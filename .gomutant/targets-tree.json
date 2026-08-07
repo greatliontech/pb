@@ -1,0 +1,87 @@
+{
+  "targets": [
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.TreeHash",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashEmpty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashGolden",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashRejectsBadBlobLength",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.dirHash",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashEmpty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashGolden",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.BlobHash",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestBlobHashSizeMismatch",
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashGolden",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.ObjectHash",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty",
+        "github.com/greatliontech/pb/internal/archive.TestTreeHashGolden",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingGarbageReferencedTree",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingHostileAndLegacyModes"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.CommitTree",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.FuzzCommitTree",
+        "github.com/greatliontech/pb/internal/archive.TestCommitTree",
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.treeEntries",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.FuzzTreeEntries",
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingGarbageReferencedTree",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingHostileAndLegacyModes"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.VerifyTreeBinding",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestTreeEntriesMalformed",
+        "github.com/greatliontech/pb/internal/archive.TestUnknownObjectFormat",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingErrorClasses",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingGarbageReferencedTree",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBindingHostileAndLegacyModes"
+      ]
+    }
+  ]
+}

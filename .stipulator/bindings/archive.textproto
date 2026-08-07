@@ -279,3 +279,75 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "23a27168890acf5b34723b5a947827ff374d6600235230c1374c6ec7803a7c97"
 }
+
+bindings {
+  requirement_id: "REQ-archive-tree-recompute"
+  content_hash: "2dc2a3e315b37461eba415fe6329f7b226af56332ff62936a68ef1d9fb80880b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TreeHash"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "24f96d7b386fa5c11d8768b0726f0fe1a4d3d754dd59d0e568d9eb83025ba7a9"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-recompute"
+  content_hash: "2dc2a3e315b37461eba415fe6329f7b226af56332ff62936a68ef1d9fb80880b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.BlobHash"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b351be1add75490bac605ad912180add10480691d5c9e8dce03b646de7085df3"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-recompute"
+  content_hash: "2dc2a3e315b37461eba415fe6329f7b226af56332ff62936a68ef1d9fb80880b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestTreeHashGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e28328f80e5650f09e7591ca7cd34f94369f9c642af1011fee7b9091b073b049"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-recompute"
+  content_hash: "2dc2a3e315b37461eba415fe6329f7b226af56332ff62936a68ef1d9fb80880b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestTreeHashEmpty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c50ee119bb52d7d8a4f950a11d59cafbc8935c3beb6e68d18a009cb665c576a7"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-recompute"
+  content_hash: "2dc2a3e315b37461eba415fe6329f7b226af56332ff62936a68ef1d9fb80880b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e049e06b2d91e8f60aae2e2a47d2caa72c1710e10bd675a48868b9719ff117d9"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-binding"
+  content_hash: "ec86306ba43bc76ca9a31b4d73a06b339a59ab5ff97c7e31a6c51a4d5505db0a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.VerifyTreeBinding"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "466df749d8c6794cfbccc7a4dc93be61c897a0e2268cee197b03d059e80b171d"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-binding"
+  content_hash: "ec86306ba43bc76ca9a31b4d73a06b339a59ab5ff97c7e31a6c51a4d5505db0a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestVerifyTreeBinding"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "74068c147adef43320b723181758b29f1e0ca798150eeeb981ff76752135f4e2"
+}
+
+bindings {
+  requirement_id: "REQ-archive-tree-binding"
+  content_hash: "ec86306ba43bc76ca9a31b4d73a06b339a59ab5ff97c7e31a6c51a4d5505db0a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestTreeHashCompositionProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e049e06b2d91e8f60aae2e2a47d2caa72c1710e10bd675a48868b9719ff117d9"
+}
