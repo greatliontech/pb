@@ -1176,6 +1176,2121 @@
       ]
     },
     {
+      "symbol": "github.com/greatliontech/pb/internal/archive.VerifyZip",
+      "bodyHash": "ca4d4ecd07f45c6035415fa46f54451c161411ec8d72189f16d441c8e61b2745",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/archive.VerifyZip",
+        "maximalClosure": "023a97e9ce51a3894a12e53c3be2fa32",
+        "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+        "observationSubjectSymbol": "VerifyZip",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+        "observationEvidence": "fe8b4547e3ff4adaa4a78b618fcabfdb",
+        "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+        "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip",
+          "maximalClosure": "62fa4b4618b1645c941fcf688c97a58a",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "FuzzVerifyZip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "2a6bcec6d32a15d491428f9dc96d6806",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+          "maximalClosure": "203924027121eebd6460e493b1772eb3",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestVerifyZipForeignOrder",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "60167efc1a183a3b0210997b1d35f2b9",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+          "maximalClosure": "ce5e27e661745d2ab72f059dc7b0ae46",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipErrors",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "0b80e51b9aca29cf0c85a5adb247400d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+          "maximalClosure": "8a1fbbfac14a29009fd508297bb4f812",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipReproducible",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bab45edc5b6e71713e09f9cae260ff2d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections",
+          "maximalClosure": "6000dd76fa3ca4a83f448cda7dc24bd8",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipContainerRejections",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "b1de56fb7ecb9646e5af5db22eacaa78",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+          "maximalClosure": "59844e3c79da2d515b487d96353c07b2",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptLocalData",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "6685c4989285842b2c5c70c96b779dff",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+          "maximalClosure": "3bbf5711c4fd7a08270c6873d5fbadca",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptedMember",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "31457be01a965f88bff74a0aef05a6da",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+          "maximalClosure": "67d0ecdb50b2ce996ab89c757d6fb454",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipEncryptedRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fe812ec1093b46962df29d44237a1a65",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths",
+          "maximalClosure": "6103a90b81a3509661f0c28bf12bd466",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipHostilePaths",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "ff78eaca49bc6641ea9c0a7c86000c4a",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipMemberSetMismatch",
+          "maximalClosure": "1dc0020311a180e31206bfa7a52da25d",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipMemberSetMismatch",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "3b8323398ec95d542d64065675497d3b",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+          "maximalClosure": "c474610ed2b360d431434996339ef672",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipMethodRejectionNamesMethod",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bdeed7ba4dbbfe0e3d1e60749fbcb01f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+          "maximalClosure": "d749036951fe23d5c14673147cda6f48",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipModeTamper",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fcd0d3900825564be90b28631e274974",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+          "maximalClosure": "536eb4e16fadacf2d093f38dbb401029",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "a5475c497c5ac77169ad66babc3cc24f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+          "maximalClosure": "9c0a818b28ab30a071a04212cf88b285",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTripProperty",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.Remove (path mutation)",
+          "observationEvidence": "fb352dfbf5b53e716c3cc63cba7d64c1",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+          "maximalClosure": "ad3149aa975cfdd8992d71772dd07144",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipStoreRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "787f1a12812ef1b8531c60811d6cb96e",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected",
+          "maximalClosure": "9031a01fa975d641167364b1bef931ee",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipSymlinkMemberRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "1112cd356a812c42384a341f15c0a9a4",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        }
+      ],
+      "oracleExplicit": true,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestCaseFoldCollisionProperty",
+            "hash": "f35c1b621277344e9d13d7822675da4c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestForm",
+            "hash": "1335eba2ac7b9a3f87de978949cf938f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestOrderIndependence",
+            "hash": "235d16b59424fd063f21d82ddb6ce2be",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestByteOrder",
+            "hash": "99f4cd2e865ccc2affeaf5a541d29c62",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestEmptyFileSet",
+            "hash": "558d777bc1369e36f7b166db6ce9bf0c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestGolden",
+            "hash": "2c94117d3a87eb83e308676afadb585f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestModeStrings",
+            "hash": "58e9bf0070fc38a0be7948b3623e584c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathCollisions",
+            "hash": "982cd6d00d6c556d9d2f64540ea7642a",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathValidation",
+            "hash": "379c8347bfdfb6acc5ae5dda7591d297",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestSizeLimit",
+            "hash": "75b93625e07d816e467f295768c360cf",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "content",
+            "hash": "f1c29a55a7e267cf3ab4ed21b9d8cf4e",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "file",
+            "hash": "54249dcfbc03ecfcd935a6d4aee962b5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "FuzzVerifyZip",
+            "hash": "76afb67c3a1430a5421493708ed2d0b3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExec",
+            "hash": "561d12fbffcd7e6b58847970ed459173",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExecProperty",
+            "hash": "00d85a925914db7881a4225c14966bfc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractRefusesBadDigest",
+            "hash": "bec2afd948b836c167d66e09455ee33a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestVerifyZipForeignOrder",
+            "hash": "5146f251b3a7f5ca3c789b2592deede7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteMemberVerifiesBytes",
+            "hash": "a571fab6914c9befd09e2a634de68f8a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipErrors",
+            "hash": "7ca37c8261c3b7a3b3f4a39d0fb09861",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipReproducible",
+            "hash": "3935fe04524b3627878d257de815f8da",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipContainerRejections",
+            "hash": "6698274a62be9609024329031bfa8225",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptLocalData",
+            "hash": "1e6c870bedff35ee0c244d27214458dc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptedMember",
+            "hash": "23f21187acc9d7710c8a4607f92d78d5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipEncryptedRejected",
+            "hash": "89e25166c72ad5ede7c4f3484ea8c0a2",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipHostilePaths",
+            "hash": "3ceb491e9d05c645f975cfe35bbaa56e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMemberSetMismatch",
+            "hash": "25d0a532e886187d763dbcb06fe9ffbc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMethodRejectionNamesMethod",
+            "hash": "a2f349c17418497604c84ff0553164c3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipModeTamper",
+            "hash": "fad2d485544a57f9bfa212efad4064d3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTrip",
+            "hash": "a7aa2b12fbc4b6a171c7d82689133006",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTripProperty",
+            "hash": "4d7a012166c45a1be0fe92867056c6bc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipStoreRoundTrip",
+            "hash": "f4266cf6f0452ac8db196db59d79330a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipSymlinkMemberRejected",
+            "hash": "010670eaa831c69397662139246a5402",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "bodies",
+            "hash": "15aa5f5d99bf30adfab3f983b9b5f4ae",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "localTempDir",
+            "hash": "328b7b54e26e04d08d0d2eb039cb7e35",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "sampleFiles",
+            "hash": "b96df0fc9994849ec397ca58434185a1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "setEncryptedFlag",
+            "hash": "0b56394a65c3547b7783e111a3eab435",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "writeZip",
+            "hash": "47788a1b7426476c894356e66c7ef614",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Write",
+            "receiver": "*failingWriter",
+            "hash": "a2be0f9284cf98d900132e2de574f76c",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Read",
+            "receiver": "failingReader",
+            "hash": "134573421028f0065ca453472971dfe4",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Close",
+            "receiver": "nopWriteCloser",
+            "hash": "3c0e33333cc7e268bc226ee1f011a98e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingReader",
+            "hash": "cb2c23e3a637bd1eace032519665c1b7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingWriter",
+            "hash": "b6d5c5cc372625ac56c31b4dd86107f1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "nopWriteCloser",
+            "hash": "86c335f03bc1b956b8478b7171c9c410",
+            "package": "archive"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "manifest_test.go",
+            "hash": "d8632ce10af0fb5444200219202833ac"
+          },
+          {
+            "file": "zip_test.go",
+            "hash": "1895c9c1ac71d32316b1213f690893bc"
+          }
+        ]
+      },
+      "commit": "62e45e59c0e4c704715fa7d15eab5d1bc0e300ff",
+      "dirty": false,
+      "candidateCount": 105,
+      "generated": 105,
+      "mutants": 82,
+      "killed": 82,
+      "discarded": 23,
+      "operators": [
+        {
+          "operator": "assignment: drop store",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "bitwise: \u0026 -\u003e |",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "block: empty",
+          "generated": 9,
+          "discarded": 0,
+          "killed": 9,
+          "survived": 0
+        },
+        {
+          "operator": "boolean operand: -\u003e true",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 9,
+          "discarded": 1,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 9,
+          "discarded": 1,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 9,
+          "discarded": 0,
+          "killed": 9,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 8,
+          "discarded": 0,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "integer literal: magnitude +1",
+          "generated": 4,
+          "discarded": 0,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "logical: \u0026\u0026 -\u003e ||",
+          "generated": 1,
+          "discarded": 1,
+          "killed": 0,
+          "survived": 0
+        },
+        {
+          "operator": "loop control: continue -\u003e break",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "range body: prepend break",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "return: nil",
+          "generated": 18,
+          "discarded": 9,
+          "killed": 9,
+          "survived": 0
+        },
+        {
+          "operator": "return: zero",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 22,
+          "discarded": 5,
+          "killed": 17,
+          "survived": 0
+        },
+        {
+          "operator": "string literal: nonempty -\u003e empty",
+          "generated": 7,
+          "discarded": 6,
+          "killed": 1,
+          "survived": 0
+        }
+      ],
+      "kills": [
+        {
+          "position": "zip.go:98:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+        },
+        {
+          "position": "zip.go:98:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:98:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:98:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+        },
+        {
+          "position": "zip.go:98:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:98:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+        },
+        {
+          "position": "zip.go:99:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+        },
+        {
+          "position": "zip.go:99:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+        },
+        {
+          "position": "zip.go:102:28",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:103:14",
+          "operator": "range body: prepend break",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:104:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:104:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:104:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:104:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:104:32",
+          "operator": "string literal: nonempty -\u003e empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:104:37",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:105:4",
+          "operator": "loop control: continue -\u003e break",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:105:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:107:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:107:30",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:107:34",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:108:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:108:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:110:3",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:111:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:111:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:111:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:111:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:111:13",
+          "operator": "bitwise: \u0026 -\u003e |",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:111:14",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:111:18",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:111:21",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:111:23",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:112:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:112:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected"
+        },
+        {
+          "position": "zip.go:114:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+        },
+        {
+          "position": "zip.go:114:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:114:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:114:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+        },
+        {
+          "position": "zip.go:114:14",
+          "operator": "bitwise: \u0026 -\u003e |",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:114:27",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:114:30",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:114:32",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+        },
+        {
+          "position": "zip.go:118:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+        },
+        {
+          "position": "zip.go:118:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+        },
+        {
+          "position": "zip.go:120:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod"
+        },
+        {
+          "position": "zip.go:120:6",
+          "operator": "boolean operand: -\u003e true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip"
+        },
+        {
+          "position": "zip.go:120:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:120:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:120:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod"
+        },
+        {
+          "position": "zip.go:120:15",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip"
+        },
+        {
+          "position": "zip.go:120:31",
+          "operator": "boolean operand: -\u003e true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:120:40",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:120:55",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod"
+        },
+        {
+          "position": "zip.go:121:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod"
+        },
+        {
+          "position": "zip.go:121:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:124:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:124:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:124:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:124:10",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:124:17",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:125:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:125:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:127:3",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:130:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths"
+        },
+        {
+          "position": "zip.go:130:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:130:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:130:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths"
+        },
+        {
+          "position": "zip.go:130:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:130:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths"
+        },
+        {
+          "position": "zip.go:131:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths"
+        },
+        {
+          "position": "zip.go:131:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths"
+        },
+        {
+          "position": "zip.go:133:28",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:133:28",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:133:28",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember"
+        },
+        {
+          "position": "zip.go:133:30",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:133:42",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember"
+        },
+        {
+          "position": "zip.go:134:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember"
+        },
+        {
+          "position": "zip.go:134:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember"
+        },
+        {
+          "position": "zip.go:136:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder"
+        },
+        {
+          "position": "zip.go:136:58",
+          "operator": "return: zero",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder"
+        },
+        {
+          "position": "zip.go:137:9",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        }
+      ],
+      "candidateEvidence": [
+        {
+          "position": "zip.go:98:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:98:5",
+          "operator": "condition: force false",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:98:16",
+          "operator": "block: empty",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:99:3",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        }
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.WriteZip",
+      "bodyHash": "f2643076e51c9be1ca613a022c64fdf338a9236712de20574ac3537513c94540",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/archive.WriteZip",
+        "maximalClosure": "82e6bc95fe36b6a02a9d853e7e9c22cc",
+        "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+        "observationSubjectSymbol": "WriteZip",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+        "observationEvidence": "6e1a76f894ced87c3afd390e38e64dc1",
+        "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+        "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+          "maximalClosure": "203924027121eebd6460e493b1772eb3",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestVerifyZipForeignOrder",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "60167efc1a183a3b0210997b1d35f2b9",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+          "maximalClosure": "ce5e27e661745d2ab72f059dc7b0ae46",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipErrors",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "0b80e51b9aca29cf0c85a5adb247400d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+          "maximalClosure": "8a1fbbfac14a29009fd508297bb4f812",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipReproducible",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bab45edc5b6e71713e09f9cae260ff2d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+          "maximalClosure": "59844e3c79da2d515b487d96353c07b2",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptLocalData",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "6685c4989285842b2c5c70c96b779dff",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+          "maximalClosure": "3bbf5711c4fd7a08270c6873d5fbadca",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptedMember",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "31457be01a965f88bff74a0aef05a6da",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+          "maximalClosure": "67d0ecdb50b2ce996ab89c757d6fb454",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipEncryptedRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fe812ec1093b46962df29d44237a1a65",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipMemberSetMismatch",
+          "maximalClosure": "1dc0020311a180e31206bfa7a52da25d",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipMemberSetMismatch",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "3b8323398ec95d542d64065675497d3b",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+          "maximalClosure": "c474610ed2b360d431434996339ef672",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipMethodRejectionNamesMethod",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bdeed7ba4dbbfe0e3d1e60749fbcb01f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+          "maximalClosure": "d749036951fe23d5c14673147cda6f48",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipModeTamper",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fcd0d3900825564be90b28631e274974",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+          "maximalClosure": "536eb4e16fadacf2d093f38dbb401029",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "a5475c497c5ac77169ad66babc3cc24f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+          "maximalClosure": "9c0a818b28ab30a071a04212cf88b285",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTripProperty",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.Remove (path mutation)",
+          "observationEvidence": "fb352dfbf5b53e716c3cc63cba7d64c1",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+          "maximalClosure": "ad3149aa975cfdd8992d71772dd07144",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipStoreRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "787f1a12812ef1b8531c60811d6cb96e",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected",
+          "maximalClosure": "9031a01fa975d641167364b1bef931ee",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipSymlinkMemberRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "1112cd356a812c42384a341f15c0a9a4",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "f6fe4335a0c61e16a2d06e469b561a4b"
+        }
+      ],
+      "oracleExplicit": true,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestCaseFoldCollisionProperty",
+            "hash": "f35c1b621277344e9d13d7822675da4c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestForm",
+            "hash": "1335eba2ac7b9a3f87de978949cf938f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestOrderIndependence",
+            "hash": "235d16b59424fd063f21d82ddb6ce2be",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestByteOrder",
+            "hash": "99f4cd2e865ccc2affeaf5a541d29c62",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestEmptyFileSet",
+            "hash": "558d777bc1369e36f7b166db6ce9bf0c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestGolden",
+            "hash": "2c94117d3a87eb83e308676afadb585f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestModeStrings",
+            "hash": "58e9bf0070fc38a0be7948b3623e584c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathCollisions",
+            "hash": "982cd6d00d6c556d9d2f64540ea7642a",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathValidation",
+            "hash": "379c8347bfdfb6acc5ae5dda7591d297",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestSizeLimit",
+            "hash": "75b93625e07d816e467f295768c360cf",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "content",
+            "hash": "f1c29a55a7e267cf3ab4ed21b9d8cf4e",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "file",
+            "hash": "54249dcfbc03ecfcd935a6d4aee962b5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "FuzzVerifyZip",
+            "hash": "76afb67c3a1430a5421493708ed2d0b3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExec",
+            "hash": "561d12fbffcd7e6b58847970ed459173",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExecProperty",
+            "hash": "00d85a925914db7881a4225c14966bfc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractRefusesBadDigest",
+            "hash": "bec2afd948b836c167d66e09455ee33a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestVerifyZipForeignOrder",
+            "hash": "5146f251b3a7f5ca3c789b2592deede7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteMemberVerifiesBytes",
+            "hash": "a571fab6914c9befd09e2a634de68f8a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipErrors",
+            "hash": "7ca37c8261c3b7a3b3f4a39d0fb09861",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipReproducible",
+            "hash": "3935fe04524b3627878d257de815f8da",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipContainerRejections",
+            "hash": "6698274a62be9609024329031bfa8225",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptLocalData",
+            "hash": "1e6c870bedff35ee0c244d27214458dc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptedMember",
+            "hash": "23f21187acc9d7710c8a4607f92d78d5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipEncryptedRejected",
+            "hash": "89e25166c72ad5ede7c4f3484ea8c0a2",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipHostilePaths",
+            "hash": "3ceb491e9d05c645f975cfe35bbaa56e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMemberSetMismatch",
+            "hash": "25d0a532e886187d763dbcb06fe9ffbc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMethodRejectionNamesMethod",
+            "hash": "a2f349c17418497604c84ff0553164c3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipModeTamper",
+            "hash": "fad2d485544a57f9bfa212efad4064d3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTrip",
+            "hash": "a7aa2b12fbc4b6a171c7d82689133006",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTripProperty",
+            "hash": "4d7a012166c45a1be0fe92867056c6bc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipStoreRoundTrip",
+            "hash": "f4266cf6f0452ac8db196db59d79330a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipSymlinkMemberRejected",
+            "hash": "010670eaa831c69397662139246a5402",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "bodies",
+            "hash": "15aa5f5d99bf30adfab3f983b9b5f4ae",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "localTempDir",
+            "hash": "328b7b54e26e04d08d0d2eb039cb7e35",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "sampleFiles",
+            "hash": "b96df0fc9994849ec397ca58434185a1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "setEncryptedFlag",
+            "hash": "0b56394a65c3547b7783e111a3eab435",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "writeZip",
+            "hash": "47788a1b7426476c894356e66c7ef614",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Write",
+            "receiver": "*failingWriter",
+            "hash": "a2be0f9284cf98d900132e2de574f76c",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Read",
+            "receiver": "failingReader",
+            "hash": "134573421028f0065ca453472971dfe4",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Close",
+            "receiver": "nopWriteCloser",
+            "hash": "3c0e33333cc7e268bc226ee1f011a98e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingReader",
+            "hash": "cb2c23e3a637bd1eace032519665c1b7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingWriter",
+            "hash": "b6d5c5cc372625ac56c31b4dd86107f1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "nopWriteCloser",
+            "hash": "86c335f03bc1b956b8478b7171c9c410",
+            "package": "archive"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "manifest_test.go",
+            "hash": "d8632ce10af0fb5444200219202833ac"
+          },
+          {
+            "file": "zip_test.go",
+            "hash": "1895c9c1ac71d32316b1213f690893bc"
+          }
+        ]
+      },
+      "commit": "62e45e59c0e4c704715fa7d15eab5d1bc0e300ff",
+      "dirty": false,
+      "candidateCount": 63,
+      "generated": 63,
+      "mutants": 51,
+      "killed": 44,
+      "discarded": 12,
+      "operators": [
+        {
+          "operator": "assignment: drop store",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "block: empty",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 4,
+          "survived": 1
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 4,
+          "survived": 1
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 4,
+          "discarded": 0,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "integer literal: magnitude +1",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 1
+        },
+        {
+          "operator": "range body: prepend break",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "return: nil",
+          "generated": 5,
+          "discarded": 1,
+          "killed": 3,
+          "survived": 1
+        },
+        {
+          "operator": "return: zero",
+          "generated": 6,
+          "discarded": 5,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 16,
+          "discarded": 4,
+          "killed": 10,
+          "survived": 2
+        },
+        {
+          "operator": "string literal: empty -\u003e nonempty",
+          "generated": 4,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 1
+        },
+        {
+          "operator": "string literal: nonempty -\u003e empty",
+          "generated": 2,
+          "discarded": 2,
+          "killed": 0,
+          "survived": 0
+        }
+      ],
+      "kills": [
+        {
+          "position": "zip.go:49:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:50:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible"
+        },
+        {
+          "position": "zip.go:50:55",
+          "operator": "return: zero",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible"
+        },
+        {
+          "position": "zip.go:53:28",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:54:14",
+          "operator": "range body: prepend break",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:54:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:55:23",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:56:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:56:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:56:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:56:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:56:13",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:57:4",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:66:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:66:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:66:10",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:71:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:71:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:71:6",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:71:6",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:71:10",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:71:17",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:72:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:72:11",
+          "operator": "string literal: empty -\u003e nonempty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:72:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:75:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:76:3",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:79:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:79:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:79:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:79:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:79:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:80:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:80:10",
+          "operator": "string literal: empty -\u003e nonempty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:80:14",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:82:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:82:24",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:82:24",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:82:24",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:82:28",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:82:35",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:83:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:83:10",
+          "operator": "string literal: empty -\u003e nonempty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        },
+        {
+          "position": "zip.go:83:14",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors"
+        }
+      ],
+      "survivors": [
+        {
+          "position": "zip.go:57:11",
+          "operator": "integer literal: magnitude +1",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "zip.go:66:3",
+          "operator": "statement: delete",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "zip.go:66:6",
+          "operator": "condition: force false",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "zip.go:66:17",
+          "operator": "block: empty",
+          "execution": "never-executed"
+        },
+        {
+          "position": "zip.go:67:4",
+          "operator": "statement: delete",
+          "execution": "never-executed"
+        },
+        {
+          "position": "zip.go:67:11",
+          "operator": "string literal: empty -\u003e nonempty",
+          "execution": "never-executed"
+        },
+        {
+          "position": "zip.go:67:15",
+          "operator": "return: nil",
+          "execution": "never-executed"
+        }
+      ],
+      "attested": [
+        {
+          "position": "zip.go:57:11",
+          "operator": "integer literal: magnitude +1",
+          "reason": "0o755 -\u003e 0o756 changes only non-execute permission bits in recorded Unix attributes; verification derives Exec from the 0o111 mask (owner execute still set) and extraction writes fixed modes, so no reader distinguishes the values."
+        },
+        {
+          "position": "zip.go:66:3",
+          "operator": "statement: delete",
+          "reason": "CreateHeader error guard: with the buffered zip writer, underlying-writer failures surface at Copy/Close (both tested), and CreateHeader cannot fail for names on a healthy writer. Defensive propagation of a stdlib error return, unreachable in every construction the package permits."
+        },
+        {
+          "position": "zip.go:66:6",
+          "operator": "condition: force false",
+          "reason": "Same unreachable defensive CreateHeader guard; forcing it false is indistinguishable on every reachable input."
+        },
+        {
+          "position": "zip.go:66:17",
+          "operator": "block: empty",
+          "reason": "Body of the unreachable CreateHeader error guard; never executes on any reachable input."
+        },
+        {
+          "position": "zip.go:67:11",
+          "operator": "string literal: empty -\u003e nonempty",
+          "reason": "Return value inside the unreachable CreateHeader error guard; never executes on any reachable input."
+        },
+        {
+          "position": "zip.go:67:15",
+          "operator": "return: nil",
+          "reason": "Return inside the unreachable CreateHeader error guard; never executes on any reachable input."
+        },
+        {
+          "position": "zip.go:67:4",
+          "operator": "statement: delete",
+          "reason": "Return inside the unreachable CreateHeader error guard; never executes on any reachable input."
+        }
+      ],
+      "candidateEvidence": [
+        {
+          "position": "zip.go:49:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        }
+      ]
+    },
+    {
       "symbol": "github.com/greatliontech/pb/internal/archive.caseFold",
       "bodyHash": "07550b27cd81757aeb835f2a3e8fc3b7bd4a4f236d1ee48e523046e279139b6e",
       "operatorSet": "go/12",
@@ -1951,6 +4066,827 @@
           "position": "manifest.go:228:42",
           "operator": "assignment: drop store",
           "reason": "mutant test process timed out",
+          "disposition": "killed"
+        }
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.hashMember",
+      "bodyHash": "f7f94e652bf3db023bfc6c886e2eaa4a30c38a053459a766506e3ac3b9a99e5a",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/archive.hashMember",
+        "maximalClosure": "ccb65f530da0c291d47ce0744c23023b",
+        "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+        "observationSubjectSymbol": "hashMember",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+        "observationEvidence": "254bfbb8ac67f153257efc0f7c561ec7",
+        "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+        "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip",
+          "maximalClosure": "62fa4b4618b1645c941fcf688c97a58a",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "FuzzVerifyZip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "2a6bcec6d32a15d491428f9dc96d6806",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+          "maximalClosure": "203924027121eebd6460e493b1772eb3",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestVerifyZipForeignOrder",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "60167efc1a183a3b0210997b1d35f2b9",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+          "maximalClosure": "ce5e27e661745d2ab72f059dc7b0ae46",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipErrors",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "0b80e51b9aca29cf0c85a5adb247400d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+          "maximalClosure": "8a1fbbfac14a29009fd508297bb4f812",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestWriteZipReproducible",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bab45edc5b6e71713e09f9cae260ff2d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections",
+          "maximalClosure": "6000dd76fa3ca4a83f448cda7dc24bd8",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipContainerRejections",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "b1de56fb7ecb9646e5af5db22eacaa78",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+          "maximalClosure": "59844e3c79da2d515b487d96353c07b2",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptLocalData",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "6685c4989285842b2c5c70c96b779dff",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+          "maximalClosure": "3bbf5711c4fd7a08270c6873d5fbadca",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipCorruptedMember",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "31457be01a965f88bff74a0aef05a6da",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+          "maximalClosure": "67d0ecdb50b2ce996ab89c757d6fb454",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipEncryptedRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fe812ec1093b46962df29d44237a1a65",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+          "maximalClosure": "c474610ed2b360d431434996339ef672",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipMethodRejectionNamesMethod",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "bdeed7ba4dbbfe0e3d1e60749fbcb01f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+          "maximalClosure": "d749036951fe23d5c14673147cda6f48",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipModeTamper",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "fcd0d3900825564be90b28631e274974",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+          "maximalClosure": "536eb4e16fadacf2d093f38dbb401029",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "a5475c497c5ac77169ad66babc3cc24f",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+          "maximalClosure": "9c0a818b28ab30a071a04212cf88b285",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipRoundTripProperty",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.Remove (path mutation)",
+          "observationEvidence": "fb352dfbf5b53e716c3cc63cba7d64c1",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+          "maximalClosure": "ad3149aa975cfdd8992d71772dd07144",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipStoreRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "787f1a12812ef1b8531c60811d6cb96e",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected",
+          "maximalClosure": "9031a01fa975d641167364b1bef931ee",
+          "testVariantClosure": "b17fd8ad9c115e41ca262c454549ec87",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/archive",
+          "observationSubjectSymbol": "TestZipSymlinkMemberRejected",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "1112cd356a812c42384a341f15c0a9a4",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL2Z1enovRnV6elZlcmlmeVppcCIsImQiOiI2NjdkYmU5ZDc3NWZkMjMyYjIyZDE2OTU3ZDExNGQwNCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9hcmNoaXZlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RaaXBSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiIwMTlkMzAwMjBlNmY5MjkxYjIwNjczODBjNzA4MWYzOSJ9XX0",
+          "runtimeDigest": "223092c53b4c116a04dc7afc3291fb8f"
+        }
+      ],
+      "oracleExplicit": true,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestCaseFoldCollisionProperty",
+            "hash": "f35c1b621277344e9d13d7822675da4c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestForm",
+            "hash": "1335eba2ac7b9a3f87de978949cf938f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestDigestOrderIndependence",
+            "hash": "235d16b59424fd063f21d82ddb6ce2be",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestByteOrder",
+            "hash": "99f4cd2e865ccc2affeaf5a541d29c62",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestEmptyFileSet",
+            "hash": "558d777bc1369e36f7b166db6ce9bf0c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestManifestGolden",
+            "hash": "2c94117d3a87eb83e308676afadb585f",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestModeStrings",
+            "hash": "58e9bf0070fc38a0be7948b3623e584c",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathCollisions",
+            "hash": "982cd6d00d6c556d9d2f64540ea7642a",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestPathValidation",
+            "hash": "379c8347bfdfb6acc5ae5dda7591d297",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "TestSizeLimit",
+            "hash": "75b93625e07d816e467f295768c360cf",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "content",
+            "hash": "f1c29a55a7e267cf3ab4ed21b9d8cf4e",
+            "package": "archive"
+          },
+          {
+            "file": "manifest_test.go",
+            "kind": "func",
+            "name": "file",
+            "hash": "54249dcfbc03ecfcd935a6d4aee962b5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "FuzzVerifyZip",
+            "hash": "76afb67c3a1430a5421493708ed2d0b3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExec",
+            "hash": "561d12fbffcd7e6b58847970ed459173",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractNoExecProperty",
+            "hash": "00d85a925914db7881a4225c14966bfc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestExtractRefusesBadDigest",
+            "hash": "bec2afd948b836c167d66e09455ee33a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestVerifyZipForeignOrder",
+            "hash": "5146f251b3a7f5ca3c789b2592deede7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteMemberVerifiesBytes",
+            "hash": "a571fab6914c9befd09e2a634de68f8a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipErrors",
+            "hash": "7ca37c8261c3b7a3b3f4a39d0fb09861",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestWriteZipReproducible",
+            "hash": "3935fe04524b3627878d257de815f8da",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipContainerRejections",
+            "hash": "6698274a62be9609024329031bfa8225",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptLocalData",
+            "hash": "1e6c870bedff35ee0c244d27214458dc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipCorruptedMember",
+            "hash": "23f21187acc9d7710c8a4607f92d78d5",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipEncryptedRejected",
+            "hash": "89e25166c72ad5ede7c4f3484ea8c0a2",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipHostilePaths",
+            "hash": "3ceb491e9d05c645f975cfe35bbaa56e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMemberSetMismatch",
+            "hash": "25d0a532e886187d763dbcb06fe9ffbc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipMethodRejectionNamesMethod",
+            "hash": "a2f349c17418497604c84ff0553164c3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipModeTamper",
+            "hash": "fad2d485544a57f9bfa212efad4064d3",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTrip",
+            "hash": "a7aa2b12fbc4b6a171c7d82689133006",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipRoundTripProperty",
+            "hash": "4d7a012166c45a1be0fe92867056c6bc",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipStoreRoundTrip",
+            "hash": "f4266cf6f0452ac8db196db59d79330a",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "TestZipSymlinkMemberRejected",
+            "hash": "010670eaa831c69397662139246a5402",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "bodies",
+            "hash": "15aa5f5d99bf30adfab3f983b9b5f4ae",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "localTempDir",
+            "hash": "328b7b54e26e04d08d0d2eb039cb7e35",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "sampleFiles",
+            "hash": "b96df0fc9994849ec397ca58434185a1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "setEncryptedFlag",
+            "hash": "0b56394a65c3547b7783e111a3eab435",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "func",
+            "name": "writeZip",
+            "hash": "47788a1b7426476c894356e66c7ef614",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Write",
+            "receiver": "*failingWriter",
+            "hash": "a2be0f9284cf98d900132e2de574f76c",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Read",
+            "receiver": "failingReader",
+            "hash": "134573421028f0065ca453472971dfe4",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "method",
+            "name": "Close",
+            "receiver": "nopWriteCloser",
+            "hash": "3c0e33333cc7e268bc226ee1f011a98e",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingReader",
+            "hash": "cb2c23e3a637bd1eace032519665c1b7",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "failingWriter",
+            "hash": "b6d5c5cc372625ac56c31b4dd86107f1",
+            "package": "archive"
+          },
+          {
+            "file": "zip_test.go",
+            "kind": "type",
+            "name": "nopWriteCloser",
+            "hash": "86c335f03bc1b956b8478b7171c9c410",
+            "package": "archive"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "manifest_test.go",
+            "hash": "d8632ce10af0fb5444200219202833ac"
+          },
+          {
+            "file": "zip_test.go",
+            "hash": "1895c9c1ac71d32316b1213f690893bc"
+          }
+        ]
+      },
+      "commit": "62e45e59c0e4c704715fa7d15eab5d1bc0e300ff",
+      "dirty": false,
+      "candidateCount": 28,
+      "generated": 28,
+      "mutants": 24,
+      "killed": 21,
+      "discarded": 4,
+      "operators": [
+        {
+          "operator": "arithmetic: + -\u003e -",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 0,
+          "survived": 1
+        },
+        {
+          "operator": "bitwise: \u0026 -\u003e |",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "block: empty",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "integer literal: magnitude +1",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 1
+        },
+        {
+          "operator": "return: nil",
+          "generated": 3,
+          "discarded": 1,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 7,
+          "discarded": 1,
+          "killed": 5,
+          "survived": 1
+        },
+        {
+          "operator": "string literal: nonempty -\u003e empty",
+          "generated": 2,
+          "discarded": 2,
+          "killed": 0,
+          "survived": 0
+        }
+      ],
+      "kills": [
+        {
+          "position": "zip.go:142:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:142:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:142:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:142:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:142:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:142:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:143:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:143:22",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:152:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:152:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:152:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:152:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:152:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:152:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:153:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:153:22",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData"
+        },
+        {
+          "position": "zip.go:160:17",
+          "operator": "bitwise: \u0026 -\u003e |",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:160:18",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+        },
+        {
+          "position": "zip.go:160:24",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:160:27",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        },
+        {
+          "position": "zip.go:163:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+        }
+      ],
+      "survivors": [
+        {
+          "position": "zip.go:145:2",
+          "operator": "statement: delete",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "zip.go:151:54",
+          "operator": "arithmetic: + -\u003e -",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "zip.go:151:55",
+          "operator": "integer literal: magnitude +1",
+          "execution": "executed-and-passed"
+        }
+      ],
+      "attested": [
+        {
+          "position": "zip.go:145:2",
+          "operator": "statement: delete",
+          "reason": "Deleting `defer rc.Close()` leaks a member reader within a single verification call; content, hashes, and errors are unchanged. Resource-hygiene only."
+        },
+        {
+          "position": "zip.go:151:54",
+          "operator": "arithmetic: + -\u003e -",
+          "reason": "Changes the decompression-bomb read cap from MaxTotalSize+1 to MaxTotalSize-1; distinguishing it requires a member of ~500 MiB actual bytes (truncation then mis-sizes a legal maximal file set) — impractical oracle; the cap's purpose (bounding work) is preserved. Accepted as impractical-to-witness."
+        },
+        {
+          "position": "zip.go:151:55",
+          "operator": "integer literal: magnitude +1",
+          "reason": "Read cap MaxTotalSize+2 vs +1: any member large enough to distinguish them exceeds the size limit either way, and both routes end in the same Manifest ErrTooLarge rejection. Distinguishing input additionally needs a ~500 MiB member — impractical oracle."
+        }
+      ],
+      "candidateEvidence": [
+        {
+          "position": "zip.go:142:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:142:5",
+          "operator": "condition: force false",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:142:16",
+          "operator": "block: empty",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "zip.go:143:3",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         }
       ]
