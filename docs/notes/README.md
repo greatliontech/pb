@@ -14,3 +14,4 @@ them.
 | [plugin-execution.md](./plugin-execution.md) | Local plugin execution: plain OCI images, sandbox tiers, strict platform rule |
 | [ecosystem.md](./ecosystem.md) | Sibling repos pb builds on, their roles and maturity, and pbr's future |
 | [sandbox-consolidation.md](./sandbox-consolidation.md) | Adopted cross-repo direction: container's create-path machinery becomes sandbox's Linux backend; pb depends on sandbox from day one |
+| [lint-breaking.md](./lint-breaking.md) | Lint & breaking-change engine: no built-in rules, all rules are CEL, rulesets are ordinary modules |
