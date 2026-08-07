@@ -51,6 +51,9 @@ the tool is platform-conditional.
   Descriptor-powered utility, zero coupling. Later.
 - **`pb vendor`** — Go-style vendoring for air-gapped/hermetic builds.
   Lockfile + cache covers most needs first.
+- **Generation attestation** — emitting "generated with plugin X @ digest
+  Y, sandbox tier Z" alongside output. Composes with the tier-reporting
+  runner; shape undesigned.
 - **Windows/macOS** — trajectory settled; behind the runner contract.
 
 ## Hard no

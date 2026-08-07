@@ -45,18 +45,17 @@ and schemas never leave the machine.
   plugin images are already OCI images with entrypoints — they qualify on
   linux today with no bridging.
 
-## Open questions
+## Closed — specced
 
-- **What pb's consumption contract specifies.** Not a packaging format:
-  plugin reference resolution, platform selection (exact match or refuse),
-  verification policy gating execution, stdio wiring through the sandbox,
-  and the one behavioral requirement (entrypoint speaks the plugin protocol
-  — documentable and runtime-checkable only, not encodable in the image).
-- **Verification policy shape.** What signature/identity is required before
-  an image runs, per-reference or global policy, and the failure mode when
-  unsigned.
-- **Generation attestation.** The tier-reporting sandbox design composes with
-  provenance: output could carry "generated with plugin X @ digest Y, sandbox
-  tier Z". Whether/where such an attestation is emitted is undesigned.
-- **Default MinTier.** Likely `OS` as default with user override in both
-  directions; undecided.
+- Consumption contract: `docs/specs/plugin-execution.md` (plain-OCI, no
+  privileged source, digest pinning via the lockfile's `plugins` entries,
+  strict platform refusal, verify-before-run, sandboxed single process,
+  response authority).
+- Verification policy: `docs/specs/provenance.md` — one trust policy file
+  (`pb.trust.yaml`) governs modules and plugin images alike; unsigned
+  allowed-and-recorded by default, `require-provenance` opt-in.
+- Default MinTier: `Strong` (core is Linux-only where namespaces afford
+  it); unattainable tier fails loudly with the explicit-lowering path
+  stated. Other platforms document their own defaults when they arrive.
+- Generation attestation: deferred — recorded in
+  [feature-set.md](./feature-set.md)'s deferred bucket.

@@ -166,6 +166,6 @@ lockfile.
 
 ## Remaining open
 
-- Module file schema (`pb.yaml` — name decided in the archive spec).
-- Next specs: module resolution (meta-tag discovery, synthesis), provenance
-  verification & acceptance policy, module file schema.
+None — the dependency side is fully specced: `module-archive.md`,
+`module-lockfile.md`, `module-proxy.md`, `module-file.md`,
+`module-resolution.md`, `provenance.md`, `workspace.md`.

@@ -26,9 +26,10 @@ record naming the evidence type and the verified identity.
 ## Format
 
 **REQ-lock-format** (wire): The lockfile MUST be UTF-8 YAML with LF line
-endings containing exactly two top-level keys in order: `version`, whose
-value is the integer `1`, and `modules`, a block-style list of module
-entries.
+endings containing, in order: `version`, whose value is the integer `1`;
+`modules`, a block-style list of module entries; and, only when plugin
+pins exist, `plugins`, a block-style list of plugin entries. No other
+top-level keys exist.
 
 **REQ-lock-entry** (wire): Each module entry MUST carry, in order: `path`
 (the module path), `version` (the version string), `digest` (the module
@@ -42,6 +43,12 @@ and `provenance` (the provenance record). No other keys exist.
 signed object; and `identity`, with `san` and `issuer` strings naming the
 verified Fulcio identity. No other evidence types are defined by this
 document; new types extend this record with their own fields.
+
+**REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
+`ref` (the OCI reference as written in generation configuration, without a
+digest), `digest` (the manifest-list digest the reference resolved to),
+and `provenance` (a provenance record for the image signature, `none` when
+unsigned). Plugin entries are sorted by `ref` in raw-byte order.
 
 **REQ-lock-canonical-emission** (invariant): Lockfile emission MUST be a
 pure function of the recorded facts: entries sorted by path then version

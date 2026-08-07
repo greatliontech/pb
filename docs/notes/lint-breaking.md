@@ -95,12 +95,16 @@ but excluded from the concept on purpose: it reopens the safety hole CEL
 closes, and its existence would pressure ruleset authors toward code instead
 of data. Real expressiveness gaps improve the stdlib instead.
 
-## Open
+## Closed — specced
 
-- Rule-file schema details (YAML shape, tag taxonomy, message templating).
-- Stdlib function inventory + environment versioning scheme.
-- Pairing algorithm details for breaking (nested/renamed entities, reserved
-  ranges).
-- Inline suppression syntax (`// pb:ignore <rule-id>`-style) — whether it
-  exists at all, and its shape.
+`docs/specs/check-rules.md` covers the rule-file schema, versioned CEL
+environment, boundedness, no-defaults behavior, breaking-change pairing,
+the lint file (`pb.lint.yaml`), and inline suppression
+(`// pb:ignore <rule-id>`, rule id mandatory).
+
+## Remaining drafting
+
+- Stdlib function inventory — emerges from porting buf's catalog (the acid
+  test); each resisting rule is a prioritized stdlib extension. Environment
+  versioning scheme is specced (integer `celEnv`).
 - LSP/MCP later phases consume this same engine for diagnostics.
