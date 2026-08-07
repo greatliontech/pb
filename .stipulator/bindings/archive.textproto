@@ -153,3 +153,129 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "4e051fe0bdab444d6c2e8023345bea151fc31257a2522ff1026ac7b7e42714b0"
 }
+
+bindings {
+  requirement_id: "REQ-archive-zip"
+  content_hash: "8e81f9a6b14c69192176785bbd4ea177f1c2712b40aba415ab95b1f004e8b740"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.VerifyZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "df2f2389a2cb68face65299a1b117e0fa629c275752baca11af0ac7902ffa20f"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip"
+  content_hash: "8e81f9a6b14c69192176785bbd4ea177f1c2712b40aba415ab95b1f004e8b740"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.WriteZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "49bcfb1fa78a9f2089a1f103ed09f8ca0bc1accddc57058e6e18694a18a72661"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip"
+  content_hash: "8e81f9a6b14c69192176785bbd4ea177f1c2712b40aba415ab95b1f004e8b740"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "166b2aaeb515418858fd97e347b33af68d0dff0f26f493f6101eda63a64c6698"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip"
+  content_hash: "8e81f9a6b14c69192176785bbd4ea177f1c2712b40aba415ab95b1f004e8b740"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipMemberSetMismatch"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "268d23134e7691960c51558f9e9487c6dc09ba4329f041b8f176d09928e1f986"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-mode"
+  content_hash: "c58ffb0974ebf7d8a7853be871fe78b4b74a80fb60aaf6118c7d7b73b972cc16"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.WriteZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "49bcfb1fa78a9f2089a1f103ed09f8ca0bc1accddc57058e6e18694a18a72661"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-mode"
+  content_hash: "c58ffb0974ebf7d8a7853be871fe78b4b74a80fb60aaf6118c7d7b73b972cc16"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0bd569d64badb8f55c356f4eba8c611411b663fc668fb5fe1c186d45f4164404"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-mode"
+  content_hash: "c58ffb0974ebf7d8a7853be871fe78b4b74a80fb60aaf6118c7d7b73b972cc16"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipModeTamper"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "da5129f4e17313f80c11204419c6560bab4b772c25a36ebe6b1beaec479a93b2"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-verification"
+  content_hash: "53904c07a5da7c4cd0d68322db4582e15bc5deb5dfe7908e03aed58488f5b9f3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.VerifyZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "df2f2389a2cb68face65299a1b117e0fa629c275752baca11af0ac7902ffa20f"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-verification"
+  content_hash: "53904c07a5da7c4cd0d68322db4582e15bc5deb5dfe7908e03aed58488f5b9f3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f7117c5eefdc2f99e2a2789dd8700357cab0c1176bcd4bbfcf8a8042b888e3fb"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-verification"
+  content_hash: "53904c07a5da7c4cd0d68322db4582e15bc5deb5dfe7908e03aed58488f5b9f3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f488b66d5b3c797b704db8d2239a9a83a13c13ecede6c091faf357f34e80b33b"
+}
+
+bindings {
+  requirement_id: "REQ-archive-zip-verification"
+  content_hash: "53904c07a5da7c4cd0d68322db4582e15bc5deb5dfe7908e03aed58488f5b9f3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "242dc76be383a7cdd3b0d463ee250a17a0d7d90efb92828f4390d1418f074a7b"
+}
+
+bindings {
+  requirement_id: "REQ-archive-no-exec-materialization"
+  content_hash: "53f52d090db884440cedaa545f65f92e3c20517c8e460bdcfc2007aca8f1c0a7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.ExtractZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "dc5a66b8e4cff8f37e709a5c88ecc463158c9c663126bccc6adb34849bbcdf0c"
+}
+
+bindings {
+  requirement_id: "REQ-archive-no-exec-materialization"
+  content_hash: "53f52d090db884440cedaa545f65f92e3c20517c8e460bdcfc2007aca8f1c0a7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestExtractNoExecProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c934dd90b8ed160a3f3c224d6a948fb592a7860f8f407292e859f660fff6e3cc"
+}
+
+bindings {
+  requirement_id: "REQ-archive-no-exec-materialization"
+  content_hash: "53f52d090db884440cedaa545f65f92e3c20517c8e460bdcfc2007aca8f1c0a7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/archive.TestExtractNoExec"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "23a27168890acf5b34723b5a947827ff374d6600235230c1374c6ec7803a7c97"
+}

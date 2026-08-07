@@ -1,0 +1,62 @@
+{
+  "targets": [
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.VerifyZip",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+        "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+        "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+        "github.com/greatliontech/pb/internal/archive.TestZipHostilePaths",
+        "github.com/greatliontech/pb/internal/archive.TestZipMemberSetMismatch",
+        "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+        "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+        "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.WriteZip",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+        "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+        "github.com/greatliontech/pb/internal/archive.TestZipMemberSetMismatch",
+        "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+        "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+        "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/archive.hashMember",
+      "oracle": [
+        "github.com/greatliontech/pb/internal/archive.FuzzVerifyZip",
+        "github.com/greatliontech/pb/internal/archive.TestVerifyZipForeignOrder",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipErrors",
+        "github.com/greatliontech/pb/internal/archive.TestWriteZipReproducible",
+        "github.com/greatliontech/pb/internal/archive.TestZipContainerRejections",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptLocalData",
+        "github.com/greatliontech/pb/internal/archive.TestZipCorruptedMember",
+        "github.com/greatliontech/pb/internal/archive.TestZipEncryptedRejected",
+        "github.com/greatliontech/pb/internal/archive.TestZipMethodRejectionNamesMethod",
+        "github.com/greatliontech/pb/internal/archive.TestZipModeTamper",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipRoundTripProperty",
+        "github.com/greatliontech/pb/internal/archive.TestZipStoreRoundTrip",
+        "github.com/greatliontech/pb/internal/archive.TestZipSymlinkMemberRejected"
+      ]
+    }
+  ]
+}
