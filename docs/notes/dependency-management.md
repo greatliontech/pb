@@ -46,6 +46,44 @@ No overlay artifact exists — nothing to author, share, or sign. Identity
 stays origin-derived, integrity is the canonical archive hash of the
 subtree, provenance is whatever the origin genuinely offers.
 
+## Provenance: signed tags are the artifact (bundle-at-origin, settled)
+
+The provenance artifact is the **gitsign-signed annotated tag** — skillset's
+architecture generalized. There is no separate signing artifact and no
+storage problem: provenance travels with every clone/mirror because it *is*
+a tag, and the author-side act is "sign your tags" (gitsign, ambient OIDC in
+CI) — no pb-specific ceremony.
+
+**The trust shape is the reason** (decided over the digest-bundle
+alternative): the identity signs the *source of truth* (tag→commit→tree) and
+the verifier **recomputes the derivation** — tree hash from archive
+contents, matched against the signed commit — so the archive builder is
+outside the trusted base entirely; a poisoned archive fails verification
+arithmetic. A bundle signed over the archive digest would instead move
+derivation *inside* the trust boundary: a compromised release step gets a
+poisoned archive validly signed. Direct-digest signing was therefore
+rejected, not deferred for cost.
+
+- Verification is fully offline: embedded CMS/Rekor proof
+  (`rekorMode=offline`) against a pinned TUF trusted root, never querying
+  Rekor — skillset's proven path, extracted as a shared library.
+- The proxy serves a **verification pack** per version: tag object + commit
+  object + (for subtree modules) the root-to-subtree tree-object path, with
+  the embedded CMS/Rekor material. Endpoint `@v/<version>.prov`, 404 when
+  none; its media type is an **envelope** from day one — an empty socket so
+  statement-shaped evidence could slot in later without a protocol change.
+  No ref namespace, no second signing flow, no second verification path
+  now.
+- SHA-256 object-format repos: tree recomputation extends to them; the
+  shared-library extraction is the moment to lift skillset's SHA-1-only
+  fail-closed scope. Until then the binding rides git's hardened SHA-1 —
+  stated in the spec; lockfile SHA-256 digests guard integrity
+  independently either way.
+- Richer predicates (SLSA/in-toto) are deliberately out for modules: a
+  module archive isn't built, it's derived from source — its provenance
+  question *is* source authenticity. Build provenance belongs to plugin
+  images, where cosign/OCI owns it.
+
 ## Provenance identity policy
 
 - **Default, zero config — origin consistency:** a signature verifies iff
@@ -59,7 +97,7 @@ subtree, provenance is whatever the origin genuinely offers.
   `require-provenance`) refuses them.
 - **No custom checksum-DB service.** The lockfile pins version→digest on
   first resolution (go.sum semantics); Rekor is the transparency log —
-  sigstore bundles carry inclusion proofs. Accepted gap, on record: unsigned
+  signed tags embed the inclusion proofs. Accepted gap, on record: unsigned
   modules have no first-fetch protection; a sumdb-analog can be layered on
   later without touching the format.
 
@@ -67,10 +105,11 @@ subtree, provenance is whatever the origin genuinely offers.
 
 The GOPROXY protocol shape as-is, renamed: `$base/<module>/@v/list`,
 `@v/<version>.info`, `@v/<version>.zip` (the canonical archive), `@latest`,
-plus `@v/<version>.bundle` serving the sigstore bundle as a sidecar (404
-when none exists). `PBPROXY` (comma-separated, `direct` fallback, Go
-semantics), `PBNOPROXY`/`PBPRIVATE` analogs. pbr implements this protocol
-as its proxy role.
+plus `@v/<version>.prov` serving the provenance verification pack as a
+sidecar (404 when none exists; envelope media type — see the provenance
+section). `PBPROXY` (comma-separated, `direct` fallback, Go semantics),
+`PBNOPROXY`/`PBPRIVATE` analogs. pbr implements this protocol as its proxy
+role.
 
 ## Version resolution
 
@@ -94,6 +133,16 @@ normalized metadata, plain SHA-256, explicitly versioned. A boring,
 fully documented archive — the direct answer to buf's undocumented,
 moving-target digest scheme. Signatures and attestations travel with the
 archive and verify against origin identity, so proxies cannot tamper.
+
+Two constraints exported by the provenance model (tree-hash recomputation
+must be total over archive contents):
+
+- **Full module subtree** — every file under the module root, not just
+  `.proto` (Go module zips made the same call). Size guards live at
+  archive-creation time, never by filtering.
+- **Symlinks and submodules forbidden** in module trees — archive creation
+  fails on them. Regular files + exec bits are exactly what git tree
+  hashing needs preserved.
 
 ## BSR bridge
 
@@ -120,5 +169,3 @@ lockfile.
 ## Remaining open
 
 - Module file name: `pb.yaml` vs `proto.mod` (and its minimal schema).
-- Sigstore machinery reuse from `../skillset` (cosign/fulcio/rekor,
-  trusted-root handling): reuse, don't rebuild — extraction shape TBD.

@@ -9,7 +9,7 @@ and go stale fast — verify against the repos before relying on them.
 | Repo | Role for pb |
 | --- | --- |
 | [protocompile] (bufbuild) | Compiler foundation: parse, resolve, descriptors, position info. Apache-licensed and stable; the irony of building on bufbuild's compiler is accepted — forking concerns wait for an actual provocation. |
-| `../skillset` | Sigstore provenance machinery (cosign/fulcio/rekor, trusted-root handling) proven in another tool; reuse for module and plugin verification. |
+| `../skillset` | Sigstore provenance machinery proven in another tool, and the architectural template for pb's provenance: gitsign-signed git objects with embedded Rekor proofs, verified fully offline against a pinned TUF trusted root. Settled: extract its provenance core as a shared library both tools consume; the extraction is the moment to lift its SHA-1-only fail-closed scope (SHA-256 object-format repos). |
 | `../sandbox` | **The trajectory-setter, and pb's day-one runner dependency.** Cross-platform, create-only, pure-Go sandbox: one process execed into a fresh isolated environment. Tier model (`Strong`/`OS`/`Minimal`/`None`) with honest tier *reporting* — pb consumes the reported tier, never assumes. Its Linux backend arrives by lifting container's proven machinery ([sandbox-consolidation.md](./sandbox-consolidation.md)). Built for `ociplug` (upcoming, unfleshed). |
 | `../ocifs` | Linux: read-only FUSE union FS over OCI images — the plugin rootfs on Linux. |
 | `../projfs-go` | Windows: ProjFS binding — the rootfs-projection equivalent. Most proven of the three FS repos (extensive test surface, spec'd callback contract). Requires the ProjFS optional Windows feature enabled. |

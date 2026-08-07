@@ -33,13 +33,12 @@ the tool is platform-conditional.
   third-party protos.
 - **`pb export`** — flatten module + deps into a plain include directory for
   protoc/other-tool interop. The escape hatch that proves no lock-in.
-- **`pb attest`** (name TBD) — author-side signing helper: build the
-  canonical archive for a tag, produce the sigstore bundle, run in CI.
-  Provenance doesn't become an ecosystem norm unless producing bundles is
-  one command. Open question it surfaces: **where bundles live at origin**
-  (the proxy serves `@v/<version>.bundle` — from what upstream source: git
-  ref/notes, release asset, OCI registry?). Settle in the archive/proxy
-  spec.
+- **Provenance verification** — bundle-at-origin is settled
+  ([dependency-management.md](./dependency-management.md)): the provenance
+  artifact is the gitsign-signed tag itself, so there is no author-side
+  bundle producer. What was sketched as `pb attest` collapses into the
+  `verify` verb plus documentation ("sign your tags"; gitsign with ambient
+  OIDC in CI). No pb-specific signing ceremony exists.
 - **Trivial utilities** — `ls-files`, cache path/clean, `version`.
 
 ## Deferred
