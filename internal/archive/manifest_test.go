@@ -156,6 +156,21 @@ func TestPathValidation(t *testing.T) {
 		{"reserved nul", "sub/nul.txt"},
 		{"reserved com1 ext", "com1.txt"},
 		{"reserved lpt9", "LPT9"},
+		{"reserved com superscript", "com¹"},
+		{"reserved lpt superscript ext", "sub/LPT².proto"},
+		{"reserved superscript three", "com³"},
+		{"colon", "com:"},
+		{"backslash", `a\b.proto`},
+		{"less than", "a<b.proto"},
+		{"greater than", "a>b.proto"},
+		{"double quote", `a"b.proto`},
+		{"pipe", "a|b.proto"},
+		{"question mark", "a?.proto"},
+		{"asterisk", "a*.proto"},
+		{"trailing dot segment", "sub./x.proto"},
+		{"trailing dot file", "a/x."},
+		{"trailing space segment", "sub /x.proto"},
+		{"trailing space file", "a/x "},
 	}
 	for _, tc := range bad {
 		if _, err := Manifest([]FileInfo{{Path: tc.path}}); !errors.Is(err, ErrPathInvalid) {
@@ -165,7 +180,7 @@ func TestPathValidation(t *testing.T) {
 	good := []string{
 		"a.proto", "a/b/c.proto", "com10.proto", "console.proto",
 		"with space.proto", "é/世界.proto", "lpt0", "COM.proto",
-		"coma", "lptx.proto", "com:", "aux0", ".proto", ".con",
+		"coma", "lptx.proto", "aux0", ".proto", ".con", "com¹0",
 	}
 	for _, p := range good {
 		if _, err := Manifest([]FileInfo{{Path: p}}); err != nil {
@@ -178,22 +193,43 @@ func TestPathCollisions(t *testing.T) {
 	cases := []struct {
 		name  string
 		files []FileInfo
+		msg   string // the collision class named in the error
 	}{
-		{"duplicate", []FileInfo{{Path: "a.proto"}, {Path: "a.proto"}}},
-		{"ascii case fold", []FileInfo{{Path: "Foo/Bar.proto"}, {Path: "foo/bAR.proto"}}},
-		{"kelvin sign folds to k", []FileInfo{{Path: "K.proto"}, {Path: "k.proto"}}},
-		{"file and directory", []FileInfo{{Path: "a"}, {Path: "a/b.proto"}}},
-		{"file and deep directory", []FileInfo{{Path: "x/y"}, {Path: "x/y/z/w.proto"}}},
+		{"duplicate", []FileInfo{{Path: "a.proto"}, {Path: "a.proto"}}, "duplicate path"},
+		{"ascii case fold", []FileInfo{{Path: "Foo/Bar.proto"}, {Path: "foo/bAR.proto"}}, "equal under case folding"},
+		{"kelvin sign folds to k", []FileInfo{{Path: "K.proto"}, {Path: "k.proto"}}, "equal under case folding"},
+		{"file and directory", []FileInfo{{Path: "a"}, {Path: "a/b.proto"}}, "is both a file and a directory"},
+		{"file and deep directory", []FileInfo{{Path: "x/y"}, {Path: "x/y/z/w.proto"}}, "is both a file and a directory"},
+		{"case-folded file vs directory", []FileInfo{{Path: "A"}, {Path: "a/b.proto"}}, "equal under case folding"},
+		{"case-folded file vs deep directory", []FileInfo{{Path: "x/Y"}, {Path: "x/y/z/w.proto"}}, "equal under case folding"},
+		// Mixed byte/fold case: "a" is byte-identically a directory (via
+		// a/b.proto) and fold-equal to directory "A"; the fold class is
+		// reported (byte-equal is a subcase of fold-equal), and the named
+		// offender is deterministic (input order).
+		{"mixed byte and fold dir collision", []FileInfo{{Path: "a/b.proto"}, {Path: "A/c.proto"}, {Path: "a"}}, "equal under case folding"},
 	}
 	for _, tc := range cases {
-		if _, err := Manifest(tc.files); !errors.Is(err, ErrPathCollision) {
+		_, err := Manifest(tc.files)
+		if !errors.Is(err, ErrPathCollision) {
 			t.Errorf("%s: err = %v, want ErrPathCollision", tc.name, err)
+			continue
+		}
+		if !strings.Contains(err.Error(), tc.msg) {
+			t.Errorf("%s: err %q does not name collision class %q", tc.name, err, tc.msg)
 		}
 	}
 	// Distinct-but-similar paths are not collisions.
 	ok := []FileInfo{{Path: "a"}, {Path: "ab/c.proto"}, {Path: "a.proto"}}
 	if _, err := Manifest(ok); err != nil {
 		t.Errorf("non-colliding set rejected: %v", err)
+	}
+	// Directories fold-equal only to each other are permitted (Go module
+	// zips make the same call): extraction may merge them case-insensitively
+	// but loses no file, and digest verification reads archive members, not
+	// the filesystem.
+	dirsDiverge := []FileInfo{{Path: "A/x.proto"}, {Path: "a/y.proto"}}
+	if _, err := Manifest(dirsDiverge); err != nil {
+		t.Errorf("fold-equal directories rejected: %v", err)
 	}
 }
 

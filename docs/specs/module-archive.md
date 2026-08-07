@@ -59,15 +59,27 @@ disjoint subtrees, never nested.
 
 **REQ-archive-path-rules** (wire): Every path in a file set MUST be a
 relative path using `/` as separator, in valid UTF-8, with no empty
-segment, no `.` or `..` segment, no leading or trailing `/`, and no
-segment that is a Windows reserved device name (`CON`, `PRN`, `AUX`,
-`NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`, case-insensitively, with or without
-an extension). Paths are compared and sorted as raw bytes; no Unicode
+segment, no `.` or `..` segment, no leading or trailing `/`, no control
+character (C0 or DEL — a `\n` would break manifest framing, a NUL git
+tree encoding), none of the characters `:` `<` `>` `"` `|` `?` `*` `\`
+(invalid in Windows file names; `\` is a separator there), no segment
+ending in a dot or a space (Windows strips them on extraction, colliding
+distinct names), and no segment that is a Windows reserved device name —
+`CON`, `PRN`, `AUX`, `NUL`, or `COM`/`LPT` followed by a digit `1`–`9`
+or a superscript `¹` `²` `³` — case-insensitively, with or without an
+extension. Paths are compared and sorted as raw bytes; no Unicode
 normalization is applied.
 
-**REQ-archive-case-collision** (invariant): A file set containing two paths
-that are equal under Unicode simple case folding is invalid: creation and
-verification MUST fail.
+**REQ-archive-case-collision** (invariant): A file set is invalid — and
+creation and verification MUST both fail — when two distinct file paths
+are equal under Unicode simple case folding, or when a file path's
+case-folded form equals the case-folded form of a directory prefix
+implied by any path (which includes the byte-identical case: a name
+cannot be both a file and a directory). Directory prefixes fold-equal
+only to each other do not invalidate a file set: extraction can merge
+such directories on a case-insensitive filesystem, but no file entry is
+lost — within-directory basenames are fold-distinct by the rule above —
+and digest verification reads archive members, never the filesystem.
 
 **REQ-archive-mode-normalization** (wire): Each file's mode MUST be exactly
 `100755` when the file is executable and `100644` otherwise; no other mode
@@ -104,6 +116,13 @@ other than store or deflate, and ignores directory entries.
 
 **REQ-archive-zip-mode** (wire): Producers MUST record each member's mode
 in the ZIP Unix external attributes.
+
+**REQ-archive-no-exec-materialization** (invariant): Tooling materializing
+archive contents onto a filesystem (cache extraction, export) MUST NOT
+mark any written file executable — the execute mode exists in the manifest
+solely for digest and git-tree fidelity, and module content is never
+executed; nothing in the toolchain runs a file that arrived in a module
+archive.
 
 **REQ-archive-zip-verification** (invariant): A consumer MUST accept a ZIP
 only after recomputing the canonical manifest from the extracted members —

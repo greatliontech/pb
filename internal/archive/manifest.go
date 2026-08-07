@@ -98,31 +98,30 @@ func Digest(manifest []byte) string {
 
 func validateFileSet(files []FileInfo) error {
 	var total int64
-	byPath := make(map[string]struct{}, len(files))
 	byFold := make(map[string]string, len(files))
-	// dirs collects every directory prefix so a path that is both a file and
-	// a directory ("a" and "a/b") is rejected: a git tree cannot represent
-	// it, which would break tree-hash recomputation
-	// (REQ-archive-tree-recompute).
-	dirs := make(map[string]struct{})
+	// dirFolds maps the case-folded form of every implied directory prefix
+	// to one original spelling. A file whose folded path hits it cannot
+	// coexist with that directory: byte-identical means a git tree cannot
+	// represent the pair (breaking tree-hash recomputation,
+	// REQ-archive-tree-recompute), fold-equal means a case-insensitive
+	// filesystem cannot extract it (REQ-archive-case-collision).
+	dirFolds := make(map[string]string)
 
 	for _, f := range files {
 		if err := validatePath(f.Path); err != nil {
 			return err
 		}
-		if _, dup := byPath[f.Path]; dup {
-			return fmt.Errorf("%w: duplicate path %q", ErrPathCollision, f.Path)
-		}
-		byPath[f.Path] = struct{}{}
-
 		fold := caseFold(f.Path)
 		if prev, clash := byFold[fold]; clash {
+			if prev == f.Path {
+				return fmt.Errorf("%w: duplicate path %q", ErrPathCollision, f.Path)
+			}
 			return fmt.Errorf("%w: %q and %q are equal under case folding (REQ-archive-case-collision)", ErrPathCollision, prev, f.Path)
 		}
 		byFold[fold] = f.Path
 
 		for prefix := parentDir(f.Path); prefix != ""; prefix = parentDir(prefix) {
-			dirs[prefix] = struct{}{}
+			dirFolds[caseFold(prefix)] = prefix
 		}
 
 		if f.Size < 0 {
@@ -135,9 +134,13 @@ func validateFileSet(files []FileInfo) error {
 		}
 		total += f.Size
 	}
-	for p := range byPath {
-		if _, isDir := dirs[p]; isDir {
-			return fmt.Errorf("%w: %q is both a file and a directory", ErrPathCollision, p)
+	// Second pass in input order, so the named offender is deterministic.
+	for _, f := range files {
+		if dir, isDir := dirFolds[caseFold(f.Path)]; isDir {
+			if dir == f.Path {
+				return fmt.Errorf("%w: %q is both a file and a directory", ErrPathCollision, f.Path)
+			}
+			return fmt.Errorf("%w: file %q and directory %q are equal under case folding (REQ-archive-case-collision)", ErrPathCollision, f.Path, dir)
 		}
 	}
 	return nil
@@ -151,11 +154,17 @@ func parentDir(p string) string {
 	return p[:i]
 }
 
+// windowsInvalid are the characters invalid in Windows file names ('\' is a
+// separator there); paths carrying them cannot be extracted portably
+// (REQ-archive-path-rules).
+const windowsInvalid = `:<>"|?*\`
+
 // validatePath enforces REQ-archive-path-rules: relative, '/'-separated,
 // valid UTF-8, no empty/'.'/'..' segments, no leading or trailing separator,
-// no Windows reserved device name segments. Control characters (C0 and DEL)
-// are rejected because a path containing '\n' would break the manifest's
-// line framing and NUL would break git tree encoding.
+// no control characters (a '\n' would break manifest line framing, a NUL git
+// tree encoding), no Windows-invalid characters, no segment ending in a dot
+// or a space (Windows strips them on extraction, colliding distinct names),
+// no Windows reserved device name segments.
 func validatePath(p string) error {
 	if !utf8.ValidString(p) {
 		return fmt.Errorf("%w: %q is not valid UTF-8", ErrPathInvalid, p)
@@ -165,12 +174,18 @@ func validatePath(p string) error {
 			return fmt.Errorf("%w: %q contains a control character", ErrPathInvalid, p)
 		}
 	}
+	if strings.ContainsAny(p, windowsInvalid) {
+		return fmt.Errorf("%w: %q contains a character invalid in Windows file names (one of %s)", ErrPathInvalid, p, windowsInvalid)
+	}
 	for seg := range strings.SplitSeq(p, "/") {
 		switch seg {
 		case "":
 			return fmt.Errorf("%w: %q has an empty segment", ErrPathInvalid, p)
 		case ".", "..":
 			return fmt.Errorf("%w: %q has a %q segment", ErrPathInvalid, p, seg)
+		}
+		if strings.HasSuffix(seg, ".") || strings.HasSuffix(seg, " ") {
+			return fmt.Errorf("%w: %q has a segment ending in a dot or a space", ErrPathInvalid, p)
 		}
 		if isReservedDeviceName(seg) {
 			return fmt.Errorf("%w: %q has a Windows reserved device name segment", ErrPathInvalid, p)
@@ -184,17 +199,19 @@ func isReservedDeviceName(seg string) bool {
 	if i := strings.IndexByte(base, '.'); i >= 0 {
 		base = base[:i]
 	}
-	switch len(base) {
+	r := []rune(strings.ToUpper(base))
+	switch len(r) {
 	case 3:
-		switch strings.ToUpper(base) {
+		switch string(r) {
 		case "CON", "PRN", "AUX", "NUL":
 			return true
 		}
 	case 4:
-		up := strings.ToUpper(base)
-		if (strings.HasPrefix(up, "COM") || strings.HasPrefix(up, "LPT")) &&
-			up[3] >= '1' && up[3] <= '9' {
-			return true
+		if p := string(r[:3]); p == "COM" || p == "LPT" {
+			switch r[3] {
+			case '1', '2', '3', '4', '5', '6', '7', '8', '9', '¹', '²', '³':
+				return true
+			}
 		}
 	}
 	return false
