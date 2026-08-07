@@ -103,13 +103,23 @@ rejected, not deferred for cost.
 
 ## Proxy protocol
 
-The GOPROXY protocol shape as-is, renamed: `$base/<module>/@v/list`,
-`@v/<version>.info`, `@v/<version>.zip` (the canonical archive), `@latest`,
-plus `@v/<version>.prov` serving the provenance verification pack as a
-sidecar (404 when none exists; envelope media type — see the provenance
-section). `PBPROXY` (comma-separated, `direct` fallback, Go semantics),
-`PBNOPROXY`/`PBPRIVATE` analogs. pbr implements this protocol as its proxy
-role.
+Specced — `docs/specs/module-proxy.md` is authoritative (endpoints
+including `.mod` and `.prov`, escaping, fall-through, client verification,
+`PBPROXY`/`PBNOPROXY`). pbr implements the protocol as its proxy role.
+
+**No default proxy — default is `direct`** (decided after weighing the
+reverse). pbr.dev is the *recommended, one-line opt-in* public proxy, not a
+default. Rationale on record: without the (deferred) transparency-log
+analog, an unsigned module's first fetch has no cross-check, so a default
+proxy would add a trusted party to every user's first-fetch path — direct
+trusts only the origin host, whom the user already trusts for the code
+itself. Also avoided: availability coupling (fall-through is 404/410-only,
+so a proxy outage aborts default-config builds), fetch-pattern privacy, and
+central-default optics. Permanence and speed are earned via opt-in
+adoption (docs, CI templates), not a default. **Revisit trigger, written
+down:** defaulting to pbr.dev becomes eligible when the first-fetch gap
+closes — a transparency log (which pbr.dev itself could serve) or broad
+signed-tag coverage.
 
 ## Version resolution
 
@@ -128,21 +138,9 @@ for their protos.
 
 ## Canonical archive format
 
-First-class contract, likely the first spec this repo gets: sorted paths,
-normalized metadata, plain SHA-256, explicitly versioned. A boring,
-fully documented archive — the direct answer to buf's undocumented,
-moving-target digest scheme. Signatures and attestations travel with the
-archive and verify against origin identity, so proxies cannot tamper.
-
-Two constraints exported by the provenance model (tree-hash recomputation
-must be total over archive contents):
-
-- **Full module subtree** — every file under the module root, not just
-  `.proto` (Go module zips made the same call). Size guards live at
-  archive-creation time, never by filtering.
-- **Symlinks and submodules forbidden** in module trees — archive creation
-  fails on them. Regular files + exec bits are exactly what git tree
-  hashing needs preserved.
+Specced — `docs/specs/module-archive.md` is authoritative (manifest-based
+digest, wire ZIP, git-tree binding, file-set rules). The lockfile is
+specced in `docs/specs/module-lockfile.md`.
 
 ## BSR bridge
 
@@ -168,4 +166,6 @@ lockfile.
 
 ## Remaining open
 
-- Module file name: `pb.yaml` vs `proto.mod` (and its minimal schema).
+- Module file schema (`pb.yaml` — name decided in the archive spec).
+- Next specs: module resolution (meta-tag discovery, synthesis), provenance
+  verification & acceptance policy, module file schema.
