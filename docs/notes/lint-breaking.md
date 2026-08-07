@@ -1,9 +1,9 @@
 # Lint and breaking-change detection
 
-Settled concept (decisions accepted 2026-08). Still a later implementation
-phase than deps + generation, but the direction is fixed: **pb ships the
-engine, rules are data.** No built-in rule catalog, no privileged defaults —
-all rules are CEL, composed from ruleset repos.
+Settled concept (decisions accepted 2026-08), and part of core
+([feature-set.md](./feature-set.md)): **pb ships the engine, rules are
+data.** No built-in rule catalog, no privileged defaults — all rules are
+CEL, composed from ruleset repos.
 
 ## Why CEL
 

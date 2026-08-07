@@ -12,12 +12,11 @@ to the BSR:
    locally in an OS-enforced sandbox — not remote execution on someone else's
    infrastructure.
 
-Lint, breaking-change detection, LSP, and MCP are explicitly later
-implementation phases, though the lint/breaking concept is settled — pb ships
-the engine, all rules are CEL, rulesets are ordinary modules
-([lint-breaking.md](./lint-breaking.md)). protocompile provides the
-foundation for all of them (full position info, AST access), so deferring
-them costs nothing architecturally.
+Lint and breaking-change detection are core — pb ships the engine, all rules
+are CEL, rulesets are ordinary modules
+([lint-breaking.md](./lint-breaking.md)). LSP and MCP are later phases
+consuming the same engines. The full command surface, including deliberate
+exclusions, is in [feature-set.md](./feature-set.md).
 
 ## The core inversion
 
