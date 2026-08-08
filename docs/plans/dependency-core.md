@@ -11,7 +11,7 @@ module-resolution.md, module-proxy.md, provenance.md, workspace.md
 - [x] 5. Lockfile: model, canonical emission, pin enforcement
 - [x] 6. Versions & selection: version syntax, pseudo-versions, MVS,
       determinism
-- [ ] 7. Origin resolution: path split, vanity redirect, probing, tag
+- [x] 7. Origin resolution: path split, vanity redirect, probing, tag
       listing, synthesis
 - [ ] 8. Proxy client: escaping, endpoints, source list, fall-through,
       verification wiring
