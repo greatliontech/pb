@@ -13,7 +13,7 @@ module-resolution.md, module-proxy.md, provenance.md, workspace.md
       determinism
 - [x] 7. Origin resolution: path split, vanity redirect, probing, tag
       listing, synthesis
-- [ ] 8. Proxy client: escaping, endpoints, source list, fall-through,
+- [x] 8. Proxy client: escaping, endpoints, source list, fall-through,
       verification wiring
 - [ ] 9. Direct source: git-backed fetching, proxy equivalence
 - [ ] 10. Provenance verification core (shared-library extraction
