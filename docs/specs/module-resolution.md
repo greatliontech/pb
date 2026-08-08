@@ -8,10 +8,13 @@ selection over declared dependencies. Archives, digests, and the module
 file are defined in `module-archive.md` and `module-file.md`;
 pseudo-versions in `module-proxy.md`.
 
-**vanity redirect** (term): An HTML meta tag, served over HTTPS at a
-module path prefix, that names the git repository backing that prefix:
+**vanity redirect** (term): An HTML meta tag in the parsed head of the
+discovery document, requested over HTTPS at the module path, that names
+the git repository backing a prefix of that path:
 `<meta name="pb-import" content="<prefix> git <repository URL>">`,
-discovered by requesting `https://<prefix>?pb-get=1`.
+discovered by requesting `https://<module path>?pb-get=1`. A
+declaration outside the parsed head is not a redirect — body content
+may be user-generated and must not redirect a module.
 
 **repository split** (term): The division of a module path into the
 prefix naming the origin repository and the remaining segments naming the
@@ -40,15 +43,26 @@ the repository prefix — the repository is the HTTPS remote at the prefix,
 and the remaining segments are the subtree.
 
 **REQ-resolve-vanity** (behavior): Absent a `.git` segment, a vanity
-redirect whose prefix is a prefix of the module path MUST take precedence
-over probing, with the longest matching prefix winning when several
-apply.
+redirect whose prefix is a segment-exact prefix of the module path MUST
+take precedence over probing, with the longest matching prefix winning
+when several apply. Discovery is one request to the module path itself
+with `?pb-get=1`; the response may declare redirects for any of the
+path's prefixes; a failed request or a response declaring no matching
+prefix falls through to probing, and a declared repository URL that is
+not HTTPS fails resolution rather than redirecting. The discovery
+request follows HTTP redirects only to HTTPS URLs: a redirect to any
+other scheme aborts the request, which then counts as failed — discovery
+never fetches over cleartext.
 
 **REQ-resolve-probing** (behavior): Absent a `.git` segment and a vanity
 redirect, the repository split MUST be found by probing path prefixes in
 increasing length with `git ls-remote` over HTTPS, taking the first
 prefix that answers as the repository; the probe result is not authority
-— every fetched artifact still verifies per its own contract.
+— every fetched artifact still verifies per its own contract. The bare
+hostname is never probed — a host answering reference listings at its
+root would silently capture every module path on it; a repository rooted
+at a bare host declares itself via a `.git` segment or a vanity
+redirect.
 
 ## Versions
 
@@ -89,10 +103,12 @@ timestamp, of the versions required for that path across the graph —
 never a version newer than required, never one older than any
 requirement.
 
-**REQ-resolve-no-import-versioning** (structural): Module paths MUST NOT
-carry semantic-import-versioning suffixes: a major version bump keeps the
-module path, and protobuf packages carry their own version idiom inside
-the schema.
+**REQ-resolve-no-import-versioning** (behavior): Resolution MUST NOT
+derive a module path from a version: a major version bump keeps the
+module path, version-shaped path segments are ordinary segments (protobuf
+packages carry their own version idiom inside the schema, and modules
+legitimately root at such subtrees), and module identity flows through
+origin resolution verbatim.
 
 **REQ-resolve-major-crossing** (behavior): Selection that raises a
 module's major version above what some requirement in the graph declares
