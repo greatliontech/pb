@@ -19455,13 +19455,13 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/direct.Repo.expectedPseudo",
-      "bodyHash": "6cf9ad713f70c24f5012c79786f85324433841e728b3b45aff96649c6bb98219",
+      "bodyHash": "5c268faa5d1105b7a6d37918c47cd38a5247cdfc82af30092ddbdb6313da077b",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/direct.Repo.expectedPseudo",
-        "maximalClosure": "ee89ba560f546bb4b6ead947367fbf10",
-        "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+        "maximalClosure": "1e656c18ed94b757ae0b01b46edf654e",
+        "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
@@ -19470,15 +19470,15 @@
         "observationSubjectSymbol": "Repo.expectedPseudo",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-        "observationEvidence": "e15ace70ba24d16dca2659d6dae9d5e3",
+        "observationEvidence": "4016c3d768714218f3675fbe2bd81d3c",
         "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
         "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly",
-          "maximalClosure": "b26cc1adefb8fe00c24715af355e2a51",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "d25b9ac3e0ce911e8c54c89fddd93100",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19487,14 +19487,14 @@
           "observationSubjectSymbol": "TestCorruptPackedRefsFailsLoudly",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "89a87e2820128b6f4b43006b61ee5e41",
+          "observationEvidence": "a0d6477500d94923df01e1cec36cb75d",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestFetchEmptyOriginFails",
-          "maximalClosure": "df5088987cd78ada655c3753651af452",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "291d5f85e8e23fcee687b23dc54e1e39",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19503,14 +19503,14 @@
           "observationSubjectSymbol": "TestFetchEmptyOriginFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "cc71f62684b37f45b36c8e1361ea5a71",
+          "observationEvidence": "f1481cbf73bf394d9c842fce61398b91",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestHeadFailures",
-          "maximalClosure": "ebf206bdfab4f05a10662b98ffdccb5b",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "7dde79d3f925ff29d348f9c07f46b64a",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19519,14 +19519,14 @@
           "observationSubjectSymbol": "TestHeadFailures",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "0a0413abdffd1d192209f050632c2003",
+          "observationEvidence": "788a1ba7f9bc88df984e9036ef1be5f3",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestHeadResolvesDefaultBranch",
-          "maximalClosure": "eb98069d940be184a18659b45c62bfdb",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "4c3ced151b6f49dc354ae2bdcaa23dac",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19535,14 +19535,14 @@
           "observationSubjectSymbol": "TestHeadResolvesDefaultBranch",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "14785d0c01e6956b19966c6877d9ce59",
+          "observationEvidence": "360b9e724e4dc835f4a27e6b601fef70",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestPseudoBaseAncestryProperty",
-          "maximalClosure": "06d5b523e8b1a997d7f320116dc14d70",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "6d34558b57f32469c68cd22eec26c642",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19551,14 +19551,14 @@
           "observationSubjectSymbol": "TestPseudoBaseAncestryProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "e7932c3dadfec61872f236c36005ed68",
+          "observationEvidence": "f9e11ff7b5f6d8a4037dd3f51a9baba3",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestRefsAdvertisePeeledTags",
-          "maximalClosure": "dc7093eaadadb003a233a37b3acdee2f",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "a98bb1c35a354c15f18381da17867fa5",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19567,14 +19567,14 @@
           "observationSubjectSymbol": "TestRefsAdvertisePeeledTags",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "ac7e981a513fcf6d34fc74dfd9a7bbf1",
+          "observationEvidence": "ed1f90d54f7d67a458f74c929ec45489",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestRefsShapeAtStorageLevel",
-          "maximalClosure": "c88deacdce53ad0ebb9fbe4a503cd679",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "f00918f30cc5d4fa38fc9f614d8ac347",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19583,14 +19583,14 @@
           "observationSubjectSymbol": "TestRefsShapeAtStorageLevel",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "b266f832be8807cd5424e9c98e0f93d3",
+          "observationEvidence": "b3f05d43b34c7636da151a5904e8a747",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoAbsentCommitFails",
-          "maximalClosure": "d76200d731caeb172c1f15835dfc1583",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "baa7929875e47388c00114338a9848f5",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19599,14 +19599,14 @@
           "observationSubjectSymbol": "TestResolvePseudoAbsentCommitFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "369b6c2ef9304cb05e488085f721bb6f",
+          "observationEvidence": "fc7d6ac2e8c16e90ba03efd467309609",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases",
-          "maximalClosure": "e903afc97ee6d3f6921a3326a773e0b7",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "7a887899fd7e52a59524e609b18822ec",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19615,14 +19615,14 @@
           "observationSubjectSymbol": "TestResolvePseudoBases",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "2921f814b6ac0570ca9e7e10ff8a088e",
+          "observationEvidence": "b7c3b67882cfd8a2993ce5ab88d583f1",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptCommitObject",
-          "maximalClosure": "99b8d6c1e501a9bbca23633ab0744364",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "ad14c6f3e3949f986ea41628f867099e",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19631,14 +19631,14 @@
           "observationSubjectSymbol": "TestResolvePseudoCorruptCommitObject",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "4212a89a7e5d6a49a93295f82c05a5d5",
+          "observationEvidence": "9d51d2e4d278e95041eb589c8ced21b0",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptReleaseTagFails",
-          "maximalClosure": "89c7fedfed47b50143ce467e46e45927",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "912a21af3e2812ed4252321b02549ced",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19647,14 +19647,14 @@
           "observationSubjectSymbol": "TestResolvePseudoCorruptReleaseTagFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "400616849b847dd551bba9da264ae62f",
+          "observationEvidence": "b1a1811d56e49dc7242a3d8d2a3bac06",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCraftedBaseFails",
-          "maximalClosure": "609eb489e4c56792583b6ea572ee4e8d",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "5bbac9af1428064948a2a27c9809934b",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19663,14 +19663,14 @@
           "observationSubjectSymbol": "TestResolvePseudoCraftedBaseFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "f63f89cff6db8b235062d7ec09b31d8b",
+          "observationEvidence": "c55cf83e2cdf7d48ffddc800e2befc9e",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails",
-          "maximalClosure": "9dbf4a596e6d49ac9eb6feb6dd5faa19",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "cd9fec0f5b93b9e1c4bc44293f7f64f5",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19679,14 +19679,14 @@
           "observationSubjectSymbol": "TestResolvePseudoDanglingParentFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "4d668033bb24a2a849678b2fbf352dc4",
+          "observationEvidence": "68eec1e2bc1418ba26d882584af4be66",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoTimeMismatchFails",
-          "maximalClosure": "f08643a2654d55e10bbd60dea0c202d7",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "e31ab5a7792e0c800653dafffeb058bf",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19695,14 +19695,14 @@
           "observationSubjectSymbol": "TestResolvePseudoTimeMismatchFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "338badcf99314c3e94d4e1392eb178f8",
+          "observationEvidence": "182fad9cc7f12b9dc6f3e4913d2ee565",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolveReleaseTags",
-          "maximalClosure": "b81ac582b39c09f1705fc7bdd197e595",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "392a64ce9981566b4de9185436a800f0",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19711,14 +19711,14 @@
           "observationSubjectSymbol": "TestResolveReleaseTags",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "5d7ca132c12f99ed1904fead9b702bf5",
+          "observationEvidence": "e52325669bfc84c0b3e90b07b50de195",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolveTagNamingNonCommitFails",
-          "maximalClosure": "8687de32114a40901c3e71b18ae9bd4c",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "fff55423733d338d847061006d1d5323",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19727,14 +19727,14 @@
           "observationSubjectSymbol": "TestResolveTagNamingNonCommitFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "157ceff8c092aa403da6a45385b1a900",
+          "observationEvidence": "a88c349fa57cba9b7132d48e199fd4f8",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolveTagPeelFailure",
-          "maximalClosure": "c7af2c10f795b47c1f8bf5209bc85689",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "e1a54ff445a3b9a47dc80e7d069f696c",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19743,14 +19743,14 @@
           "observationSubjectSymbol": "TestResolveTagPeelFailure",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "c0772fe8ed2503161d06ac422733fc6d",
+          "observationEvidence": "61e702e9b566ba2c298661ab3a86fdb7",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolveTagThroughSymbolicRef",
-          "maximalClosure": "1841ba8a338a18624421bbde0e37b42c",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "33672dacd3872b2539e20ec0d4f9cc7a",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19759,14 +19759,14 @@
           "observationSubjectSymbol": "TestResolveTagThroughSymbolicRef",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "1678ed24094a8be22ccae91760d86abc",
+          "observationEvidence": "2d5a8e5894b75aece1c8d78d0aa711df",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestResolveUnknownVersionFails",
-          "maximalClosure": "9609493c2fde98e58359b6b3aae8ee38",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "176457c2f45248f4c6d61f2c232f8df2",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19775,14 +19775,14 @@
           "observationSubjectSymbol": "TestResolveUnknownVersionFails",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "a966f53bc12f9f71ddbdef714bcd793a",
+          "observationEvidence": "f7cee0c4dbe95f0b20710a04191be4bd",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestSynthesizedFallbackResolvesHeadPseudo",
-          "maximalClosure": "c0baf84d0d791dd4a6cb5c2614b20f57",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "0be83b6328cb52ed48d81fcbfb7abc36",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19791,14 +19791,14 @@
           "observationSubjectSymbol": "TestSynthesizedFallbackResolvesHeadPseudo",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "ca6fe9370eeb6535bd243a20943b4bf7",
+          "observationEvidence": "630a76f635dbbf7d135af11676bac136",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/direct.TestUniqueCommitDecision",
-          "maximalClosure": "9e372c7fdcbb8a475a4cc47616ddce01",
-          "testVariantClosure": "9a0067e488d5de4a83abf5a628c63a83",
+          "maximalClosure": "2205f83d766eb6ffb4f3e7b2caaf5b39",
+          "testVariantClosure": "a41d13a9aefde58a46d5fbb3de19f70c",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -19807,7 +19807,7 @@
           "observationSubjectSymbol": "TestUniqueCommitDecision",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "62d202861150a16a93774eebd7f95199",
+          "observationEvidence": "442b71ecfccacab0eefab39799d91d10",
           "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvZGlyZWN0L3Rlc3RkYXRhL3JhcGlkL1Rlc3RQc2V1ZG9CYXNlQW5jZXN0cnlQcm9wZXJ0eSIsImQiOiJjNTJkMjA1YjZjNDFiNzgzY2ZkZWM1NTMwOTBhZDcxZCJ9XX0",
           "runtimeDigest": "7c5c024f96bca063dd8f9b23498b50d3"
         }
@@ -19820,21 +19820,21 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestCorruptPackedRefsFailsLoudly",
-            "hash": "2af8dfe1ed041d1c37a3e62c37c0bda2",
+            "hash": "6ecc1abe9a7a8b4f6792d1f403449be1",
             "package": "direct"
           },
           {
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestFetchEmptyOriginFails",
-            "hash": "a5fed536ff857b6c03b945ba659d9222",
+            "hash": "b14f23705d35f5ab99c80dad202657dc",
             "package": "direct"
           },
           {
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestHeadFailures",
-            "hash": "57bd47ad5f51b79dd7167d42344176cf",
+            "hash": "0d240221f7066db4cbb4aee1dd841572",
             "package": "direct"
           },
           {
@@ -19848,7 +19848,7 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestPseudoBaseAncestryProperty",
-            "hash": "0fbdb304ce3345ddf7a2f05b74e349db",
+            "hash": "7fc8c09ba6a94871ca7c8bedc416afe6",
             "package": "direct"
           },
           {
@@ -19862,7 +19862,7 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestRefsShapeAtStorageLevel",
-            "hash": "fba5b84542c2903e61275ab924858453",
+            "hash": "883f4b09b65f9dbf51a3bb1d523e7d81",
             "package": "direct"
           },
           {
@@ -19883,14 +19883,14 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestResolvePseudoCorruptCommitObject",
-            "hash": "88474281714dc6f4753538e16c5a137b",
+            "hash": "3fda361fc6baa4b4a68280c8b5ade9e2",
             "package": "direct"
           },
           {
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestResolvePseudoCorruptReleaseTagFails",
-            "hash": "9383f9bf3706e8c9fd3d0d90432d4972",
+            "hash": "aacf337abc98178c91182c7c6471095f",
             "package": "direct"
           },
           {
@@ -19904,7 +19904,7 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestResolvePseudoDanglingParentFails",
-            "hash": "d3ee58b7f517d18ea599be67d0b39662",
+            "hash": "1930d5b7d5f637a098aa8db3c865dce0",
             "package": "direct"
           },
           {
@@ -19932,14 +19932,14 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestResolveTagPeelFailure",
-            "hash": "280ca7700a4319be9e73b43c20feb694",
+            "hash": "eab8ff4ca277ab44737dd021b091392f",
             "package": "direct"
           },
           {
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestResolveTagThroughSymbolicRef",
-            "hash": "49eca78ba5d736c82111a019f185ecd7",
+            "hash": "eed0d8aa23094fe6db50c5dfd2006134",
             "package": "direct"
           },
           {
@@ -19953,7 +19953,7 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "TestSynthesizedFallbackResolvesHeadPseudo",
-            "hash": "6d9b0711b6d33351398f8b895d0ac787",
+            "hash": "8684134bc16745d9e64de407671e47f2",
             "package": "direct"
           },
           {
@@ -19981,7 +19981,7 @@
             "file": "direct_test.go",
             "kind": "func",
             "name": "newGraphFixture",
-            "hash": "190a12c17fc77f9b27842f0b26c0205f",
+            "hash": "b59b3a072db579ac7b28b728aee7692f",
             "package": "direct"
           },
           {
@@ -19995,54 +19995,7 @@
             "file": "fixture_test.go",
             "kind": "func",
             "name": "newFixture",
-            "hash": "19b6c1d7647cceed2d1d3ad2cc6f2919",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "func",
-            "name": "sig",
-            "hash": "6140bec8eff2b976a627523a697ac9f5",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "annotatedTag",
-            "receiver": "*repoFixture",
-            "hash": "bfebde89030e3d88cb654b0c70436c5c",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "blob",
-            "receiver": "*repoFixture",
-            "hash": "8b3375016375f026e71ea2791a1835a0",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "branch",
-            "receiver": "*repoFixture",
-            "hash": "22caf4c50cc18dfa30754ed2fac77ea6",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "commit",
-            "receiver": "*repoFixture",
-            "hash": "9e2374626860009c44d221f12dbc04ed",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "corruptObject",
-            "receiver": "*repoFixture",
-            "hash": "387e1824a0772ecbf8467f78819dc9a7",
+            "hash": "be6695063f8a8a9cbef0e4e581bb2df5",
             "package": "direct"
           },
           {
@@ -20050,23 +20003,7 @@
             "kind": "method",
             "name": "fetch",
             "receiver": "*repoFixture",
-            "hash": "de89cd2b9c80b25ca775eae05da2a378",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "fetchClientOptions",
-            "receiver": "*repoFixture",
-            "hash": "1f6e273720be85a172471f5c66b6ccd5",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "head",
-            "receiver": "*repoFixture",
-            "hash": "7adc35c045c74f8fb3362b973c3fa62e",
+            "hash": "0adc9994632b208c1473e756e5f3bc09",
             "package": "direct"
           },
           {
@@ -20074,69 +20011,21 @@
             "kind": "method",
             "name": "open",
             "receiver": "*repoFixture",
-            "hash": "7f8acd2ffde383f62235ad6597001897",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "ref",
-            "receiver": "*repoFixture",
-            "hash": "718c3042761595434d91926761dd600c",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "set",
-            "receiver": "*repoFixture",
-            "hash": "6985809a605d58be91870757fb3fe623",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "symref",
-            "receiver": "*repoFixture",
-            "hash": "c819718ee06a9f1ab96f8031208960b5",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "tag",
-            "receiver": "*repoFixture",
-            "hash": "ea360ac0f1e05e0ec5448721878c550a",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "tree",
-            "receiver": "*repoFixture",
-            "hash": "7834199da742a293d4e465977be4f662",
-            "package": "direct"
-          },
-          {
-            "file": "fixture_test.go",
-            "kind": "method",
-            "name": "writeFile",
-            "receiver": "*repoFixture",
-            "hash": "cc9bb0a6e3963f128bff04bc3ba9db5e",
+            "hash": "30c6f83b3ffa5b7059f935146ee6be8b",
             "package": "direct"
           },
           {
             "file": "fixture_test.go",
             "kind": "type",
             "name": "failer",
-            "hash": "b26e92f4a7e6b1adee96b2a9f7f6568e",
+            "hash": "58d7deef479092b26fd674dee15e62b2",
             "package": "direct"
           },
           {
             "file": "fixture_test.go",
             "kind": "type",
             "name": "repoFixture",
-            "hash": "ef13bb8d56e9ad860761974aef6e4fdf",
+            "hash": "ef06f10d1ee9174451c89e7c36066b23",
             "package": "direct"
           }
         ],
@@ -20147,16 +20036,16 @@
           },
           {
             "file": "fixture_test.go",
-            "hash": "68e9b21f0d8ee3efefb784268099443b"
+            "hash": "14fbe8faf7465649913f174526f612a6"
           }
         ]
       },
-      "commit": "753761b60c8f4161a650632ab680b3912849855f",
+      "commit": "c8a5e0e8dde447324b59ee40b90f3c4f503b02b1",
       "dirty": false,
-      "candidateCount": 58,
-      "generated": 58,
-      "mutants": 48,
-      "killed": 48,
+      "candidateCount": 51,
+      "generated": 51,
+      "mutants": 41,
+      "killed": 41,
       "discarded": 10,
       "operators": [
         {
@@ -20175,30 +20064,30 @@
         },
         {
           "operator": "block: empty",
-          "generated": 6,
+          "generated": 5,
           "discarded": 0,
-          "killed": 6,
-          "survived": 0
-        },
-        {
-          "operator": "condition: force false",
-          "generated": 7,
-          "discarded": 2,
           "killed": 5,
           "survived": 0
         },
         {
-          "operator": "condition: force true",
+          "operator": "condition: force false",
           "generated": 6,
           "discarded": 2,
           "killed": 4,
           "survived": 0
         },
         {
+          "operator": "condition: force true",
+          "generated": 5,
+          "discarded": 2,
+          "killed": 3,
+          "survived": 0
+        },
+        {
           "operator": "condition: negate",
-          "generated": 7,
+          "generated": 6,
           "discarded": 0,
-          "killed": 7,
+          "killed": 6,
           "survived": 0
         },
         {
@@ -20231,9 +20120,9 @@
         },
         {
           "operator": "loop control: continue -\u003e break",
-          "generated": 2,
+          "generated": 1,
           "discarded": 0,
-          "killed": 2,
+          "killed": 1,
           "survived": 0
         },
         {
@@ -20259,9 +20148,9 @@
         },
         {
           "operator": "statement: delete",
-          "generated": 14,
+          "generated": 12,
           "discarded": 5,
-          "killed": 9,
+          "killed": 7,
           "survived": 0
         },
         {
@@ -20281,267 +20170,232 @@
       ],
       "kills": [
         {
-          "position": "resolve.go:176:2",
+          "position": "resolve.go:177:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly"
         },
         {
-          "position": "resolve.go:176:5",
+          "position": "resolve.go:177:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:176:5",
+          "position": "resolve.go:177:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:176:5",
+          "position": "resolve.go:177:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly"
         },
         {
-          "position": "resolve.go:176:9",
+          "position": "resolve.go:177:9",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:176:16",
+          "position": "resolve.go:177:16",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly"
         },
         {
-          "position": "resolve.go:177:3",
+          "position": "resolve.go:178:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly"
         },
         {
-          "position": "resolve.go:177:29",
+          "position": "resolve.go:178:29",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/direct.TestCorruptPackedRefsFailsLoudly"
         },
         {
-          "position": "resolve.go:180:2",
+          "position": "resolve.go:181:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails"
         },
         {
-          "position": "resolve.go:180:5",
+          "position": "resolve.go:181:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:180:5",
+          "position": "resolve.go:181:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:180:5",
+          "position": "resolve.go:181:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails"
         },
         {
-          "position": "resolve.go:180:9",
+          "position": "resolve.go:181:9",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:180:16",
+          "position": "resolve.go:181:16",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails"
         },
         {
-          "position": "resolve.go:181:3",
+          "position": "resolve.go:182:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails"
         },
         {
-          "position": "resolve.go:181:29",
+          "position": "resolve.go:182:29",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoDanglingParentFails"
         },
         {
-          "position": "resolve.go:185:21",
+          "position": "resolve.go:186:21",
           "operator": "arithmetic: - -\u003e +",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:23",
+          "position": "resolve.go:186:23",
           "operator": "integer literal: magnitude +1",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:26",
+          "position": "resolve.go:186:26",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:26",
+          "position": "resolve.go:186:26",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:28",
+          "position": "resolve.go:186:28",
           "operator": "relational boundary: \u003e= -\u003e \u003e",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:28",
+          "position": "resolve.go:186:28",
           "operator": "relational negation: \u003e= -\u003e \u003c",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:31",
+          "position": "resolve.go:186:31",
           "operator": "integer literal: magnitude +1",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:185:35",
+          "position": "resolve.go:186:35",
           "operator": "increment/decrement: -- -\u003e ++",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:187:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:187:6",
+          "position": "resolve.go:189:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:187:6",
+          "position": "resolve.go:189:6",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:187:6",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:187:27",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:188:4",
-          "operator": "loop control: continue -\u003e break",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:188:4",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:191:6",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:191:6",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
-        },
-        {
-          "position": "resolve.go:191:6",
+          "position": "resolve.go:189:6",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptReleaseTagFails"
         },
         {
-          "position": "resolve.go:191:10",
+          "position": "resolve.go:189:10",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:191:17",
+          "position": "resolve.go:189:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptReleaseTagFails"
         },
         {
-          "position": "resolve.go:192:4",
+          "position": "resolve.go:190:4",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptReleaseTagFails"
         },
         {
-          "position": "resolve.go:192:30",
+          "position": "resolve.go:190:30",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoCorruptReleaseTagFails"
         },
         {
-          "position": "resolve.go:194:6",
+          "position": "resolve.go:192:6",
           "operator": "unary: ! -\u003e identity",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:194:6",
+          "position": "resolve.go:192:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:194:10",
+          "position": "resolve.go:192:10",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:197:4",
+          "position": "resolve.go:195:4",
           "operator": "loop control: continue -\u003e break",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:197:4",
+          "position": "resolve.go:195:4",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:199:6",
+          "position": "resolve.go:197:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:199:34",
+          "position": "resolve.go:197:34",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:200:4",
+          "position": "resolve.go:198:4",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/direct.TestResolvePseudoBases"
         },
         {
-          "position": "resolve.go:201:4",
+          "position": "resolve.go:199:4",
           "operator": "loop control: break -\u003e continue",
           "killer": "github.com/greatliontech/pb/internal/direct.TestPseudoBaseAncestryProperty"
         },
         {
-          "position": "resolve.go:201:4",
+          "position": "resolve.go:199:4",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/direct.TestPseudoBaseAncestryProperty"
         }
       ],
       "candidateEvidence": [
         {
-          "position": "resolve.go:185:21",
+          "position": "resolve.go:186:21",
           "operator": "arithmetic: - -\u003e +",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "resolve.go:185:35",
+          "position": "resolve.go:186:35",
           "operator": "increment/decrement: -- -\u003e ++",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "resolve.go:194:10",
+          "position": "resolve.go:192:10",
           "operator": "block: empty",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "resolve.go:197:4",
+          "position": "resolve.go:195:4",
           "operator": "statement: delete",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
@@ -59967,13 +59821,13 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/origin.ReleaseTags",
-      "bodyHash": "2015bc6e180e4be9cc1597065cec25072a5a5024f057a6fd9d537b085fa7cfb2",
+      "bodyHash": "1be2a1854a7fcf1bf7921f95ebaf1f041277c500ffd1f755e78ae266cbb4d939",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/origin.ReleaseTags",
-        "maximalClosure": "c9961cd5c9b6df32182e918bcf8dab43",
-        "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+        "maximalClosure": "744589c43bd4911fded0ec34d572432c",
+        "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
@@ -59982,15 +59836,15 @@
         "observationSubjectSymbol": "ReleaseTags",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-        "observationEvidence": "95eb9488d6c9e51ebcdd9a06f7424782",
-        "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-        "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+        "observationEvidence": "7bedecb643dbf2c99f08d83a8075c939",
+        "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+        "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestDiscoverVanityDirectContracts",
-          "maximalClosure": "ced1e83d4d65b4fb93bb86b1417470c0",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "36ed7f7b8f0347018b4d5bd5f8a89c96",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -59999,14 +59853,14 @@
           "observationSubjectSymbol": "TestDiscoverVanityDirectContracts",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "7caa740b0722b3bb8ea1ad409944c797",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "abddf420c18eb34e6187445184ce98bb",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestGitProberListError",
-          "maximalClosure": "5592102775d9abca0f75a21b3eeff071",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "7c74c3c2ffb09e4d1ac71c99956c38af",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60015,14 +59869,14 @@
           "observationSubjectSymbol": "TestGitProberListError",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "07d6b1d0f230a2737b2aa7554f42d703",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "e54ea6b08ce76bbc07c9070a7e89ea49",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestGitProberListsFixtureRepo",
-          "maximalClosure": "5c1edfe0becec34989084ac9f238a30a",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "24b63a79e29100351ac3d44f4cf92a42",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60031,14 +59885,14 @@
           "observationSubjectSymbol": "TestGitProberListsFixtureRepo",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net/http.Do (network I/O)",
-          "observationEvidence": "b983ffe50451c335c0c879f0c27864b3",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "14a577075a1f58dc3e0aa10b3d17f7d3",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestParsePBImportReaderErrorFailsClosed",
-          "maximalClosure": "2ea792608cd726e76f481d13530fbb3a",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "08bb87fa0818c0d24314bb3117915134",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60047,14 +59901,14 @@
           "observationSubjectSymbol": "TestParsePBImportReaderErrorFailsClosed",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "9852106a730d54d99662d7761fba5d2a",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "4db3721cfc79ec426d05d419df7cc5f0",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestPrefixesGolden",
-          "maximalClosure": "86a8092204544393fec3a7e23f5ad115",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "df0747e6f335df0a0bb0f1371a5f3f12",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60063,14 +59917,14 @@
           "observationSubjectSymbol": "TestPrefixesGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "ddfe5642367a7b08c53fdab4d27cbb00",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "934d09e5830b102a14ea2fb49187666c",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsDeterminismProperty",
-          "maximalClosure": "1328903baf90fd1e2d102d5f027ea892",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "4fb4341c95c3f955c220b3e4da33bf71",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60079,14 +59933,14 @@
           "observationSubjectSymbol": "TestReleaseTagsDeterminismProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "4d7ad03b0e3cf75ea392d60eb218ffec",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "01eb2209ac0e3577d3fa3970e54bb40b",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden",
-          "maximalClosure": "d2c5508ab67a3f5ec06d119e85f6c8b2",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "4bd3bba04ccad27193b75a7bc66fd44a",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60095,14 +59949,14 @@
           "observationSubjectSymbol": "TestReleaseTagsGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "82c27b4fbb9e89bc93e0696422cda19b",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "5c2b9334651271ca3dbb077a2ebd7b5f",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveNoOrigin",
-          "maximalClosure": "32f6694a2792e55e9c7b6b17297c72cb",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "f0d687a6639e6fc551f82567ac50774d",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60111,14 +59965,14 @@
           "observationSubjectSymbol": "TestResolveNoOrigin",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "257eb3448ab2b1aca7a5955d07204527",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "b0e34365505ea98d0f148621b1efb7b2",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveProbingCanceledContext",
-          "maximalClosure": "27fe5038b2407d3810e0ed69d1dec853",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "449b7abed2d22bbc9d360717383bc86b",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60127,14 +59981,14 @@
           "observationSubjectSymbol": "TestResolveProbingCanceledContext",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "ff15307e7efcedf4067975cd26928dd2",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "d2dccdd630f5cf6de05f48a30526dd1b",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveProbingOrderAndFirstAnswer",
-          "maximalClosure": "16a3ede89b983b96490692de46c47dbd",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "07f3825e224bd9651b27ae45252200c5",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60143,14 +59997,14 @@
           "observationSubjectSymbol": "TestResolveProbingOrderAndFirstAnswer",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "5fa76496f65a06a9bc96e986a8387e4f",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "1ddfb1f5471920305f5fffcd9d880294",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveRejectsInvalidPath",
-          "maximalClosure": "74485560f78ac34f4381d7f8e23060d7",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "123fc126bfc6bbdbe21aeb3b123ab09b",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60159,14 +60013,14 @@
           "observationSubjectSymbol": "TestResolveRejectsInvalidPath",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "1290a5116ac27f076b7f1ae72b267a0f",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "5b86e6f7473ea26c67be1bf94c0452bf",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVCSSuffixPrecedence",
-          "maximalClosure": "ed156d130b6fea034ae08b2d128b4a06",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "27e0799e50768946040f8009c45db635",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60175,14 +60029,14 @@
           "observationSubjectSymbol": "TestResolveVCSSuffixPrecedence",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "288a3b120dc4d051247d0ed94d7a9959",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "099cb350788d3bfc568d654d9d940842",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityBodyBeyondLimitIgnored",
-          "maximalClosure": "bb65512252f80d51290903ff87238650",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "3d3b9a51d4a7df4011f920609e774cd7",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60191,14 +60045,14 @@
           "observationSubjectSymbol": "TestResolveVanityBodyBeyondLimitIgnored",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "c5a3298dd3bf1bf2b19a18f4abeb66bf",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "c224ab2bcf3b80354ea02d19488d9666",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityCanceledContext",
-          "maximalClosure": "0581898fbf72d40c619c835fab642d70",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "42b707890ec9a1b1be97a4c822d5e61c",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60207,14 +60061,14 @@
           "observationSubjectSymbol": "TestResolveVanityCanceledContext",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "c105ffbfea356c60e67cd9133ed9070c",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "70b188aee44ada732e23297ec5e8da31",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityDuplicatePrefixFirstWins",
-          "maximalClosure": "23f0848b185b6a3f7a3232cae47d44f1",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "b86958727ee1cfa3262a388f15663fe2",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60223,14 +60077,14 @@
           "observationSubjectSymbol": "TestResolveVanityDuplicatePrefixFirstWins",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "d6d3e8c6a90d458df3840ca18011faa5",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "ba6b8fec656a1a01d032eef78c0460d1",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityFollowsHTTPSRedirect",
-          "maximalClosure": "6cb9afe2e2a10e04bd5f452b6721a135",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "789b8eba5e9ce62eb83b9dfd7e447cff",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60239,14 +60093,14 @@
           "observationSubjectSymbol": "TestResolveVanityFollowsHTTPSRedirect",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "c993905b03bd2ad38dd6436f3c940599",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "569ae937bf5985e072136016e40281ea",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresBodyDeclarations",
-          "maximalClosure": "30cbbdff4ad19dcb20eb9be71704eab4",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "c2b142cf169bf03a94e69d8254d52d4d",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60255,14 +60109,14 @@
           "observationSubjectSymbol": "TestResolveVanityIgnoresBodyDeclarations",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "4e43d336d1817405e0dbfba83a2b411c",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "0c6583b448b234cf475d4ebb9fbd0d78",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresCookieJar",
-          "maximalClosure": "4c872ecb83e9bcbe16e6fb94e0ed77f3",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "2108361a48e29372f8a34df1c8fa87f0",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60271,14 +60125,14 @@
           "observationSubjectSymbol": "TestResolveVanityIgnoresCookieJar",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "69dfd1767ff111a5c18420a7973830a1",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "29884497dbd89df78f6a7bec5ea8d7bd",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresForeignPrefixes",
-          "maximalClosure": "818555ffcc0503a797ba77b832def7dc",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "310f3be2622a0c2f131db65cb68c6759",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60287,14 +60141,14 @@
           "observationSubjectSymbol": "TestResolveVanityIgnoresForeignPrefixes",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "00d49ba2786d9913b423703d0473b2d1",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "15a1ee214afde5d27e3e4a509e9cd322",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresNonPBDeclarations",
-          "maximalClosure": "ac725c4367e12e1688cea546b8c648e0",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "923a4a8ec87f66b91242012b495ab106",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60303,14 +60157,14 @@
           "observationSubjectSymbol": "TestResolveVanityIgnoresNonPBDeclarations",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "1244f7e883297f38fb742cc2b3161269",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "020c49bdf9e4fb5d0d04b1312ee0c046",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityLongestPrefixWins",
-          "maximalClosure": "21be666773dc805b822d0b0337ef82c4",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "a672208bcfd0f3b9d3a6e8d3810fd15b",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60319,14 +60173,14 @@
           "observationSubjectSymbol": "TestResolveVanityLongestPrefixWins",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "c941b598476f42328cc2a73ee2999c84",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "db078bbc0331b48fbfc698ffbf07245b",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityMatchAfterForeignPrefix",
-          "maximalClosure": "2ef859901cf567fb0e5160e87ba3151e",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "72d387c22c9e079c21d927d438d0196f",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60335,14 +60189,14 @@
           "observationSubjectSymbol": "TestResolveVanityMatchAfterForeignPrefix",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "b2dbd0a472f38ae3fa1627ec1d044dc3",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "936b734143814119928c36d29c416aae",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityPrecedence",
-          "maximalClosure": "a3f440a2c941eb1e3faf6f4000850f75",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "b20ccbcebb4631f6afb29894a0738fa8",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60351,14 +60205,14 @@
           "observationSubjectSymbol": "TestResolveVanityPrecedence",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "2498ce30c21dc42a11cf210c2d52298c",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "a7d8c5b2b3a3d857e7962c4a844e4e24",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityRedirectCapAtTen",
-          "maximalClosure": "341fbff0d5cdd76533ea1a13341d726e",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "5151f0a4ec54c3ad8b804cee51f5e24f",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60367,14 +60221,14 @@
           "observationSubjectSymbol": "TestResolveVanityRedirectCapAtTen",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "bd816783d1791455ce1f0b490b1fba6d",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "7b8c45a6463198e250f580385ab7b724",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityRedirectToCleartextFallsThrough",
-          "maximalClosure": "0b5c9b3fd8227413e5aabd47bbef6b61",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "860bef26734e287ab2dec38d8deb1346",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60383,14 +60237,14 @@
           "observationSubjectSymbol": "TestResolveVanityRedirectToCleartextFallsThrough",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "62c466e0f2f0da0716da259a25827dd3",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "957a49ff953183ff23ce311b924c5918",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityRejectsMalformedRepoURL",
-          "maximalClosure": "de9007b3a3947871ea8252291320b1db",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "ffc8215867c3514ff07dfbe36209df30",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60399,14 +60253,14 @@
           "observationSubjectSymbol": "TestResolveVanityRejectsMalformedRepoURL",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "2dfd56247801cc327d7e6029752e5a1a",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "a0fe4183af5f153cf625ecdc3a0e1d12",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityRejectsNonHTTPS",
-          "maximalClosure": "ef27b886dab94738c6ecdf52e9f3c22b",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "aff3d34b156d616f1eeb7775e5f099d9",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60415,14 +60269,14 @@
           "observationSubjectSymbol": "TestResolveVanityRejectsNonHTTPS",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "68e3c24d447e4829fd7e214410169ca3",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "85e45b4f4451a49647e563e8a1af7230",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityStatusBoundaries",
-          "maximalClosure": "2c8d9106008132d74a2ad6a43fddddfe",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "b519d3e0fb8b7544b6fcad6d40fa0ed1",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60431,14 +60285,14 @@
           "observationSubjectSymbol": "TestResolveVanityStatusBoundaries",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "cc89b4ea9d3c0a842855e39c6876f9fd",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "59bea90634aa2d28d4e736730f9190eb",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestResolveVanityTransportErrorFallsThrough",
-          "maximalClosure": "fd8cf495775936d8d01fdd2f8ab67b0e",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "684a159c1382446238db3efec10aede8",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60447,14 +60301,14 @@
           "observationSubjectSymbol": "TestResolveVanityTransportErrorFallsThrough",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "3accc588c92de603a3063bfea03200e0",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "471993ec1eeaa5c6175feece03a4a757",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestSplitVCSGolden",
-          "maximalClosure": "33a32ec59a420abfd046b6db18eb9746",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "37d2861994315911cf8d4690832432e5",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60463,14 +60317,14 @@
           "observationSubjectSymbol": "TestSplitVCSGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "f7e8233c687d3ddccd67986795633d90",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "388cad3b58b75ea7dbd9729f89531d13",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestSubtreeOfGolden",
-          "maximalClosure": "314be2ade9c7186621dd52a54c10c576",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "db4314ece4caaf4a863e465250d5da73",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60479,14 +60333,14 @@
           "observationSubjectSymbol": "TestSubtreeOfGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "18117f246443785ec589044e87d7efd4",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "84ead428b6fd049f21af21d4ff8ef76e",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestSubtreeOfProperty",
-          "maximalClosure": "2b0913c701fcf14bc85eac8cf9c40b9c",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "ebe07c8b786fb7c91c46e07946b1307a",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60495,14 +60349,142 @@
           "observationSubjectSymbol": "TestSubtreeOfProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "78ff25b21c2331350ddafcc3fd4735b2",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "4a252c3bad81e16a8b04d76d07ad4ef6",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestSynthesizedVersionsBadHead",
+          "maximalClosure": "9a500ea73984a111a1f349d1fc4c0bdd",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestSynthesizedVersionsBadHead",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "fe0474b861253ef181c3bf9f378ee5fa",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestSynthesizedVersionsFallsBackToPseudo",
+          "maximalClosure": "790d47782030aa63520608e6be779601",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestSynthesizedVersionsFallsBackToPseudo",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "1d8bfee7a221c26363ffa7a18794e3a8",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestSynthesizedVersionsProperty",
+          "maximalClosure": "cc99d4aaeef26b8044e9ff13530dc6ab",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestSynthesizedVersionsProperty",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "e561c22c4db87f210ccef6a7bc65fc59",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestSynthesizedVersionsTakesRepoTags",
+          "maximalClosure": "494ae5f8d941f1c1400e2f626af685bc",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestSynthesizedVersionsTakesRepoTags",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "c184aef0239a7b6fc0b496939e3ab9de",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestVerifyPseudoGolden",
+          "maximalClosure": "3332e49aa647a398de2d7dd4e7c643c5",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestVerifyPseudoGolden",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "b98b6c9ec37c5472428590429f3a7867",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestVerifyPseudoPrefixNotSubstring",
+          "maximalClosure": "dd90a8db859916184a416b7c90f4bf73",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestVerifyPseudoPrefixNotSubstring",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "fe8b9a7f56d8079ba879a8d4f485c941",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestVerifyPseudoRequiresFullHash",
+          "maximalClosure": "1d03e99ed95bfc8d87b88805135008cb",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestVerifyPseudoRequiresFullHash",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "23a5645eb714de38e58435eae22aad98",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/origin.TestVerifyPseudoRoundTripProperty",
+          "maximalClosure": "9d74e9ea5968a8fd750e5fc4617fe429",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/origin",
+          "observationSubjectSymbol": "TestVerifyPseudoRoundTripProperty",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "70ac7a9eaaa6ff7a0a18724113d026b1",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/origin.TestVersionSegmentsFlowVerbatim",
-          "maximalClosure": "81fe4c63789e8e89ff774fd0002297fe",
-          "testVariantClosure": "f51d2726668dff8467412fedf58fc6b9",
+          "maximalClosure": "5be422ce39060b6b8b9bc95356188738",
+          "testVariantClosure": "e171825e27769116cbcfd2b53f7c682d",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -60511,9 +60493,9 @@
           "observationSubjectSymbol": "TestVersionSegmentsFlowVerbatim",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
-          "observationEvidence": "9396eedf114bd1a42d761754d3963afe",
-          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9XX0",
-          "runtimeDigest": "013d2009114cd4ecc74d11921e684f6d"
+          "observationEvidence": "c5b3564646ed44db87698e49ef792a25",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSZWxlYXNlVGFnc0RldGVybWluaXNtUHJvcGVydHkiLCJkIjoiNjdiOGEwYTA1MmZmYzdmMWY0N2I0MDJjZjY2MDMxNWUifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvb3JpZ2luL3Rlc3RkYXRhL3JhcGlkL1Rlc3RTdWJ0cmVlT2ZQcm9wZXJ0eSIsImQiOiI5NzJkNjk5MzQ1Nzc1ODMzMWU0ZjcwYjA0NDAyODA3MCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFN5bnRoZXNpemVkVmVyc2lvbnNQcm9wZXJ0eSIsImQiOiIwNGIzNGQ5Zjc0NjhmM2EzNjBmNGExZDg2MGM2NDg2NyJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9vcmlnaW4vdGVzdGRhdGEvcmFwaWQvVGVzdFZlcmlmeVBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjMzZjU2NmQ3NDRhN2ZhN2I3MzYyZTcwNTVkNjgwZWM1In1dfQ",
+          "runtimeDigest": "a799f7382a88392f79a31b4be2c38f27"
         }
       ],
       "oracleExplicit": false,
@@ -60552,7 +60534,7 @@
             "file": "origin_test.go",
             "kind": "func",
             "name": "TestReleaseTagsGolden",
-            "hash": "29c96754a5522ac5d54162f64838c3ef",
+            "hash": "e9bfa5f9b23e8648aaad735efac01120",
             "package": "origin"
           },
           {
@@ -60573,7 +60555,7 @@
             "file": "origin_test.go",
             "kind": "func",
             "name": "TestResolveProbingOrderAndFirstAnswer",
-            "hash": "c320bf9bcaf661f2d6dba9a5aebfecc9",
+            "hash": "bde3cece806b03ce450abd3a07ee312a",
             "package": "origin"
           },
           {
@@ -60713,7 +60695,7 @@
             "file": "origin_test.go",
             "kind": "func",
             "name": "TestSplitVCSGolden",
-            "hash": "0a50102c8b5e4929812e9dec15c3a8a3",
+            "hash": "193c0b13c47e205f101affcdd083759b",
             "package": "origin"
           },
           {
@@ -60859,14 +60841,70 @@
             "file": "prober_test.go",
             "kind": "func",
             "name": "TestGitProberListError",
-            "hash": "01a5543573e916c98b591f1b27df9efa",
+            "hash": "029256814b81db55d5971e8fd83610fa",
             "package": "origin"
           },
           {
             "file": "prober_test.go",
             "kind": "func",
             "name": "TestGitProberListsFixtureRepo",
-            "hash": "72189a42d67ca5b45ea592fe6aeb4a00",
+            "hash": "f0c3c9c6bcf1731320bd45a8c78cbd8a",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestSynthesizedVersionsBadHead",
+            "hash": "e8e2fde319cf8e780d6dd3631f4d5a28",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestSynthesizedVersionsFallsBackToPseudo",
+            "hash": "8241c1752325cba18a964c4d408e9929",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestSynthesizedVersionsProperty",
+            "hash": "cdfd42350358e72f3bcc5d72d2bc30d3",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestSynthesizedVersionsTakesRepoTags",
+            "hash": "614e4af0f8e711e2ee924db79311dea2",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestVerifyPseudoGolden",
+            "hash": "03010d91b52e9c8899fc6e266db561e7",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestVerifyPseudoPrefixNotSubstring",
+            "hash": "60e33787712c4d0527cace19343f4b66",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestVerifyPseudoRequiresFullHash",
+            "hash": "35d31af2027f57b3f89677378a1aa44b",
+            "package": "origin"
+          },
+          {
+            "file": "synth_test.go",
+            "kind": "func",
+            "name": "TestVerifyPseudoRoundTripProperty",
+            "hash": "8787c646d38d0d0338476e8056f33980",
             "package": "origin"
           }
         ],
@@ -60877,17 +60915,21 @@
           },
           {
             "file": "prober_test.go",
-            "hash": "7def43ff0a6650d149454f9223f9d0ce"
+            "hash": "272f30b0f6ea2b286f2f477f822fa8b4"
+          },
+          {
+            "file": "synth_test.go",
+            "hash": "9b9e992402ab2d0cd1b81665bb31153a"
           }
         ]
       },
-      "commit": "4255e033ea066c5293c0e5347406112a8ac1d44b",
+      "commit": "c8a5e0e8dde447324b59ee40b90f3c4f503b02b1",
       "dirty": false,
-      "candidateCount": 58,
-      "generated": 58,
-      "mutants": 44,
-      "killed": 40,
-      "discarded": 14,
+      "candidateCount": 61,
+      "generated": 61,
+      "mutants": 46,
+      "killed": 45,
+      "discarded": 15,
       "operators": [
         {
           "operator": "assignment: drop store",
@@ -60900,14 +60942,14 @@
           "operator": "block: empty",
           "generated": 6,
           "discarded": 0,
-          "killed": 5,
-          "survived": 1
+          "killed": 6,
+          "survived": 0
         },
         {
           "operator": "boolean operand: -\u003e false",
-          "generated": 2,
-          "discarded": 1,
-          "killed": 0,
+          "generated": 4,
+          "discarded": 2,
+          "killed": 1,
           "survived": 1
         },
         {
@@ -60954,10 +60996,10 @@
         },
         {
           "operator": "logical: || -\u003e \u0026\u0026",
-          "generated": 1,
+          "generated": 2,
           "discarded": 0,
-          "killed": 0,
-          "survived": 1
+          "killed": 2,
+          "survived": 0
         },
         {
           "operator": "loop control: continue -\u003e break",
@@ -60984,8 +61026,8 @@
           "operator": "statement: delete",
           "generated": 11,
           "discarded": 5,
-          "killed": 5,
-          "survived": 1
+          "killed": 6,
+          "survived": 0
         },
         {
           "operator": "string literal: empty -\u003e nonempty",
@@ -61011,93 +61053,78 @@
       ],
       "kills": [
         {
-          "position": "origin.go:112:12",
+          "position": "origin.go:116:12",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:2",
+          "position": "origin.go:117:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:5",
+          "position": "origin.go:117:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:5",
+          "position": "origin.go:117:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:5",
+          "position": "origin.go:117:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:13",
+          "position": "origin.go:117:13",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:16",
+          "position": "origin.go:117:16",
           "operator": "string literal: empty -\u003e nonempty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:113:19",
+          "position": "origin.go:117:19",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:114:3",
+          "position": "origin.go:118:3",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:114:10",
+          "position": "origin.go:118:10",
           "operator": "compound store: += -\u003e =",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:114:23",
+          "position": "origin.go:118:23",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:118:14",
+          "position": "origin.go:122:14",
           "operator": "range body: prepend break",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:118:2",
+          "position": "origin.go:122:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:119:45",
+          "position": "origin.go:123:45",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:121:6",
+          "position": "origin.go:125:6",
           "operator": "unary: ! -\u003e identity",
-          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
-        },
-        {
-          "position": "origin.go:121:6",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
-        },
-        {
-          "position": "origin.go:121:36",
-          "operator": "string literal: nonempty -\u003e empty",
-          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
-        },
-        {
-          "position": "origin.go:122:4",
-          "operator": "loop control: continue -\u003e break",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
@@ -61107,11 +61134,16 @@
         },
         {
           "position": "origin.go:125:10",
-          "operator": "equality: != -\u003e ==",
+          "operator": "logical: || -\u003e \u0026\u0026",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:125:17",
+          "position": "origin.go:125:36",
+          "operator": "string literal: nonempty -\u003e empty",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:125:41",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
@@ -61127,42 +61159,57 @@
         },
         {
           "position": "origin.go:129:6",
-          "operator": "unary: ! -\u003e identity",
-          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
-        },
-        {
-          "position": "origin.go:129:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:129:12",
+          "position": "origin.go:129:10",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:129:17",
+          "operator": "logical: || -\u003e \u0026\u0026",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:129:20",
+          "operator": "boolean operand: -\u003e false",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:129:33",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
           "position": "origin.go:130:4",
-          "operator": "assignment: drop store",
+          "operator": "loop control: continue -\u003e break",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:131:4",
-          "operator": "assignment: drop store",
+          "position": "origin.go:130:4",
+          "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:132:4",
-          "operator": "assignment: drop store",
+          "position": "origin.go:133:6",
+          "operator": "unary: ! -\u003e identity",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:134:6",
+          "position": "origin.go:133:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:134:13",
+          "position": "origin.go:133:12",
           "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:134:4",
+          "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
@@ -61171,117 +61218,107 @@
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:136:10",
+          "position": "origin.go:136:4",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:138:6",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:138:13",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:137:4",
+          "position": "origin.go:139:4",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:140:2",
+          "position": "origin.go:140:10",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:141:4",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
+        },
+        {
+          "position": "origin.go:144:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:141:21",
+          "position": "origin.go:145:21",
           "operator": "integer literal: magnitude +1",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:142:14",
+          "position": "origin.go:146:14",
           "operator": "range body: prepend break",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:142:2",
+          "position": "origin.go:146:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:143:3",
+          "position": "origin.go:147:3",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         },
         {
-          "position": "origin.go:145:9",
+          "position": "origin.go:149:9",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/origin.TestReleaseTagsGolden"
         }
       ],
       "survivors": [
         {
-          "position": "origin.go:121:10",
-          "operator": "logical: || -\u003e \u0026\u0026",
-          "execution": "executed-and-passed"
-        },
-        {
-          "position": "origin.go:121:13",
+          "position": "origin.go:125:13",
           "operator": "boolean operand: -\u003e false",
-          "execution": "executed-and-passed"
-        },
-        {
-          "position": "origin.go:121:41",
-          "operator": "block: empty",
-          "execution": "executed-and-passed"
-        },
-        {
-          "position": "origin.go:122:4",
-          "operator": "statement: delete",
           "execution": "executed-and-passed"
         }
       ],
       "attested": [
         {
-          "position": "origin.go:121:10",
-          "operator": "logical: || -\u003e \u0026\u0026",
-          "reason": "The skip guard is subsumed by version.Parse: strings.CutPrefix returns the full unshortened ref name on failure, and neither a full ref name nor any rest containing \"/\" parses as a canonical version, so every ref the guard skips is skipped one line later regardless."
-        },
-        {
-          "position": "origin.go:121:13",
+          "position": "origin.go:125:13",
           "operator": "boolean operand: -\u003e false",
-          "reason": "Subsumed by version.Parse: with the !ok operand forced false, refs failing the prefix cut flow to version.Parse carrying the full ref name (CutPrefix returns it unshortened), which never parses as a canonical version; the skip happens one line later regardless."
-        },
-        {
-          "position": "origin.go:121:41",
-          "operator": "block: empty",
-          "reason": "Subsumed by version.Parse: emptying the guard body routes non-matching and slash-carrying refs to version.Parse, which rejects them all (full ref names and any rest containing \"/\" are not canonical versions), skipping them one line later regardless."
-        },
-        {
-          "position": "origin.go:122:4",
-          "operator": "statement: delete",
-          "reason": "Subsumed by version.Parse: deleting the continue routes non-matching and slash-carrying refs to version.Parse, which rejects them all, skipping them one line later regardless."
+          "reason": "Drops the !ok operand: a ref outside the tag prefix keeps its full name as rest, and a full ref name can never parse as a canonical version, so the Parse skip catches exactly the same refs."
         }
       ],
       "candidateEvidence": [
         {
-          "position": "origin.go:129:6",
+          "position": "origin.go:133:6",
           "operator": "unary: ! -\u003e identity",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "origin.go:129:6",
+          "position": "origin.go:133:6",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "origin.go:129:12",
+          "position": "origin.go:133:12",
           "operator": "block: empty",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "origin.go:130:4",
+          "position": "origin.go:134:4",
           "operator": "assignment: drop store",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "origin.go:131:4",
+          "position": "origin.go:135:4",
           "operator": "assignment: drop store",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
