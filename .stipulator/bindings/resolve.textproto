@@ -1,0 +1,38 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-resolve-path-syntax"
+  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modpath.Validate"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8357a98fec28604441ba8edc3efbdcb62c39164133e7fc8cfbe719af4f6a9af0"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-path-syntax"
+  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modpath.TestValidate"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f10ac584314f221fb33a003b337800b395d4a5e23f6f05a6077707569484d9b3"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-path-syntax"
+  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modpath.TestValidateProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b7229cf249692ac76d07349da48fec443790526b21a098750600c02a19254829"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-path-syntax"
+  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modpath.FuzzValidate"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "036a5463b918dff1b1e933e85191a3caa40ce19cf75c44638fa7ed24b4d3806f"
+}

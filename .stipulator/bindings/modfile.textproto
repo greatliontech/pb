@@ -1,0 +1,110 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-modfile-schema"
+  content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "571ca2e2d44a2adf8f6fd39e18adb92c60623034dc8fcae7b70c72cc49fc20a7"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-schema"
+  content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "25aaf5afcb7916046ad6e4fac9993b240f43a3a47c9f4afad733814897b8911c"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-schema"
+  content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2852f765688ecc95811fb89b3f9b29b6348d3d6845f467c658652504bc652352"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-schema"
+  content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.FuzzParse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5cc5fb7d21fb49ca500ea0020d1cb7056a8cf1b5fce9320a8b9f4e0cae81d900"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-identity"
+  content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.CheckIdentity"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "d722b54aad9c126029375c87bc2cb48cebf4737c244ae04434bea5327585d6fa"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-identity"
+  content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestCheckIdentityProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "18e07d3a4163d39840b3d4ce03ceaff18e756b1ac051af09f6ba001e9a83df19"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-identity"
+  content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestCheckIdentity"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d474a76b23237b812adb1607081d94e6fb851083d1a6a00996b1cba99f9e182b"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-versions"
+  content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.checkVersion"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9dc5c5253f6fdd524ca174f1acffa9e9af78e5dbf356ff9a3697057da774cdb9"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-versions"
+  content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2852f765688ecc95811fb89b3f9b29b6348d3d6845f467c658652504bc652352"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-emission"
+  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.Encode"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a356af2c3963ac00d1d7ae8588b6d241a10304caa165b20bea35f66a1b9923dc"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-emission"
+  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestEncodeGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "75f5416a97c9d438c25bbc0670b36549517cde835296f1368b5c7b34ec1f68a1"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-emission"
+  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestRoundTripProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bd218c4e8668204d2e376d4d4624ad105d8027fb5fc62046f85a693097512c1c"
+}

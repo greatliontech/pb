@@ -23,9 +23,16 @@ selected version.
 
 ## Path resolution
 
-**REQ-resolve-path-syntax** (wire): A module path MUST be a hostname
-followed by one or more `/`-separated non-empty segments, containing no
-scheme, no port, no query, and no fragment.
+**REQ-resolve-path-syntax** (wire): A module path MUST be a hostname —
+two or more dot-separated, non-empty DNS labels of lowercase ASCII
+letters, digits, and hyphens, no label beginning or ending with a hyphen
+— followed by one or more `/`-separated non-empty segments
+each consisting of ASCII letters, digits, and the characters `.` `-` `_`
+`~`, with no segment beginning or ending with a dot; no scheme, port,
+query, or fragment appears. The character discipline is load-bearing
+downstream: proxy escaping is defined over ASCII case, vanity-redirect
+probing embeds the path in a URL, and canonical YAML emission writes
+paths as plain scalars.
 
 **REQ-resolve-vcs-suffix** (behavior): A module path containing a segment
 ending in `.git` MUST resolve with that segment as the final segment of

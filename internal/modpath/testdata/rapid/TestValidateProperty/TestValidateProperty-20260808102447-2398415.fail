@@ -1,0 +1,25 @@
+# 2026/08/08 10:24:47.714297 [TestValidateProperty] [rapid] draw hostA: []int32{97}
+# 2026/08/08 10:24:47.714310 [TestValidateProperty] [rapid] draw hostB: []int32{97, 45}
+# 2026/08/08 10:24:47.714313 [TestValidateProperty] [rapid] draw segs: 1
+# 2026/08/08 10:24:47.714318 [TestValidateProperty] [rapid] draw seg: []int32{97}
+# 2026/08/08 10:24:47.714324 [TestValidateProperty] constructed path "a.a-/a" rejected: invalid module path: "a.a-/a": hostname label begins or ends with a hyphen
+# 
+v0.4.8#5750486950681609090
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x1f2b5a0e61c3a6
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
