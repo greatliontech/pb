@@ -108,7 +108,7 @@ func TestZipRoundTripProperty(t *testing.T) {
 		var files []File
 		var want []FileInfo
 		for i := range n {
-			body := rapid.StringN(-1, 0, 64).Draw(t, "body")
+			body := rapid.StringN(0, 64, -1).Draw(t, "body")
 			exec := rapid.Bool().Draw(t, "exec")
 			path := fmt.Sprintf("d%d/f%d.proto", rapid.IntRange(0, 4).Draw(t, "dir"), i)
 			files = append(files, File{Path: path, Exec: exec, Body: strings.NewReader(body)})
@@ -410,7 +410,7 @@ func TestExtractNoExecProperty(t *testing.T) {
 			files = append(files, File{
 				Path: fmt.Sprintf("d%d/f%d.proto", rapid.IntRange(0, 2).Draw(t, "dir"), i),
 				Exec: rapid.Bool().Draw(t, "exec"),
-				Body: strings.NewReader(rapid.StringN(-1, 0, 32).Draw(t, "body")),
+				Body: strings.NewReader(rapid.StringN(0, 32, -1).Draw(t, "body")),
 			})
 		}
 		var buf bytes.Buffer

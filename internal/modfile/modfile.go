@@ -20,6 +20,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/yamlshape"
 )
 
 // ErrInvalid is wrapped by every module-file rejection other than an
@@ -66,6 +67,9 @@ func Parse(data []byte) (*File, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: top level must be a mapping", ErrInvalid)
 	}
+	if err := yamlshape.Check(mapping); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
 	if err := checkMappingShape(mapping); err != nil {
 		return nil, err
 	}
@@ -81,31 +85,27 @@ func Parse(data []byte) (*File, error) {
 }
 
 // checkMappingShape enforces the schema at the AST level: keys are exactly
-// module (+ deps), no merge keys anywhere, and deps — when present — is a
-// non-empty mapping (a null or empty value is "present without
-// dependencies", which the schema excludes).
+// module (+ deps), and deps — when present — is a non-empty mapping (a
+// null or empty value is "present without dependencies", which the schema
+// excludes). It runs after yamlshape.Check, so every key is a string node
+// and comparisons see the unquoted key value.
 func checkMappingShape(mapping *ast.MappingNode) error {
 	for _, kv := range mapping.Values {
-		if _, merge := kv.Key.(*ast.MergeKeyNode); merge {
-			return fmt.Errorf("%w: merge keys are not part of the module file schema", ErrInvalid)
+		key, ok := kv.Key.(*ast.StringNode)
+		if !ok {
+			return fmt.Errorf("%w: unknown key %q", ErrInvalid, kv.Key.String())
 		}
-		switch kv.Key.String() {
+		switch key.Value {
 		case "module":
 		case "deps":
-			// Null, sequence, scalar, alias, and anchor-decorated values all
-			// fail the mapping assertion; an empty mapping decodes to a
-			// non-nil empty map that validate rejects with the same message.
-			deps, ok := kv.Value.(*ast.MappingNode)
-			if !ok {
+			// Null, sequence, and scalar values all fail the mapping
+			// assertion; an empty mapping decodes to a non-nil empty map
+			// that validate rejects with the same message.
+			if _, ok := kv.Value.(*ast.MappingNode); !ok {
 				return fmt.Errorf("%w: deps must be a non-empty mapping", ErrInvalid)
 			}
-			for _, dep := range deps.Values {
-				if _, merge := dep.Key.(*ast.MergeKeyNode); merge {
-					return fmt.Errorf("%w: merge keys are not part of the module file schema", ErrInvalid)
-				}
-			}
 		default:
-			return fmt.Errorf("%w: unknown key %q", ErrInvalid, kv.Key.String())
+			return fmt.Errorf("%w: unknown key %q", ErrInvalid, key.Value)
 		}
 	}
 	return nil

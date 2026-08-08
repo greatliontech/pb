@@ -118,7 +118,7 @@ func TestTreeHashCompositionProperty(t *testing.T) {
 		entries := make([]TreeEntry, 0, n+1)
 		var subEntries []TreeEntry
 		for i := range n {
-			body := rapid.StringN(-1, 0, 32).Draw(t, "body")
+			body := rapid.StringN(0, 32, -1).Draw(t, "body")
 			blob, err := BlobHash(f, int64(len(body)), strings.NewReader(body))
 			if err != nil {
 				t.Fatal(err)

@@ -3,7 +3,7 @@
 
 bindings {
   requirement_id: "REQ-resolve-path-syntax"
-  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  content_hash: "167e86f93489c2c1d741dd017134591a3f1190a52f6a50342825eca04a2b0520"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modpath.Validate"
   role: BINDING_ROLE_IMPLEMENTS
@@ -12,7 +12,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-path-syntax"
-  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  content_hash: "167e86f93489c2c1d741dd017134591a3f1190a52f6a50342825eca04a2b0520"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modpath.TestValidate"
   role: BINDING_ROLE_TESTS
@@ -21,7 +21,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-path-syntax"
-  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  content_hash: "167e86f93489c2c1d741dd017134591a3f1190a52f6a50342825eca04a2b0520"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modpath.TestValidateProperty"
   role: BINDING_ROLE_TESTS
@@ -30,7 +30,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-path-syntax"
-  content_hash: "af00d211add8abb2ea3bd779c044bddf3ba97175b19d273533b5f6d049c2767a"
+  content_hash: "167e86f93489c2c1d741dd017134591a3f1190a52f6a50342825eca04a2b0520"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modpath.FuzzValidate"
   role: BINDING_ROLE_TESTS

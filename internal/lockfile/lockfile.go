@@ -1,0 +1,549 @@
+// Package lockfile parses, validates, and canonically emits pb.lock — the
+// pin store: content identity and provenance facts for every (module path,
+// version) a resolution has consulted, plus plugin reference pins. It
+// records only pins (REQ-lock-pins-only): version selection is recomputed
+// from module files, and nothing derivable by re-running resolution is
+// stored — the data model has no fields for it.
+//
+// Parsing goes through the YAML AST, as module-file parsing does, so
+// the accepted surface is the schema's; emission is hand-rolled because
+// regeneration must be byte-identical (REQ-lock-canonical-emission).
+package lockfile
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
+
+	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/yamlshape"
+)
+
+// ErrInvalid is wrapped by every lockfile rejection.
+var ErrInvalid = errors.New("invalid lockfile")
+
+// ErrPinMismatch is wrapped when a fetched artifact disagrees with its pin
+// (REQ-lock-digest-enforcement) or when a pin addition conflicts with an
+// existing pin (REQ-lock-first-use).
+var ErrPinMismatch = errors.New("lockfile pin mismatch")
+
+// ErrProvenanceDowngrade is wrapped when a non-explicit operation would
+// weaken or alter a verified provenance record
+// (REQ-lock-no-silent-downgrade).
+var ErrProvenanceDowngrade = errors.New("provenance downgrade")
+
+// Provenance is a lockfile provenance record (REQ-lock-provenance-record).
+// The zero value is the literal `none`.
+type Provenance struct {
+	Type         string // "git-signed-tag"
+	ObjectFormat string // "sha1" or "sha256"
+	Object       string // hex git hash of the signed object
+	SAN          string
+	Issuer       string
+}
+
+// ModulePin is one module entry (REQ-lock-entry).
+type ModulePin struct {
+	Path       string
+	Version    string
+	Digest     string // "pb1:" + 64 hex; empty when the archive has not been fetched
+	Modfile    string // "sha256:" + 64 hex; empty when the module declares no module file
+	Provenance Provenance
+}
+
+// PluginPin is one plugin entry (REQ-lock-plugin-entry).
+type PluginPin struct {
+	Ref        string // OCI reference as written in generation configuration, without a digest
+	Digest     string // "sha256:" + 64 hex manifest-list digest
+	Provenance Provenance
+}
+
+// File is a parsed lockfile: pins only.
+type File struct {
+	Modules []ModulePin
+	Plugins []PluginPin
+}
+
+func hexOK(s string, n int) bool {
+	if len(s) != n {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// checkPlainScalar bounds a free-string pin fact to values whose unquoted
+// emission re-parses as the same plain YAML scalar, keeping Encode a fixed
+// point of Parse (REQ-lock-canonical-emission): printable non-space ASCII,
+// leading alphanumeric (no YAML indicator or quote interpretation), no
+// trailing ':' (which would turn the value into a nested mapping), and not
+// a YAML null spelling (which a parser resolves to null, skipping the
+// value decode entirely).
+func checkPlainScalar(kind, s string) error {
+	bad := s == "" || s[len(s)-1] == ':' || s == "null" || s == "Null" || s == "NULL"
+	if !bad {
+		c := s[0]
+		bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
+	}
+	for i := 0; !bad && i < len(s); i++ {
+		bad = s[i] < '!' || s[i] > '~'
+	}
+	if bad {
+		return fmt.Errorf("%s %q is not plain-scalar safe: values start alphanumeric, use printable non-space ASCII, are not a null spelling, and do not end with %q", kind, s, ":")
+	}
+	return nil
+}
+
+// checkHashRef bounds a hash-reference fact to prefix plus 64 lowercase
+// hex digits ("pb1:" module digests, "sha256:" module-file hashes and
+// plugin digests).
+func checkHashRef(prefix, d string) error {
+	rest, ok := strings.CutPrefix(d, prefix)
+	if !ok || !hexOK(rest, 64) {
+		return fmt.Errorf("%q is not %s plus 64 lowercase hex digits", d, prefix)
+	}
+	return nil
+}
+
+func checkProvenance(p Provenance) error {
+	if p == (Provenance{}) {
+		return nil
+	}
+	if p.Type != "git-signed-tag" {
+		return fmt.Errorf("unknown provenance type %q", p.Type)
+	}
+	var hexLen int
+	switch p.ObjectFormat {
+	case "sha1":
+		hexLen = 40
+	case "sha256":
+		hexLen = 64
+	default:
+		return fmt.Errorf("unknown object format %q", p.ObjectFormat)
+	}
+	if !hexOK(p.Object, hexLen) {
+		return fmt.Errorf("object %q is not %d lowercase hex digits", p.Object, hexLen)
+	}
+	if p.SAN == "" || p.Issuer == "" {
+		return errors.New("identity needs both san and issuer")
+	}
+	if err := checkPlainScalar("san", p.SAN); err != nil {
+		return err
+	}
+	if err := checkPlainScalar("issuer", p.Issuer); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkModulePin(m ModulePin) error {
+	if err := modpath.Validate(m.Path); err != nil {
+		return err
+	}
+	if m.Version == "" {
+		return fmt.Errorf("module %q has no version", m.Path)
+	}
+	if err := checkPlainScalar("version", m.Version); err != nil {
+		return fmt.Errorf("module %q: %v", m.Path, err)
+	}
+	if m.Digest != "" {
+		if err := checkHashRef("pb1:", m.Digest); err != nil {
+			return fmt.Errorf("digest: %v", err)
+		}
+	}
+	if m.Modfile != "" {
+		if err := checkHashRef("sha256:", m.Modfile); err != nil {
+			return fmt.Errorf("modfile: %v", err)
+		}
+	}
+	if err := checkProvenance(m.Provenance); err != nil {
+		return fmt.Errorf("module %q: %v", m.Path, err)
+	}
+	return nil
+}
+
+func checkPluginPin(p PluginPin) error {
+	if p.Ref == "" {
+		return errors.New("plugin entry has no ref")
+	}
+	if strings.Contains(p.Ref, "@") {
+		return fmt.Errorf("plugin ref %q carries a digest; refs are pinned by the digest field", p.Ref)
+	}
+	if err := checkPlainScalar("ref", p.Ref); err != nil {
+		return err
+	}
+	if err := checkHashRef("sha256:", p.Digest); err != nil {
+		return fmt.Errorf("plugin %q: %v", p.Ref, err)
+	}
+	if err := checkProvenance(p.Provenance); err != nil {
+		return fmt.Errorf("plugin %q: %v", p.Ref, err)
+	}
+	return nil
+}
+
+// validate checks a File's content; Parse accepts and Encode emits exactly
+// the files that pass it. Entry uniqueness: one pin per (path, version) and
+// one per ref.
+func validate(f *File) error {
+	seenM := make(map[[2]string]struct{}, len(f.Modules))
+	for _, m := range f.Modules {
+		if err := checkModulePin(m); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvalid, err)
+		}
+		k := [2]string{m.Path, m.Version}
+		if _, dup := seenM[k]; dup {
+			return fmt.Errorf("%w: duplicate module pin %s@%s", ErrInvalid, m.Path, m.Version)
+		}
+		seenM[k] = struct{}{}
+	}
+	seenP := make(map[string]struct{}, len(f.Plugins))
+	for _, p := range f.Plugins {
+		if err := checkPluginPin(p); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvalid, err)
+		}
+		if _, dup := seenP[p.Ref]; dup {
+			return fmt.Errorf("%w: duplicate plugin pin %q", ErrInvalid, p.Ref)
+		}
+		seenP[p.Ref] = struct{}{}
+	}
+	return nil
+}
+
+func sortPins(f *File) {
+	slices.SortFunc(f.Modules, func(a, b ModulePin) int {
+		if c := strings.Compare(a.Path, b.Path); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Version, b.Version)
+	})
+	slices.SortFunc(f.Plugins, func(a, b PluginPin) int { return strings.Compare(a.Ref, b.Ref) })
+}
+
+// Encode renders the lockfile canonically (REQ-lock-canonical-emission,
+// REQ-lock-format): version 1, modules sorted by (path, version), plugins
+// sorted by ref, fixed key order, two-space indent, block style, LF.
+// Emission is a pure function of the recorded facts.
+func Encode(f *File) ([]byte, error) {
+	if err := validate(f); err != nil {
+		return nil, err
+	}
+	c := &File{Modules: slices.Clone(f.Modules), Plugins: slices.Clone(f.Plugins)}
+	sortPins(c)
+
+	var b strings.Builder
+	b.WriteString("version: 1\n")
+	b.WriteString("modules:\n")
+	for _, m := range c.Modules {
+		fmt.Fprintf(&b, "  - path: %s\n", m.Path)
+		fmt.Fprintf(&b, "    version: %s\n", m.Version)
+		if m.Digest != "" {
+			fmt.Fprintf(&b, "    digest: %s\n", m.Digest)
+		}
+		if m.Modfile != "" {
+			fmt.Fprintf(&b, "    modfile: %s\n", m.Modfile)
+		}
+		writeProvenance(&b, "    ", m.Provenance)
+	}
+	if len(c.Plugins) > 0 {
+		b.WriteString("plugins:\n")
+		for _, p := range c.Plugins {
+			fmt.Fprintf(&b, "  - ref: %s\n", p.Ref)
+			fmt.Fprintf(&b, "    digest: %s\n", p.Digest)
+			writeProvenance(&b, "    ", p.Provenance)
+		}
+	}
+	return []byte(b.String()), nil
+}
+
+func writeProvenance(b *strings.Builder, indent string, p Provenance) {
+	if p == (Provenance{}) {
+		fmt.Fprintf(b, "%sprovenance: none\n", indent)
+		return
+	}
+	fmt.Fprintf(b, "%sprovenance:\n", indent)
+	fmt.Fprintf(b, "%s  type: %s\n", indent, p.Type)
+	fmt.Fprintf(b, "%s  objectFormat: %s\n", indent, p.ObjectFormat)
+	fmt.Fprintf(b, "%s  object: %s\n", indent, p.Object)
+	fmt.Fprintf(b, "%s  identity:\n", indent)
+	fmt.Fprintf(b, "%s    san: %s\n", indent, p.SAN)
+	fmt.Fprintf(b, "%s    issuer: %s\n", indent, p.Issuer)
+}
+
+// rawScalar captures a scalar's exact spelling (one matching quote layer
+// stripped) instead of goccy's typed interpretation: a digits-only object
+// hash must not collapse leading zeros, and identity values are preserved
+// byte-faithfully.
+type rawScalar string
+
+func (r *rawScalar) UnmarshalYAML(b []byte) error {
+	s := strings.TrimSpace(string(b))
+	if len(s) >= 2 && (s[0] == '"' || s[0] == '\'') && s[len(s)-1] == s[0] {
+		inner := s[1 : len(s)-1]
+		// One layer of escape-free quoting is spelling, not content; with
+		// an escape inside, the stripped bytes would differ from the YAML
+		// value — reject rather than record a misread.
+		if strings.ContainsRune(inner, rune(s[0])) || (s[0] == '"' && strings.Contains(inner, `\`)) {
+			return fmt.Errorf("quoted scalar %s contains escapes; only escape-free quoting is accepted", s)
+		}
+		s = inner
+	}
+	*r = rawScalar(s)
+	return nil
+}
+
+type rawIdentity struct {
+	SAN    rawScalar `yaml:"san"`
+	Issuer rawScalar `yaml:"issuer"`
+}
+
+type rawProvenance struct {
+	Type         rawScalar   `yaml:"type"`
+	ObjectFormat rawScalar   `yaml:"objectFormat"`
+	Object       rawScalar   `yaml:"object"`
+	Identity     rawIdentity `yaml:"identity"`
+}
+
+// provNode captures the provenance value's raw YAML fragment
+// (BytesUnmarshaler), so scalars keep their exact spelling — no
+// map[string]any type-coercion detour: a digits-only object hash stays a
+// string, and identity values are preserved byte-faithfully.
+type provNode struct {
+	set bool
+	rec rawProvenance
+}
+
+func (p *provNode) UnmarshalYAML(b []byte) error {
+	p.set = true
+	if strings.TrimSpace(string(b)) == "none" {
+		// The zero record is the none record; no separate flag needed.
+		return nil
+	}
+	if err := yaml.UnmarshalWithOptions(b, &p.rec, yaml.Strict()); err != nil {
+		return fmt.Errorf("provenance is neither none nor a record: %v", err)
+	}
+	if p.rec == (rawProvenance{}) {
+		// The zero record must never masquerade as the spelled none: an
+		// empty or degenerate record mapping is a mangled lockfile, and
+		// reading it as unsigned would erase provenance silently.
+		return errors.New("provenance record is empty")
+	}
+	return nil
+}
+
+func (p *provNode) record() (Provenance, error) {
+	if !p.set {
+		return Provenance{}, errors.New("missing provenance")
+	}
+	return Provenance{
+		Type: string(p.rec.Type), ObjectFormat: string(p.rec.ObjectFormat), Object: string(p.rec.Object),
+		SAN: string(p.rec.Identity.SAN), Issuer: string(p.rec.Identity.Issuer),
+	}, nil
+}
+
+// Version and Ref are free-string facts and decode via rawScalar so no
+// spelling takes goccy's typed-coercion path (0x1f -> "31"); Path,
+// Digest, and Modfile stay plain strings because their grammars admit no
+// coercible spelling — any coerced output fails their validation.
+type rawModule struct {
+	Path       string    `yaml:"path"`
+	Version    rawScalar `yaml:"version"`
+	Digest     string    `yaml:"digest"`
+	Modfile    string    `yaml:"modfile"`
+	Provenance provNode  `yaml:"provenance"`
+}
+
+type rawPlugin struct {
+	Ref        rawScalar `yaml:"ref"`
+	Digest     string    `yaml:"digest"`
+	Provenance provNode  `yaml:"provenance"`
+}
+
+type rawFile struct {
+	Version int         `yaml:"version"`
+	Modules []rawModule `yaml:"modules"`
+	Plugins []rawPlugin `yaml:"plugins"`
+}
+
+// Parse decodes and validates lockfile bytes (REQ-lock-format,
+// REQ-lock-entry): exactly one YAML document, top-level keys version (the
+// integer 1), modules, and — only when plugin pins exist — plugins; no
+// merge keys anywhere.
+func Parse(data []byte) (*File, error) {
+	astFile, err := parser.ParseBytes(data, 0)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if len(astFile.Docs) != 1 {
+		return nil, fmt.Errorf("%w: expected exactly one YAML document, found %d", ErrInvalid, len(astFile.Docs))
+	}
+	body := astFile.Docs[0].Body
+	if body == nil {
+		return nil, fmt.Errorf("%w: missing version key", ErrInvalid)
+	}
+	mapping, ok := body.(*ast.MappingNode)
+	if !ok {
+		return nil, fmt.Errorf("%w: top level must be a mapping", ErrInvalid)
+	}
+	if err := yamlshape.Check(mapping); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	var raw rawFile
+	if err := yaml.NodeToValue(body, &raw, yaml.Strict()); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if raw.Version != 1 {
+		return nil, fmt.Errorf("%w: unsupported lockfile version %d", ErrInvalid, raw.Version)
+	}
+	f := &File{}
+	for _, m := range raw.Modules {
+		prov, err := m.Provenance.record()
+		if err != nil {
+			return nil, fmt.Errorf("%w: module %q: %v", ErrInvalid, m.Path, err)
+		}
+		f.Modules = append(f.Modules, ModulePin{
+			Path: m.Path, Version: string(m.Version), Digest: m.Digest, Modfile: m.Modfile, Provenance: prov,
+		})
+	}
+	for _, p := range raw.Plugins {
+		prov, err := p.Provenance.record()
+		if err != nil {
+			return nil, fmt.Errorf("%w: plugin %q: %v", ErrInvalid, p.Ref, err)
+		}
+		f.Plugins = append(f.Plugins, PluginPin{Ref: string(p.Ref), Digest: p.Digest, Provenance: prov})
+	}
+	if err := validate(f); err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+// Module returns the pin for (path, version).
+func (f *File) Module(path, version string) (ModulePin, bool) {
+	for _, m := range f.Modules {
+		if m.Path == path && m.Version == version {
+			return m, true
+		}
+	}
+	return ModulePin{}, false
+}
+
+// Plugin returns the pin for ref.
+func (f *File) Plugin(ref string) (PluginPin, bool) {
+	for _, p := range f.Plugins {
+		if p.Ref == ref {
+			return p, true
+		}
+	}
+	return PluginPin{}, false
+}
+
+// AddModule records a first-use pin (REQ-lock-first-use): it is an error if
+// any pin for (path, version) already exists — pins are only added or
+// explicitly updated, never silently rewritten.
+func (f *File) AddModule(pin ModulePin) error {
+	if err := checkModulePin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if _, exists := f.Module(pin.Path, pin.Version); exists {
+		return fmt.Errorf("%w: pin for %s@%s already exists", ErrPinMismatch, pin.Path, pin.Version)
+	}
+	f.Modules = append(f.Modules, pin)
+	return nil
+}
+
+// UpdateModule is the explicit update path (REQ-lock-no-silent-downgrade):
+// the only operation that may change an existing pin, including weakening
+// or altering its provenance record.
+func (f *File) UpdateModule(pin ModulePin) error {
+	if err := checkModulePin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	for i, m := range f.Modules {
+		if m.Path == pin.Path && m.Version == pin.Version {
+			f.Modules[i] = pin
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: no pin for %s@%s to update", ErrPinMismatch, pin.Path, pin.Version)
+}
+
+// VerifyModule enforces a fetched artifact against its pin
+// (REQ-lock-digest-enforcement). A pinned digest must equal computedDigest
+// — including when computedDigest is empty; the digest spans the module's
+// whole file set, so a stripped or altered in-archive module file always
+// surfaces here. A pinned module-file hash is enforced only when
+// computedModfile is non-empty: an empty computedModfile means the caller
+// did not compute one this call (a synthesized module file lives outside
+// the archive), not that the artifact was verified without it. A mismatch
+// names the module, version, expected, and computed values; no pin is
+// updated as a side effect. An empty pinned digest (archive never fetched)
+// is NOT enforced: recording the first-use digest is the caller's separate
+// responsibility via AddModule/UpdateModule — silent success here is
+// absence of a pin, not verification.
+func (f *File) VerifyModule(path, version, computedDigest, computedModfile string) error {
+	pin, ok := f.Module(path, version)
+	if !ok {
+		return fmt.Errorf("%w: no pin for %s@%s", ErrPinMismatch, path, version)
+	}
+	if pin.Digest != "" && pin.Digest != computedDigest {
+		return fmt.Errorf("%w: %s@%s digest: expected %s, computed %s", ErrPinMismatch, path, version, pin.Digest, computedDigest)
+	}
+	if pin.Modfile != "" && computedModfile != "" && pin.Modfile != computedModfile {
+		return fmt.Errorf("%w: %s@%s modfile: expected %s, computed %s", ErrPinMismatch, path, version, pin.Modfile, computedModfile)
+	}
+	return nil
+}
+
+// CheckProvenanceTransition guards non-explicit re-resolution
+// (REQ-lock-no-silent-downgrade): a pin whose record names verified
+// evidence must not transition to none, a different type, or a different
+// identity outside UpdateModule.
+func CheckProvenanceTransition(old, new Provenance) error {
+	if old == (Provenance{}) {
+		return nil
+	}
+	if new == (Provenance{}) {
+		return fmt.Errorf("%w: verified record would become none", ErrProvenanceDowngrade)
+	}
+	if old.Type != new.Type {
+		return fmt.Errorf("%w: evidence type %q would become %q", ErrProvenanceDowngrade, old.Type, new.Type)
+	}
+	if old.SAN != new.SAN || old.Issuer != new.Issuer {
+		return fmt.Errorf("%w: identity %q/%q would become %q/%q", ErrProvenanceDowngrade, old.SAN, old.Issuer, new.SAN, new.Issuer)
+	}
+	if old.Object != new.Object || old.ObjectFormat != new.ObjectFormat {
+		// A different signed object for the same (path, version) means the
+		// origin tag moved: a rewrite, never a silent refresh.
+		return fmt.Errorf("%w: signed object %s (%s) would become %s (%s)", ErrProvenanceDowngrade, old.Object, old.ObjectFormat, new.Object, new.ObjectFormat)
+	}
+	return nil
+}
+
+// CheckModfileConsistency enforces REQ-lock-modfile-consistency: when both
+// a standalone module file and the module archive have been fetched for the
+// same pinned version, the standalone bytes must hash to the pinned
+// module-file hash and equal the archive's module file bytes.
+func CheckModfileConsistency(pinModfile string, standalone, archiveCopy []byte) error {
+	sum := sha256.Sum256(standalone)
+	got := "sha256:" + hex.EncodeToString(sum[:])
+	if pinModfile != "" && got != pinModfile {
+		return fmt.Errorf("%w: standalone module file hashes to %s, pin says %s", ErrPinMismatch, got, pinModfile)
+	}
+	if archiveCopy != nil && !bytes.Equal(standalone, archiveCopy) {
+		return fmt.Errorf("%w: standalone module file differs from the archive's copy", ErrPinMismatch)
+	}
+	return nil
+}

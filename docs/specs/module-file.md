@@ -18,6 +18,14 @@ top-level keys `module`, a string module path, and — only when the module
 has dependencies — `deps`, a map from module path to version string. No
 other keys exist.
 
+**REQ-modfile-acceptance** (wire): Parsing MUST accept any YAML spelling
+that yields the declared facts unambiguously and reject everything else:
+key order, quoting, and line-ending variants are accepted and normalized
+by canonical re-emission; merge keys, anchors, aliases, tags, and
+non-string mapping keys are rejected anywhere in the document — their
+expansion differs across YAML implementations, and a file in the
+archive's contract role reads identically everywhere or not at all.
+
 **REQ-modfile-identity** (invariant): The `module` value MUST equal the
 module path under which the file's module is required and fetched; a
 fetched module whose module file declares a different path fails

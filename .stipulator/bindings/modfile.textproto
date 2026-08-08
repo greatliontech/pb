@@ -108,3 +108,30 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "bd218c4e8668204d2e376d4d4624ad105d8027fb5fc62046f85a693097512c1c"
 }
+
+bindings {
+  requirement_id: "REQ-modfile-acceptance"
+  content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "571ca2e2d44a2adf8f6fd39e18adb92c60623034dc8fcae7b70c72cc49fc20a7"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-acceptance"
+  content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestForbiddenYAMLConstructs"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c5a55154a0910ffdb444556d222b1f125a9aba8f7ba6791318e34a5ce9d0c618"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-acceptance"
+  content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfile.TestAcceptanceVariants"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "71487ffcf954f67933340d2218e8bf52bdfbaab42bcb6ddde782c0f3d3cdeb18"
+}

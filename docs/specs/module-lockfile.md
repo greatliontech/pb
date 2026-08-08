@@ -50,6 +50,24 @@ digest), `digest` (the manifest-list digest the reference resolved to),
 and `provenance` (a provenance record for the image signature, `none` when
 unsigned). Plugin entries are sorted by `ref` in raw-byte order.
 
+**REQ-lock-scalar-values** (wire): Every free-string fact — `version`,
+`san`, `issuer`, and `ref` — MUST be printable non-space ASCII, start
+with an alphanumeric character, not end with `:`, and not be a YAML null
+spelling (`null`, `Null`, `NULL`, `~`). This bound is exactly what lets
+canonical emission write every value as an unquoted plain scalar that
+re-parses to the same bytes; values outside it are rejected on parse and
+on emission alike. Paths, digests, hashes, and object fields are bounded
+by their own grammars.
+
+**REQ-lock-acceptance** (wire): Parsing MUST accept key-order, comment,
+line-ending, and quoting variants that yield the recorded facts
+unambiguously — normalized by canonical re-emission — and reject merge
+keys, anchors, aliases, tags, non-string mapping keys, empty or
+degenerate provenance record mappings, and, for the free-string facts of
+REQ-lock-scalar-values, YAML null spellings and quoted spellings
+containing escapes. A parse-and-re-emit cycle never alters a recorded
+fact.
+
 **REQ-lock-canonical-emission** (invariant): Lockfile emission MUST be a
 pure function of the recorded facts: entries sorted by path then version
 (raw-byte order), keys in the specified order, two-space indentation,
@@ -66,7 +84,10 @@ over the pinned module files; it records only pins.
 recomputed digest or module-file hash differs from its pin MUST fail the
 operation with an error naming the module path, version, expected hash,
 and computed hash. No operation updates a pin as a side effect of a
-mismatch.
+mismatch. Module-file-hash enforcement applies when the verifying
+operation computed a module-file hash from fetched content; an operation
+that verified the digest has already verified the declared module file's
+bytes, which the file set contains (`module-archive.md`).
 
 **REQ-lock-first-use** (behavior): Resolving a (module path, version) with
 no existing pin MUST compute its digest and module-file hash from fetched
@@ -81,6 +102,9 @@ operation.
 
 **REQ-lock-no-silent-downgrade** (invariant): A pin whose provenance
 record names verified evidence MUST NOT transition to `none`, to a
-different evidence type, or to a different identity except by an explicit
-user-invoked update of that pin; re-resolution that can no longer verify
-previously recorded provenance fails rather than rewriting the record.
+different evidence type, to a different identity, or to a different
+signed object except by an explicit user-invoked update of that pin;
+re-resolution that can no longer verify previously recorded provenance
+fails rather than rewriting the record. A changed signed object for the
+same (module path, version) means the origin tag moved — a rewrite, not
+a refresh: new releases are new versions with their own pins.

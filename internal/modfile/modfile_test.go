@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
 	"pgregory.net/rapid"
 
 	"github.com/greatliontech/pb/internal/modpath"
@@ -235,4 +237,61 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("emission changed content")
 		}
 	})
+}
+
+// An anchored entry can smuggle a merge key past checks that inspect only
+// mapping keys: anchors, aliases, and tags are rejected anywhere in the
+// module file.
+func TestForbiddenYAMLConstructs(t *testing.T) {
+	cases := []struct{ name, in, msg string }{
+		{"anchored deps hiding merge", "module: a.b/x\ndeps: &d\n  <<: {a.b/c: v1.0.0}\n", "anchors"},
+		{"anchored module value", "module: &m a.b/x\n", "anchors"},
+		{"tagged module", "module: !!str a.b/x\n", "tags"},
+		{"null key", "module: a.b/x\nnull: x\n", "mapping keys are strings"},
+		{"integer key in deps", "module: a.b/x\ndeps:\n  7: v1.0.0\n", "mapping keys are strings"},
+	}
+	for _, tc := range cases {
+		_, err := Parse([]byte(tc.in))
+		if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
+			t.Errorf("%s: err = %v, want %q rejection", tc.name, err, tc.msg)
+		}
+	}
+}
+
+// The shape check's non-string-key fallback fails closed even though
+// yamlshape rejects such keys first in the Parse pipeline: called
+// directly with a non-string key, it must reject, not fall through.
+func TestMappingShapeNonStringKeyFallback(t *testing.T) {
+	f, err := parser.ParseBytes([]byte("7: x\n"), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mapping, ok := f.Docs[0].Body.(*ast.MappingNode)
+	if !ok {
+		t.Fatal("fixture is not a mapping")
+	}
+	if err := checkMappingShape(mapping); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "unknown key") {
+		t.Fatalf("non-string key: err = %v, want unknown-key rejection", err)
+	}
+}
+
+// Acceptance variants the wire contract admits: key order, CRLF, and
+// quoting yield the same declared facts, normalized by re-emission.
+func TestAcceptanceVariants(t *testing.T) {
+	canonical := "module: a.b/x\ndeps:\n  a.b/c: v1.0.0\n"
+	for name, in := range map[string]string{
+		"key order": "deps:\n  a.b/c: v1.0.0\nmodule: a.b/x\n",
+		"crlf":      strings.ReplaceAll(canonical, "\n", "\r\n"),
+		"quoting":   "\"module\": \"a.b/x\"\ndeps:\n  'a.b/c': v1.0.0\n",
+	} {
+		f, err := Parse([]byte(in))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		out, err := Encode(f)
+		if err != nil || string(out) != canonical {
+			t.Errorf("%s: re-emission not canonical (%v):\n%s", name, err, out)
+		}
+	}
 }
