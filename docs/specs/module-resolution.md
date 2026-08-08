@@ -72,12 +72,21 @@ version; a declared module rooted at a subtree uses tags prefixed with
 the subtree path (`<subtree>/vX.Y.Z`).
 
 **REQ-resolve-synthesized-tags** (behavior): A synthesized module MUST
-take its tagged releases from repository-level tags, falling back to
-pseudo-versions when no such tag exists.
+take its tagged releases from repository-level tags, falling back to the
+pseudo-version of the origin's default-branch head commit when no such
+tag exists.
 
 **REQ-resolve-pseudo-commit** (invariant): A pseudo-version MUST resolve
 only to the commit whose hash and commit time it embeds; a pseudo-version
 naming a commit absent from the origin fails resolution.
+
+**REQ-resolve-pseudo-base** (invariant): A pseudo-version's base MUST
+derive from the module's own release-tag history at the embedded commit
+— its tag namespace per REQ-resolve-release-tags, repository-level for a
+synthesized module — taking the highest of those release tags on an
+ancestor of that commit, or the zero base when none exists, so a crafted
+pseudo-version cannot outrank the module's real releases in selection; a
+base-inconsistent pseudo-version fails resolution.
 
 ## Synthesis
 

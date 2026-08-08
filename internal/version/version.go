@@ -202,6 +202,12 @@ func Max(a, b Version) Version {
 	return b
 }
 
+// PseudoTimeLayout is the wire layout of a pseudo-version's embedded
+// commit timestamp: the UTC commit time rendered as yyyymmddhhmmss. The
+// encoding has one home; verification against a commit renders with the
+// same layout.
+const PseudoTimeLayout = "20060102150405"
+
 // Pseudo reports whether v is a pseudo-version and, when it is, returns
 // the embedded commit timestamp (UTC yyyymmddhhmmss) and 12-hex-digit
 // commit hash prefix. The three shapes (module-proxy.md pseudo-version
@@ -209,13 +215,16 @@ func Max(a, b Version) Version {
 // `vX.Y.(Z+1)-0.<ts>-<hash>` after release `vX.Y.Z`, and
 // `vX.Y.Z-<pre>.0.<ts>-<hash>` after prerelease `vX.Y.Z-<pre>`.
 func (v Version) Pseudo() (timestamp, hash string, ok bool) {
+	// The suffix is the timestamp, a '-', and the 12 hash digits; widths
+	// derive from the layout so the parser cannot drift from the encoder.
+	const tsLen = len(PseudoTimeLayout)
 	ids := strings.Split(v.prerelease, ".")
 	last := ids[len(ids)-1]
-	if len(last) != 27 || last[14] != '-' {
+	if len(last) != tsLen+1+12 || last[tsLen] != '-' {
 		return "", "", false
 	}
-	ts, h := last[:14], last[15:]
-	if !isNumericID(ts) || !isLowerHex(h) {
+	ts, h := last[:tsLen], last[tsLen+1:]
+	if !isNumericID(ts) || !IsLowerHex(h) {
 		return "", "", false
 	}
 	switch {
@@ -234,7 +243,11 @@ func (v Version) Pseudo() (timestamp, hash string, ok bool) {
 	return ts, h, true
 }
 
-func isLowerHex(s string) bool {
+// IsLowerHex reports whether s consists solely of lowercase hexadecimal
+// digits — the character class of git commit hashes and the hash
+// prefixes pseudo-versions embed. The class has one home; length policy
+// stays with each caller.
+func IsLowerHex(s string) bool {
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
@@ -261,13 +274,13 @@ func PseudoVersion(precedent *Version, commitTime time.Time, hash string) (Versi
 		return Version{}, fmt.Errorf("%w: commit hash %q is shorter than 12 digits", ErrInvalid, hash)
 	}
 	h := hash[:12]
-	if !isLowerHex(h) {
+	if !IsLowerHex(h) {
 		return Version{}, fmt.Errorf("%w: commit hash %q is not lowercase hex", ErrInvalid, hash)
 	}
 	if precedent != nil && precedent.IsPseudo() {
 		return Version{}, fmt.Errorf("%w: precedent %s is a pseudo-version, not a tagged release", ErrInvalid, precedent)
 	}
-	suffix := commitTime.UTC().Format("20060102150405") + "-" + h
+	suffix := commitTime.UTC().Format(PseudoTimeLayout) + "-" + h
 	var s string
 	switch {
 	case precedent == nil:

@@ -24,9 +24,10 @@ case-insensitive storage.
 commit: `v0.0.0-<timestamp>-<hash>` when no tagged release precedes the
 commit, `vX.Y.(Z+1)-0.<timestamp>-<hash>` when release `vX.Y.Z` precedes
 it, and `vX.Y.Z-<pre>.0.<timestamp>-<hash>` when prerelease `vX.Y.Z-<pre>`
-precedes it — where `<timestamp>` is the commit time as UTC
-`yyyymmddhhmmss` and `<hash>` is the first 12 hex digits of the commit
-hash.
+precedes it — "precedes" meaning the release is tagged on an ancestor of
+the commit (module-resolution.md REQ-resolve-pseudo-base), `<timestamp>`
+is the commit time as UTC `yyyymmddhhmmss`, and `<hash>` is the first 12
+hex digits of the commit hash.
 
 **verification pack** (term): The provenance evidence for a module
 version under the `git-signed-tag` evidence type: the raw signed tag

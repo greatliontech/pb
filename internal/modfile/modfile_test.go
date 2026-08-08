@@ -295,3 +295,72 @@ func TestAcceptanceVariants(t *testing.T) {
 		}
 	}
 }
+
+// A root module file declares the module; its absence synthesizes one —
+// identity is the required path, no dependencies. Deeper module files
+// never decide.
+func TestFromFileSet(t *testing.T) {
+	declared := []byte("module: example.com/protos\ndeps:\n  example.com/dep: v1.2.0\n")
+	cases := map[string]struct {
+		required string
+		files    map[string][]byte
+		want     *File
+		wantErr  error
+	}{
+		"declared": {
+			required: "example.com/protos",
+			files:    map[string][]byte{ModuleFileName: declared, "a/b.proto": nil},
+			want:     &File{Module: "example.com/protos", Deps: map[string]string{"example.com/dep": "v1.2.0"}},
+		},
+		"synthesized": {
+			required: "example.com/protos",
+			files:    map[string][]byte{"a/b.proto": nil, "c.proto": nil},
+			want:     &File{Module: "example.com/protos"},
+		},
+		"synthesized empty set": {
+			required: "example.com/protos",
+			files:    nil,
+			want:     &File{Module: "example.com/protos"},
+		},
+		"nested module file does not decide": {
+			required: "example.com/protos",
+			files:    map[string][]byte{"sub/" + ModuleFileName: declared},
+			want:     &File{Module: "example.com/protos"},
+		},
+		"identity mismatch": {
+			required: "example.com/other",
+			files:    map[string][]byte{ModuleFileName: declared},
+			wantErr:  ErrIdentityMismatch,
+		},
+		"invalid module file": {
+			required: "example.com/protos",
+			files:    map[string][]byte{ModuleFileName: []byte("module: [broken\n")},
+			wantErr:  ErrInvalid,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got, err := FromFileSet(tc.required, tc.files)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("err = %v, want %v", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Module != tc.want.Module || fmt.Sprint(got.Deps) != fmt.Sprint(tc.want.Deps) {
+				t.Fatalf("got %+v, want %+v", got, tc.want)
+			}
+		})
+	}
+}
+
+// The required path is validated even on the synthesized branch: a
+// synthesized module cannot exist under an invalid identity.
+func TestFromFileSetRejectsInvalidRequired(t *testing.T) {
+	if _, err := FromFileSet("nodot/x", nil); err == nil {
+		t.Fatal("invalid required path accepted")
+	}
+}

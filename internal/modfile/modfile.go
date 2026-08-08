@@ -32,11 +32,39 @@ var ErrInvalid = errors.New("invalid module file")
 // (REQ-modfile-identity).
 var ErrIdentityMismatch = errors.New("module identity mismatch")
 
+// ModuleFileName is the module file's name at the module root.
+const ModuleFileName = "pb.yaml"
+
 // File is a parsed module file: the module path and the declared
 // dependencies (module path -> minimum required version).
 type File struct {
 	Module string
 	Deps   map[string]string
+}
+
+// FromFileSet derives the module facts of a module root's file set, keyed
+// by root-relative path. A module file at the root declares the module —
+// parsed and identity-checked against the path the module is required
+// under — and its absence synthesizes one (REQ-resolve-synthesis):
+// identity is the required path and no dependencies are declared. Only
+// the root module file decides; a module file deeper in the tree belongs
+// to a nested module, whose exclusion is the archive contract's concern.
+func FromFileSet(required string, files map[string][]byte) (*File, error) {
+	if err := modpath.Validate(required); err != nil {
+		return nil, err
+	}
+	data, ok := files[ModuleFileName]
+	if !ok {
+		return &File{Module: required}, nil
+	}
+	f, err := Parse(data)
+	if err != nil {
+		return nil, err
+	}
+	if err := CheckIdentity(f, required); err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 type rawFile struct {
