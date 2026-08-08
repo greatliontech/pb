@@ -18,14 +18,14 @@ import (
 
 func TestSplitVCSGolden(t *testing.T) {
 	cases := map[string]*Origin{
-		"example.com/repo.git":              {Repo: "https://example.com/repo.git", Subtree: ""},
-		"example.com/repo.git/sub/tree":     {Repo: "https://example.com/repo.git", Subtree: "sub/tree"},
-		"example.com/a/b.git/protos/v1":     {Repo: "https://example.com/a/b.git", Subtree: "protos/v1"},
-		"example.com/first.git/second.git":  {Repo: "https://example.com/first.git", Subtree: "second.git"},
-		"example.com/repo":                  nil,
-		"example.com/repo/sub":              nil,
-		"example.com/git/sub":               nil, // segment "git" does not end in ".git"
-		"example.com/.git/sub":              nil, // bare ".git" is not a repository segment
+		"example.com/repo.git":             {Repo: "https://example.com/repo.git", Subtree: ""},
+		"example.com/repo.git/sub/tree":    {Repo: "https://example.com/repo.git", Subtree: "sub/tree"},
+		"example.com/a/b.git/protos/v1":    {Repo: "https://example.com/a/b.git", Subtree: "protos/v1"},
+		"example.com/first.git/second.git": {Repo: "https://example.com/first.git", Subtree: "second.git"},
+		"example.com/repo":                 nil,
+		"example.com/repo/sub":             nil,
+		"example.com/git/sub":              nil, // segment "git" does not end in ".git"
+		"example.com/.git/sub":             nil, // bare ".git" is not a repository segment
 	}
 	for path, want := range cases {
 		got, ok := SplitVCS(path)
@@ -479,7 +479,7 @@ func TestResolveVanityTransportErrorFallsThrough(t *testing.T) {
 
 func TestResolveProbingOrderAndFirstAnswer(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{
-		"https://example.com/a/b": nil,
+		"https://example.com/a/b":   nil,
 		"https://example.com/a/b/c": nil, // longer prefix also answers; first wins
 	}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b/c/d")

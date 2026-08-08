@@ -396,3 +396,66 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "7b966b3793385d05cf24f51277eae4c916ead209c69cfef61b1646d482000d9e"
 }
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.Check"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4d53478624abd702db3c58fd387b31bcaceead6bb232214342a68455d936317a"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.WellKnown"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "bb2f4f70b443c5f2a3648f2e47acc35eba3ae8d35b48a0b108ce7c7909c6ec58"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4437f5c772e04d4b3375dbe13d2e3bd2e7a5f0905b9708aa61cd2a28a3ca7e6a"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e89b038acd7847ba24b2cdc1d61428eb13af259165212040cb9a228915944d9b"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6cde445a134babb6a3afda4769279809ef8fe1905865d0d68faa2d0563112a4c"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.TestCheckCompletenessProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "15ed2ce18541dee398398d8d81d9c79f2b10a07f256da76d63a41d8745120450"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "33b2b395d6dc093d222aeefda8d275ca7f7a43aa64ae0ef7e23c388e4648a660"
+}

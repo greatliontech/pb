@@ -3,6 +3,7 @@ module github.com/greatliontech/pb
 go 1.26.5
 
 require (
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/go-git/go-billy/v6 v6.0.0-alpha.2
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/goccy/go-yaml v1.19.2
@@ -26,4 +27,5 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 )

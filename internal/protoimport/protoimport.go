@@ -1,0 +1,159 @@
+// Package protoimport checks protobuf import satisfaction across a build
+// list (REQ-resolve-unsatisfied-imports): every import of every module's
+// files must be a well-known import — the toolchain's embedded
+// google/protobuf sources — or name a file some build-list module
+// provides; anything else fails, naming the importing module, the
+// importing file, and the unsatisfied import path.
+//
+// The well-known set is probed through the same embedded resolver the
+// compiler will read from (wellknownimports), so membership can never
+// drift from what compilation actually serves. The set is pinned by the
+// protocompile version alone: the descriptor-registry alternative
+// (protocompile.WithStandardImports) was rejected because its content
+// follows the linked protobuf-go runtime version and drops the extension
+// declarations only source retains.
+package protoimport
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"slices"
+	"strings"
+
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/wellknownimports"
+)
+
+// errNotEmbedded is the base resolver's constant answer, so the probe
+// falls through to the embedded well-known sources alone.
+var errNotEmbedded = errors.New("not an embedded well-known import")
+
+// wellKnownProbe builds the membership probe: constructed per call —
+// cheap wrapper allocations, no I/O — so the package holds no mutable
+// state.
+func wellKnownProbe() protocompile.Resolver {
+	return wellknownimports.WithStandardImports(
+		protocompile.ResolverFunc(func(string) (protocompile.SearchResult, error) {
+			return protocompile.SearchResult{}, errNotEmbedded
+		}),
+	)
+}
+
+// WellKnown reports whether path names a well-known import: one of the
+// toolchain's embedded google/protobuf source files. The set is the
+// protobuf installation's — google/protobuf/go_features.proto is not
+// shipped with it and resolves through modules like any other import.
+func WellKnown(path string) bool {
+	res, err := wellKnownProbe().FindFileByPath(path)
+	if err != nil {
+		return false
+	}
+	// embed.FS.Open succeeds on directories, and the resolver returns the
+	// handle unread — but a well-known import is a readable source file,
+	// so membership requires the first byte (or a clean EOF) to prove it.
+	var b [1]byte
+	_, rerr := res.Source.Read(b[:])
+	if c, ok := res.Source.(io.Closer); ok {
+		c.Close()
+	}
+	return rerr == nil || rerr == io.EOF
+}
+
+// Imports returns the import paths a protobuf source file declares —
+// plain, public, and weak alike, since each must resolve to compile.
+// filename labels parse diagnostics only.
+func Imports(filename string, src []byte) ([]string, error) {
+	// A nil reporter fails fast: Parse's returned error is the first
+	// positioned syntax error itself, so no separate handler.Error()
+	// consultation exists to diverge from it.
+	f, err := parser.Parse(filename, bytes.NewReader(src), reporter.NewHandler(nil))
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", filename, err)
+	}
+	var out []string
+	for _, decl := range f.Decls {
+		if imp, ok := decl.(*ast.ImportNode); ok {
+			out = append(out, imp.Name.AsString())
+		}
+	}
+	return out, nil
+}
+
+// Module is one build-list member's import-relevant view: its module
+// path and its file set's include-root-relative protobuf files, each
+// with the imports it declares.
+type Module struct {
+	Path  string
+	Files map[string][]string
+}
+
+// Unsatisfied is one import no module in the build list satisfies.
+type Unsatisfied struct {
+	Module string
+	File   string
+	Import string
+}
+
+// UnsatisfiedError carries every unsatisfied import of a build list, in
+// deterministic order.
+type UnsatisfiedError struct {
+	Unsatisfied []Unsatisfied
+}
+
+func (e *UnsatisfiedError) Error() string {
+	var b strings.Builder
+	for i, u := range e.Unsatisfied {
+		if i > 0 {
+			b.WriteString("; ")
+		}
+		fmt.Fprintf(&b, "module %s: file %s imports %q, which no module in the build list satisfies",
+			u.Module, u.File, u.Import)
+	}
+	return b.String()
+}
+
+// Check verifies every import across the build list — the resolution
+// root included, so a module's own files satisfy its imports. An import
+// is satisfied by the well-known set (checked first: well-known paths
+// are the toolchain's, never looked up in modules) or by any module
+// providing the file; the failure reports every unsatisfied import
+// sorted by module, file, then import, independent of input order —
+// REQ-resolve-unsatisfied-imports pins the report as exhaustive and
+// deterministically ordered.
+func Check(modules []Module) error {
+	provided := make(map[string]bool)
+	for _, m := range modules {
+		for f := range m.Files {
+			provided[f] = true
+		}
+	}
+	var missing []Unsatisfied
+	for _, m := range modules {
+		for f, imports := range m.Files {
+			for _, imp := range imports {
+				if WellKnown(imp) || provided[imp] {
+					continue
+				}
+				missing = append(missing, Unsatisfied{Module: m.Path, File: f, Import: imp})
+			}
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	slices.SortFunc(missing, func(a, b Unsatisfied) int {
+		if c := strings.Compare(a.Module, b.Module); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.File, b.File); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Import, b.Import)
+	})
+	return &UnsatisfiedError{Unsatisfied: slices.Compact(missing)}
+}

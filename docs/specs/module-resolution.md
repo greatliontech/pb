@@ -95,10 +95,20 @@ MUST be consumable as a synthesized module: its file set is the subtree's
 (per the archive contract), its include root is the subtree root, and it
 declares no dependencies.
 
-**REQ-resolve-unsatisfied-imports** (behavior): A protobuf import that no
-module in the build list satisfies MUST fail the operation with an error
-naming the importing module, the importing file, and the unsatisfied
-import path.
+**well-known imports** (term): The protobuf installation's
+`google/protobuf` source files, embedded in the toolchain at a version
+pinned by the toolchain alone. Imports of these paths are satisfied by
+the toolchain and never looked up in modules, so no module can shadow
+them. `google/protobuf/go_features.proto` is not among them — protobuf
+installations do not ship it — and resolves through modules like any
+other import.
+
+**REQ-resolve-unsatisfied-imports** (behavior): A protobuf import that
+neither the well-known imports nor any module in the build list
+satisfies MUST fail the operation with an error naming, for every such
+import, the importing module, the importing file, and the unsatisfied
+import path — the report is exhaustive and deterministically ordered, so
+what a user sees never depends on traversal order.
 
 ## Selection
 
