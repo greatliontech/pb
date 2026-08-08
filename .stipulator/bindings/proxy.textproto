@@ -225,3 +225,102 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "c6a408c0b8ebdf1babf5720c50a8facc69f841e3d6a5edc112e51325711442e8"
 }
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.Fallthrough"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ff8cbbc2e53a51583dc036c9fc2e663b2757dc55707b71bab282914b323d9b05"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughOrderAndNotHere"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "eef5b3b926009c435b49f093f73df91d3a977361a8adb09bee96c5be2c32d9c9"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughAbortsOnOtherFailure"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7d64b60120bf3fdb646a0f9718519b170b35468147b935d7561da55f13793991"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughOff"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a8345dc7321e8d7c6fb95252439b11475204f8370b2bd80305a51eb08108ae5f"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughConsultationPrefixProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c0f07768fa03453f6b3fa89984de0c4610a9516def9ed7aba31022cc597712e5"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-not-found"
+  content_hash: "a465007ecb5c158082dbd4e6968e807696158e245fcf7d309a84e4a8a6d17c89"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.Get"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5886f0ebdf63750eba4c4dcf5840b245607a197799f0f80399b286de5bbda2e7"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-not-found"
+  content_hash: "a465007ecb5c158082dbd4e6968e807696158e245fcf7d309a84e4a8a6d17c89"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestGetClassification"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2d36a416e9cafdc7ac8cc74ae8c950841e29be425eaa72266adee02006ec788b"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestGetRedirects"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6841f5c2bcd653d649356088a0afbf64158179590a82415e003c7c77d20ebc90"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-fallthrough"
+  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestGetRedirectCap"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d726a75e636a9379c4a792329e3433f3d1ad93c88047ea4f9254a4d39856c66a"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.Get"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6c3e1195db81acb67482e6dc292e63bcfd423efb183d469136e44e203a69da46"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestGetResponseLimit"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "67d90fe3b3e5f2702ecb3ae117acce3c6ea82bb06bd9c31de294f55962bb2965"
+}

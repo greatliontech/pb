@@ -13,7 +13,7 @@ document under a base URL.
 
 **source list** (term): The ordered list of fetch sources a client
 consults: proxies by base URL, the literal `direct` (fetch from origin),
-or the literal `off` (fail).
+or the literal `off` (fail when reached, consulting nothing further).
 
 **escaped path** (term): A module path or version string encoded for use
 in a URL: every uppercase ASCII letter is replaced by `!` followed by its
@@ -97,7 +97,10 @@ envelope whose `formatVersion` it does not support.
 list order, moving to the next source only on 404 or 410 — any other
 failure (transport error, 5xx, malformed response) aborts the fetch
 without consulting later sources. `direct` fetches from the origin; `off`
-fails immediately.
+fails when reached. A proxy's redirects are followed only to HTTPS URLs
+and boundedly — proxies legitimately redirect artifacts to blob storage
+— with the status classification applying to the final response; a
+cleartext or excessive redirect aborts like any transport failure.
 
 **REQ-proxy-config** (behavior): The source list MUST come from `PBPROXY`
 (comma-separated entries, default `direct`), with `PBNOPROXY`
@@ -118,7 +121,11 @@ matched per `module-lockfile.md`), and provenance evidence is verified
 against the origin identity before use. The acceptance policy — which
 identities are required, whether absence is tolerated — is configuration,
 outside this document's scope; the protocol's obligation is that every
-byte a proxy serves is verifiable without trusting the proxy.
+byte a proxy serves is verifiable without trusting the proxy. The no-
+trust posture extends to resources: a client reads no more of a response
+than its artifact-size bound — a response beyond `REQ-archive-size-limit`
+can never verify, so reading it would trust the proxy with unbounded
+memory.
 
 **REQ-proxy-direct-equivalence** (behavior): The `direct` source MUST
 yield artifacts indistinguishable from a well-behaved proxy's: the same
