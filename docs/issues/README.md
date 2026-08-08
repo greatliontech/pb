@@ -7,6 +7,6 @@ doc is deleted (git holds history).
 | slug | summary | Lands |
 |------|---------|-------|
 | [archive-extraction-evidence-machine-local](archive-extraction-evidence-machine-local.md) | ExtractZip/writeMember oracle scratch churn keeps mutation evidence machine-local; 37 unstable-oracle survivors unattributable | gomutant scratch-namespace declaration surface, or user decision on test redesign |
-| [pseudo-origin-lookup](pseudo-origin-lookup.md) | Absent-commit failure (REQ-resolve-pseudo-commit), base consistency (REQ-resolve-pseudo-base), and default-branch-head resolution (REQ-resolve-synthesized-tags) need commit-graph access at the fetch layer | 9 |
+| [direct-repo-resolution-caching](direct-repo-resolution-caching.md) | resolvePseudo recomputes refs, commit scan, and ancestry per call against an immutable fetched repo; memoize on Repo once the driver's access pattern exists | 13 |
 | [synthesis-driver-wiring](synthesis-driver-wiring.md) | REQ-resolve-synthesis file-set/include-root clauses enforced when the driver materializes synthesized modules | 13 |
 | [proxy-client-verification-wiring](proxy-client-verification-wiring.md) | REQ-proxy-client-verification enforced where the driver verifies Unverified bytes (digests, pins, provenance) | 13 |

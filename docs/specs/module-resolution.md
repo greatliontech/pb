@@ -79,7 +79,10 @@ tag exists.
 
 **REQ-resolve-pseudo-commit** (invariant): A pseudo-version MUST resolve
 only to the commit whose hash and commit time it embeds; a pseudo-version
-naming a commit absent from the origin fails resolution.
+naming a commit absent from the origin fails resolution. An embedded
+hash prefix carried by more than one commit at the origin identifies
+none of them: resolution fails rather than choosing, so what a version
+resolves to never depends on enumeration order.
 
 **REQ-resolve-pseudo-base** (invariant): A pseudo-version's base MUST
 derive from the module's own release-tag history at the embedded commit
@@ -87,7 +90,10 @@ derive from the module's own release-tag history at the embedded commit
 synthesized module — taking the highest of those release tags on an
 ancestor of that commit, or the zero base when none exists, so a crafted
 pseudo-version cannot outrank the module's real releases in selection; a
-base-inconsistent pseudo-version fails resolution.
+base-inconsistent pseudo-version fails resolution. Ancestry is
+reachability: the commit itself counts among its ancestors, so a tag on
+the embedded commit is a valid base. A pseudo-version-shaped tag is not
+a release tag and never seeds a base.
 
 ## Synthesis
 
