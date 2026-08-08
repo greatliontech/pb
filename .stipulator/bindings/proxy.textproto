@@ -1,0 +1,155 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ListURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "3b066f5508273e1757db9c18c6a9deba6e6c31a717c9a1211e2b8531a9a88610"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.LatestURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "d16ced1b9c0907c35ad2827b8384861163b7f61f509478769d08f88e5b8b5a18"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.InfoURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "00bd43c053c5f269ac9b44e9f045f693eebe4ca7296cd1fa9b50d05610d12847"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ModURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "bad2151fc7e57680a41ff1717ed462acd6e398b702d649334c0fd286487b2e7a"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ZipURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "55ed19fb0e20cedbd6c3634f8f696c228f7520981616464a5f5cfb2c55cb7052"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ProvURL"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "0daaef5291f21d284c130b4f02696c4f93bf8c0037e84dc3e1760e2ea100e906"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseList"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a5b7080963abea75004401f9e01283e350856d1b859af81aa02a0356b81b937a"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseInfo"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b174135c00babe6efe1e8693414cb1beeaa4408ae85a5ca5a16fc4f6601a3179"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestEndpointURLs"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4abbe6ccf0318524ff32c68d7d4e38ae140099c7fb4e155b6999b30388c47843"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestParseListGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "04e623c418221e7c93dc326742cf1f88177ea03810cf31b840e3b396c6dc9dad"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestParseInfoGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "59016e24739c4a656236b9c17c808f54f7b6a7b7db5013103224c4ed314c191b"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-endpoints"
+  content_hash: "5f6f9e684344fe124fd4d1cdcee99c9478c24533deb89c831b0ba60e59216771"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestEscapeProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0032ef1da400270b28a35f26e06b57ecd9361090a663b5f3555afbddf1bd7f31"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-prov-envelope"
+  content_hash: "27decd738f1ae1f181c28eb71c10ee9fd89d3e0699840e68560e92d0068a66c8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseEnvelope"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2deb995d608e58a97466566e18d42add974c3c3ac4f7f2c63cab3bd7c9fdc40c"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-prov-envelope"
+  content_hash: "27decd738f1ae1f181c28eb71c10ee9fd89d3e0699840e68560e92d0068a66c8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestParseEnvelopeGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7fc3e7c09a7d71b5191e7417cc5df78f23493a436053fbacbe9e75c7481932f4"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-prov-envelope"
+  content_hash: "27decd738f1ae1f181c28eb71c10ee9fd89d3e0699840e68560e92d0068a66c8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestParseEnvelopeRejections"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "47a375bbcfd14ca8e07781c56132b61be6ca5c169e1b2aea4dd1961f5596c892"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-prov-unknown"
+  content_hash: "61628adfb4f929afcaacc8414bc8efbb94965ec41bd16b687b6ee27329144428"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseEnvelope"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2deb995d608e58a97466566e18d42add974c3c3ac4f7f2c63cab3bd7c9fdc40c"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-prov-unknown"
+  content_hash: "61628adfb4f929afcaacc8414bc8efbb94965ec41bd16b687b6ee27329144428"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.TestParseEnvelopeUnknownEvidence"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4a00820958df03b61f4d258050f138d5d44e407b99f716b22c1b1e4b87cd3964"
+}

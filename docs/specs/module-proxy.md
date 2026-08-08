@@ -39,6 +39,10 @@ match the module root's tree hash offline.
 **provenance envelope** (term): The JSON document served for a version's
 provenance: `formatVersion` (integer `1`) and `evidence`, a list of
 evidence objects each carrying a `type` string and type-specific fields.
+An entry that is not a JSON object carrying a string `type` makes the
+envelope malformed; a well-formed entry of unrecognized type is ignored
+(REQ-proxy-prov-unknown), its type-specific fields opaque to the
+consumer.
 
 ## Endpoints
 
@@ -78,7 +82,10 @@ MUST carry: `type` (`"git-signed-tag"`), `objectFormat` (`"sha1"` or
 `"sha256"`), `tag` (base64 of the raw annotated tag object), `commit`
 (base64 of the raw commit object), and `treePath` (list, possibly empty,
 of base64 raw tree objects ordered from the commit's root tree toward the
-module root).
+module root). Each base64 value is canonical — standard alphabet with
+padding, no embedded whitespace, no nonzero spare trailing bits — so a
+given object has exactly one wire spelling; and a raw git object is
+never empty.
 
 **REQ-proxy-prov-unknown** (behavior): A consumer MUST ignore evidence
 objects whose `type` it does not recognize, failing instead only on an
