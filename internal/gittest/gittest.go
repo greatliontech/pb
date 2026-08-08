@@ -30,6 +30,10 @@ type Failer interface {
 	Fatal(args ...any)
 }
 
+// FakeSignature is a syntactically shaped, cryptographically
+// meaningless signature block for signed-tag fixtures.
+const FakeSignature = "-----BEGIN PGP SIGNATURE-----\n\nfake\n-----END PGP SIGNATURE-----\n"
+
 // Repo is a bare repository under construction in an in-memory
 // filesystem. Build failures abort the test through T.
 type Repo struct {
@@ -148,6 +152,38 @@ func (r *Repo) AnnotatedTag(name string, target plumbing.Hash, targetType plumbi
 		Message:    name + "\n",
 		Target:     target,
 		TargetType: targetType,
+	})
+	r.Ref("refs/tags/"+name, h)
+	return h
+}
+
+// SignedTag writes an annotated tag object carrying the signature
+// block verbatim, plus its ref, and returns the tag object's hash.
+// Cryptographic validity is the caller's concern — the builder only
+// carries bytes.
+func (r *Repo) SignedTag(name string, target plumbing.Hash, targetType plumbing.ObjectType, when time.Time, signature string) plumbing.Hash {
+	h := r.set(&object.Tag{
+		Name:       name,
+		Tagger:     Sig(when),
+		Message:    name + "\n",
+		Target:     target,
+		TargetType: targetType,
+		Signature:  signature,
+	})
+	r.Ref("refs/tags/"+name, h)
+	return h
+}
+
+// SignedTagSHA256 writes an annotated tag whose signature rides the
+// gpgsig-sha256 header — git's second signature home — plus its ref.
+func (r *Repo) SignedTagSHA256(name string, target plumbing.Hash, targetType plumbing.ObjectType, when time.Time, signature string) plumbing.Hash {
+	h := r.set(&object.Tag{
+		Name:            name,
+		Tagger:          Sig(when),
+		Message:         name + "\n",
+		Target:          target,
+		TargetType:      targetType,
+		SignatureSHA256: signature,
 	})
 	r.Ref("refs/tags/"+name, h)
 	return h

@@ -17,6 +17,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
+	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/version"
 
 	"github.com/greatliontech/pb/internal/modpath"
@@ -32,8 +33,10 @@ var ErrInvalid = errors.New("invalid module file")
 // (REQ-modfile-identity).
 var ErrIdentityMismatch = errors.New("module identity mismatch")
 
-// ModuleFileName is the module file's name at the module root.
-const ModuleFileName = "pb.yaml"
+// ModuleFileName is the module file's name at the module root. The
+// name is the module-archive contract's term and lives with the
+// archive layer; this alias keeps the module-file domain's spelling.
+const ModuleFileName = archive.ModuleFileName
 
 // File is a parsed module file: the module path and the declared
 // dependencies (module path -> minimum required version).

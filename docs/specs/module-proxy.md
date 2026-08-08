@@ -132,4 +132,7 @@ memory.
 **REQ-proxy-direct-equivalence** (behavior): The `direct` source MUST
 yield artifacts indistinguishable from a well-behaved proxy's: the same
 canonical archives, module file bytes, info objects, and verification
-packs, constructed from the origin repository itself.
+packs, constructed from the origin repository itself. A version whose
+file set the archive contract rejects has no artifacts at all — a
+source that cannot produce the archive serves nothing else for that
+version either.

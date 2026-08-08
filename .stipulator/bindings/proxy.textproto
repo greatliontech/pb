@@ -324,3 +324,93 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "67d90fe3b3e5f2702ecb3ae117acce3c6ea82bb06bd9c31de294f55962bb2965"
 }
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.Repo.Archive"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "43fb1077d28a6560f7f37755f1efb21457c44d561eda7a1cf796a406361ac5bf"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.InfoJSON"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7ca20d26ae30a900c465a16fac0cfae01328140bf9e61553375a4d8a4d080b96"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.Repo.ModuleFileBytes"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5be36f6f7afc37bb38e56d01bb085fddcefcc5e7e2ef0bbedb85cf82e7f1ac1f"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.Repo.VerificationPack"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8488c536203ef2e2b22f59b9e4ac79498ca3980faa1fff5c6299a382d295dbb6"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.TestArchiveRoundTripsProxyVerification"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1498aa1ac32c1d724524c7e65c503a5dfe4ab6144e4f07696afa796e485e4d0d"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.TestArchiveTreeBindingEquivalence"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "cfba972fc9ca5693106eb056eef432852b9825b119d713acfce96f5f94ddf2d4"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.TestInfoJSONRoundTrips"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "312318354ca73907c967eb42214837603e5409c5e165bb3dfe4d433410808538"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.TestVerificationPackShapes"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "8acf34e1e573198ccd3cc09e5a891aaf8718db421d0787c20f8e86dc063cfaf6"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.TestModuleFileBytes"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f0769e2c2019091539f97e73ff409f66fbc71ebd44f5e7135be5a5c753de21a8"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/direct.Repo.moduleFileSet"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "78d2d713bb719f8ca5dac203a48d90dd00b91df395397312d27177231e4883f7"
+}

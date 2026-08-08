@@ -51,6 +51,10 @@ commit — all files, not a filtered subset — and nothing else.
 **REQ-archive-forbidden-entries** (invariant): A module tree containing a
 symbolic link or a git submodule entry under the module root is invalid:
 archive creation and archive verification MUST both fail on it.
+Verification's failure point is tree binding: a file set cannot carry
+the entry, so an archive that launders one away recomputes a different
+tree hash than the origin commit's — digest verification alone never
+sees the entry.
 
 **REQ-archive-nested-module** (invariant): A module tree containing a
 module file at any path strictly below the module root is invalid: archive

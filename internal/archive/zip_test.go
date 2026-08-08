@@ -176,6 +176,32 @@ func TestZipCorruptedMember(t *testing.T) {
 }
 
 // Extra and missing members change the recomputed manifest: digest mismatch.
+// The verification side of REQ-archive-nested-module: a crafted zip
+// smuggling a nested module file fails VerifyZip regardless of digest.
+func TestZipNestedModuleRejected(t *testing.T) {
+	var crafted bytes.Buffer
+	zw := zip.NewWriter(&crafted)
+	for _, m := range []struct{ name, content string }{
+		{"a.proto", "syntax = \"proto3\";"},
+		{"sub/" + ModuleFileName, "module: example.com/n\n"},
+	} {
+		w, err := zw.CreateHeader(&zip.FileHeader{Name: m.name, Method: zip.Deflate})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(m.content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	_, err := VerifyZip(bytes.NewReader(crafted.Bytes()), int64(crafted.Len()), DigestPrefix+strings.Repeat("0", 64))
+	if !errors.Is(err, ErrNestedModule) {
+		t.Fatalf("err = %v, want ErrNestedModule", err)
+	}
+}
+
 func TestZipMemberSetMismatch(t *testing.T) {
 	data, digest := writeZip(t, sampleFiles())
 

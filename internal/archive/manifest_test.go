@@ -135,6 +135,60 @@ func TestManifestByteOrder(t *testing.T) {
 	}
 }
 
+// A module file strictly below the root invalidates the file set on
+// both the creation and verification paths — they share this
+// validation (REQ-archive-nested-module); the root's own module file
+// is the declared-module case, not nesting.
+func TestNestedModuleFileRejected(t *testing.T) {
+	root := FileInfo{Path: ModuleFileName, Size: 1}
+	proto := FileInfo{Path: "a.proto", Size: 1}
+	if _, err := Manifest([]FileInfo{root, proto}); err != nil {
+		t.Fatalf("root module file rejected: %v", err)
+	}
+	for _, nested := range []string{"sub/" + ModuleFileName, "a/b/" + ModuleFileName} {
+		if _, err := Manifest([]FileInfo{root, {Path: nested, Size: 1}}); !errors.Is(err, ErrNestedModule) {
+			t.Fatalf("%s: err = %v, want ErrNestedModule", nested, err)
+		}
+	}
+	// A file merely named like the module file with a suffix or in a
+	// name that only contains it is not a module file.
+	for _, ok := range []string{"sub/pb.yaml.bak", "sub/xpb.yaml"} {
+		if _, err := Manifest([]FileInfo{{Path: ok, Size: 1}}); err != nil {
+			t.Fatalf("%s: %v, want accepted", ok, err)
+		}
+	}
+}
+
+// For any valid file set, a module file injected at any directory
+// strictly below the root — and only there — invalidates it
+// (REQ-archive-nested-module).
+func TestNestedModuleProperty(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(1, 20).Draw(t, "n")
+		files := make([]FileInfo, 0, n+2)
+		for i := range n {
+			files = append(files, FileInfo{
+				Path: fmt.Sprintf("dir%d/f%d.proto", rapid.IntRange(0, 5).Draw(t, "dir"), i),
+				Size: 1,
+			})
+		}
+		// The root's own module file is the declared-module case.
+		files = append(files, FileInfo{Path: ModuleFileName, Size: 1})
+		if _, err := Manifest(files); err != nil {
+			t.Fatalf("valid set rejected: %v", err)
+		}
+		depth := rapid.IntRange(1, 3).Draw(t, "depth")
+		segs := make([]string, depth)
+		for i := range segs {
+			segs[i] = fmt.Sprintf("d%d", rapid.IntRange(0, 4).Draw(t, fmt.Sprintf("seg%d", i)))
+		}
+		nested := strings.Join(segs, "/") + "/" + ModuleFileName
+		if _, err := Manifest(append(files, FileInfo{Path: nested, Size: 1})); !errors.Is(err, ErrNestedModule) {
+			t.Fatalf("nested %s: err = %v, want ErrNestedModule", nested, err)
+		}
+	})
+}
+
 func TestPathValidation(t *testing.T) {
 	bad := []struct {
 		name, path string

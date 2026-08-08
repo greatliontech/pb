@@ -104,6 +104,39 @@ func TestBuilderRoundTrip(t *testing.T) {
 	if aliasRef.Type() != plumbing.SymbolicReference || aliasRef.Target().String() != "refs/heads/main" {
 		t.Fatalf("symref read back as %+v", aliasRef)
 	}
+
+	const sig = FakeSignature
+	signed := g.SignedTag("v2.0.0", c1, plumbing.CommitObject, when, sig)
+	st, err := repo.TagObject(signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Signature != sig || st.Target != c1 || st.Name != "v2.0.0" {
+		t.Fatalf("signed tag read back as %+v", st)
+	}
+	signedRef, err := g.St.Reference(plumbing.ReferenceName("refs/tags/v2.0.0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if signedRef.Hash() != signed {
+		t.Fatalf("signed tag ref at %s, want %s", signedRef.Hash(), signed)
+	}
+
+	signed256 := g.SignedTagSHA256("v3.0.0", c1, plumbing.CommitObject, when, sig)
+	st256, err := repo.TagObject(signed256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st256.SignatureSHA256 != sig || st256.Signature != "" || st256.Target != c1 || st256.Message != "v3.0.0\n" {
+		t.Fatalf("sha256-signed tag read back as %+v", st256)
+	}
+	ref256, err := g.St.Reference(plumbing.ReferenceName("refs/tags/v3.0.0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref256.Hash() != signed256 {
+		t.Fatalf("sha256-signed tag ref at %s, want %s", ref256.Hash(), signed256)
+	}
 }
 
 // CorruptObject's guarantee is an object of the claimed type whose

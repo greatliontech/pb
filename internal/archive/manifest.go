@@ -30,12 +30,19 @@ const DigestPrefix = "pb1:"
 // total content size exceeds it is rejected (REQ-archive-size-limit).
 const MaxTotalSize int64 = 500 << 20
 
+// ModuleFileName is the module file's name at the module root — the
+// module-archive contract's "module file" term; the schema is
+// internal/modfile's domain and pb.yaml declared anywhere strictly
+// below the root invalidates the file set (REQ-archive-nested-module).
+const ModuleFileName = "pb.yaml"
+
 // File-set validation failure classes. Every validation error wraps exactly
 // one of these.
 var (
 	ErrPathInvalid   = errors.New("invalid path")
 	ErrPathCollision = errors.New("path collision")
 	ErrTooLarge      = errors.New("file set exceeds size limit")
+	ErrNestedModule  = errors.New("module file below the module root")
 )
 
 // FileInfo describes one file of a module file set: its path relative to the
@@ -68,7 +75,7 @@ func (f FileInfo) Mode() string {
 // line per file in ascending raw-byte path order, each line LF-terminated.
 // The input slice is not modified.
 func Manifest(files []FileInfo) ([]byte, error) {
-	if err := validateFileSet(files); err != nil {
+	if err := ValidateFileSet(files); err != nil {
 		return nil, err
 	}
 	sorted := make([]FileInfo, len(files))
@@ -96,7 +103,13 @@ func Digest(manifest []byte) string {
 	return DigestPrefix + hex.EncodeToString(sum[:])
 }
 
-func validateFileSet(files []FileInfo) error {
+// ValidateFileSet checks the whole file-set discipline — path rules,
+// collisions, nested module file, size limit over declared sizes —
+// without touching content. Manifest applies it on every creation and
+// verification path; sources that know their file set before reading
+// content (the direct source walks blob metadata) apply it first, so
+// an invalid version fails before serving or materializing anything.
+func ValidateFileSet(files []FileInfo) error {
 	var total int64
 	byFold := make(map[string]string, len(files))
 	// dirFolds maps the case-folded form of every implied directory prefix
@@ -110,6 +123,13 @@ func validateFileSet(files []FileInfo) error {
 	for _, f := range files {
 		if err := validatePath(f.Path); err != nil {
 			return err
+		}
+		// Both creation (WriteZip) and verification (VerifyZip) pass
+		// through here, so the nested-module invariant has one home
+		// (REQ-archive-nested-module). The root's own module file is
+		// the declared-module case, not nesting.
+		if strings.HasSuffix(f.Path, "/"+ModuleFileName) {
+			return fmt.Errorf("%w: %q (repositories host modules as disjoint subtrees, never nested)", ErrNestedModule, f.Path)
 		}
 		fold := caseFold(f.Path)
 		if prev, clash := byFold[fold]; clash {

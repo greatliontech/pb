@@ -57,13 +57,24 @@ func tagRefName(v version.Version, subtree string) string {
 	return name + v.String()
 }
 
-func (r *Repo) resolveTag(v version.Version, subtree string) (origin.Commit, error) {
+// tagRef looks up the module's tag ref for a release version, mapping
+// absence to ErrUnknownVersion; resolveTag and VerificationPack share
+// the one lookup.
+func (r *Repo) tagRef(v version.Version, subtree string) (*plumbing.Reference, error) {
 	ref, err := r.r.Reference(plumbing.ReferenceName(tagRefName(v, subtree)), true)
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
-			return origin.Commit{}, fmt.Errorf("%w: %s (tag %s)", ErrUnknownVersion, v, tagRefName(v, subtree))
+			return nil, fmt.Errorf("%w: %s (tag %s)", ErrUnknownVersion, v, tagRefName(v, subtree))
 		}
-		return origin.Commit{}, fmt.Errorf("resolving %s: %w", v, err)
+		return nil, fmt.Errorf("resolving %s: %w", v, err)
+	}
+	return ref, nil
+}
+
+func (r *Repo) resolveTag(v version.Version, subtree string) (origin.Commit, error) {
+	ref, err := r.tagRef(v, subtree)
+	if err != nil {
+		return origin.Commit{}, err
 	}
 	c, ok, err := r.tagCommit(ref.Hash())
 	if err != nil {
