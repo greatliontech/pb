@@ -135,3 +135,21 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "71487ffcf954f67933340d2218e8bf52bdfbaab42bcb6ddde782c0f3d3cdeb18"
 }
+
+bindings {
+  requirement_id: "REQ-modfile-versions"
+  content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/version.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "41af843345d8ad4f5fa555d6094e02ce978f6ef55347636d1e1357873050c290"
+}
+
+bindings {
+  requirement_id: "REQ-modfile-versions"
+  content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/version.TestGrammarAgreesWithCanonicalSemver"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "106ac2d50710f3b8a7cf0ae4141033601387690ba22a38bd46964c4a6e8d703b"
+}

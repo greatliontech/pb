@@ -17,7 +17,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
-	"golang.org/x/mod/semver"
+	"github.com/greatliontech/pb/internal/version"
 
 	"github.com/greatliontech/pb/internal/modpath"
 	"github.com/greatliontech/pb/internal/yamlshape"
@@ -136,9 +136,9 @@ func validate(f *File) error {
 
 // checkVersion enforces REQ-modfile-versions: a full v-prefixed semver
 // version, optionally with a prerelease (which covers pseudo-versions), and
-// no build metadata. Canonical equality rejects shortened forms like v1.2.
+// no build metadata. Version grammar has one home, internal/version.
 func checkVersion(v string) error {
-	if !semver.IsValid(v) || v != semver.Canonical(v) {
+	if _, err := version.Parse(v); err != nil {
 		return fmt.Errorf("version %q is not a canonical vX.Y.Z[-prerelease] version", v)
 	}
 	return nil

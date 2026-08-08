@@ -80,11 +80,14 @@ import path.
 ## Selection
 
 **REQ-resolve-mvs** (behavior): Version selection MUST be minimal version
-selection: the selected version of each module path is the maximum, under
+selection over the requirement graph — whose nodes are the resolution
+root plus every (module path, version) pair some node requires,
+transitively, a pair remaining a node even when its path selects a higher
+version: the selected version of each module path is the maximum, under
 semantic-version ordering with pseudo-versions ordered by their embedded
-timestamp, of the versions required for that path across the resolution
-root and every module in the build list — never a version newer than
-required, never one older than any requirement.
+timestamp, of the versions required for that path across the graph —
+never a version newer than required, never one older than any
+requirement.
 
 **REQ-resolve-no-import-versioning** (structural): Module paths MUST NOT
 carry semantic-import-versioning suffixes: a major version bump keeps the
@@ -92,9 +95,18 @@ module path, and protobuf packages carry their own version idiom inside
 the schema.
 
 **REQ-resolve-major-crossing** (behavior): Selection that raises a
-module's major version above what any requirement in the graph declared
-directly MUST be reported to the user as a warning naming the module and
-both versions.
+module's major version above what some requirement in the graph declares
+MUST fail the operation unless the resolution root itself requires that
+module at the selected major — the failure names the module, a
+requirement at the selected version, and the lowest requirement below
+the selected major (ties broken by requirer, so the report is
+deterministic), and states that recording the selected major in the
+root's requirements accepts it. When the root does require the selected
+major, the crossing is instead reported as a warning naming the module,
+the selected version, and the lowest crossed requirement's version.
+The rule reads only the requirement graph: no configuration input exists,
+so the build list and its diagnostics stay a pure function of the
+requirements.
 
 **REQ-resolve-determinism** (invariant): The build list MUST be a pure
 function of the resolution root's requirements and the pinned module

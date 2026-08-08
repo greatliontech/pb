@@ -9,7 +9,7 @@ module-resolution.md, module-proxy.md, provenance.md, workspace.md
 - [x] 3. Git tree recomputation & binding (SHA-1 and SHA-256)
 - [x] 4. Module file: parse, validate, canonical emission
 - [x] 5. Lockfile: model, canonical emission, pin enforcement
-- [ ] 6. Versions & selection: version syntax, pseudo-versions, MVS,
+- [x] 6. Versions & selection: version syntax, pseudo-versions, MVS,
       determinism
 - [ ] 7. Origin resolution: path split, vanity redirect, probing, tag
       listing, synthesis

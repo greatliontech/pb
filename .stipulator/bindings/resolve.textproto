@@ -36,3 +36,102 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "036a5463b918dff1b1e933e85191a3caa40ce19cf75c44638fa7ed24b4d3806f"
 }
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.BuildList"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5a13ed76243fd8133ca778fb5009eaf34648eebdd8e90c77df5301b5a74d7bc9"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.TestSelectionSoundAndMinimalProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "78d855fc36d62ecaec92573c9b89698bbd894577bcd854effb979073c18b23cd"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.TestSupersededVersionsKeepRequirements"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "764fe469361105871648d2e9c9578bc08f4a965d6a707355dd245acd6b0c6f36"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/version.Compare"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "33b4e9fa715bcfd9a45a7b485743e3e4d9693e5af1e4fb86369fb7ce387de945"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/version.TestCompareTotalOrderProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f9bf96bcd0bf9c0c567a5e1c210a7091a3ff365dc87421cca53ec6edb0b11d95"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/version.TestPseudoRoundTripProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "164c250c28e4b2f41648a7c17ca97dcbccd59ab5cbd1f486fff86741c454291c"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-determinism"
+  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.BuildList"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5a13ed76243fd8133ca778fb5009eaf34648eebdd8e90c77df5301b5a74d7bc9"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-determinism"
+  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.TestDeterminismProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a02e121fa3cbca8dd24f7e6dcba805eda70bfb816895ae1829e9d2a1322b8254"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-major-crossing"
+  content_hash: "0a02bc60e78ba48839da3792c35cd04cc4414d6fd374069a2e3f77695590cb85"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.BuildList"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5a13ed76243fd8133ca778fb5009eaf34648eebdd8e90c77df5301b5a74d7bc9"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-major-crossing"
+  content_hash: "0a02bc60e78ba48839da3792c35cd04cc4414d6fd374069a2e3f77695590cb85"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.TestMajorCrossing"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "95d05f1449a353ec7c13dcaca76d893acce55215964cb99e6bc3b67b281344e3"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-major-crossing"
+  content_hash: "0a02bc60e78ba48839da3792c35cd04cc4414d6fd374069a2e3f77695590cb85"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.TestCrossingAcceptanceIsMajorLevel"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2514a78559cd1624788a5f20af6bd29e9614c81d53cd6c7678dd142ce8036c9a"
+}
