@@ -100,7 +100,8 @@ without consulting later sources. `direct` fetches from the origin; `off`
 fails when reached. A proxy's redirects are followed only to HTTPS URLs
 and boundedly — proxies legitimately redirect artifacts to blob storage
 — with the status classification applying to the final response; a
-cleartext or excessive redirect aborts like any transport failure.
+cleartext or excessive redirect aborts like any transport failure, and
+no cookie state crosses a fetch in either direction.
 
 **REQ-proxy-config** (behavior): The source list MUST come from `PBPROXY`
 (comma-separated entries, default `direct`), with `PBNOPROXY`

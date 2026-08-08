@@ -8,6 +8,8 @@ import (
 	"math"
 	"net/http"
 	"strings"
+
+	"github.com/greatliontech/pb/internal/httpspolicy"
 )
 
 // ErrNotHere is wrapped when a source answers "not here" — for a proxy,
@@ -96,23 +98,10 @@ func Get(ctx context.Context, client *http.Client, url string, limit int64) (Unv
 	if err != nil {
 		return nil, fmt.Errorf("building request for %s: %w", url, err)
 	}
-	// Shallow copy: proxies legitimately redirect artifact fetches to
-	// blob storage, but only across HTTPS and boundedly — the same
-	// policy shape as vanity discovery (internal/origin); a shared home
-	// for it is surfaced as a consolidation candidate. A custom
-	// CheckRedirect replaces the default hop cap, so it is restated.
-	c := *client
-	c.Jar = nil
-	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if req.URL.Scheme != "https" {
-			return fmt.Errorf("redirect to non-HTTPS URL %q", req.URL)
-		}
-		if len(via) >= 10 {
-			return fmt.Errorf("stopped after 10 redirects")
-		}
-		return nil
-	}
-	resp, err := c.Do(req)
+	// Proxies legitimately redirect artifact fetches to blob storage,
+	// under the shared fetch posture: cookie-free, redirects HTTPS-only
+	// and bounded.
+	resp, err := httpspolicy.Client(client).Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", url, err)
 	}

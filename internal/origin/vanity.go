@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/greatliontech/pb/internal/httpspolicy"
 	"golang.org/x/net/html"
 )
 
@@ -40,24 +41,10 @@ func discoverVanity(ctx context.Context, client *http.Client, path string) (redi
 	if err != nil {
 		return redirect{}, false, fmt.Errorf("vanity request for %s: %w", path, err)
 	}
-	// Shallow copy: the caller's client keeps its transport and timeout,
-	// but discovery pins its own redirect policy and carries no cookie
-	// state — module hosts must never see the caller's cookies, and
-	// discovery responses must not seed the caller's jar. A custom
-	// CheckRedirect replaces the default hop cap, so the cap is restated
-	// here.
-	c := *client
-	c.Jar = nil
-	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if req.URL.Scheme != "https" {
-			return fmt.Errorf("redirect to non-HTTPS URL %q", req.URL)
-		}
-		if len(via) >= 10 {
-			return fmt.Errorf("stopped after 10 redirects")
-		}
-		return nil
-	}
-	resp, err := c.Do(req)
+	// Discovery pins the shared fetch posture — cookie-free, redirects
+	// HTTPS-only and bounded — on a copy; the caller's client is
+	// untouched.
+	resp, err := httpspolicy.Client(client).Do(req)
 	if err != nil {
 		// Absence and cancellation both surface as transport errors;
 		// only a live context means the prefix genuinely didn't answer.

@@ -228,7 +228,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.Fallthrough"
   role: BINDING_ROLE_IMPLEMENTS
@@ -237,7 +237,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughOrderAndNotHere"
   role: BINDING_ROLE_TESTS
@@ -246,7 +246,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughAbortsOnOtherFailure"
   role: BINDING_ROLE_TESTS
@@ -255,7 +255,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughOff"
   role: BINDING_ROLE_TESTS
@@ -264,7 +264,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestFallthroughConsultationPrefixProperty"
   role: BINDING_ROLE_TESTS
@@ -291,7 +291,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestGetRedirects"
   role: BINDING_ROLE_TESTS
@@ -300,7 +300,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-fallthrough"
-  content_hash: "9de0329b428bee74ec37e9bda448216a6a9af33eee1c8d60a7b14cd323af98ed"
+  content_hash: "20d6e066978fa397f6a66ea5e2169ae5b1649e6c012b28401798c545c159166c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestGetRedirectCap"
   role: BINDING_ROLE_TESTS

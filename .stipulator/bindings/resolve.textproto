@@ -156,7 +156,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.discoverVanity"
   role: BINDING_ROLE_IMPLEMENTS
@@ -165,7 +165,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityPrecedence"
   role: BINDING_ROLE_TESTS
@@ -174,7 +174,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityLongestPrefixWins"
   role: BINDING_ROLE_TESTS
@@ -183,7 +183,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityRejectsNonHTTPS"
   role: BINDING_ROLE_TESTS
@@ -192,7 +192,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresForeignPrefixes"
   role: BINDING_ROLE_TESTS
@@ -273,7 +273,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityRedirectToCleartextFallsThrough"
   role: BINDING_ROLE_TESTS
@@ -282,7 +282,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityFollowsHTTPSRedirect"
   role: BINDING_ROLE_TESTS
@@ -291,7 +291,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityIgnoresBodyDeclarations"
   role: BINDING_ROLE_TESTS
@@ -300,7 +300,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-vanity"
-  content_hash: "3c5b3cfe89a1c7f42d72b7775d21272fe52943c426aa03cb7d01a804a6d93f6b"
+  content_hash: "cdbf65a2c1da8c6739e5386da2500daad8e5d6256a35317b96421ef0312a7478"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/origin.TestResolveVanityRejectsMalformedRepoURL"
   role: BINDING_ROLE_TESTS

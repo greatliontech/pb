@@ -50,9 +50,10 @@ with `?pb-get=1`; the response may declare redirects for any of the
 path's prefixes; a failed request or a response declaring no matching
 prefix falls through to probing, and a declared repository URL that is
 not HTTPS fails resolution rather than redirecting. The discovery
-request follows HTTP redirects only to HTTPS URLs: a redirect to any
-other scheme aborts the request, which then counts as failed — discovery
-never fetches over cleartext.
+request follows HTTP redirects only to HTTPS URLs and boundedly: a
+redirect to any other scheme, or an excessive chain, aborts the request,
+which then counts as failed — discovery never fetches over cleartext and
+carries no cookie state in either direction.
 
 **REQ-resolve-probing** (behavior): Absent a `.git` segment and a vanity
 redirect, the repository split MUST be found by probing path prefixes in
