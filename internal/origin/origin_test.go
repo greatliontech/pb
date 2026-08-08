@@ -118,6 +118,16 @@ func TestReleaseTagsGolden(t *testing.T) {
 		"refs/tags/protos/v0.9.0", "t5",
 		"refs/tags/protosx/v3.0.0", "t6",
 		"refs/tags/v0.5.0", "t7", // valid after the invalid ones
+		// Pseudo-version-shaped: parses as a canonical version but is
+		// never a release tag (REQ-resolve-pseudo-base) — resolution
+		// binds a pseudo-version to the commit its hash embeds, not to
+		// a tag, so listing it would advertise an unresolvable version.
+		"refs/tags/v3.0.1-0.20260101000000-aaaaaaaaaaaa", "t8",
+		// A bare version-string ref name: origin-controlled bytes that
+		// parse as a version but sit outside refs/tags/, which is the
+		// only home of a release (REQ-resolve-release-tags). Only the
+		// prefix guard excludes it — version syntax alone would not.
+		"v9.9.9", "t9",
 	)
 	root := ReleaseTags(rs, "")
 	if len(root) != 3 || root[0].Version.String() != "v0.5.0" ||

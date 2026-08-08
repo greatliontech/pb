@@ -168,9 +168,10 @@ func uniqueCommit(v version.Version, matches []*object.Commit) (*object.Commit, 
 // assigns to a commit for the module at subtree: the highest release
 // tag in the module's namespace on an ancestor of the commit seeds the
 // base, the zero base when none exists (REQ-resolve-pseudo-base).
-// Ancestry is reachability — the commit itself included — and a
-// pseudo-version-shaped tag is not a release tag, so it never seeds a
-// base (version.PseudoVersion refuses one as precedent).
+// Ancestry is reachability — the commit itself included. A
+// pseudo-version-shaped tag never seeds a base: origin.ReleaseTags
+// excludes it from the release list, and version.PseudoVersion refuses
+// one as precedent regardless.
 func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version, error) {
 	refs, err := r.Refs()
 	if err != nil {
@@ -184,9 +185,6 @@ func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version
 	var precedent *version.Version
 	for i := len(tags) - 1; i >= 0; i-- {
 		t := tags[i]
-		if t.Version.IsPseudo() {
-			continue
-		}
 		tc, ok, err := r.tagCommit(plumbing.NewHash(t.Hash))
 		if err != nil {
 			return version.Version{}, fmt.Errorf("release tag %s: %w", t.Version, err)

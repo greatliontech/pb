@@ -105,9 +105,13 @@ type Tag struct {
 // `refs/tags/<subtree>/<v>` for a subtree module — the separator makes
 // prefix matching segment-exact. A synthesized module passes subtree ""
 // and takes the repository-level tags (REQ-resolve-synthesized-tags's
-// listing half). Refs that do not parse as canonical versions are not the
-// module's releases and are skipped; the result is sorted ascending, so
-// listing order never leaks (REQ-resolve-determinism).
+// listing half). Refs that do not parse as canonical versions are not
+// the module's releases and are skipped — as is a pseudo-version-shaped
+// tag, which is never a release tag (REQ-resolve-pseudo-base): version
+// resolution binds a pseudo-version to the commit its hash embeds, not
+// to a tag, so listing one as a release would advertise an unresolvable
+// version. The result is sorted ascending, so listing order never leaks
+// (REQ-resolve-determinism).
 func ReleaseTags(refs []Ref, subtree string) []Tag {
 	prefix := "refs/tags/"
 	if subtree != "" {
@@ -122,7 +126,7 @@ func ReleaseTags(refs []Ref, subtree string) []Tag {
 			continue
 		}
 		v, err := version.Parse(rest)
-		if err != nil {
+		if err != nil || v.IsPseudo() {
 			continue
 		}
 		t, seen := byVersion[v.String()]

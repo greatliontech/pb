@@ -30,6 +30,10 @@ func TestSynthesizedVersionsFallsBackToPseudo(t *testing.T) {
 		"refs/heads/main", "h0",
 		"refs/tags/protos/v2.0.0", "t2", // subtree tags do not avert the fallback
 		"refs/tags/not-a-version", "t3",
+		// A pseudo-version-shaped tag is not a release
+		// (REQ-resolve-pseudo-base) and must not avert the fallback
+		// either — as a "release" it would be unresolvable.
+		"refs/tags/v9.0.1-0.20260101000000-bbbbbbbbbbbb", "t4",
 	)
 	head := Commit{Hash: "0123456789abcdef0123456789abcdef01234567", Time: time.Date(2026, 8, 8, 12, 30, 15, 0, time.UTC)}
 	tags, err := SynthesizedVersions(rs, head)
