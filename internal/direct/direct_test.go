@@ -61,42 +61,37 @@ func newGraphFixture(t failer) *graphFixture {
 	f.t2 = time.Date(2026, 2, 2, 3, 4, 5, 0, time.FixedZone("EET", 2*60*60))
 	f.t3 = time.Date(2026, 3, 2, 3, 4, 5, 0, time.UTC)
 
-	f.c0 = f.commit("c0", f.t0)
-	f.c1 = f.commit("c1", f.t1)
-	f.c2 = f.commit("c2", f.t2, f.c1)
-	f.c3 = f.commit("c3", f.t3, f.c2)
+	f.c0 = f.Commit("c0", f.t0)
+	f.c1 = f.Commit("c1", f.t1)
+	f.c2 = f.Commit("c2", f.t2, f.c1)
+	f.c3 = f.Commit("c3", f.t3, f.c2)
 
-	f.branch("orphan", f.c0)
-	f.branch("main", f.c3)
-	f.head("main")
+	f.Branch("orphan", f.c0)
+	f.Branch("main", f.c3)
+	f.Head("main")
 
-	f.annotatedTag("v1.0.0", f.c1, plumbing.CommitObject, f.t1)
-	ref, err := f.st.Reference(plumbing.ReferenceName("refs/tags/v1.0.0"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	f.tagV1 = ref.Hash()
+	f.tagV1 = f.AnnotatedTag("v1.0.0", f.c1, plumbing.CommitObject, f.t1)
 
-	f.tag("lw/v1.5.0", f.c2)
-	f.tag("pre/v1.1.0-rc.1", f.c2)
-	f.tag("self/v3.0.0", f.c3)
-	f.tag("ps/v1.0.1-0.20260101000000-aaaaaaaaaaaa", f.c1)
-	f.tag("decoy/v2.0.0", f.c0)
-	f.annotatedTag("obj/v1.0.0", f.tree("objtag"), plumbing.TreeObject, f.t1)
+	f.Tag("lw/v1.5.0", f.c2)
+	f.Tag("pre/v1.1.0-rc.1", f.c2)
+	f.Tag("self/v3.0.0", f.c3)
+	f.Tag("ps/v1.0.1-0.20260101000000-aaaaaaaaaaaa", f.c1)
+	f.Tag("decoy/v2.0.0", f.c0)
+	f.AnnotatedTag("obj/v1.0.0", f.LabelTree("objtag"), plumbing.TreeObject, f.t1)
 
 	// Higher-ranked non-releases above a real release: base derivation
 	// must skip them and keep scanning, not stop.
-	f.tag("ps2/v1.0.0", f.c1)
-	f.tag("ps2/v2.0.1-0.20260101000000-cccccccccccc", f.c1)
-	f.tag("obj2/v1.0.0", f.c1)
-	f.annotatedTag("obj2/v5.0.0", f.tree("objtag2"), plumbing.TreeObject, f.t1)
+	f.Tag("ps2/v1.0.0", f.c1)
+	f.Tag("ps2/v2.0.1-0.20260101000000-cccccccccccc", f.c1)
+	f.Tag("obj2/v1.0.0", f.c1)
+	f.AnnotatedTag("obj2/v5.0.0", f.LabelTree("objtag2"), plumbing.TreeObject, f.t1)
 
-	f.cD = f.commit("d", f.t0)
-	f.cA = f.commit("a", f.t2, f.c1)
-	f.cB = f.commit("b", f.t2, f.c1, f.cD)
-	f.cM = f.commit("m", f.t3, f.cA, f.cB)
-	f.branch("feature", f.cM)
-	f.tag("merge/v4.0.0", f.cD)
+	f.cD = f.Commit("d", f.t0)
+	f.cA = f.Commit("a", f.t2, f.c1)
+	f.cB = f.Commit("b", f.t2, f.c1, f.cD)
+	f.cM = f.Commit("m", f.t3, f.cA, f.cB)
+	f.Branch("feature", f.cM)
+	f.Tag("merge/v4.0.0", f.cD)
 	return f
 }
 
@@ -289,9 +284,9 @@ func TestRefsAdvertisePeeledTags(t *testing.T) {
 func TestSynthesizedFallbackResolvesHeadPseudo(t *testing.T) {
 	f := newFixture(t)
 	when := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
-	c := f.commit("only", when)
-	f.branch("main", c)
-	f.head("main")
+	c := f.Commit("only", when)
+	f.Branch("main", c)
+	f.Head("main")
 	repo := f.fetch()
 
 	head, err := repo.Head()
@@ -320,7 +315,7 @@ func TestSynthesizedFallbackResolvesHeadPseudo(t *testing.T) {
 
 func TestFetchEmptyOriginFails(t *testing.T) {
 	f := newFixture(t)
-	fe := Fetcher{clientOptions: f.fetchClientOptions()}
+	fe := Fetcher{clientOptions: f.ClientOptions()}
 	if _, err := fe.Fetch(t.Context(), "file:///"); err == nil {
 		t.Fatal("Fetch of an empty origin succeeded, want error")
 	}
@@ -329,15 +324,15 @@ func TestFetchEmptyOriginFails(t *testing.T) {
 func TestHeadFailures(t *testing.T) {
 	t.Run("HEAD names a missing branch", func(t *testing.T) {
 		f := newFixture(t)
-		f.head("gone")
+		f.Head("gone")
 		if _, err := f.open().Head(); err == nil || !strings.Contains(err.Error(), "resolving origin HEAD") {
 			t.Fatalf("err = %v, want a HEAD resolution failure", err)
 		}
 	})
 	t.Run("HEAD names a non-commit", func(t *testing.T) {
 		f := newFixture(t)
-		f.ref("refs/heads/blob", f.blob("not a commit\n"))
-		f.head("blob")
+		f.Ref("refs/heads/blob", f.Blob("not a commit\n"))
+		f.Head("blob")
 		if _, err := f.open().Head(); err == nil || !strings.Contains(err.Error(), "reading HEAD commit") {
 			t.Fatalf("err = %v, want a HEAD commit read failure", err)
 		}
@@ -350,25 +345,21 @@ func TestHeadFailures(t *testing.T) {
 func TestRefsShapeAtStorageLevel(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.commit("c", when)
-	f.branch("main", c)
-	f.head("main")
-	f.annotatedTag("v1.0.0", c, plumbing.CommitObject, when)
-	f.tag("light", c)
+	c := f.Commit("c", when)
+	f.Branch("main", c)
+	f.Head("main")
+	tagObj := f.AnnotatedTag("v1.0.0", c, plumbing.CommitObject, when)
+	f.Tag("light", c)
 	// Sorts between v1.0.0's own entry and its `^{}` entry ('-' < '^'),
 	// where storage iteration order — annotated tag immediately followed
 	// by its peeled entry — would put it after both.
-	f.tag("v1.0.0-pre", c)
-	f.ref("refs/notes/commits", c)
-	f.ref("refs/remotes/origin/main", c)
-	f.symref("refs/heads/link", "refs/heads/main")
-	corrupt := f.corruptObject(plumbing.TagObject, "not a decodable tag object")
-	f.ref("refs/tags/corrupt", corrupt)
+	f.Tag("v1.0.0-pre", c)
+	f.Ref("refs/notes/commits", c)
+	f.Ref("refs/remotes/origin/main", c)
+	f.Symref("refs/heads/link", "refs/heads/main")
+	corrupt := f.CorruptObject(plumbing.TagObject, "not a decodable tag object")
+	f.Ref("refs/tags/corrupt", corrupt)
 
-	tagRef, err := f.st.Reference(plumbing.ReferenceName("refs/tags/v1.0.0"))
-	if err != nil {
-		t.Fatal(err)
-	}
 	refs, err := f.open().Refs()
 	if err != nil {
 		t.Fatal(err)
@@ -377,7 +368,7 @@ func TestRefsShapeAtStorageLevel(t *testing.T) {
 		{Name: "refs/heads/main", Hash: c.String()},
 		{Name: "refs/tags/corrupt", Hash: corrupt.String()},
 		{Name: "refs/tags/light", Hash: c.String()},
-		{Name: "refs/tags/v1.0.0", Hash: tagRef.Hash().String()},
+		{Name: "refs/tags/v1.0.0", Hash: tagObj.String()},
 		{Name: "refs/tags/v1.0.0-pre", Hash: c.String()},
 		{Name: "refs/tags/v1.0.0^{}", Hash: c.String()},
 	}
@@ -395,10 +386,10 @@ func TestRefsShapeAtStorageLevel(t *testing.T) {
 func TestResolveTagThroughSymbolicRef(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.commit("c", when)
-	f.branch("main", c)
-	f.head("main")
-	f.symref("refs/tags/v7.0.0", "refs/heads/main")
+	c := f.Commit("c", when)
+	f.Branch("main", c)
+	f.Head("main")
+	f.Symref("refs/tags/v7.0.0", "refs/heads/main")
 	got, err := f.open().ResolveVersion(mustParse(t, "v7.0.0"), "")
 	if err != nil {
 		t.Fatal(err)
@@ -411,10 +402,10 @@ func TestResolveTagThroughSymbolicRef(t *testing.T) {
 func TestResolveTagPeelFailure(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.commit("c", when)
-	f.branch("main", c)
-	f.head("main")
-	f.ref("refs/tags/v1.0.0", f.corruptObject(plumbing.TagObject, "not a decodable tag object"))
+	c := f.Commit("c", when)
+	f.Branch("main", c)
+	f.Head("main")
+	f.Ref("refs/tags/v1.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
 	_, err := f.open().ResolveVersion(mustParse(t, "v1.0.0"), "")
 	if err == nil || !strings.Contains(err.Error(), "peeling") {
 		t.Fatalf("err = %v, want a peel failure", err)
@@ -427,10 +418,10 @@ func TestResolveTagPeelFailure(t *testing.T) {
 func TestCorruptPackedRefsFailsLoudly(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.commit("c", when)
-	f.branch("main", c)
-	f.head("main")
-	f.writeFile("packed-refs", "this is not a packed-refs file\n@@garbage@@\n")
+	c := f.Commit("c", when)
+	f.Branch("main", c)
+	f.Head("main")
+	f.WriteFile("packed-refs", "this is not a packed-refs file\n@@garbage@@\n")
 	repo := f.open()
 
 	if _, err := repo.ResolveVersion(mustParse(t, "v1.0.0"), ""); err == nil || errors.Is(err, ErrUnknownVersion) {
@@ -448,10 +439,10 @@ func TestCorruptPackedRefsFailsLoudly(t *testing.T) {
 func TestResolvePseudoCorruptCommitObject(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.commit("c", when)
-	f.branch("main", c)
-	f.head("main")
-	f.corruptObject(plumbing.CommitObject, "not a decodable commit object")
+	c := f.Commit("c", when)
+	f.Branch("main", c)
+	f.Head("main")
+	f.CorruptObject(plumbing.CommitObject, "not a decodable commit object")
 	v := mustPseudo(t, nil, when, c.String())
 	_, err := f.open().ResolveVersion(v, "")
 	if err == nil || !strings.Contains(err.Error(), "iterating commits") {
@@ -468,17 +459,17 @@ func TestResolvePseudoCorruptReleaseTagFails(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	build := func(t *testing.T) (*repoFixture, version.Version) {
 		f := newFixture(t)
-		c1 := f.commit("c1", when)
-		c2 := f.commit("c2", when.Add(time.Hour), c1)
-		f.branch("main", c2)
-		f.head("main")
-		f.tag("v1.0.0", c1)
+		c1 := f.Commit("c1", when)
+		c2 := f.Commit("c2", when.Add(time.Hour), c1)
+		f.Branch("main", c2)
+		f.Head("main")
+		f.Tag("v1.0.0", c1)
 		v100 := mustParse(t, "v1.0.0")
 		return f, mustPseudo(t, &v100, when.Add(time.Hour), c2.String())
 	}
 	t.Run("dangling tag target", func(t *testing.T) {
 		f, v := build(t)
-		f.annotatedTag("v5.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.CommitObject, when)
+		f.AnnotatedTag("v5.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.CommitObject, when)
 		_, err := f.open().ResolveVersion(v, "")
 		if err == nil || !strings.Contains(err.Error(), "release tag v5.0.0") {
 			t.Fatalf("err = %v, want a loud v5.0.0 corruption failure", err)
@@ -486,7 +477,7 @@ func TestResolvePseudoCorruptReleaseTagFails(t *testing.T) {
 	})
 	t.Run("undecodable tag object", func(t *testing.T) {
 		f, v := build(t)
-		f.ref("refs/tags/v5.0.0", f.corruptObject(plumbing.TagObject, "not a decodable tag object"))
+		f.Ref("refs/tags/v5.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
 		_, err := f.open().ResolveVersion(v, "")
 		if err == nil || !strings.Contains(err.Error(), "release tag v5.0.0") {
 			t.Fatalf("err = %v, want a loud v5.0.0 corruption failure", err)
@@ -499,9 +490,9 @@ func TestResolvePseudoCorruptReleaseTagFails(t *testing.T) {
 func TestResolvePseudoDanglingParentFails(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	x := f.commit("x", when, plumbing.NewHash(strings.Repeat("ab", 20)))
-	f.branch("main", x)
-	f.head("main")
+	x := f.Commit("x", when, plumbing.NewHash(strings.Repeat("ab", 20)))
+	f.Branch("main", x)
+	f.Head("main")
 	v := mustPseudo(t, nil, when, x.String())
 	_, err := f.open().ResolveVersion(v, "")
 	if err == nil || !strings.Contains(err.Error(), "reading ancestor") {
@@ -537,18 +528,18 @@ func TestPseudoBaseAncestryProperty(t *testing.T) {
 			if i > 0 {
 				parents = []plumbing.Hash{hashes[i-1]}
 			}
-			hashes[i] = f.commit(fmt.Sprintf("c%d", i), when, parents...)
+			hashes[i] = f.Commit(fmt.Sprintf("c%d", i), when, parents...)
 			if tagged[i] {
 				v := mustParse(rt, fmt.Sprintf("v0.%d.0", minors[i]))
-				f.tag("prop/"+v.String(), hashes[i])
+				f.Tag("prop/"+v.String(), hashes[i])
 				if i <= target && minors[i] > bestMinor {
 					bestMinor = minors[i]
 					precedent = &v
 				}
 			}
 		}
-		f.branch("main", hashes[n-1])
-		f.head("main")
+		f.Branch("main", hashes[n-1])
+		f.Head("main")
 		repo := f.fetch()
 
 		when := base.Add(time.Duration(target) * time.Hour)
