@@ -421,7 +421,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/direct.Repo.moduleFileSet"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "78d2d713bb719f8ca5dac203a48d90dd00b91df395397312d27177231e4883f7"
+  shape_hash: "a248b77aca1a1129ceb39b6c19f2ec428a199077359b16afac86b256fc2be105"
 }
 
 bindings {
