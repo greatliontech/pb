@@ -13932,6 +13932,830 @@
       ]
     },
     {
+      "symbol": "github.com/greatliontech/pb/internal/contractfile.Check",
+      "bodyHash": "db099d850fd9b9512159fd9793f1aa90ebcc8b300888836632d8a0312ea98bc6",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/contractfile.Check",
+        "maximalClosure": "9c2ca5f7d58c3d28ef5b44b02a86adef",
+        "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+        "observationSubjectSymbol": "Check",
+        "observationObservable": false,
+        "observationReason": "subject reachability is not closed: computed function call in github.com/goccy/go-yaml/token.New",
+        "observationEvidence": "7bc66070b1662557ec2af4093badc269",
+        "runtimeInputs": "eyJ2IjoxfQ",
+        "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestCheck",
+          "maximalClosure": "160c695f6448fb3d22dc9b7ffab50df7",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestCheck",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "b6411373d2e316022625468d9c5f825f",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestCheckConstructedNodes",
+          "maximalClosure": "9e8cec73281df93d965db09c9f968b8a",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestCheckConstructedNodes",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "e1fc4a100b0b445af66805c6ef658ecb",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestDoc",
+          "maximalClosure": "8d516631c54bfc2ba1a221ae7875adb9",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestDoc",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "bc2f59b60ab1ef43fad99612c8ed98e3",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        }
+      ],
+      "oracleExplicit": false,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestCheck",
+            "hash": "cb3bbf711a93ee3c15346723930f60cc",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestCheckConstructedNodes",
+            "hash": "58bb6babec485446bf710f6eab05165c",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestDoc",
+            "hash": "f59ea65065a65492e58df584b0b1dfa7",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "parseBody",
+            "hash": "80e59fc983c598e365143718c724fb59",
+            "package": "contractfile"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "contractfile_test.go",
+            "hash": "22d7452b948f6a85b81c609513129f1b"
+          }
+        ]
+      },
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
+      "dirty": false,
+      "candidateCount": 58,
+      "generated": 58,
+      "mutants": 42,
+      "killed": 42,
+      "discarded": 16,
+      "operators": [
+        {
+          "operator": "block: empty",
+          "generated": 10,
+          "discarded": 0,
+          "killed": 10,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 4,
+          "discarded": 1,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 4,
+          "discarded": 1,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 4,
+          "discarded": 0,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "range body: prepend break",
+          "generated": 2,
+          "discarded": 0,
+          "killed": 2,
+          "survived": 0
+        },
+        {
+          "operator": "return: nil",
+          "generated": 9,
+          "discarded": 1,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 16,
+          "discarded": 8,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "string literal: nonempty -\u003e empty",
+          "generated": 5,
+          "discarded": 5,
+          "killed": 0,
+          "survived": 0
+        },
+        {
+          "operator": "unary: ! -\u003e identity",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        }
+      ],
+      "kills": [
+        {
+          "position": "contractfile.go:65:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:66:24",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:67:10",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:68:22",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:69:10",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:70:21",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheckConstructedNodes"
+        },
+        {
+          "position": "contractfile.go:71:10",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheckConstructedNodes"
+        },
+        {
+          "position": "contractfile.go:72:19",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:73:10",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:74:23",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:75:16",
+          "operator": "range body: prepend break",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:76:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:76:42",
+          "operator": "unary: ! -\u003e identity",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:76:42",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:76:46",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:5",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:30",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:30",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:30",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:34",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:77:41",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:78:6",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:78:13",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:80:5",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:80:12",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:4",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:31",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:31",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:31",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:35",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:82:42",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:83:5",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:83:12",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:86:24",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:87:15",
+          "operator": "range body: prepend break",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:88:24",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:88:24",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:88:24",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:88:28",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:88:35",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:89:5",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        },
+        {
+          "position": "contractfile.go:89:12",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestCheck"
+        }
+      ]
+    },
+    {
+      "symbol": "github.com/greatliontech/pb/internal/contractfile.Doc",
+      "bodyHash": "188c90e037ee95479a3ea9e57e43b486575271e149972fffc2591757df392f3e",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/contractfile.Doc",
+        "maximalClosure": "4459f6ac48e9f46929d294755b5e28f0",
+        "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+        "observationSubjectSymbol": "Doc",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+        "observationEvidence": "d26bae6bbb9828e290c952db5ed2c584",
+        "runtimeInputs": "eyJ2IjoxfQ",
+        "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestCheck",
+          "maximalClosure": "160c695f6448fb3d22dc9b7ffab50df7",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestCheck",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "b6411373d2e316022625468d9c5f825f",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestCheckConstructedNodes",
+          "maximalClosure": "9e8cec73281df93d965db09c9f968b8a",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestCheckConstructedNodes",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "e1fc4a100b0b445af66805c6ef658ecb",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/contractfile.TestDoc",
+          "maximalClosure": "8d516631c54bfc2ba1a221ae7875adb9",
+          "testVariantClosure": "16c1000cc9fff545380e9db557b5a249",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/contractfile",
+          "observationSubjectSymbol": "TestDoc",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches unaudited standard operation math.Max",
+          "observationEvidence": "bc2f59b60ab1ef43fad99612c8ed98e3",
+          "runtimeInputs": "eyJ2IjoxfQ",
+          "runtimeDigest": "3a79bf37b571938d1f2907afb6a643f4"
+        }
+      ],
+      "oracleExplicit": false,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestCheck",
+            "hash": "cb3bbf711a93ee3c15346723930f60cc",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestCheckConstructedNodes",
+            "hash": "58bb6babec485446bf710f6eab05165c",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "TestDoc",
+            "hash": "f59ea65065a65492e58df584b0b1dfa7",
+            "package": "contractfile"
+          },
+          {
+            "file": "contractfile_test.go",
+            "kind": "func",
+            "name": "parseBody",
+            "hash": "80e59fc983c598e365143718c724fb59",
+            "package": "contractfile"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "contractfile_test.go",
+            "hash": "22d7452b948f6a85b81c609513129f1b"
+          }
+        ]
+      },
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
+      "dirty": false,
+      "candidateCount": 53,
+      "generated": 53,
+      "mutants": 39,
+      "killed": 39,
+      "discarded": 14,
+      "operators": [
+        {
+          "operator": "block: empty",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 5,
+          "discarded": 1,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 5,
+          "discarded": 1,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "equality: == -\u003e !=",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "integer literal: magnitude +1",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "return: nil",
+          "generated": 12,
+          "discarded": 8,
+          "killed": 4,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 11,
+          "discarded": 3,
+          "killed": 8,
+          "survived": 0
+        },
+        {
+          "operator": "string literal: nonempty -\u003e empty",
+          "generated": 2,
+          "discarded": 1,
+          "killed": 1,
+          "survived": 0
+        },
+        {
+          "operator": "unary: ! -\u003e identity",
+          "generated": 1,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 0
+        }
+      ],
+      "kills": [
+        {
+          "position": "contractfile.go:37:42",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:38:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:38:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:38:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:38:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:38:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:39:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:39:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:23",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:26",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:41:28",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:42:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:42:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:44:23",
+          "operator": "integer literal: magnitude +1",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:10",
+          "operator": "equality: == -\u003e !=",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:45:17",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:46:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:25",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:25",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:25",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:29",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:48:36",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:49:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:49:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:52:5",
+          "operator": "unary: ! -\u003e identity",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:52:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:52:9",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:53:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:53:15",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        },
+        {
+          "position": "contractfile.go:53:26",
+          "operator": "string literal: nonempty -\u003e empty",
+          "killer": "github.com/greatliontech/pb/internal/contractfile.TestDoc"
+        }
+      ],
+      "candidateEvidence": [
+        {
+          "position": "contractfile.go:38:5",
+          "operator": "condition: force false",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "contractfile.go:38:16",
+          "operator": "block: empty",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "contractfile.go:39:3",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "contractfile.go:44:23",
+          "operator": "integer literal: magnitude +1",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        }
+      ]
+    },
+    {
       "symbol": "github.com/greatliontech/pb/internal/direct.Fetcher.Fetch",
       "bodyHash": "34420ffed8d9fd0696f911971b160aef95d5c94e778941b2810f54657ff07bed",
       "operatorSet": "go/12",
@@ -54333,12 +55157,12 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/lockfile.Parse",
-      "bodyHash": "151428747f3215ed33c4f020bca3bc911abf320f747e03bd39ebb597942343ed",
+      "bodyHash": "27666081c0330d7e974953244303fe28cf0db2eaeb2625a0ffd46b352f27b14a",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/lockfile.Parse",
-        "maximalClosure": "98b93c9f6e53d1f17a2b277771478109",
+        "maximalClosure": "6839910923077ed32713659f8337d528",
         "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54348,14 +55172,14 @@
         "observationSubjectSymbol": "Parse",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Getenv (environment input)",
-        "observationEvidence": "f9bc10c924d14dff52494f740153a9cf",
+        "observationEvidence": "154db854d6a7d02bf259987120bafd70",
         "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
         "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.FuzzParse",
-          "maximalClosure": "c3d5126ac6dce0579c4a9f9426be3d9f",
+          "maximalClosure": "4a3361a4b22df06d6067841ee22a3f0c",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54365,13 +55189,13 @@
           "observationSubjectSymbol": "FuzzParse",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "39260f7a6e1e3112bf6380be726352e5",
+          "observationEvidence": "ffae713772784f5fc35178a901a99479",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestAcceptanceVariants",
-          "maximalClosure": "2484d1da8cf7c080658852e0dd36e47e",
+          "maximalClosure": "be4583e75d2e1cc7fc39f1d78a4b6bb5",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54381,13 +55205,13 @@
           "observationSubjectSymbol": "TestAcceptanceVariants",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "cb7fa4fedba525afe0542ec3444a17fc",
+          "observationEvidence": "d8f4bac545279368964eca8cc11ea6c2",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestAddUpdateSemantics",
-          "maximalClosure": "f8bb48a0627dcca777cb31beb93b80b6",
+          "maximalClosure": "e5351fbd09d5d30ca07355f86958a374",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54397,13 +55221,13 @@
           "observationSubjectSymbol": "TestAddUpdateSemantics",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "86550c0c1035d008228b25631141a9c9",
+          "observationEvidence": "4d0d4e30439b4b4e6011c192004cbf01",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestEncodeGolden",
-          "maximalClosure": "262e9667f41329e38bf88c7ac827d7bb",
+          "maximalClosure": "a7c5ef793ee47a36c283dda175eeb9ed",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54413,13 +55237,13 @@
           "observationSubjectSymbol": "TestEncodeGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "9d83275a7705ae99749fc9f66df55a26",
+          "observationEvidence": "33008ebdc1505799d98726102db2dacf",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestEncodeNoPluginsGolden",
-          "maximalClosure": "a2d964823f81bfe2d457484c9f9dbf5c",
+          "maximalClosure": "9e7d36eba530825faed21ba80024ae1a",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54429,13 +55253,13 @@
           "observationSubjectSymbol": "TestEncodeNoPluginsGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "7e24d7d9a657039d495c0ce1f9aa765b",
+          "observationEvidence": "bab7c8be60888f8706e5e1d43c326afa",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestEncodeRejectsUnsafeScalars",
-          "maximalClosure": "8a325c883bd59c0708fcb7163dc83847",
+          "maximalClosure": "3e6c229e981965ebf724f352be9e76ff",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54445,13 +55269,13 @@
           "observationSubjectSymbol": "TestEncodeRejectsUnsafeScalars",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "204cf72fd8e7048d1115ad600c6cca64",
+          "observationEvidence": "ee96943268323769586407a9ca7904f4",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestFixedPointProperty",
-          "maximalClosure": "014149e651ecef9962979fca0ad4bfef",
+          "maximalClosure": "ad61f1de3fb8fc74fe03095804284f5f",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54461,13 +55285,13 @@
           "observationSubjectSymbol": "TestFixedPointProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Remove (path mutation)",
-          "observationEvidence": "2441585dff8347bb523ccdd13c7bd2f8",
+          "observationEvidence": "f2262d2c3517d6d868ed3f420c887312",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestForbiddenYAMLConstructs",
-          "maximalClosure": "063af9567f4e5635a2c81e79128948e2",
+          "maximalClosure": "0b68fb3777ad8fcfcc1690a9041a8fd2",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54477,13 +55301,13 @@
           "observationSubjectSymbol": "TestForbiddenYAMLConstructs",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "26ed0d8589ec88d5cd3b4b0809e97ac9",
+          "observationEvidence": "7cfedb4c6edf2dbb6f00155fb128752a",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestGuardMessages",
-          "maximalClosure": "d4ce4a406250f5a81ef05cc94034d343",
+          "maximalClosure": "bf2e4a73b24d94e3c92f3050adfd88f5",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54493,13 +55317,13 @@
           "observationSubjectSymbol": "TestGuardMessages",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "6d4e784e31dd6edfbaab663f9bb4c33c",
+          "observationEvidence": "65225d00c1dabe2a143470ec48de1300",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestHashFormRejections",
-          "maximalClosure": "e9246416d12a6e5001a97f22f1b0dd91",
+          "maximalClosure": "20f23090ec073ef49526e4deba632811",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54509,13 +55333,13 @@
           "observationSubjectSymbol": "TestHashFormRejections",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "ac878a22ea037ace38f94d1ce586ef8c",
+          "observationEvidence": "54efe21f55840e14cf3ea26ee5c54bb8",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestModfileConsistencyProperty",
-          "maximalClosure": "62ade30b1ddbd469d0d295f037adfbff",
+          "maximalClosure": "38008592e45d369d3f0a443e7204e44f",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54525,13 +55349,13 @@
           "observationSubjectSymbol": "TestModfileConsistencyProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Remove (path mutation)",
-          "observationEvidence": "ec2b7ea9751e5904881442facb29452b",
+          "observationEvidence": "4106a88d55649b3991d877fc331549f2",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue",
-          "maximalClosure": "0c9a4903aa9138e50bc03266969b8659",
+          "maximalClosure": "0396d9a129daf7221c7d399a0c3430a0",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54541,13 +55365,13 @@
           "observationSubjectSymbol": "TestMutationResidue",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "6a12c07c9d0e36ab04af3bc4ba77b3aa",
+          "observationEvidence": "663a15fbd1141fc645ada0602c4c0d00",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip",
-          "maximalClosure": "6ccf47a3c8d1a723a5efb64b49a8f7d5",
+          "maximalClosure": "f6b6932e47fc4b6dea37473b4344a845",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54557,13 +55381,13 @@
           "observationSubjectSymbol": "TestParseGoldenRoundTrip",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "9a45df9d5846619bd93030bc41fc3318",
+          "observationEvidence": "7b8bbd5abc6babf5042d2bb0099596c0",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections",
-          "maximalClosure": "72840faae53730edeb093d69df3e9841",
+          "maximalClosure": "81df78ce34a56e388a627aae547c2632",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54573,13 +55397,13 @@
           "observationSubjectSymbol": "TestParseRejections",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "18db89165bf70fc8fa237933c7ce6716",
+          "observationEvidence": "35783882461f8427a5913a9a1a8991a3",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestPinsOnlyStructural",
-          "maximalClosure": "63f2c9feb5f0ce0ed69f9dde020d60d5",
+          "maximalClosure": "435c1a0c7ba36a7297218ed345313195",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54589,13 +55413,13 @@
           "observationSubjectSymbol": "TestPinsOnlyStructural",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "6269aecae1d0fa793b323b798b6b3704",
+          "observationEvidence": "ad51f8f3bca6473462ba6e3965c034ac",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestPlainScalarBoundaries",
-          "maximalClosure": "9a8190fd7601e69bab2bbbad882f93d1",
+          "maximalClosure": "e111d425ebd453aeed2b660e85369998",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54605,13 +55429,13 @@
           "observationSubjectSymbol": "TestPlainScalarBoundaries",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "cfeed591f5352b0ea8903b6aeb689443",
+          "observationEvidence": "a26785713aab747d620230e4fb92a31f",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestProvenanceTransition",
-          "maximalClosure": "74124dd962e0754214e66bbf3f3f5a08",
+          "maximalClosure": "8e297395caa77b6e30ea36065272b55a",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54621,13 +55445,13 @@
           "observationSubjectSymbol": "TestProvenanceTransition",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "891945095b9fae1c62fbc5e27c1d6172",
+          "observationEvidence": "6c37790248b960d3ed2cf901cbe36fe9",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestProvenanceTransitionMessages",
-          "maximalClosure": "e93fc2455bae4bb0ad29908de57b877e",
+          "maximalClosure": "2f9a2f00e5b4efe853c2a1f68f77320f",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54637,13 +55461,13 @@
           "observationSubjectSymbol": "TestProvenanceTransitionMessages",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "6b02411d76e13317f6a6e5d1a76906dc",
+          "observationEvidence": "7839681f204150857c79bfff9bd04b12",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestScalarSpellingsPreserved",
-          "maximalClosure": "5f2675021043e85dcdf21088f187032f",
+          "maximalClosure": "553b66f72cca7d3632b6fe366197750a",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54653,13 +55477,13 @@
           "observationSubjectSymbol": "TestScalarSpellingsPreserved",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "0d287195576895cc242958be68ebd3ea",
+          "observationEvidence": "c87291f926c3bf3a2c763abdf7b0098e",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestVerifyModule",
-          "maximalClosure": "0b9605656c80d69ede50f3b75130ce22",
+          "maximalClosure": "55876aecb12dc4e46e7cde0ee6492dfd",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54669,13 +55493,13 @@
           "observationSubjectSymbol": "TestVerifyModule",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Getenv (environment input)",
-          "observationEvidence": "b87a74b6faab5e8704d146318213cc56",
+          "observationEvidence": "63415e6a44ac75fa4ea3e9ed204be4df",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/lockfile.TestVerifyModuleProperty",
-          "maximalClosure": "5c039ede2f1f258cde5db226fc81d09c",
+          "maximalClosure": "ba0a8b76c9d376db7de21d6d68901355",
           "testVariantClosure": "c77b66f21acaa19d9e169f5195d6a502",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
@@ -54685,7 +55509,7 @@
           "observationSubjectSymbol": "TestVerifyModuleProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Remove (path mutation)",
-          "observationEvidence": "c0800be93aef4fbfab8c3e334704c50b",
+          "observationEvidence": "1ce7964f9050d4f11881f82b8104db7d",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9mdXp6L0Z1enpQYXJzZSIsImQiOiIzMjA5NDBiYjg2ZmVkNWQ4YmI1ZTQ0NGFjNjM2ZThiNSJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0Rml4ZWRQb2ludFByb3BlcnR5IiwiZCI6ImY4MWEzYjZkNmJmYjI5ODA0MWZiNWQ2ZGMxYTM2N2FlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL2xvY2tmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RNb2RmaWxlQ29uc2lzdGVuY3lQcm9wZXJ0eSIsImQiOiJkNDM0Yzk0ODQwMDUwNThmMTg2NjBiZjE0ZjY0NTg0YiJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9sb2NrZmlsZS90ZXN0ZGF0YS9yYXBpZC9UZXN0VmVyaWZ5TW9kdWxlUHJvcGVydHkiLCJkIjoiMmY3MGRkYTlhNzQ1Y2RiNGQxNTU3NjM4MDRmNzAzNjYifV19",
           "runtimeDigest": "a7021eb6e41bd78d84b53582766d209e"
         }
@@ -54877,13 +55701,13 @@
           }
         ]
       },
-      "commit": "266a63d7f24ea9702f7dc35d37657a8bc656510c",
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
       "dirty": false,
-      "candidateCount": 112,
-      "generated": 112,
-      "mutants": 84,
-      "killed": 84,
-      "discarded": 28,
+      "candidateCount": 79,
+      "generated": 79,
+      "mutants": 61,
+      "killed": 61,
+      "discarded": 18,
       "operators": [
         {
           "operator": "assignment: drop store",
@@ -54894,37 +55718,37 @@
         },
         {
           "operator": "block: empty",
-          "generated": 10,
+          "generated": 7,
           "discarded": 0,
-          "killed": 10,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "condition: force false",
-          "generated": 10,
-          "discarded": 1,
-          "killed": 9,
+          "generated": 7,
+          "discarded": 0,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "condition: force true",
-          "generated": 10,
-          "discarded": 1,
-          "killed": 9,
+          "generated": 7,
+          "discarded": 0,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "condition: negate",
-          "generated": 10,
+          "generated": 7,
           "discarded": 0,
-          "killed": 10,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "equality: != -\u003e ==",
-          "generated": 8,
+          "generated": 6,
           "discarded": 0,
-          "killed": 8,
+          "killed": 6,
           "survived": 0
         },
         {
@@ -54936,9 +55760,9 @@
         },
         {
           "operator": "integer literal: magnitude +1",
-          "generated": 4,
+          "generated": 1,
           "discarded": 0,
-          "killed": 4,
+          "killed": 1,
           "survived": 0
         },
         {
@@ -54950,512 +55774,378 @@
         },
         {
           "operator": "return: nil",
-          "generated": 22,
-          "discarded": 11,
-          "killed": 11,
+          "generated": 16,
+          "discarded": 8,
+          "killed": 8,
           "survived": 0
         },
         {
           "operator": "statement: delete",
-          "generated": 23,
-          "discarded": 6,
-          "killed": 17,
+          "generated": 17,
+          "discarded": 4,
+          "killed": 13,
           "survived": 0
         },
         {
           "operator": "string literal: nonempty -\u003e empty",
-          "generated": 9,
-          "discarded": 9,
+          "generated": 6,
+          "discarded": 6,
           "killed": 0,
-          "survived": 0
-        },
-        {
-          "operator": "unary: ! -\u003e identity",
-          "generated": 1,
-          "discarded": 0,
-          "killed": 1,
           "survived": 0
         }
       ],
       "kills": [
         {
-          "position": "lockfile.go:385:42",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestAcceptanceVariants"
-        },
-        {
-          "position": "lockfile.go:386:5",
+          "position": "lockfile.go:384:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:386:5",
+          "position": "lockfile.go:384:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:386:5",
+          "position": "lockfile.go:384:5",
           "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
+          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:386:9",
+          "position": "lockfile.go:384:9",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:386:16",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
-        },
-        {
-          "position": "lockfile.go:387:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
-        },
-        {
-          "position": "lockfile.go:387:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
-        },
-        {
-          "position": "lockfile.go:389:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:389:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:389:5",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:389:5",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:389:23",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:389:26",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:389:28",
+          "position": "lockfile.go:384:16",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:390:3",
+          "position": "lockfile.go:385:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:390:15",
+          "position": "lockfile.go:385:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:392:23",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:393:2",
+          "position": "lockfile.go:387:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:393:5",
+          "position": "lockfile.go:387:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:393:5",
+          "position": "lockfile.go:387:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:393:5",
+          "position": "lockfile.go:387:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:393:10",
+          "position": "lockfile.go:387:13",
           "operator": "equality: == -\u003e !=",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:393:17",
+          "position": "lockfile.go:387:20",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:394:3",
+          "position": "lockfile.go:388:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:394:15",
+          "position": "lockfile.go:388:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:397:5",
-          "operator": "unary: ! -\u003e identity",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:397:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:397:9",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:398:3",
+          "position": "lockfile.go:391:2",
           "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
+          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:398:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:400:38",
+          "position": "lockfile.go:391:60",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:400:38",
+          "position": "lockfile.go:391:60",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:400:38",
+          "position": "lockfile.go:391:60",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:400:42",
+          "position": "lockfile.go:391:64",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:400:49",
+          "position": "lockfile.go:391:71",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:401:3",
+          "position": "lockfile.go:392:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:401:15",
+          "position": "lockfile.go:392:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:404:2",
+          "position": "lockfile.go:394:2",
           "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
+          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:404:57",
+          "position": "lockfile.go:394:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:404:57",
+          "position": "lockfile.go:394:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:404:57",
+          "position": "lockfile.go:394:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:404:61",
+          "position": "lockfile.go:394:17",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:404:68",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:405:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:405:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:407:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:407:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:407:5",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:407:5",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
-        },
-        {
-          "position": "lockfile.go:407:17",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
-        },
-        {
-          "position": "lockfile.go:407:20",
+          "position": "lockfile.go:394:20",
           "operator": "integer literal: magnitude +1",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:407:22",
+          "position": "lockfile.go:394:22",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:408:3",
+          "position": "lockfile.go:395:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:408:15",
+          "position": "lockfile.go:395:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:411:14",
+          "position": "lockfile.go:398:14",
           "operator": "range body: prepend break",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:411:2",
+          "position": "lockfile.go:398:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:413:6",
+          "position": "lockfile.go:400:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:413:6",
+          "position": "lockfile.go:400:6",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:413:6",
+          "position": "lockfile.go:400:6",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:413:10",
+          "position": "lockfile.go:400:10",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:413:17",
+          "position": "lockfile.go:400:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:414:4",
+          "position": "lockfile.go:401:4",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:414:16",
+          "position": "lockfile.go:401:16",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:416:3",
+          "position": "lockfile.go:403:3",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:420:14",
+          "position": "lockfile.go:407:14",
           "operator": "range body: prepend break",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:420:2",
+          "position": "lockfile.go:407:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:422:6",
+          "position": "lockfile.go:409:6",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:422:6",
+          "position": "lockfile.go:409:6",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:422:6",
+          "position": "lockfile.go:409:6",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
         },
         {
-          "position": "lockfile.go:422:10",
+          "position": "lockfile.go:409:10",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:422:17",
+          "position": "lockfile.go:409:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
         },
         {
-          "position": "lockfile.go:423:4",
+          "position": "lockfile.go:410:4",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
         },
         {
-          "position": "lockfile.go:423:16",
+          "position": "lockfile.go:410:16",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestMutationResidue"
         },
         {
-          "position": "lockfile.go:425:3",
+          "position": "lockfile.go:412:3",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:427:2",
+          "position": "lockfile.go:414:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:427:25",
+          "position": "lockfile.go:414:25",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:427:25",
+          "position": "lockfile.go:414:25",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:427:25",
+          "position": "lockfile.go:414:25",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:427:29",
+          "position": "lockfile.go:414:29",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         },
         {
-          "position": "lockfile.go:427:36",
+          "position": "lockfile.go:414:36",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:428:3",
+          "position": "lockfile.go:415:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:428:15",
+          "position": "lockfile.go:415:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseRejections"
         },
         {
-          "position": "lockfile.go:430:9",
+          "position": "lockfile.go:417:9",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/lockfile.TestParseGoldenRoundTrip"
         }
       ],
       "candidateEvidence": [
         {
-          "position": "lockfile.go:386:5",
+          "position": "lockfile.go:387:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "lockfile.go:387:5",
           "operator": "condition: force false",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:386:16",
+          "position": "lockfile.go:387:20",
           "operator": "block: empty",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:387:3",
+          "position": "lockfile.go:388:3",
           "operator": "statement: delete",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:392:23",
-          "operator": "integer literal: magnitude +1",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "lockfile.go:397:9",
-          "operator": "block: empty",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "lockfile.go:398:3",
-          "operator": "statement: delete",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "lockfile.go:427:25",
+          "position": "lockfile.go:414:25",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:427:25",
+          "position": "lockfile.go:414:25",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:427:29",
+          "position": "lockfile.go:414:29",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "lockfile.go:430:9",
+          "position": "lockfile.go:417:9",
           "operator": "return: nil",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
@@ -67187,13 +67877,13 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/modfile.Parse",
-      "bodyHash": "64f362331590ca5659d45b05cc9d28c0634546977e11a5b046f553bf95280433",
+      "bodyHash": "818e8f9f1781c59085fdace44a9396192bef44a619d9135388b6d46fcdd00e7b",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/modfile.Parse",
-        "maximalClosure": "3db4b6e10704f0257a7823b7bd8ce14d",
-        "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+        "maximalClosure": "990424e5ffd68b1cbb91d0011db28c05",
+        "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
@@ -67202,15 +67892,15 @@
         "observationSubjectSymbol": "Parse",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-        "observationEvidence": "5c2a8caaa95531b20060dc8fd07fe492",
+        "observationEvidence": "a8428308128c3dbe1263730a156f9bf9",
         "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
         "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.FuzzParse",
-          "maximalClosure": "c3ef82daa2eb2a44b84a2f66f6532b68",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "97638b4375a188dcbc46a21498de324e",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67219,14 +67909,14 @@
           "observationSubjectSymbol": "FuzzParse",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "b28a00fdbe8c75acb118d3f2ad0446a8",
+          "observationEvidence": "fadca06ed03692265994c1cdfb4ac1cb",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestAcceptanceVariants",
-          "maximalClosure": "8b1cee65833c785ec2b779b7f43dfbc4",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "4894cd33b419b73a1bb8b3f6ec5cfec3",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67235,14 +67925,14 @@
           "observationSubjectSymbol": "TestAcceptanceVariants",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "ab08481f12fe6cfa007a9e097f39e902",
+          "observationEvidence": "07977014cb5f6c226825de319040cb40",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestCheckIdentity",
-          "maximalClosure": "e6549d76c3b73a4ad53f33edc661f630",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "44693cf4028502ef1592ba62ac01bdc3",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67251,14 +67941,14 @@
           "observationSubjectSymbol": "TestCheckIdentity",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "b1a4736d32f408b69696a79007d3ee96",
+          "observationEvidence": "5bdf75d8b1d9de77cac5a635599a098f",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestCheckIdentityProperty",
-          "maximalClosure": "4f6f5e16bc084eb928df1dbe969bdc80",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "6ba81dfe03488bb6f91f6ea2b1747f82",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67267,14 +67957,14 @@
           "observationSubjectSymbol": "TestCheckIdentityProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Remove (path mutation)",
-          "observationEvidence": "c622338241f77dde3cb8c4467ed50f7a",
+          "observationEvidence": "cf205a1220981599e984e864454f1a38",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestEncodeGolden",
-          "maximalClosure": "b76962b65b1c102f96cfd62549d24ee5",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "f28db46db04cfd9295d4332fb933ee96",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67283,14 +67973,14 @@
           "observationSubjectSymbol": "TestEncodeGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "650b3a273a3242548511fcbeced2ada9",
+          "observationEvidence": "1f6d6b136f3e6a793766549b2c21c1cc",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestForbiddenYAMLConstructs",
-          "maximalClosure": "e2577ea1432e49599e9210fd5437ba5b",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "abcccbcfb97c2c90bdf5a7c81796e2ad",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67299,14 +67989,46 @@
           "observationSubjectSymbol": "TestForbiddenYAMLConstructs",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "5276b677ec4e8f8056594dbcf5bd8244",
+          "observationEvidence": "3c7750cb2881b09568d531d445c894d7",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
+          "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/modfile.TestFromFileSet",
+          "maximalClosure": "37458d506b55da6e99a2a63cd01fb234",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfile",
+          "observationSubjectSymbol": "TestFromFileSet",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "c764bbe94dc1333b6106992d98459c9d",
+          "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
+          "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/modfile.TestFromFileSetRejectsInvalidRequired",
+          "maximalClosure": "b279ca0389d26d89c30005f8d24967b3",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfile",
+          "observationSubjectSymbol": "TestFromFileSetRejectsInvalidRequired",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
+          "observationEvidence": "7f3df93de42f7cdba3154931fc84b9a2",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestMappingShapeNonStringKeyFallback",
-          "maximalClosure": "53d3aa5d7e7bca67c7199f6975ff3dda",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "3b87c9987896f78e48fc9efdef7b8cf3",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67315,14 +68037,14 @@
           "observationSubjectSymbol": "TestMappingShapeNonStringKeyFallback",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "30cb279b1d045bee92e33e9e4d79adbb",
+          "observationEvidence": "5dc0f595140a77a9c927547277ccaf3b",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestParseGolden",
-          "maximalClosure": "96e03d7910a34035aab7a78a8041222d",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "3783e0aaddc2411eb589c38058ba8d53",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67331,14 +68053,14 @@
           "observationSubjectSymbol": "TestParseGolden",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "fdc6606b76c28a76155f0ef0f3f7d7b3",
+          "observationEvidence": "861fe0a69dfbdc26e2c2cd46e2f75427",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestParseRejections",
-          "maximalClosure": "37cc295f4e2944e574a0d18a844cc4d3",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "e7d2493bcab2a18ff53a53cd87e1a094",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67347,14 +68069,14 @@
           "observationSubjectSymbol": "TestParseRejections",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.LookupEnv (environment input)",
-          "observationEvidence": "4f62cd794807338084202654687709e4",
+          "observationEvidence": "878495933542d2c81024e73838085a7c",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/modfile.TestRoundTripProperty",
-          "maximalClosure": "46d24a1eb5e8c0201b0f91dd75419feb",
-          "testVariantClosure": "f008305cd1bc4f38619a59ecf86220f9",
+          "maximalClosure": "21f9895a1f88e642ac7ca0fd0622e413",
+          "testVariantClosure": "faa126b6ba3c146e9998c1d26289ee86",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -67363,7 +68085,7 @@
           "observationSubjectSymbol": "TestRoundTripProperty",
           "observationObservable": false,
           "observationReason": "startup effect: reaches os.Remove (path mutation)",
-          "observationEvidence": "31f37d1a8a69cc48563ad99a4bb7329c",
+          "observationEvidence": "f13b74b2e602937b7a9e99e972d75ee0",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNWQ1YTVmYmI5ZWEwM2I1YjkyMWQ1ZDBhYTYwOGM5In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL21vZGZpbGUvdGVzdGRhdGEvcmFwaWQvVGVzdENoZWNrSWRlbnRpdHlQcm9wZXJ0eSIsImQiOiJlYzVkNjExMmEwNjJjZjE1MjA5MmU5ODU5OTA1ZWEyMCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9tb2RmaWxlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RSb3VuZFRyaXBQcm9wZXJ0eSIsImQiOiI5YWM1MDg3ZjdlYWQ2Nzc0Y2U3NTE3YTJiNzBkZmY0MSJ9XX0",
           "runtimeDigest": "7c8f17f299f9a5de55410cc5fb1906e1"
         }
@@ -67417,8 +68139,22 @@
           {
             "file": "modfile_test.go",
             "kind": "func",
+            "name": "TestFromFileSet",
+            "hash": "177cca6327e20f89892e314993076188",
+            "package": "modfile"
+          },
+          {
+            "file": "modfile_test.go",
+            "kind": "func",
+            "name": "TestFromFileSetRejectsInvalidRequired",
+            "hash": "1ac8eb7439e98c6ef101d1efce760ba3",
+            "package": "modfile"
+          },
+          {
+            "file": "modfile_test.go",
+            "kind": "func",
             "name": "TestMappingShapeNonStringKeyFallback",
-            "hash": "3811b1ba66e9665cd8c190d1abb0dd49",
+            "hash": "d69d40b6be613a0d4f90c357ad0d0a1e",
             "package": "modfile"
           },
           {
@@ -67446,51 +68182,51 @@
         "fileHeaders": [
           {
             "file": "modfile_test.go",
-            "hash": "1cd0276a0c5bdd461e2146bb74821df0"
+            "hash": "7e3894dc3fe9e458ba32066398b71317"
           }
         ]
       },
-      "commit": "d12efbad8d16561a0b028a65b59e1e669fba680e",
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
       "dirty": false,
-      "candidateCount": 84,
-      "generated": 84,
-      "mutants": 64,
-      "killed": 63,
-      "discarded": 20,
+      "candidateCount": 51,
+      "generated": 51,
+      "mutants": 40,
+      "killed": 40,
+      "discarded": 11,
       "operators": [
         {
           "operator": "block: empty",
-          "generated": 8,
+          "generated": 5,
           "discarded": 0,
-          "killed": 8,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "condition: force false",
-          "generated": 8,
-          "discarded": 1,
-          "killed": 7,
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "condition: force true",
-          "generated": 8,
-          "discarded": 1,
-          "killed": 7,
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "condition: negate",
-          "generated": 8,
+          "generated": 5,
           "discarded": 0,
-          "killed": 8,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "equality: != -\u003e ==",
-          "generated": 6,
+          "generated": 4,
           "discarded": 0,
-          "killed": 6,
+          "killed": 4,
           "survived": 0
         },
         {
@@ -67501,447 +68237,292 @@
           "survived": 0
         },
         {
-          "operator": "integer literal: magnitude +1",
-          "generated": 3,
-          "discarded": 0,
-          "killed": 2,
-          "survived": 1
-        },
-        {
           "operator": "return: nil",
-          "generated": 18,
-          "discarded": 9,
-          "killed": 9,
+          "generated": 12,
+          "discarded": 6,
+          "killed": 6,
           "survived": 0
         },
         {
           "operator": "statement: delete",
-          "generated": 17,
-          "discarded": 3,
-          "killed": 14,
+          "generated": 11,
+          "discarded": 2,
+          "killed": 9,
           "survived": 0
         },
         {
           "operator": "string literal: nonempty -\u003e empty",
-          "generated": 6,
-          "discarded": 6,
+          "generated": 3,
+          "discarded": 3,
           "killed": 0,
-          "survived": 0
-        },
-        {
-          "operator": "unary: ! -\u003e identity",
-          "generated": 1,
-          "discarded": 0,
-          "killed": 1,
           "survived": 0
         }
       ],
       "kills": [
         {
-          "position": "modfile.go:56:5",
+          "position": "modfile.go:86:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:56:5",
+          "position": "modfile.go:86:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:56:5",
+          "position": "modfile.go:86:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:56:9",
+          "position": "modfile.go:86:9",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:56:16",
+          "position": "modfile.go:86:16",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:57:3",
+          "position": "modfile.go:87:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:57:15",
+          "position": "modfile.go:87:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:59:2",
+          "position": "modfile.go:89:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:59:5",
+          "position": "modfile.go:89:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:59:5",
+          "position": "modfile.go:89:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:59:5",
+          "position": "modfile.go:89:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:59:23",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:59:26",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:59:28",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:60:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:60:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:62:23",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:63:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:63:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:63:5",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:63:5",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:63:10",
+          "position": "modfile.go:89:13",
           "operator": "equality: == -\u003e !=",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:63:17",
+          "position": "modfile.go:89:20",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:64:3",
+          "position": "modfile.go:90:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:64:15",
+          "position": "modfile.go:90:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:67:5",
-          "operator": "unary: ! -\u003e identity",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:67:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:67:9",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:68:3",
+          "position": "modfile.go:92:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:68:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:70:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:70:38",
+          "position": "modfile.go:92:40",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:70:38",
+          "position": "modfile.go:92:40",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:70:38",
+          "position": "modfile.go:92:40",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:70:42",
+          "position": "modfile.go:92:44",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:70:49",
+          "position": "modfile.go:92:51",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:71:3",
+          "position": "modfile.go:93:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:71:15",
+          "position": "modfile.go:93:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:73:2",
+          "position": "modfile.go:96:2",
           "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
+          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:73:40",
+          "position": "modfile.go:96:60",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:73:40",
+          "position": "modfile.go:96:60",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:73:40",
+          "position": "modfile.go:96:60",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:73:44",
+          "position": "modfile.go:96:64",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:73:51",
+          "position": "modfile.go:96:71",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:74:3",
+          "position": "modfile.go:97:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:74:15",
+          "position": "modfile.go:97:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:77:2",
+          "position": "modfile.go:100:2",
           "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
+          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:77:57",
+          "position": "modfile.go:100:25",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:77:57",
+          "position": "modfile.go:100:25",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:77:57",
+          "position": "modfile.go:100:25",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:77:61",
+          "position": "modfile.go:100:29",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
         },
         {
-          "position": "modfile.go:77:68",
+          "position": "modfile.go:100:36",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:78:3",
+          "position": "modfile.go:101:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:78:15",
+          "position": "modfile.go:101:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
         },
         {
-          "position": "modfile.go:81:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:81:25",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:81:25",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:81:25",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:81:29",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        },
-        {
-          "position": "modfile.go:81:36",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:82:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:82:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
-        },
-        {
-          "position": "modfile.go:84:9",
+          "position": "modfile.go:103:9",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
-        }
-      ],
-      "survivors": [
-        {
-          "position": "modfile.go:55:42",
-          "operator": "integer literal: magnitude +1",
-          "execution": "executed-and-passed"
-        }
-      ],
-      "attested": [
-        {
-          "position": "modfile.go:55:42",
-          "operator": "integer literal: magnitude +1",
-          "reason": "parser mode 0 -\u003e 1 sets goccy's ParseComments, which only attaches comment nodes to the AST; modfile validation and encoding read document count, mapping structure, and scalar values, none of which comment attachment alters, so no in-contract input can distinguish the mutant"
         }
       ],
       "candidateEvidence": [
         {
-          "position": "modfile.go:56:5",
+          "position": "modfile.go:89:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "modfile.go:89:5",
           "operator": "condition: force false",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:56:16",
+          "position": "modfile.go:89:20",
           "operator": "block: empty",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:57:3",
+          "position": "modfile.go:90:3",
           "operator": "statement: delete",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:62:23",
-          "operator": "integer literal: magnitude +1",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "modfile.go:67:9",
-          "operator": "block: empty",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "modfile.go:68:3",
-          "operator": "statement: delete",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "modfile.go:73:40",
+          "position": "modfile.go:92:40",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:73:40",
+          "position": "modfile.go:92:40",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:73:44",
+          "position": "modfile.go:92:44",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:81:25",
+          "position": "modfile.go:100:25",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:81:25",
+          "position": "modfile.go:100:25",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:81:29",
+          "position": "modfile.go:100:29",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "modfile.go:84:9",
+          "position": "modfile.go:103:9",
           "operator": "return: nil",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
@@ -106015,13 +106596,13 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/trust.DefaultIdentity",
-      "bodyHash": "5b8197a556a1e340a415e21d7a09fb63ab399f780b5574b5e1c1b0f5d0e37dcd",
+      "bodyHash": "1ad8f95691bf91b5165a836ff391aeb73ef75c5eadd9ee6d481dbf8aca75315e",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/trust.DefaultIdentity",
-        "maximalClosure": "3839fdf28d8e857c09926786250bf1cf",
-        "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+        "maximalClosure": "39f40a34d1c6da53e04db42968036397",
+        "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
@@ -106030,15 +106611,15 @@
         "observationSubjectSymbol": "DefaultIdentity",
         "observationObservable": false,
         "observationReason": "startup effect: reaches net.Dial (network I/O)",
-        "observationEvidence": "b3158fb3dc493f9fa015200f4b8e2b56",
+        "observationEvidence": "20d5a04c8c51d9da33c74313f9332ad4",
         "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity",
-          "maximalClosure": "b97db4b2afb67a30dd94ff9076ba5114",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "7bdfbc4f9a2f8d4130a985f75f2b111a",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106047,14 +106628,14 @@
           "observationSubjectSymbol": "TestDefaultIdentity",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "ed6fd2e29b263782b615e628cadfca45",
+          "observationEvidence": "c039241d4cf908a8c5aea79c4e2ccff5",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestEvaluate",
-          "maximalClosure": "dd624670cd90c83b4cee129a7526c6a3",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "d9d8b64a553363e99fea076faefeeeea",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106063,14 +106644,14 @@
           "observationSubjectSymbol": "TestEvaluate",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "3356e158735329155ba09edec9916c37",
+          "observationEvidence": "1994022bef8b9e2b6273803ce6c952fd",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestEvaluateAlwaysPicksTheLongestMatch",
-          "maximalClosure": "cdbc8f567ffa6c72cb13447d2492ba37",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "d7aba7190e5caaf79c6ce209a570c8de",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106079,14 +106660,14 @@
           "observationSubjectSymbol": "TestEvaluateAlwaysPicksTheLongestMatch",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "8e79e3c26a57da1105ffb5790c9ece4b",
+          "observationEvidence": "85a35d25af03f267a032ed8a74b267c0",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestExplicitIdentity",
-          "maximalClosure": "bb38e8a67e5b938d95aa9a5da8134bce",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "28e5d5518a03414ed21a741c493f209f",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106095,14 +106676,14 @@
           "observationSubjectSymbol": "TestExplicitIdentity",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "2d6df989c8e69ce4214e64c3ddb86e76",
+          "observationEvidence": "b18369d9247d487eb187c7f890bcedfd",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestParse",
-          "maximalClosure": "57dc60f9465d10cb9186d34501e06673",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "6efc457c2427c91b04a5a5bb1a903ad7",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106111,7 +106692,7 @@
           "observationSubjectSymbol": "TestParse",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "a654e6e2978ba682e9aa3cea52f73021",
+          "observationEvidence": "5135da6a8356ef0be185465dd34484ab",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         }
@@ -106124,7 +106705,7 @@
             "file": "identity_test.go",
             "kind": "func",
             "name": "TestDefaultIdentity",
-            "hash": "a7839f1de18a8fb455c3c7b16085fb05",
+            "hash": "931007d748dee57c1358c645b3fc6fba",
             "package": "trust"
           },
           {
@@ -106139,6 +106720,13 @@
             "kind": "func",
             "name": "TestMain",
             "hash": "4f4498c46a6f6f670f8248a9e9c65a45",
+            "package": "trust"
+          },
+          {
+            "file": "identity_test.go",
+            "kind": "func",
+            "name": "defaultMatches",
+            "hash": "eec989bdaadf5ac721a86ad01b3cf7ba",
             "package": "trust"
           },
           {
@@ -106166,7 +106754,7 @@
         "fileHeaders": [
           {
             "file": "identity_test.go",
-            "hash": "c6d75902ca420b714700dc9afe905b3b"
+            "hash": "54687b0b6754bdfbe4a9b4159974be8c"
           },
           {
             "file": "trust_test.go",
@@ -106174,27 +106762,27 @@
           }
         ]
       },
-      "commit": "9a4810279393dd68cde2c7320b749193e96acb3d",
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
       "dirty": false,
       "candidateCount": 22,
       "generated": 22,
       "mutants": 15,
-      "killed": 10,
+      "killed": 15,
       "discarded": 7,
       "operators": [
         {
           "operator": "block: empty",
           "generated": 2,
           "discarded": 0,
-          "killed": 1,
-          "survived": 1
+          "killed": 2,
+          "survived": 0
         },
         {
           "operator": "condition: force false",
           "generated": 2,
           "discarded": 1,
-          "killed": 0,
-          "survived": 1
+          "killed": 1,
+          "survived": 0
         },
         {
           "operator": "condition: force true",
@@ -106221,15 +106809,15 @@
           "operator": "return: nil",
           "generated": 3,
           "discarded": 1,
-          "killed": 1,
-          "survived": 1
+          "killed": 2,
+          "survived": 0
         },
         {
           "operator": "statement: delete",
           "generated": 5,
           "discarded": 2,
-          "killed": 1,
-          "survived": 2
+          "killed": 3,
+          "survived": 0
         },
         {
           "operator": "string literal: nonempty -\u003e empty",
@@ -106248,108 +106836,79 @@
       ],
       "kills": [
         {
-          "position": "identity.go:48:5",
+          "position": "identity.go:52:5",
           "operator": "unary: ! -\u003e identity",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:48:5",
+          "position": "identity.go:52:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:48:9",
+          "position": "identity.go:52:9",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:49:3",
+          "position": "identity.go:53:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:49:30",
+          "position": "identity.go:53:30",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:53:62",
+          "position": "identity.go:57:55",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:53:70",
+          "position": "identity.go:57:63",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:55:27",
+          "position": "identity.go:59:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
+        },
+        {
+          "position": "identity.go:59:27",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:55:27",
+          "position": "identity.go:59:27",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:55:31",
+          "position": "identity.go:59:27",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
+        },
+        {
+          "position": "identity.go:59:31",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
-        }
-      ],
-      "survivors": [
-        {
-          "position": "identity.go:55:2",
-          "operator": "statement: delete",
-          "execution": "executed-and-passed"
         },
         {
-          "position": "identity.go:55:27",
-          "operator": "condition: force false",
-          "execution": "executed-and-passed"
-        },
-        {
-          "position": "identity.go:55:38",
+          "position": "identity.go:59:38",
           "operator": "block: empty",
-          "execution": "never-executed"
+          "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:56:3",
+          "position": "identity.go:60:3",
           "operator": "statement: delete",
-          "execution": "never-executed"
+          "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         },
         {
-          "position": "identity.go:56:30",
+          "position": "identity.go:60:30",
           "operator": "return: nil",
-          "execution": "never-executed"
-        }
-      ],
-      "attested": [
-        {
-          "position": "identity.go:55:2",
-          "operator": "statement: delete",
-          "reason": "the constructed identity always validates: QuoteMeta output plus /.* always compiles, and the axis shape is fixed (exact issuer from the forge table, subject regex kind only) - the guard is defense in depth for a state the constructor cannot produce"
-        },
-        {
-          "position": "identity.go:55:27",
-          "operator": "condition: force false",
-          "reason": "the constructed identity always validates: QuoteMeta output plus /.* always compiles, and the axis shape is fixed (exact issuer from the forge table, subject regex kind only) - the guard is defense in depth for a state the constructor cannot produce"
-        },
-        {
-          "position": "identity.go:55:38",
-          "operator": "block: empty",
-          "reason": "the constructed identity always validates: QuoteMeta output plus /.* always compiles, and the axis shape is fixed (exact issuer from the forge table, subject regex kind only) - the guard is defense in depth for a state the constructor cannot produce"
-        },
-        {
-          "position": "identity.go:56:30",
-          "operator": "return: nil",
-          "reason": "the constructed identity always validates: QuoteMeta output plus /.* always compiles, and the axis shape is fixed (exact issuer from the forge table, subject regex kind only) - the guard is defense in depth for a state the constructor cannot produce"
-        },
-        {
-          "position": "identity.go:56:3",
-          "operator": "statement: delete",
-          "reason": "the constructed identity always validates: QuoteMeta output plus /.* always compiles, and the axis shape is fixed (exact issuer from the forge table, subject regex kind only) - the guard is defense in depth for a state the constructor cannot produce"
+          "killer": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
         }
       ]
     },
@@ -106624,13 +107183,13 @@
     },
     {
       "symbol": "github.com/greatliontech/pb/internal/trust.Parse",
-      "bodyHash": "d2b297509ae4a25af4f5048e4d0a94ccca2845a860370c19a896526af05b79b9",
+      "bodyHash": "1aa88b6a5d7426727dbeb6ca660fc2fde147cbc540c3be9136eb83bc87ad247a",
       "operatorSet": "go/12",
       "budget": 0,
       "targetEvidence": {
         "symbol": "github.com/greatliontech/pb/internal/trust.Parse",
-        "maximalClosure": "661c9fdb5c461a9dc11f77cb5ed39535",
-        "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+        "maximalClosure": "559b27d02dffd2fd7223880a23bfce16",
+        "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
@@ -106639,15 +107198,15 @@
         "observationSubjectSymbol": "Parse",
         "observationObservable": false,
         "observationReason": "startup effect: reaches net.Dial (network I/O)",
-        "observationEvidence": "497a7f8af544aea2af3b561e7e124fc9",
+        "observationEvidence": "0b4bf70bdc62532adfc5a9dcf5bc7755",
         "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
       "oracleEvidence": [
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity",
-          "maximalClosure": "b97db4b2afb67a30dd94ff9076ba5114",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "7bdfbc4f9a2f8d4130a985f75f2b111a",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106656,14 +107215,14 @@
           "observationSubjectSymbol": "TestDefaultIdentity",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "ed6fd2e29b263782b615e628cadfca45",
+          "observationEvidence": "c039241d4cf908a8c5aea79c4e2ccff5",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestEvaluate",
-          "maximalClosure": "dd624670cd90c83b4cee129a7526c6a3",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "d9d8b64a553363e99fea076faefeeeea",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106672,14 +107231,14 @@
           "observationSubjectSymbol": "TestEvaluate",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "3356e158735329155ba09edec9916c37",
+          "observationEvidence": "1994022bef8b9e2b6273803ce6c952fd",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestEvaluateAlwaysPicksTheLongestMatch",
-          "maximalClosure": "cdbc8f567ffa6c72cb13447d2492ba37",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "d7aba7190e5caaf79c6ce209a570c8de",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106688,14 +107247,14 @@
           "observationSubjectSymbol": "TestEvaluateAlwaysPicksTheLongestMatch",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "8e79e3c26a57da1105ffb5790c9ece4b",
+          "observationEvidence": "85a35d25af03f267a032ed8a74b267c0",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestExplicitIdentity",
-          "maximalClosure": "bb38e8a67e5b938d95aa9a5da8134bce",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "28e5d5518a03414ed21a741c493f209f",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106704,14 +107263,14 @@
           "observationSubjectSymbol": "TestExplicitIdentity",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "2d6df989c8e69ce4214e64c3ddb86e76",
+          "observationEvidence": "b18369d9247d487eb187c7f890bcedfd",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         },
         {
           "symbol": "github.com/greatliontech/pb/internal/trust.TestParse",
-          "maximalClosure": "57dc60f9465d10cb9186d34501e06673",
-          "testVariantClosure": "18a3f322d79ec8a4f6c1217f70d40af2",
+          "maximalClosure": "6efc457c2427c91b04a5a5bb1a903ad7",
+          "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
           "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
           "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
           "observationAssertion": "caller assertion",
@@ -106720,7 +107279,7 @@
           "observationSubjectSymbol": "TestParse",
           "observationObservable": false,
           "observationReason": "startup effect: reaches net.Dial (network I/O)",
-          "observationEvidence": "a654e6e2978ba682e9aa3cea52f73021",
+          "observationEvidence": "5135da6a8356ef0be185465dd34484ab",
           "runtimeInputs": "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
           "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
         }
@@ -106733,7 +107292,7 @@
             "file": "identity_test.go",
             "kind": "func",
             "name": "TestDefaultIdentity",
-            "hash": "a7839f1de18a8fb455c3c7b16085fb05",
+            "hash": "931007d748dee57c1358c645b3fc6fba",
             "package": "trust"
           },
           {
@@ -106748,6 +107307,13 @@
             "kind": "func",
             "name": "TestMain",
             "hash": "4f4498c46a6f6f670f8248a9e9c65a45",
+            "package": "trust"
+          },
+          {
+            "file": "identity_test.go",
+            "kind": "func",
+            "name": "defaultMatches",
+            "hash": "eec989bdaadf5ac721a86ad01b3cf7ba",
             "package": "trust"
           },
           {
@@ -106775,7 +107341,7 @@
         "fileHeaders": [
           {
             "file": "identity_test.go",
-            "hash": "c6d75902ca420b714700dc9afe905b3b"
+            "hash": "54687b0b6754bdfbe4a9b4159974be8c"
           },
           {
             "file": "trust_test.go",
@@ -106783,13 +107349,13 @@
           }
         ]
       },
-      "commit": "9a4810279393dd68cde2c7320b749193e96acb3d",
+      "commit": "c4de1fe6c210693575e2fcc706af5b6368fa5537",
       "dirty": false,
-      "candidateCount": 102,
-      "generated": 102,
-      "mutants": 76,
-      "killed": 76,
-      "discarded": 26,
+      "candidateCount": 69,
+      "generated": 69,
+      "mutants": 53,
+      "killed": 53,
+      "discarded": 16,
       "operators": [
         {
           "operator": "assignment: drop store",
@@ -106800,37 +107366,37 @@
         },
         {
           "operator": "block: empty",
-          "generated": 12,
+          "generated": 9,
           "discarded": 0,
-          "killed": 12,
+          "killed": 9,
           "survived": 0
         },
         {
           "operator": "condition: force false",
-          "generated": 8,
-          "discarded": 1,
-          "killed": 7,
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "condition: force true",
-          "generated": 8,
-          "discarded": 1,
-          "killed": 7,
+          "generated": 5,
+          "discarded": 0,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "condition: negate",
-          "generated": 8,
+          "generated": 5,
           "discarded": 0,
-          "killed": 8,
+          "killed": 5,
           "survived": 0
         },
         {
           "operator": "equality: != -\u003e ==",
-          "generated": 6,
+          "generated": 4,
           "discarded": 0,
-          "killed": 6,
+          "killed": 4,
           "survived": 0
         },
         {
@@ -106838,13 +107404,6 @@
           "generated": 1,
           "discarded": 0,
           "killed": 1,
-          "survived": 0
-        },
-        {
-          "operator": "integer literal: magnitude +1",
-          "generated": 3,
-          "discarded": 0,
-          "killed": 3,
           "survived": 0
         },
         {
@@ -106856,514 +107415,380 @@
         },
         {
           "operator": "return: nil",
-          "generated": 20,
-          "discarded": 10,
-          "killed": 10,
+          "generated": 14,
+          "discarded": 7,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "statement: delete",
-          "generated": 20,
-          "discarded": 9,
-          "killed": 11,
+          "generated": 14,
+          "discarded": 7,
+          "killed": 7,
           "survived": 0
         },
         {
           "operator": "string literal: nonempty -\u003e empty",
-          "generated": 11,
-          "discarded": 5,
+          "generated": 8,
+          "discarded": 2,
           "killed": 6,
-          "survived": 0
-        },
-        {
-          "operator": "unary: ! -\u003e identity",
-          "generated": 1,
-          "discarded": 0,
-          "killed": 1,
           "survived": 0
         }
       ],
       "kills": [
         {
-          "position": "trust.go:72:42",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:73:5",
+          "position": "trust.go:72:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:73:5",
+          "position": "trust.go:72:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:73:5",
+          "position": "trust.go:72:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:73:9",
+          "position": "trust.go:72:9",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:73:16",
+          "position": "trust.go:72:16",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:74:3",
+          "position": "trust.go:73:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:74:15",
+          "position": "trust.go:73:15",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:76:2",
+          "position": "trust.go:75:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:76:5",
+          "position": "trust.go:75:5",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:76:5",
+          "position": "trust.go:75:5",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:76:5",
+          "position": "trust.go:75:5",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:76:23",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:76:26",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:76:28",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:77:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:77:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:79:23",
-          "operator": "integer literal: magnitude +1",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:80:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:80:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:80:5",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:80:5",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:80:10",
+          "position": "trust.go:75:13",
           "operator": "equality: == -\u003e !=",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:80:17",
+          "position": "trust.go:75:20",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:81:3",
+          "position": "trust.go:78:3",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:81:10",
+          "position": "trust.go:78:10",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:83:2",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:83:35",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:83:35",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:83:35",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:83:39",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:83:46",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:84:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:84:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:87:5",
-          "operator": "unary: ! -\u003e identity",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:87:5",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:87:9",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:88:3",
-          "operator": "statement: delete",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:88:15",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:91:15",
+          "position": "trust.go:81:15",
           "operator": "range body: prepend break",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:94:8",
-          "operator": "string literal: nonempty -\u003e empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:94:17",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:95:34",
-          "operator": "string literal: nonempty -\u003e empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:96:7",
-          "operator": "condition: negate",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:96:7",
-          "operator": "condition: force true",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:96:7",
-          "operator": "condition: force false",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:96:11",
-          "operator": "equality: != -\u003e ==",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:96:18",
-          "operator": "block: empty",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:97:5",
+          "position": "trust.go:81:2",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:97:17",
-          "operator": "return: nil",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:99:4",
-          "operator": "assignment: drop store",
-          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
-        },
-        {
-          "position": "trust.go:100:8",
+          "position": "trust.go:84:8",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:100:17",
+          "position": "trust.go:84:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:101:39",
+          "position": "trust.go:85:34",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:102:7",
+          "position": "trust.go:86:7",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:102:7",
+          "position": "trust.go:86:7",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:102:7",
+          "position": "trust.go:86:7",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:102:11",
+          "position": "trust.go:86:11",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:102:18",
+          "position": "trust.go:86:18",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:103:5",
+          "position": "trust.go:87:5",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:103:17",
+          "position": "trust.go:87:17",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:105:4",
+          "position": "trust.go:89:4",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:106:8",
+          "position": "trust.go:90:8",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:106:17",
+          "position": "trust.go:90:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:107:39",
+          "position": "trust.go:91:39",
           "operator": "string literal: nonempty -\u003e empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:108:7",
+          "position": "trust.go:92:7",
           "operator": "condition: negate",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:108:7",
+          "position": "trust.go:92:7",
           "operator": "condition: force true",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:108:7",
+          "position": "trust.go:92:7",
           "operator": "condition: force false",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:108:11",
+          "position": "trust.go:92:11",
           "operator": "equality: != -\u003e ==",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:108:18",
+          "position": "trust.go:92:18",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:109:5",
+          "position": "trust.go:93:5",
           "operator": "statement: delete",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:109:17",
+          "position": "trust.go:93:17",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:111:4",
+          "position": "trust.go:95:4",
           "operator": "assignment: drop store",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:112:10",
+          "position": "trust.go:96:8",
+          "operator": "string literal: nonempty -\u003e empty",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:96:17",
           "operator": "block: empty",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:113:16",
+          "position": "trust.go:97:39",
+          "operator": "string literal: nonempty -\u003e empty",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:98:7",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:98:7",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:98:7",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:98:11",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:98:18",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:99:5",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:99:17",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         },
         {
-          "position": "trust.go:116:9",
+          "position": "trust.go:101:4",
+          "operator": "assignment: drop store",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:102:10",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:103:16",
+          "operator": "return: nil",
+          "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
+        },
+        {
+          "position": "trust.go:106:9",
           "operator": "return: nil",
           "killer": "github.com/greatliontech/pb/internal/trust.TestParse"
         }
       ],
       "candidateEvidence": [
         {
-          "position": "trust.go:73:5",
+          "position": "trust.go:75:2",
+          "operator": "statement: delete",
+          "reason": "mutant test process panicked before observation finalization",
+          "disposition": "killed"
+        },
+        {
+          "position": "trust.go:75:5",
           "operator": "condition: force false",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:73:16",
+          "position": "trust.go:75:20",
           "operator": "block: empty",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:74:3",
+          "position": "trust.go:78:3",
           "operator": "statement: delete",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:79:23",
-          "operator": "integer literal: magnitude +1",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "trust.go:81:10",
+          "position": "trust.go:78:10",
           "operator": "return: nil",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:87:9",
-          "operator": "block: empty",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "trust.go:88:3",
-          "operator": "statement: delete",
-          "reason": "mutant test process panicked before observation finalization",
-          "disposition": "killed"
-        },
-        {
-          "position": "trust.go:96:7",
+          "position": "trust.go:86:7",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:96:7",
+          "position": "trust.go:86:7",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:96:11",
+          "position": "trust.go:86:11",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:102:7",
+          "position": "trust.go:92:7",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:102:7",
+          "position": "trust.go:92:7",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:102:11",
+          "position": "trust.go:92:11",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:108:7",
+          "position": "trust.go:98:7",
           "operator": "condition: negate",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:108:7",
+          "position": "trust.go:98:7",
           "operator": "condition: force true",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:108:11",
+          "position": "trust.go:98:11",
           "operator": "equality: != -\u003e ==",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
         },
         {
-          "position": "trust.go:116:9",
+          "position": "trust.go:106:9",
           "operator": "return: nil",
           "reason": "mutant test process panicked before observation finalization",
           "disposition": "killed"
