@@ -19,5 +19,5 @@ module-resolution.md, module-proxy.md, provenance.md, workspace.md
 - [x] 10. Provenance verification core (shared-library extraction
       coordinated with skillset; pb-side interface first)
 - [x] 11. Trust policy evaluation & lockfile provenance records
-- [ ] 12. Workspace resolution root
+- [x] 12. Workspace resolution root
 - [ ] 13. dep verbs: init, tidy, download, update, graph, why, verify

@@ -6,7 +6,10 @@ Its semantics follow Go workspaces: a `use` list, local override, one
 lockfile at the root.
 
 **workspace** (term): A directory containing a workspace file `pb.work`,
-serving as the resolution root for the modules it uses.
+serving as the resolution root for the modules it uses. The nearest
+workspace file above a directory governs it; a workspace directory used
+by an outer workspace is an ordinary member there, and resolves as its
+own workspace only from within.
 
 **workspace module** (term): A module whose root directory is listed in
 the workspace file's `use` list.
@@ -31,3 +34,9 @@ their own.
 **REQ-work-default** (behavior): Absent a workspace file, a module's own
 root MUST serve as the resolution root — a single-module workspace in
 all but name.
+
+**REQ-work-membership** (behavior): Operating from a module inside a
+workspace whose `use` list does not include it MUST fail: the governing
+resolution root would neither treat the module as local nor carry its
+requirements, so resolving silently against it answers for the wrong
+root.

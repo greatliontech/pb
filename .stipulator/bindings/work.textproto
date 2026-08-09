@@ -1,0 +1,119 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-work-schema"
+  content_hash: "e566831fa29a067611d68665874dedcdd320ab97967a8aa279e128e255630f90"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "de6eb238cfb3cd9b93c7766790923e91b3e2c6daec660da8ac5aa45c0f9452f4"
+}
+
+bindings {
+  requirement_id: "REQ-work-schema"
+  content_hash: "e566831fa29a067611d68665874dedcdd320ab97967a8aa279e128e255630f90"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestParse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0ab2752c513b74fe94955409e79344d13e54c2e12b8d25854f05440bbdce31ba"
+}
+
+bindings {
+  requirement_id: "REQ-work-default"
+  content_hash: "f73920778e4fe7f0f0ad3ec7236898696eaed0ffe79ee3f00cb2ca7b0e62c7b7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.Find"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6c8f2c2397948281f94465d563aa982f3748701a844392bd5bc160ad69377ec0"
+}
+
+bindings {
+  requirement_id: "REQ-work-default"
+  content_hash: "f73920778e4fe7f0f0ad3ec7236898696eaed0ffe79ee3f00cb2ca7b0e62c7b7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestFind"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6c437b311bb3f2a5ad5d1b4b3165b793ffd7c3104faf0d41a643ac42eead0efb"
+}
+
+bindings {
+  requirement_id: "REQ-work-default"
+  content_hash: "f73920778e4fe7f0f0ad3ec7236898696eaed0ffe79ee3f00cb2ca7b0e62c7b7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestLoad"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6d6a9e611f554fa85143ac286f00c56efdfe0e952615ff016aa4eafc6cb5c85e"
+}
+
+bindings {
+  requirement_id: "REQ-work-local-resolution"
+  content_hash: "462b21b9d484330d5906e0f4719d7abd671641fc90f37e6edef64f675d807575"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.Root.IsLocal"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6d15c725ae6bf69b2eb21395c125a8c5b3c06049b6dc97d4d3270fed82e881a2"
+}
+
+bindings {
+  requirement_id: "REQ-work-local-resolution"
+  content_hash: "462b21b9d484330d5906e0f4719d7abd671641fc90f37e6edef64f675d807575"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestWorkspaceLocalsNeverEnterExternalSelection"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f0cc049900f5824959c45056c49ccba1ea3c5d796902969d755179aed54c180c"
+}
+
+bindings {
+  requirement_id: "REQ-work-external-resolution"
+  content_hash: "bb79835bd95ef87598136c98891147e8d95f0d19e0c399ba38c8c249f53832cb"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.Root.Requirements"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4c9d7a159dba568cb31f66804d23a23cc576f1f7cc0a77fe30e16198fd402545"
+}
+
+bindings {
+  requirement_id: "REQ-work-external-resolution"
+  content_hash: "bb79835bd95ef87598136c98891147e8d95f0d19e0c399ba38c8c249f53832cb"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestLoad"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6d6a9e611f554fa85143ac286f00c56efdfe0e952615ff016aa4eafc6cb5c85e"
+}
+
+bindings {
+  requirement_id: "REQ-work-external-resolution"
+  content_hash: "bb79835bd95ef87598136c98891147e8d95f0d19e0c399ba38c8c249f53832cb"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestWorkspaceLocalsNeverEnterExternalSelection"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f0cc049900f5824959c45056c49ccba1ea3c5d796902969d755179aed54c180c"
+}
+
+bindings {
+  requirement_id: "REQ-work-lockfile"
+  content_hash: "f88cf1ade0aea78f2576c1421f8385ee485000f07becb90e8dec63063e268576"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.Load"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "3cf2878596bf147d0ccfd0162dd6b1eea2609061618c43f60982572da76b7054"
+}
+
+bindings {
+  requirement_id: "REQ-work-lockfile"
+  content_hash: "f88cf1ade0aea78f2576c1421f8385ee485000f07becb90e8dec63063e268576"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestLockfilePlacementStructural"
+  role: BINDING_ROLE_PROVES
+  shape_hash: "30f5d7614bd47f045d57c07e43cfb6189ae81bae96f6663a9bef62154f475f8e"
+}
+
+bindings {
+  requirement_id: "REQ-work-lockfile"
+  content_hash: "f88cf1ade0aea78f2576c1421f8385ee485000f07becb90e8dec63063e268576"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/workspace.TestLoad"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6d6a9e611f554fa85143ac286f00c56efdfe0e952615ff016aa4eafc6cb5c85e"
+}
