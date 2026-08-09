@@ -11,6 +11,7 @@ require (
 	github.com/go-openapi/swag/conv v0.26.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/greatliontech/gitprov v0.0.0-20260809121825-04e102e35f68
+	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/sigstore/gitsign v0.16.0
 	github.com/sigstore/protobuf-specs v0.5.1
@@ -109,7 +110,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
 	github.com/googleapis/gax-go/v2 v2.19.0 // indirect
-	github.com/greatliontech/glob v0.1.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect

@@ -16,12 +16,11 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/parser"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/version"
 
+	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/modpath"
-	"github.com/greatliontech/pb/internal/yamlshape"
 )
 
 // ErrInvalid is wrapped by every module-file rejection other than an
@@ -83,29 +82,18 @@ type rawFile struct {
 // module value is a valid module path, every dependency key a valid module
 // path, and every dependency value a valid version (REQ-modfile-versions).
 func Parse(data []byte) (*File, error) {
-	astFile, err := parser.ParseBytes(data, 0)
+	mapping, err := contractfile.Doc(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
-	if len(astFile.Docs) != 1 {
-		return nil, fmt.Errorf("%w: expected exactly one YAML document, found %d", ErrInvalid, len(astFile.Docs))
-	}
-	body := astFile.Docs[0].Body
-	if body == nil {
+	if mapping == nil {
 		return nil, fmt.Errorf("%w: missing module key", ErrInvalid)
-	}
-	mapping, ok := body.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: top level must be a mapping", ErrInvalid)
-	}
-	if err := yamlshape.Check(mapping); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
 	if err := checkMappingShape(mapping); err != nil {
 		return nil, err
 	}
 	var raw rawFile
-	if err := yaml.NodeToValue(body, &raw, yaml.Strict()); err != nil {
+	if err := yaml.NodeToValue(mapping, &raw, yaml.Strict()); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
 	f := &File{Module: raw.Module, Deps: raw.Deps}
@@ -118,7 +106,7 @@ func Parse(data []byte) (*File, error) {
 // checkMappingShape enforces the schema at the AST level: keys are exactly
 // module (+ deps), and deps — when present — is a non-empty mapping (a
 // null or empty value is "present without dependencies", which the schema
-// excludes). It runs after yamlshape.Check, so every key is a string node
+// excludes). It runs after the admissibility check, so every key is a string node
 // and comparisons see the unquoted key value.
 func checkMappingShape(mapping *ast.MappingNode) error {
 	for _, kv := range mapping.Values {

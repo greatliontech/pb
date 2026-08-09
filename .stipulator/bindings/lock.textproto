@@ -293,9 +293,9 @@ bindings {
   requirement_id: "REQ-lock-acceptance"
   content_hash: "8b04ccd450c3ef4017ea9c8cedfe6077d8454cb13ca0f9a908f67946855f5cbd"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/yamlshape.Check"
+  symbol: "github.com/greatliontech/pb/internal/contractfile.Check"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "83a8c51ee22282220becce49f52f20cc9184066cb57cbaf15e9935943151d8b4"
+  shape_hash: "cf37af400e12dc44f87c389505848a6d3a179b5133fc2bbe3db89e22c175e1fe"
 }
 
 bindings {

@@ -20,11 +20,9 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/parser"
 
+	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/modpath"
-	"github.com/greatliontech/pb/internal/yamlshape"
 )
 
 // ErrInvalid is wrapped by every lockfile rejection.
@@ -382,26 +380,15 @@ type rawFile struct {
 // integer 1), modules, and — only when plugin pins exist — plugins; no
 // merge keys anywhere.
 func Parse(data []byte) (*File, error) {
-	astFile, err := parser.ParseBytes(data, 0)
+	mapping, err := contractfile.Doc(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
-	if len(astFile.Docs) != 1 {
-		return nil, fmt.Errorf("%w: expected exactly one YAML document, found %d", ErrInvalid, len(astFile.Docs))
-	}
-	body := astFile.Docs[0].Body
-	if body == nil {
+	if mapping == nil {
 		return nil, fmt.Errorf("%w: missing version key", ErrInvalid)
 	}
-	mapping, ok := body.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: top level must be a mapping", ErrInvalid)
-	}
-	if err := yamlshape.Check(mapping); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
-	}
 	var raw rawFile
-	if err := yaml.NodeToValue(body, &raw, yaml.Strict()); err != nil {
+	if err := yaml.NodeToValue(mapping, &raw, yaml.Strict()); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
 	if raw.Version != 1 {

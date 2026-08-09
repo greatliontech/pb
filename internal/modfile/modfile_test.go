@@ -259,8 +259,9 @@ func TestForbiddenYAMLConstructs(t *testing.T) {
 }
 
 // The shape check's non-string-key fallback fails closed even though
-// yamlshape rejects such keys first in the Parse pipeline: called
-// directly with a non-string key, it must reject, not fall through.
+// the admissibility check rejects such keys first in the Parse
+// pipeline: called directly with a non-string key, it must reject, not
+// fall through.
 func TestMappingShapeNonStringKeyFallback(t *testing.T) {
 	f, err := parser.ParseBytes([]byte("7: x\n"), 0)
 	if err != nil {

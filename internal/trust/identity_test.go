@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/rapidtest"
 )
 
@@ -38,6 +39,18 @@ func TestExplicitIdentity(t *testing.T) {
 	})
 }
 
+// defaultMatches reports whether the DefaultIdentity subject pattern
+// for repoURL accepts san, through the same glob semantics the
+// verifier applies.
+func defaultMatches(t *testing.T, repoURL, san string) bool {
+	t.Helper()
+	id, err := DefaultIdentity(repoURL)
+	if err != nil {
+		t.Fatalf("DefaultIdentity(%q) = %v", repoURL, err)
+	}
+	return glob.MustCompile(id.SubjectGlob).Match(san)
+}
+
 func TestDefaultIdentity(t *testing.T) {
 	t.Run("github origin yields the workflow-URI policy", func(t *testing.T) {
 		id, err := DefaultIdentity("https://github.com/acme/widget")
@@ -47,9 +60,55 @@ func TestDefaultIdentity(t *testing.T) {
 		if id.Issuer != "https://token.actions.githubusercontent.com" {
 			t.Fatalf("issuer = %q", id.Issuer)
 		}
-		if !strings.Contains(id.SubjectRegex, `github\.com/acme/widget`) ||
-			!strings.HasSuffix(id.SubjectRegex, "/.*") {
-			t.Fatalf("subject regex = %q", id.SubjectRegex)
+		if id.SubjectGlob == "" || id.SubjectRegex != "" || id.Subject != "" {
+			t.Fatalf("identity = %+v, want a glob-kind subject", id)
+		}
+	})
+	t.Run("accepts exactly the SANs under the repository URL", func(t *testing.T) {
+		const url = "https://github.com/acme/widget"
+		accepted := []string{
+			url + "/.github/workflows/release.yml@refs/heads/main",
+			url + "/.github/workflows/ci.yml@refs/tags/v1.2.3",
+			url + "/x",
+			// A raw LF is not a valid URI octet and Fulcio derives
+			// workflow SANs from claim values that cannot carry one, so
+			// this shape is unreachable through any chain-valid
+			// certificate; the clause pins "under the URL" and nothing
+			// else, and this pin keeps the behavior from silently
+			// flapping. (The retired regex default rejected it only as an
+			// accident of RE2 `.` excluding newlines.)
+			url + "/a\nb",
+		}
+		rejected := []string{
+			url, // the bare URL is not a designation
+			"https://github.com/acme/widgetx/.github/workflows/x.yml@refs/heads/main",
+			"https://github.com/acme/wid/.github/workflows/x.yml@refs/heads/main",
+			"https://github.com/other/widget/x",
+		}
+		for _, san := range accepted {
+			if !defaultMatches(t, url, san) {
+				t.Errorf("SAN %q rejected, want accepted", san)
+			}
+		}
+		for _, san := range rejected {
+			if defaultMatches(t, url, san) {
+				t.Errorf("SAN %q accepted, want rejected", san)
+			}
+		}
+	})
+	t.Run("pattern syntax in the repo URL is neutralized", func(t *testing.T) {
+		if defaultMatches(t, "https://github.com/acme/wid*t", "https://github.com/acme/widget/x") {
+			t.Fatal("a metacharacter-bearing repo URL must match only itself literally")
+		}
+	})
+	t.Run("an oversized repo URL fails closed at pattern limits", func(t *testing.T) {
+		// Quoting at most doubles the URL; past the pattern byte limit
+		// the glob no longer compiles and the constructed identity must
+		// be rejected, never silently accepted with a broken pattern.
+		long := "https://github.com/acme/" + strings.Repeat("a", 8000)
+		if _, err := DefaultIdentity(long); err == nil ||
+			!strings.Contains(err.Error(), "default identity") {
+			t.Fatalf("DefaultIdentity(oversized) = %v, want validation failure", err)
 		}
 	})
 	t.Run("trailing slash on the repo URL does not double", func(t *testing.T) {
@@ -61,8 +120,8 @@ func TestDefaultIdentity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if a.SubjectRegex != b.SubjectRegex {
-			t.Fatalf("regexes differ: %q vs %q", a.SubjectRegex, b.SubjectRegex)
+		if a.SubjectGlob != b.SubjectGlob {
+			t.Fatalf("globs differ: %q vs %q", a.SubjectGlob, b.SubjectGlob)
 		}
 	})
 	t.Run("unknown forge has no default", func(t *testing.T) {
@@ -84,8 +143,8 @@ func TestDefaultIdentity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DefaultIdentity = %v, want nil", err)
 		}
-		if !strings.HasSuffix(id.SubjectRegex, "/.*") {
-			t.Fatalf("subject regex = %q", id.SubjectRegex)
+		if !strings.HasSuffix(id.SubjectGlob, "/*/**") {
+			t.Fatalf("subject glob = %q", id.SubjectGlob)
 		}
 	})
 }

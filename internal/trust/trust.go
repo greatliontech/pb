@@ -17,8 +17,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
-	"github.com/goccy/go-yaml/parser"
-	"github.com/greatliontech/pb/internal/yamlshape"
+	"github.com/greatliontech/pb/internal/contractfile"
 )
 
 // FileName is the trust policy file, at the resolution root next to the
@@ -69,23 +68,14 @@ var ErrInvalid = errors.New("invalid trust policy")
 // optional; rules of shape {prefix, require, identity: {san, issuer}};
 // no unknown keys anywhere.
 func Parse(data []byte) (*Policy, error) {
-	astFile, err := parser.ParseBytes(data, 0)
+	mapping, err := contractfile.Doc(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
-	if len(astFile.Docs) != 1 {
-		return nil, fmt.Errorf("%w: exactly one YAML document, got %d", ErrInvalid, len(astFile.Docs))
-	}
-	body := astFile.Docs[0].Body
-	if body == nil {
+	if mapping == nil {
+		// An empty or fully commented-out policy file is the empty
+		// policy.
 		return &Policy{}, nil
-	}
-	if err := yamlshape.Check(body); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
-	}
-	mapping, ok := body.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: top level must be a mapping", ErrInvalid)
 	}
 	p := &Policy{}
 	for _, kv := range mapping.Values {

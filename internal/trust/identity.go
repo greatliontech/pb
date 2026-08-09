@@ -3,10 +3,10 @@ package trust
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/greatliontech/gitprov"
+	"github.com/greatliontech/glob"
 )
 
 // ErrNoDefaultIdentity marks an origin whose forge has no derivable
@@ -42,6 +42,10 @@ func ExplicitIdentity(rule IdentityRule) (gitprov.Identity, error) {
 // maintainer's personal identity) are never accepted by default; an
 // origin on a forge with no known CI issuer has no default at all and
 // returns ErrNoDefaultIdentity.
+//
+// The pattern is glob.Quote(url) + "/*/**": strictly under the URL —
+// the bare URL itself is not a designation — with the quoted part
+// neutralizing any pattern syntax in the URL.
 func DefaultIdentity(repoURL string) (gitprov.Identity, error) {
 	host := repoHost(repoURL)
 	issuer, ok := forgeIssuers[host]
@@ -49,8 +53,8 @@ func DefaultIdentity(repoURL string) (gitprov.Identity, error) {
 		return gitprov.Identity{}, fmt.Errorf("%w host %q", ErrNoDefaultIdentity, host)
 	}
 	id := gitprov.Identity{
-		Issuer:       issuer,
-		SubjectRegex: regexp.QuoteMeta(strings.TrimSuffix(repoURL, "/")) + "/.*",
+		Issuer:      issuer,
+		SubjectGlob: glob.Quote(strings.TrimSuffix(repoURL, "/")) + "/*/**",
 	}
 	if err := id.Validate(); err != nil {
 		return gitprov.Identity{}, fmt.Errorf("trust: default identity: %w", err)
