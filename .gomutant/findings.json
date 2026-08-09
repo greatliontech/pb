@@ -44344,6 +44344,460 @@
       ]
     },
     {
+      "symbol": "github.com/greatliontech/pb/internal/gittest.Repo.Raw",
+      "bodyHash": "db3ff5beca45f84ea3ae91e3f88acc29aa65fec1f2cf87d7e5415f88f170c2e8",
+      "operatorSet": "go/12",
+      "budget": 0,
+      "targetEvidence": {
+        "symbol": "github.com/greatliontech/pb/internal/gittest.Repo.Raw",
+        "maximalClosure": "f4c9ee3448435004583996dac7df8c17",
+        "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+        "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@13",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+        "observationSubjectSymbol": "Repo.Raw",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+        "observationEvidence": "3739011219e29c626e9f31fba770b38e",
+        "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+        "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+      },
+      "oracleEvidence": [
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderBlobIdentity",
+          "maximalClosure": "0be54983b0f5bdabb5cc476e0f9d6793",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderBlobIdentity",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "bf0ce73f2084b816719b44d083916fbc",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderCorruption",
+          "maximalClosure": "aaea72d39fa8db36873317a85e71dffc",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderCorruption",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "41662b9c4ff6fc0be11cede9f4e51aaf",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects",
+          "maximalClosure": "53fe8b15909ead16eb184c27dbb1cf50",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderRawObjects",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "1e4b7f550711a1e1fdfae5c1a808695a",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderRoundTrip",
+          "maximalClosure": "e35e7baf1e45020b0771b41c8549b401",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderRoundTrip",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "72afe35f71bf5e4bd2c93c804cdd9e83",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderSurfacesStorageFailures",
+          "maximalClosure": "d57e73432bcb5a7203fa12b17e5d7e4d",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderSurfacesStorageFailures",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
+          "observationEvidence": "4d8ad2b81f762b343f2ca4b49e009680",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        },
+        {
+          "symbol": "github.com/greatliontech/pb/internal/gittest.TestBuilderTransport",
+          "maximalClosure": "d7093db5bdf846e8f325f9ba95a305a7",
+          "testVariantClosure": "3b6829b34f9d2381b2ca95adced1e73e",
+          "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
+          "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+          "observationAssertion": "caller assertion",
+          "observationStrategy": "gofresh/observation-rta@13",
+          "observationSubjectPackage": "github.com/greatliontech/pb/internal/gittest",
+          "observationSubjectSymbol": "TestBuilderTransport",
+          "observationObservable": false,
+          "observationReason": "startup effect: reaches net/http.Do (network I/O)",
+          "observationEvidence": "e42ab09eb48a30e59d072520e33635d3",
+          "runtimeInputs": "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+          "runtimeDigest": "31d4ad7879c1b9a633527122664d3148"
+        }
+      ],
+      "oracleExplicit": false,
+      "oracleTimeout": "1m0s",
+      "compartmentLedger": {
+        "declarations": [
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderBlobIdentity",
+            "hash": "8334aef1e9f8cb27f18d93ca0f7d8fe0",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderCorruption",
+            "hash": "59cf559fbf2c62cfb7977aafd05ce874",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderRawObjects",
+            "hash": "49f646fde089cf184b2701cc0f055d52",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderRoundTrip",
+            "hash": "e1fb5ee14c0688f476ca77c24c5fb54c",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderSurfacesStorageFailures",
+            "hash": "08ca6ed8b9abc4dc24645d0e54b4465e",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "TestBuilderTransport",
+            "hash": "b03f94115a9f7220a8e7b3af236cf1a2",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "func",
+            "name": "expectFatal",
+            "hash": "670f0cbe8144afd36a81ac79ddcd261f",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "method",
+            "name": "Fatal",
+            "receiver": "*recordingFailer",
+            "hash": "22f6d04c6afe00533c4c3dde01fd9e24",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "method",
+            "name": "Create",
+            "receiver": "failFS",
+            "hash": "cf72ba234e4d7668f177ed04b8f7c5ad",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "method",
+            "name": "MkdirAll",
+            "receiver": "failFS",
+            "hash": "82ad67f585207c5ecccb1a9d393fce13",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "method",
+            "name": "OpenFile",
+            "receiver": "failFS",
+            "hash": "eaff4e516aee652cfe2ecbd6fb0f7b73",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "method",
+            "name": "TempFile",
+            "receiver": "failFS",
+            "hash": "13af752c3932c8225a3b915169382f39",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "type",
+            "name": "failFS",
+            "hash": "d0899731ed8aad7165039ea0a0aef2d5",
+            "package": "gittest"
+          },
+          {
+            "file": "gittest_test.go",
+            "kind": "type",
+            "name": "recordingFailer",
+            "hash": "4d64810b004c3ed2d5e90c7d3210b40a",
+            "package": "gittest"
+          }
+        ],
+        "fileHeaders": [
+          {
+            "file": "gittest_test.go",
+            "hash": "4a4c639160d8959cd980e39c14f2e9f8"
+          }
+        ]
+      },
+      "commit": "a4ca2e2cf15b2a59031a186879a4b1e51916aae1",
+      "dirty": false,
+      "candidateCount": 24,
+      "generated": 24,
+      "mutants": 22,
+      "killed": 13,
+      "discarded": 2,
+      "operators": [
+        {
+          "operator": "block: empty",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 2
+        },
+        {
+          "operator": "condition: force false",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 1,
+          "survived": 2
+        },
+        {
+          "operator": "condition: force true",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "condition: negate",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "equality: != -\u003e ==",
+          "generated": 3,
+          "discarded": 0,
+          "killed": 3,
+          "survived": 0
+        },
+        {
+          "operator": "return: nil",
+          "generated": 1,
+          "discarded": 1,
+          "killed": 0,
+          "survived": 0
+        },
+        {
+          "operator": "statement: delete",
+          "generated": 8,
+          "discarded": 1,
+          "killed": 2,
+          "survived": 5
+        }
+      ],
+      "kills": [
+        {
+          "position": "gittest.go:105:2",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:105:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:105:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:105:5",
+          "operator": "condition: force false",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:105:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:105:16",
+          "operator": "block: empty",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:106:3",
+          "operator": "statement: delete",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:109:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:109:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:109:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:114:5",
+          "operator": "condition: negate",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:114:5",
+          "operator": "condition: force true",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:114:9",
+          "operator": "equality: != -\u003e ==",
+          "killer": "github.com/greatliontech/pb/internal/gittest.TestBuilderRawObjects"
+        }
+      ],
+      "survivors": [
+        {
+          "position": "gittest.go:109:2",
+          "operator": "statement: delete",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "gittest.go:109:5",
+          "operator": "condition: force false",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "gittest.go:109:16",
+          "operator": "block: empty",
+          "execution": "never-executed"
+        },
+        {
+          "position": "gittest.go:110:3",
+          "operator": "statement: delete",
+          "execution": "never-executed"
+        },
+        {
+          "position": "gittest.go:112:2",
+          "operator": "statement: delete",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "gittest.go:114:2",
+          "operator": "statement: delete",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "gittest.go:114:5",
+          "operator": "condition: force false",
+          "execution": "executed-and-passed"
+        },
+        {
+          "position": "gittest.go:114:16",
+          "operator": "block: empty",
+          "execution": "never-executed"
+        },
+        {
+          "position": "gittest.go:115:3",
+          "operator": "statement: delete",
+          "execution": "never-executed"
+        }
+      ],
+      "attested": [
+        {
+          "position": "gittest.go:109:16",
+          "operator": "block: empty",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:109:2",
+          "operator": "statement: delete",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:109:5",
+          "operator": "condition: force false",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:110:3",
+          "operator": "statement: delete",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:112:2",
+          "operator": "statement: delete",
+          "reason": "dropped reader close is unobservable on in-memory storage: no descriptor, no flush, no leak a test could witness"
+        },
+        {
+          "position": "gittest.go:114:16",
+          "operator": "block: empty",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:114:2",
+          "operator": "statement: delete",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:114:5",
+          "operator": "condition: force false",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        },
+        {
+          "position": "gittest.go:115:3",
+          "operator": "statement: delete",
+          "reason": "memfs-backed storage: EncodedObject succeeded, so Reader() construction and ReadAll from the memory-backed handle have no reachable error path; the one reachable failure (missing object) is pinned by TestBuilderRawObjects"
+        }
+      ]
+    },
+    {
       "symbol": "github.com/greatliontech/pb/internal/gittest.Repo.Ref",
       "bodyHash": "8fb81e06c88fbc16cb3fbaed60f4f5eaadaddecec13587593d399a9b48a2bb61",
       "operatorSet": "go/12",
