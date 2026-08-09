@@ -8,8 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/direct"
+	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
 	"pgregory.net/rapid"
 )
@@ -499,5 +503,58 @@ func TestRepoFetchIsSnapshotConsistent(t *testing.T) {
 	fresh := fx.client("direct")
 	if _, err := fresh.Module(ctx, "example.com/m", ver(t, "v2.0.0")); err != nil {
 		t.Fatalf("post-fetch tag through a fresh client: %v", err)
+	}
+}
+
+// Two origins through one client: each keeps its own fetched snapshot,
+// and interleaving them never evicts the other's — the repository memo
+// is per-URL snapshot consistency, not a single-slot cache.
+func TestTwoOriginSnapshotsIndependent(t *testing.T) {
+	sharedFS := memfs.New()
+	repoA := gittest.NewAt(t, sharedFS, "a")
+	repoB := gittest.NewAt(t, sharedFS, "b")
+	build := func(r *gittest.Repo, module string) {
+		files := map[string]string{"pb.yaml": "module: " + module + "\n"}
+		fx := &fixture{t: t, repo: r}
+		commit := fx.commitFor(files, gitWhen)
+		r.Ref("refs/tags/v1.0.0", commit)
+		r.Ref("refs/heads/main", commit)
+		r.Symref("HEAD", "refs/heads/main")
+	}
+	build(repoA, "example.com/a")
+	build(repoB, "example.com/b")
+
+	fx := newFixture(t)
+	fx.resolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
+		if modPath == "example.com/b" {
+			return origin.Origin{Repo: "file:///b"}, nil
+		}
+		return origin.Origin{Repo: "file:///a"}, nil
+	}
+	c := fx.client("direct")
+	c.Fetcher = direct.Fetcher{ClientOptions: repoA.ClientOptions()} // shared FS serves both
+
+	if _, err := c.Module(ctx, "example.com/a", ver(t, "v1.0.0")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Module(ctx, "example.com/b", ver(t, "v1.0.0")); err != nil {
+		t.Fatal(err)
+	}
+	// Both origins move after their fetches; both snapshots must hold.
+	for _, r := range []*gittest.Repo{repoA, repoB} {
+		commit := (&fixture{t: t, repo: r}).commitFor(map[string]string{"x.proto": "syntax = \"proto3\";\n"}, gitWhen.Add(time.Hour))
+		r.Ref("refs/tags/v2.0.0", commit)
+	}
+	if _, err := c.Versions(ctx, "example.com/a"); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"example.com/a", "example.com/b"} {
+		vs, err := c.Versions(ctx, path)
+		if err != nil {
+			t.Fatalf("Versions(%s): %v", path, err)
+		}
+		if len(vs) != 1 || vs[0].String() != "v1.0.0" {
+			t.Fatalf("%s versions = %v, want the fetch-time snapshot", path, vs)
+		}
 	}
 }

@@ -61,9 +61,25 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 }
 
 // Repo is a fetched origin repository: the refs and commit graph the
-// direct source resolves versions against.
+// direct source resolves versions against. The views a resolution
+// reads repeatedly — the ref listing, the commit index behind
+// pseudo-version prefix lookup, per-head ancestry — are derived lazily
+// from the fetched storage and memoized: the storage is immutable
+// after Fetch, so a derived view can never diverge from it, and one
+// Repo answers every version of an origin at one snapshot — caching a
+// pure function changes cost, never results. Not safe for concurrent
+// use, matching the single-threaded resolution pipeline above it.
 type Repo struct {
 	r *git.Repository
+
+	refs     []origin.Ref
+	refsDone bool
+
+	commits  map[string]*object.Commit // full hash -> commit
+	hashes   []string                  // commit hashes, sorted
+	indexed  bool
+
+	ancestry map[string]map[string]bool // commit hash -> reachability set
 }
 
 // Head resolves the origin's default-branch head commit — the fallback
@@ -94,8 +110,21 @@ func commitIdentity(c *object.Commit) origin.Commit {
 // origin.ReleaseTags consumes: an annotated tag contributes its tag
 // object ref and a fully dereferenced `^{}` entry, exactly as a
 // reference listing advertises it. The result is sorted by name, so
-// storage iteration order never leaks.
+// storage iteration order never leaks. The listing is computed once
+// per Repo: callers share the fetch-time snapshot.
 func (r *Repo) Refs() ([]origin.Ref, error) {
+	if r.refsDone {
+		return r.refs, nil
+	}
+	refs, err := r.listRefs()
+	if err != nil {
+		return nil, err
+	}
+	r.refs, r.refsDone = refs, true
+	return refs, nil
+}
+
+func (r *Repo) listRefs() ([]origin.Ref, error) {
 	iter, err := r.r.References()
 	if err != nil {
 		return nil, fmt.Errorf("listing refs: %w", err)

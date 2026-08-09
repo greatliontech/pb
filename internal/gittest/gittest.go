@@ -45,8 +45,26 @@ type Repo struct {
 
 // New initializes a bare repository in a fresh in-memory filesystem.
 func New(t Failer) *Repo {
-	fs := memfs.New()
-	st := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
+	return NewAt(t, memfs.New(), ".")
+}
+
+// NewAt initializes a bare repository at dir within fs, so one loader
+// filesystem can serve several origins at distinct file:///<dir> URLs
+// (ClientOptions roots the file transport at fs, and the transport
+// resolves a URL's path within it).
+func NewAt(t Failer, fs billy.Filesystem, dir string) *Repo {
+	root := fs
+	if dir != "." && dir != "/" {
+		if err := fs.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		sub, err := fs.Chroot(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		root = sub
+	}
+	st := filesystem.NewStorage(root, cache.NewObjectLRUDefault())
 	if _, err := git.Init(st); err != nil {
 		t.Fatal(err)
 	}

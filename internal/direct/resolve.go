@@ -3,6 +3,7 @@ package direct
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -133,23 +134,47 @@ func (r *Repo) resolvePseudo(v version.Version, subtree string) (origin.Commit, 
 	return commitIdentity(c), nil
 }
 
-// commitsWithPrefix lists the commits whose hash carries the given
-// prefix, in storage iteration order; uniqueCommit owns making the
-// outcome order-independent.
-func (r *Repo) commitsWithPrefix(prefix string) ([]*object.Commit, error) {
+// commitIndex is the memoized hash index over the snapshot's commit
+// objects: every commit keyed by full hash, plus the sorted hash list
+// prefix lookup ranges over. Built on the first pseudo-version
+// resolution; a driver resolving many versions against one Repo pays
+// the full-storage iteration once.
+func (r *Repo) commitIndex() (map[string]*object.Commit, []string, error) {
+	if r.indexed {
+		return r.commits, r.hashes, nil
+	}
 	iter, err := r.r.CommitObjects()
 	if err != nil {
-		return nil, fmt.Errorf("iterating commits: %w", err)
+		return nil, nil, fmt.Errorf("iterating commits: %w", err)
 	}
-	var matches []*object.Commit
+	commits := map[string]*object.Commit{}
 	err = iter.ForEach(func(c *object.Commit) error {
-		if strings.HasPrefix(c.Hash.String(), prefix) {
-			matches = append(matches, c)
-		}
+		commits[c.Hash.String()] = c
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("iterating commits: %w", err)
+		return nil, nil, fmt.Errorf("iterating commits: %w", err)
+	}
+	hashes := slices.Sorted(maps.Keys(commits))
+	r.commits, r.hashes, r.indexed = commits, hashes, true
+	return commits, hashes, nil
+}
+
+// commitsWithPrefix lists the commits whose hash carries the given
+// prefix, in hash order over the memoized index; uniqueCommit owns the
+// zero/one/many decision.
+func (r *Repo) commitsWithPrefix(prefix string) ([]*object.Commit, error) {
+	commits, hashes, err := r.commitIndex()
+	if err != nil {
+		return nil, err
+	}
+	start, _ := slices.BinarySearch(hashes, prefix)
+	var matches []*object.Commit
+	for _, h := range hashes[start:] {
+		if !strings.HasPrefix(h, prefix) {
+			break
+		}
+		matches = append(matches, commits[h])
 	}
 	return matches, nil
 }
@@ -213,8 +238,14 @@ func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version
 	return version.PseudoVersion(precedent, c.Committer.When, c.Hash.String())
 }
 
-// ancestors is the commit's reachability set, itself included.
+// ancestors is the commit's reachability set, itself included,
+// memoized per resolved commit: repeated resolution of the same
+// pseudo-version (and the same commit across subtree namespaces)
+// walks history once.
 func (r *Repo) ancestors(c *object.Commit) (map[string]bool, error) {
+	if seen, ok := r.ancestry[c.Hash.String()]; ok {
+		return seen, nil
+	}
 	seen := map[string]bool{c.Hash.String(): true}
 	queue := []*object.Commit{c}
 	for len(queue) > 0 {
@@ -232,5 +263,9 @@ func (r *Repo) ancestors(c *object.Commit) (map[string]bool, error) {
 			queue = append(queue, parent)
 		}
 	}
+	if r.ancestry == nil {
+		r.ancestry = map[string]map[string]bool{}
+	}
+	r.ancestry[c.Hash.String()] = seen
 	return seen, nil
 }
