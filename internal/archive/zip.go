@@ -2,6 +2,7 @@ package archive
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -94,47 +95,149 @@ func WriteZip(w io.Writer, files []File) (string, error) {
 // or deflate are rejected (REQ-archive-zip). On success the verified file
 // set is returned in manifest order.
 func VerifyZip(r io.ReaderAt, size int64, expected string) ([]FileInfo, error) {
+	d, infos, err := DigestZip(r, size)
+	if err != nil {
+		return nil, err
+	}
+	if d != expected {
+		return nil, fmt.Errorf("%w: computed %s, expected %s", ErrDigestMismatch, d, expected)
+	}
+	return infos, nil
+}
+
+// DigestZip recomputes the canonical manifest from the zip's members under
+// the same discipline as VerifyZip and returns the resulting module digest
+// with the file set in manifest order. It computes and never compares:
+// first-use pinning (REQ-lock-first-use) records what was fetched, while
+// VerifyZip enforces an expectation over the same recomputation.
+func DigestZip(r io.ReaderAt, size int64) (string, []FileInfo, error) {
+	var infos []FileInfo
+	err := walkZip(r, size, func(m *zip.File) error {
+		info, err := hashMember(m)
+		if err != nil {
+			return err
+		}
+		infos = append(infos, info)
+		return nil
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	manifest, err := Manifest(infos)
+	if err != nil {
+		return "", nil, err
+	}
+	slices.SortFunc(infos, func(a, b FileInfo) int { return strings.Compare(a.Path, b.Path) })
+	return Digest(manifest), infos, nil
+}
+
+// walkZip iterates the zip's file members under the wire-container
+// discipline every consumer shares (REQ-archive-zip): directory entries are
+// skipped; duplicate member names, encrypted members, non-regular members,
+// and compression methods other than store or deflate are rejected. One
+// walker keeps the accepted member surface from drifting between the
+// digest, tree-hash, and member-read paths.
+func walkZip(r io.ReaderAt, size int64, fn func(*zip.File) error) error {
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrZipInvalid, err)
+		return fmt.Errorf("%w: %v", ErrZipInvalid, err)
 	}
 	seen := make(map[string]struct{}, len(zr.File))
-	infos := make([]FileInfo, 0, len(zr.File))
 	for _, m := range zr.File {
 		if strings.HasSuffix(m.Name, "/") {
 			continue // directory entry
 		}
 		if _, dup := seen[m.Name]; dup {
-			return nil, fmt.Errorf("%w: duplicate member %q", ErrZipInvalid, m.Name)
+			return fmt.Errorf("%w: duplicate member %q", ErrZipInvalid, m.Name)
 		}
 		seen[m.Name] = struct{}{}
 		if m.Flags&0x1 != 0 { // general-purpose bit 0: encrypted
-			return nil, fmt.Errorf("%w: member %q is encrypted", ErrZipInvalid, m.Name)
+			return fmt.Errorf("%w: member %q is encrypted", ErrZipInvalid, m.Name)
 		}
 		if m.Mode()&fs.ModeType != 0 {
 			// A symlink (or any non-regular) member could otherwise verify
 			// as a regular file with the link target as content
 			// (REQ-archive-forbidden-entries: verification MUST fail).
-			return nil, fmt.Errorf("%w: member %q is not a regular file", ErrZipInvalid, m.Name)
+			return fmt.Errorf("%w: member %q is not a regular file", ErrZipInvalid, m.Name)
 		}
 		if m.Method != zip.Store && m.Method != zip.Deflate {
-			return nil, fmt.Errorf("%w: member %q uses unsupported compression method %d", ErrZipInvalid, m.Name, m.Method)
+			return fmt.Errorf("%w: member %q uses unsupported compression method %d", ErrZipInvalid, m.Name, m.Method)
 		}
-		info, err := hashMember(m)
-		if err != nil {
-			return nil, err
+		if err := fn(m); err != nil {
+			return err
 		}
-		infos = append(infos, info)
 	}
-	manifest, err := Manifest(infos)
+	return nil
+}
+
+// readMember decompresses one member's content whole, reading at most one
+// byte past MaxTotalSize: content beyond it can never belong to a valid
+// file set, so the bound caps decompression work without trusting the
+// declared size (a zip bomb declares small and inflates large).
+func readMember(m *zip.File) ([]byte, error) {
+	rc, err := m.Open()
+	if err != nil {
+		return nil, fmt.Errorf("%w: opening member %q: %v", ErrZipInvalid, m.Name, err)
+	}
+	defer rc.Close()
+	b, err := io.ReadAll(io.LimitReader(rc, MaxTotalSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("%w: reading member %q: %v", ErrZipInvalid, m.Name, err)
+	}
+	if int64(len(b)) > MaxTotalSize {
+		return nil, fmt.Errorf("%w: member %q exceeds the %d-byte file-set limit", ErrZipInvalid, m.Name, MaxTotalSize)
+	}
+	return b, nil
+}
+
+// ZipTreeHash recomputes the module root's git tree hash from the zip's
+// members in the given object format — the archive side of
+// REQ-archive-tree-binding for a consumer holding only the wire container:
+// each member's content is blob-hashed and the tree assembled per
+// REQ-archive-tree-recompute. The zip's digest acceptance is separate and
+// prior (VerifyZip); this recomputation trusts nothing about the container
+// beyond the shared member discipline.
+func ZipTreeHash(f ObjectFormat, r io.ReaderAt, size int64) ([]byte, error) {
+	var entries []TreeEntry
+	err := walkZip(r, size, func(m *zip.File) error {
+		b, err := readMember(m)
+		if err != nil {
+			return err
+		}
+		blob, err := BlobHash(f, int64(len(b)), bytes.NewReader(b))
+		if err != nil {
+			return err
+		}
+		entries = append(entries, TreeEntry{Path: m.Name, Exec: m.Mode()&0o111 != 0, Blob: blob})
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if d := Digest(manifest); d != expected {
-		return nil, fmt.Errorf("%w: computed %s, expected %s", ErrDigestMismatch, d, expected)
+	return TreeHash(f, entries)
+}
+
+// ZipFile returns the content bytes of the named member, reporting whether
+// the zip has it. The name is matched exactly against member names — the
+// file-set path rules make the module file's spelling unique.
+func ZipFile(r io.ReaderAt, size int64, path string) ([]byte, bool, error) {
+	var content []byte
+	found := false
+	err := walkZip(r, size, func(m *zip.File) error {
+		if m.Name != path {
+			return nil
+		}
+		b, err := readMember(m)
+		if err != nil {
+			return err
+		}
+		content, found = b, true
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
 	}
-	slices.SortFunc(infos, func(a, b FileInfo) int { return strings.Compare(a.Path, b.Path) })
-	return infos, nil
+	return content, found, nil
 }
 
 func hashMember(m *zip.File) (FileInfo, error) {

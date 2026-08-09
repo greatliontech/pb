@@ -29,10 +29,11 @@ import (
 
 // Fetcher fetches origin repositories. The zero value is ready to use.
 type Fetcher struct {
-	// clientOptions extends the transport client per fetch; the fixture
-	// tests root the file-transport loader in an in-memory filesystem,
-	// keeping the whole filesystem out of the tests' observed inputs.
-	clientOptions []client.Option
+	// ClientOptions extends the transport client per fetch — the
+	// transport seam: fixture tests (here and in consumers) root the
+	// file-transport loader in an in-memory filesystem, keeping the
+	// whole filesystem out of the tests' observed inputs.
+	ClientOptions []client.Option
 }
 
 // Fetch clones the origin repository: bare, in memory, every branch and
@@ -51,7 +52,7 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 	r, err := git.CloneContext(ctx, memory.NewStorage(), nil, &git.CloneOptions{
 		URL:           repoURL,
 		Tags:          git.AllTags,
-		ClientOptions: f.clientOptions,
+		ClientOptions: f.ClientOptions,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)

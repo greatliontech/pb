@@ -32,6 +32,14 @@ import (
 // cleanly yet can never tree-bind to the origin commit.
 var ErrForbiddenEntry = errors.New("forbidden entry under module root")
 
+// ErrNoModuleRoot is wrapped when a commit's tree has no directory at
+// the module's subtree path — an in-spec state consumers classify: a
+// subtree absent at a commit is not a declared module there
+// (REQ-resolve-synthesized-tags reads listings through it), while for
+// artifact construction against a resolved version it is simply a
+// failing walk.
+var ErrNoModuleRoot = errors.New("module root not present in commit tree")
+
 // commitObject looks up the full-hash commit a resolved version bound.
 func (r *Repo) commitObject(commitHash string) (*object.Commit, error) {
 	c, err := r.r.CommitObject(plumbing.NewHash(commitHash))
@@ -64,7 +72,7 @@ func (r *Repo) moduleRoot(c *object.Commit, subtree string) (*object.Tree, [][]b
 		seg, rest, _ := strings.Cut(subtree, "/")
 		entry, err := tree.FindEntry(seg)
 		if err != nil || entry.Mode != filemode.Dir {
-			return nil, nil, fmt.Errorf("module root: %q is not a directory of tree %s", seg, tree.Hash)
+			return nil, nil, fmt.Errorf("%w: %q is not a directory of tree %s", ErrNoModuleRoot, seg, tree.Hash)
 		}
 		sub, err := object.GetTree(r.r.Storer, entry.Hash)
 		if err != nil {

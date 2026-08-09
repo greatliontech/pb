@@ -315,7 +315,7 @@ func TestSynthesizedFallbackResolvesHeadPseudo(t *testing.T) {
 
 func TestFetchEmptyOriginFails(t *testing.T) {
 	f := newFixture(t)
-	fe := Fetcher{clientOptions: f.ClientOptions()}
+	fe := Fetcher{ClientOptions: f.ClientOptions()}
 	if _, err := fe.Fetch(t.Context(), "file:///"); err == nil {
 		t.Fatal("Fetch of an empty origin succeeded, want error")
 	}

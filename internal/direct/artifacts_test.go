@@ -465,8 +465,10 @@ func TestArtifactFailures(t *testing.T) {
 		if _, err := repo.Archive(&buf, c.String(), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
 			t.Fatalf("Archive err = %v", err)
 		}
-		if _, _, err := repo.ModuleFileBytes(c.String(), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
-			t.Fatalf("ModuleFileBytes err = %v", err)
+		// The absent module root is classifiable: consumers read it as
+		// "not a declared module at this commit", not as a storage fault.
+		if _, _, err := repo.ModuleFileBytes(c.String(), "nope"); !errors.Is(err, ErrNoModuleRoot) {
+			t.Fatalf("ModuleFileBytes err = %v, want ErrNoModuleRoot", err)
 		}
 	})
 	t.Run("subtree segment is a file", func(t *testing.T) {

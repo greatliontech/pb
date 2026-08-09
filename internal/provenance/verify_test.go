@@ -17,6 +17,7 @@ import (
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/provtest"
 	"github.com/greatliontech/pb/internal/version"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 	"pgregory.net/rapid"
@@ -71,19 +72,19 @@ func tagPayload(commit plumbing.Hash, name string) []byte {
 
 func TestVerify(t *testing.T) {
 	ctx := context.Background()
-	s := newVirtualSigner(t)
+	s := provtest.New(t)
 	fx := newFixture(t)
-	id := s.identity()
+	id := s.Identity()
 
 	t.Run("happy: root module", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root)
+		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot())
 		if err != nil {
 			t.Fatalf("Verify = %v, want nil", err)
 		}
-		if vi.Subject != testSubject || vi.Issuer != testIssuer {
-			t.Fatalf("identity = (%q,%q), want (%q,%q)", vi.Subject, vi.Issuer, testSubject, testIssuer)
+		if vi.Subject != provtest.Subject || vi.Issuer != provtest.Issuer {
+			t.Fatalf("identity = (%q,%q), want (%q,%q)", vi.Subject, vi.Issuer, provtest.Subject, provtest.Issuer)
 		}
 		if vi.RekorIntegratedTime == 0 {
 			t.Fatal("verified identity carries no transparency coordinates")
@@ -91,21 +92,21 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("happy: subtree module walks the treePath", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{fx.rawRoot}}
-		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.root)
+		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot())
 		if err != nil {
 			t.Fatalf("Verify(subtree) = %v, want nil", err)
 		}
-		if vi.Subject != testSubject {
+		if vi.Subject != provtest.Subject {
 			t.Fatalf("subject = %q", vi.Subject)
 		}
 	})
 
 	t.Run("absent: no embedded transparency proof", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), false)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), false)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		_, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root)
+		_, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot())
 		if !errors.Is(err, ErrNoTransparency) {
 			t.Fatalf("Verify = %v, want ErrNoTransparency", err)
 		}
@@ -113,7 +114,7 @@ func TestVerify(t *testing.T) {
 
 	t.Run("rejected: unsigned tag is not absent", func(t *testing.T) {
 		ev := Evidence{Format: archive.SHA1, Tag: tagPayload(fx.commitHash, "v1.2.3"), Commit: fx.rawCommit}
-		_, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root)
+		_, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot())
 		if err == nil || errors.Is(err, ErrNoTransparency) {
 			t.Fatalf("Verify = %v, want rejection distinct from absence", err)
 		}
@@ -123,28 +124,28 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("rejected: identity mismatch", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		wrong := gitprov.Identity{Issuer: testIssuer, Subject: "attacker@evil.example"}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, wrong, s.root); err == nil ||
+		wrong := gitprov.Identity{Issuer: provtest.Issuer, Subject: "attacker@evil.example"}
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, wrong, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "SAN") {
 			t.Fatalf("Verify = %v, want identity rejection", err)
 		}
 	})
 
 	t.Run("rejected: tag names a different version", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.4"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.4"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "does not name") {
 			t.Fatalf("Verify = %v, want tag-name rejection", err)
 		}
 	})
 
 	t.Run("rejected: subtree tag without the subtree prefix", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v2.0.0"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v2.0.0"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{fx.rawRoot}}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.root); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "does not name") {
 			t.Fatalf("Verify = %v, want tag-name rejection", err)
 		}
@@ -156,9 +157,9 @@ func TestVerify(t *testing.T) {
 		// never trusted (REQ-prov-tag-binding).
 		r2 := gittest.New(t)
 		other := r2.CommitTree(r2.Tree(), "other", time.Unix(1700000000, 0))
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: r2.Raw(plumbing.CommitObject, other)}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "does not match the signed tag's object") {
 			t.Fatalf("Verify = %v, want commit-binding rejection", err)
 		}
@@ -167,18 +168,18 @@ func TestVerify(t *testing.T) {
 	t.Run("rejected: tag targeting another tag, not a commit", func(t *testing.T) {
 		payload := []byte(fmt.Sprintf("object %s\ntype tag\ntag v1.2.3\n"+
 			"tagger Test Signer <signer@example.com> 1700000100 +0000\n\nnested\n", fx.commitHash))
-		tag := s.signedTag(t, payload, true)
+		tag := s.SignedTag(t, payload, true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "not a commit") {
 			t.Fatalf("Verify = %v, want target-type rejection", err)
 		}
 	})
 
 	t.Run("rejected: archive tree does not match the module root", func(t *testing.T) {
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.modTree, id, s.root); err == nil {
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.modTree, id, s.TrustedRoot()); err == nil {
 			t.Fatal("Verify = nil, want tree-binding rejection for a foreign computed tree")
 		}
 	})
@@ -188,9 +189,9 @@ func TestVerify(t *testing.T) {
 		// sha1 evidence as sha256 must fail: the signed tag's own
 		// object field is 40 hex digits, not the 64 the stated format
 		// requires — the tag pins its true format.
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 		ev := Evidence{Format: archive.SHA256, Tag: tag, Commit: fx.rawCommit}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.root); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "is 40 hex digits, want 64") {
 			t.Fatalf("Verify = %v, want format-pinned rejection naming both lengths", err)
 		}
@@ -199,9 +200,9 @@ func TestVerify(t *testing.T) {
 	t.Run("rejected: tampered treePath", func(t *testing.T) {
 		bad := append([]byte{}, fx.rawRoot...)
 		bad[0] ^= 0x01
-		tag := s.signedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
+		tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{bad}}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.root); err == nil {
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil {
 			t.Fatal("Verify = nil, want tree-walk rejection for tampered treePath")
 		}
 	})
@@ -283,14 +284,14 @@ func TestParseTagHeader(t *testing.T) {
 // no component whose corruption is silently absorbed.
 func TestVerifyBindingFailsClosedUnderCorruption(t *testing.T) {
 	ctx := context.Background()
-	s := newVirtualSigner(t)
+	s := provtest.New(t)
 	fx := newFixture(t)
-	id := s.identity()
-	tag := s.signedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
+	id := s.Identity()
+	tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), true)
 	sub := Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}
 
 	genuine, err := Verify(ctx, Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit,
-		TreePath: [][]byte{fx.rawRoot}}, sub, fx.modTree, id, s.root)
+		TreePath: [][]byte{fx.rawRoot}}, sub, fx.modTree, id, s.TrustedRoot())
 	if err != nil {
 		t.Fatalf("uncorrupted evidence does not verify: %v", err)
 	}
@@ -332,7 +333,7 @@ func TestVerifyBindingFailsClosedUnderCorruption(t *testing.T) {
 		default:
 			computed = corrupt(rt, fx.modTree)
 		}
-		vi, err := Verify(ctx, ev, sub, computed, id, s.root)
+		vi, err := Verify(ctx, ev, sub, computed, id, s.TrustedRoot())
 		if (vi == nil) == (err == nil) {
 			t.Fatalf("partial success: vi=%v err=%v", vi, err)
 		}
@@ -347,12 +348,12 @@ func TestVerifyBindingFailsClosedUnderCorruption(t *testing.T) {
 // through, the hex hash of the TAG (the signed object — not the
 // commit), and the verified identity's two fields in their places.
 func TestRecord(t *testing.T) {
-	s := newVirtualSigner(t)
+	s := provtest.New(t)
 	fx := newFixture(t)
-	tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+	tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
 	ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
 
-	vi, err := Verify(context.Background(), ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, s.identity(), s.root)
+	vi, err := Verify(context.Background(), ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, s.Identity(), s.TrustedRoot())
 	if err != nil {
 		t.Fatalf("Verify: %v", err)
 	}
@@ -380,8 +381,8 @@ func TestRecord(t *testing.T) {
 	if rec.Object == hex.EncodeToString(wantCommit) {
 		t.Fatal("Object records the commit hash; the signed object is the tag")
 	}
-	if rec.SAN != testSubject || rec.Issuer != testIssuer {
-		t.Fatalf("identity = (%q,%q), want (%q,%q)", rec.SAN, rec.Issuer, testSubject, testIssuer)
+	if rec.SAN != provtest.Subject || rec.Issuer != provtest.Issuer {
+		t.Fatalf("identity = (%q,%q), want (%q,%q)", rec.SAN, rec.Issuer, provtest.Subject, provtest.Issuer)
 	}
 	if rec == (lockfile.Provenance{}) {
 		t.Fatal("record is the zero value, which the lockfile reads as none")

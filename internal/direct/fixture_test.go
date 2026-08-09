@@ -21,7 +21,7 @@ func newFixture(t failer) *repoFixture {
 
 // fetch clones the fixture through the in-memory file transport.
 func (f *repoFixture) fetch() *Repo {
-	fe := Fetcher{clientOptions: f.ClientOptions()}
+	fe := Fetcher{ClientOptions: f.ClientOptions()}
 	repo, err := fe.Fetch(context.Background(), "file:///")
 	if err != nil {
 		f.T.Fatal(err)

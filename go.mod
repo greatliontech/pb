@@ -10,7 +10,7 @@ require (
 	github.com/go-openapi/strfmt v0.26.1
 	github.com/go-openapi/swag/conv v0.26.0
 	github.com/goccy/go-yaml v1.19.2
-	github.com/greatliontech/gitprov v0.0.0-20260809121825-04e102e35f68
+	github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/sigstore/gitsign v0.16.0

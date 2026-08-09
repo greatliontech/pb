@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -723,5 +724,160 @@ func TestWriteMemberVerifiesBytes(t *testing.T) {
 	wrongSize.Size--
 	if err := writeMember(filepath.Join(dir, "s"), m, wrongSize); !errors.Is(err, ErrZipInvalid) {
 		t.Fatalf("wrong size: err = %v, want ErrZipInvalid", err)
+	}
+}
+
+// The golden fixture's zip form hashes to the same real-git tree hashes
+// the entry-level golden test pins, in both object formats: the container
+// walk (member discipline, exec derivation, blob hashing) introduces
+// nothing of its own.
+func TestZipTreeHashGolden(t *testing.T) {
+	files := bodies(
+		struct {
+			path, body string
+			exec       bool
+		}{"pb.yaml", "module: example.com/m\n", false},
+		struct {
+			path, body string
+			exec       bool
+		}{"proto/v1/svc.proto", "syntax = \"proto3\";", false},
+		struct {
+			path, body string
+			exec       bool
+		}{"tools/gen.sh", "#!/bin/sh\n", true},
+		struct {
+			path, body string
+			exec       bool
+		}{"a.b", "x", false},
+		struct {
+			path, body string
+			exec       bool
+		}{"a/inner.txt", "inner", false},
+		struct {
+			path, body string
+			exec       bool
+		}{"a0", "zed", false},
+	)
+	data, _ := writeZip(t, files)
+	for f, want := range goldenTrees {
+		h, err := ZipTreeHash(f, bytes.NewReader(data), int64(len(data)))
+		if err != nil {
+			t.Fatalf("%s: ZipTreeHash: %v", f, err)
+		}
+		if hex.EncodeToString(h) != want.root {
+			t.Errorf("%s: ZipTreeHash = %x, want %s", f, h, want.root)
+		}
+	}
+}
+
+// Property: for any produced file set, the container-walk tree hash equals
+// the entry-level TreeHash over independently blob-hashed contents — the
+// zip walk loses no path, byte, or exec bit on the way to the tree.
+func TestZipTreeHashMatchesEntryHashing(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		f := rapid.SampledFrom([]ObjectFormat{SHA1, SHA256}).Draw(t, "format")
+		n := rapid.IntRange(0, 12).Draw(t, "n")
+		var files []File
+		var entries []TreeEntry
+		for i := range n {
+			body := rapid.StringN(0, 64, -1).Draw(t, "body")
+			exec := rapid.Bool().Draw(t, "exec")
+			path := fmt.Sprintf("d%d/f%d.proto", rapid.IntRange(0, 4).Draw(t, "dir"), i)
+			files = append(files, File{Path: path, Exec: exec, Body: strings.NewReader(body)})
+			blob, err := BlobHash(f, int64(len(body)), strings.NewReader(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			entries = append(entries, TreeEntry{Path: path, Exec: exec, Blob: blob})
+		}
+		var buf bytes.Buffer
+		if _, err := WriteZip(&buf, files); err != nil {
+			t.Fatalf("WriteZip: %v", err)
+		}
+		data := buf.Bytes()
+		got, err := ZipTreeHash(f, bytes.NewReader(data), int64(len(data)))
+		if err != nil {
+			t.Fatalf("ZipTreeHash: %v", err)
+		}
+		want, err := TreeHash(f, entries)
+		if err != nil {
+			t.Fatalf("TreeHash: %v", err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Fatalf("ZipTreeHash = %x, TreeHash = %x", got, want)
+		}
+	})
+}
+
+// ZipFile reads exactly the named member's bytes, reports absence without
+// error, and propagates the shared member discipline.
+func TestZipFile(t *testing.T) {
+	data, _ := writeZip(t, sampleFiles())
+	r := bytes.NewReader(data)
+
+	b, ok, err := ZipFile(r, int64(len(data)), "pb.yaml")
+	if err != nil || !ok {
+		t.Fatalf("ZipFile(pb.yaml) = ok=%v, err=%v", ok, err)
+	}
+	if string(b) != "module: example.com/m\n" {
+		t.Fatalf("ZipFile(pb.yaml) = %q", b)
+	}
+
+	if _, ok, err := ZipFile(r, int64(len(data)), "absent.proto"); err != nil || ok {
+		t.Fatalf("ZipFile(absent) = ok=%v, err=%v, want absent without error", ok, err)
+	}
+
+	// A member named like a directory prefix of a real member is not that
+	// member: matching is exact.
+	if _, ok, err := ZipFile(r, int64(len(data)), "proto"); err != nil || ok {
+		t.Fatalf("ZipFile(proto) = ok=%v, err=%v, want absent", ok, err)
+	}
+
+	dup := duplicateMemberZip(t)
+	if _, _, err := ZipFile(bytes.NewReader(dup), int64(len(dup)), "pb.yaml"); !errors.Is(err, ErrZipInvalid) {
+		t.Fatalf("duplicate-member zip: err = %v, want ErrZipInvalid", err)
+	}
+	if _, err := ZipTreeHash(SHA1, bytes.NewReader(dup), int64(len(dup))); !errors.Is(err, ErrZipInvalid) {
+		t.Fatalf("duplicate-member zip tree hash: err = %v, want ErrZipInvalid", err)
+	}
+}
+
+// duplicateMemberZip crafts a container carrying the same member name
+// twice — representable in the wire format, rejected by the walk.
+func duplicateMemberZip(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for _, body := range []string{"a", "b"} {
+		w, err := zw.Create("pb.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := io.WriteString(w, body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+// DigestZip computes without an expectation: its digest is WriteZip's, and
+// VerifyZip is exactly that computation plus the comparison.
+func TestDigestZipComputes(t *testing.T) {
+	data, digest := writeZip(t, sampleFiles())
+	d, infos, err := DigestZip(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("DigestZip: %v", err)
+	}
+	if d != digest {
+		t.Fatalf("DigestZip = %s, WriteZip = %s", d, digest)
+	}
+	if len(infos) != 3 || infos[0].Path != "pb.yaml" {
+		t.Fatalf("unexpected file set: %+v", infos)
+	}
+	if _, err := VerifyZip(bytes.NewReader(data), int64(len(data)), "pb1:"+strings.Repeat("0", 64)); !errors.Is(err, ErrDigestMismatch) {
+		t.Fatalf("VerifyZip with wrong expectation: err = %v, want ErrDigestMismatch", err)
 	}
 }

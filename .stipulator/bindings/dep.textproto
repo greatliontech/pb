@@ -1,0 +1,74 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.entryPath"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "57baff1d3d83562f5b5ccf150eb8adcf5ccc4342b5c36cc18edb8c1e2afea295"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Cache"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "efce7cee60f891d068a16ad2a5aac46ed0a0652656ff840d3e1a8c9bb1aa4518"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheLayoutGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ae9c6e3f54062b62e5649886fddcd9606bde69438c334229018978091069a864"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCachePutGet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7d89ec61a4d4dd15f1b3641eb03d7d8577da038571d53c186ca31e10adc4a0d2"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-transparent"
+  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4c2775352096450a6b6e0392c4cda927840199a6eeb71d4dbfde77047dfeff98"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-transparent"
+  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.firstUse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "e02bb667a8b58d37a4e509d8cb054445216de065c8beb7d35658ce76d8326f19"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-transparent"
+  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheTransparencyProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "9648ba7f1a37a1e48f5ad3cbec3db4489a8c0323bdd571ec3d0aca0a3835b5ba"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-transparent"
+  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIgnoresCache"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "82a8b0e9b72b2e00234a968265d646b33f3ea26a170636c9f2c22c7289e20f39"
+}

@@ -1,10 +1,10 @@
-package provenance
-
-// Test-side gitsign-equivalent signing: a virtual sigstore (fulcio CA +
-// rekor log) signs tag payloads and embeds a genuine, offline-verifiable
-// Rekor transparency proof in the CMS unsigned attributes — the exact
-// shape gitsign's offline Rekor mode produces, so the verification path
-// under test runs real cryptography end to end.
+// Package provtest builds gitsign-equivalent signed-tag evidence for
+// tests: a virtual sigstore (fulcio CA + rekor log) signs tag payloads
+// and embeds a genuine, offline-verifiable Rekor transparency proof in
+// the CMS unsigned attributes — the exact shape gitsign's offline Rekor
+// mode produces — so verification paths under test run real
+// cryptography end to end against the matching pinned trusted root.
+package provtest
 
 import (
 	"context"
@@ -40,27 +40,35 @@ import (
 // Rekor TransparencyLogEntry (the gitsign embedded-proof location).
 var oidRekorTLE = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 3, 1}
 
+// The virtual leaf identity every Signer issues.
 const (
-	testSubject = "signer@example.com"
-	testIssuer  = "https://accounts.example.com"
+	Subject = "signer@example.com"
+	Issuer  = "https://accounts.example.com"
 )
 
 // virtualSigner is a virtual sigstore with one leaf identity and the
 // pinned trusted root built from it.
-type virtualSigner struct {
+type Signer struct {
 	vs     *ca.VirtualSigstore
 	leaf   *x509.Certificate
 	signer crypto.Signer
 	root   *gitprov.TrustedRoot
 }
 
-func newVirtualSigner(t *testing.T) *virtualSigner {
+func New(t testing.TB) *Signer {
+	return NewWithIdentity(t, Subject, Issuer)
+}
+
+// NewWithIdentity builds a Signer whose leaf carries the given SAN and
+// OIDC issuer — for exercising identity policies beyond the fixed
+// default (a CI workflow identity, an unaccepted signer).
+func NewWithIdentity(t testing.TB, subject, issuer string) *Signer {
 	t.Helper()
 	vs, err := ca.NewVirtualSigstore()
 	if err != nil {
 		t.Fatalf("NewVirtualSigstore: %v", err)
 	}
-	leaf, key, err := vs.GenerateLeafCert(testSubject, testIssuer)
+	leaf, key, err := vs.GenerateLeafCert(subject, issuer)
 	if err != nil {
 		t.Fatalf("GenerateLeafCert: %v", err)
 	}
@@ -82,16 +90,20 @@ func newVirtualSigner(t *testing.T) *virtualSigner {
 	if err != nil {
 		t.Fatalf("ParseTrustedRoot: %v", err)
 	}
-	return &virtualSigner{vs: vs, leaf: leaf, signer: key.(crypto.Signer), root: proot}
+	return &Signer{vs: vs, leaf: leaf, signer: key.(crypto.Signer), root: proot}
 }
 
-func (s *virtualSigner) identity() gitprov.Identity {
-	return gitprov.Identity{Issuer: testIssuer, Subject: testSubject}
+// TrustedRoot is the pinned trusted root built from the virtual
+// sigstore — the root every SignedTag verifies against.
+func (s *Signer) TrustedRoot() *gitprov.TrustedRoot { return s.root }
+
+func (s *Signer) Identity() gitprov.Identity {
+	return gitprov.Identity{Issuer: Issuer, Subject: Subject}
 }
 
 // signedTag signs payload and returns the raw tag bytes with the
 // signature appended in-body, with or without an embedded Rekor proof.
-func (s *virtualSigner) signedTag(t *testing.T, payload []byte, embedProof bool) []byte {
+func (s *Signer) SignedTag(t testing.TB, payload []byte, embedProof bool) []byte {
 	t.Helper()
 	der, err := cms.SignDetached(payload, []*x509.Certificate{s.leaf}, s.signer)
 	if err != nil {
@@ -111,7 +123,7 @@ func (s *virtualSigner) signedTag(t *testing.T, payload []byte, embedProof bool)
 // embedRekor logs the CMS signature in the virtual Rekor and embeds the
 // resulting entry — SET, inclusion proof, checkpoint — as the gitsign
 // unsigned attribute, returning the re-encoded DER.
-func (s *virtualSigner) embedRekor(t *testing.T, der []byte) []byte {
+func (s *Signer) embedRekor(t testing.TB, der []byte) []byte {
 	t.Helper()
 	ci, err := protocol.ParseContentInfo(der)
 	if err != nil {
@@ -198,7 +210,7 @@ func (s *virtualSigner) embedRekor(t *testing.T, der []byte) []byte {
 
 // hashedRekordBody canonicalizes the Rekor HashedRekord for the CMS
 // triple — the exact body the verifier recomputes and binds.
-func hashedRekordBody(t *testing.T, message, sig []byte, cert *x509.Certificate) []byte {
+func hashedRekordBody(t testing.TB, message, sig []byte, cert *x509.Certificate) []byte {
 	t.Helper()
 	hash := sha256.Sum256(message)
 	certPEM, err := cryptoutils.MarshalCertificateToPEM(cert)

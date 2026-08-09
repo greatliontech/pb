@@ -135,3 +135,30 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "ef8084b58726ed5c912e3bd08574a325d99e134b89133d0b00dd753221e057e9"
 }
+
+bindings {
+  requirement_id: "REQ-prov-unsigned-recorded"
+  content_hash: "052d2fd4aad4257f8527a3329a5df4d4b11f1300cd6642edd85dae2a55f5305c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.evaluateProvenance"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "fff2c49226c57605a379f3c43d4d5de8bb40d7e7ecf0e7d383f46a8eb5439f5b"
+}
+
+bindings {
+  requirement_id: "REQ-prov-unsigned-recorded"
+  content_hash: "052d2fd4aad4257f8527a3329a5df4d4b11f1300cd6642edd85dae2a55f5305c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestFirstUseRecordsCompletePin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a70f648229fce3cc962b3c24d2fc40afc55f55a5d47f860a619e0ee7ec30a7ef"
+}
+
+bindings {
+  requirement_id: "REQ-prov-unsigned-recorded"
+  content_hash: "052d2fd4aad4257f8527a3329a5df4d4b11f1300cd6642edd85dae2a55f5305c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestUnacceptedIdentityClassifiedAsUnsigned"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e1c72716688d72760a7cd588db3f8fff489b8e6aebc0b54f1ca947c21aa364b4"
+}

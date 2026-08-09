@@ -414,3 +414,48 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "a248b77aca1a1129ceb39b6c19f2ec428a199077359b16afac86b256fc2be105"
 }
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.Module"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5f33282a7c7659ef9a74795f4e5a47b9b08e563bc205e01267fe661098b4dd59"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestPinnedArchiveTamperRejectedProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "48c557171f83ec8b65601b30f117b41da4a9b90f4632d5020ec3159bb3255f3e"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIdentityMismatchLeavesNoState"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7c79df4f1fc2058855b879bab13871bc3054ad3b711261e2b354f6b905c3dcec"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-immutable"
+  content_hash: "9784d2bec3d5baca5b223c629b08c595e87eaeab2e73446fe3c50b4b72cb69f1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.TestPinnedArchiveTamperRejectedProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "48c557171f83ec8b65601b30f117b41da4a9b90f4632d5020ec3159bb3255f3e"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-immutable"
+  content_hash: "9784d2bec3d5baca5b223c629b08c595e87eaeab2e73446fe3c50b4b72cb69f1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4c2775352096450a6b6e0392c4cda927840199a6eeb71d4dbfde77047dfeff98"
+}
