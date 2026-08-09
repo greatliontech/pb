@@ -299,8 +299,10 @@ github.com/googleapis/enterprise-certificate-proxy v0.3.14 h1:yh8ncqsbUY4shRD5dA
 github.com/googleapis/enterprise-certificate-proxy v0.3.14/go.mod h1:vqVt9yG9480NtzREnTlmGSBmFrA+bzb0yl0TxoBQXOg=
 github.com/googleapis/gax-go/v2 v2.19.0 h1:fYQaUOiGwll0cGj7jmHT/0nPlcrZDFPrZRhTsoCr8hE=
 github.com/googleapis/gax-go/v2 v2.19.0/go.mod h1:w2ROXVdfGEVFXzmlciUU4EdjHgWvB5h2n6x/8XSTTJA=
-github.com/greatliontech/gitprov v0.0.0-20260809094841-9365fb22e77c h1:VMNLSm++F5WPhgTLXyeXtGYOahl0KJS+3oIt890LqZ8=
-github.com/greatliontech/gitprov v0.0.0-20260809094841-9365fb22e77c/go.mod h1:X5+FZBIywOMBAWNTUKUeeNSDSOdHbqjeJ4glPLX1Pis=
+github.com/greatliontech/gitprov v0.0.0-20260809121825-04e102e35f68 h1:WUk+rxOD2ufs3D65m7kMgjrs2Md1K8KZ1iLIerNtB30=
+github.com/greatliontech/gitprov v0.0.0-20260809121825-04e102e35f68/go.mod h1:jtWzTgVyGS88Sb1+hXAykPyCjAMIvxEJeWS4r2PO3B8=
+github.com/greatliontech/glob v0.1.0 h1:LwZX7EtMnHypXoZVdvQi/jW34qAtJ3VLdeB5EzTrVqE=
+github.com/greatliontech/glob v0.1.0/go.mod h1:2GCLEmzSHTM+1L3ZxH7gr4CEAOwPM1N1SEyk8R25Ke0=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0 h1:VlS2R0BC1oTBRePffJtkwjzy1jf0Cozphab/fqD/AJw=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0/go.mod h1:EamD9lGjaQ52lCU4ja1oKftZ7PMrDTC1Th9kVxBgSWk=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=

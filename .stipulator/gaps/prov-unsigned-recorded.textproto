@@ -2,5 +2,5 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-prov-unsigned-recorded"
-reason: "Trust policy evaluation and lockfile provenance records are the next roadmap slice; the verification core these clauses govern landed first"
-lands { manual { condition: "trust policy evaluation and lockfile provenance records land (dependency-core chunk 11)" } }
+reason: "Recording the none-provenance outcome in the lockfile is driver behavior; the record shape (zero-value Provenance) and the policy decision it follows from exist"
+lands { manual { condition: "the dep driver wires resolution end to end (dependency-core chunk 13)" } }

@@ -72,3 +72,66 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "bf45e3cbac840572b43d9d7acf0b406edb7483bf203e255f2b6c24d3861e9e58"
 }
+
+bindings {
+  requirement_id: "REQ-prov-trust-schema"
+  content_hash: "7e00d054657779d2a720c71e3c6d98f0b78ee0f77d4930f405142a56e70493e9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "37b88c84ed606aeee60b474689a1a456d377130c2adaf8b41736d0b657cb1358"
+}
+
+bindings {
+  requirement_id: "REQ-prov-trust-schema"
+  content_hash: "7e00d054657779d2a720c71e3c6d98f0b78ee0f77d4930f405142a56e70493e9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestParse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "cd98beb1c655a791932a7bd1c0dfc16892662bc46cc7cacdf807f40041a33013"
+}
+
+bindings {
+  requirement_id: "REQ-prov-policy-eval"
+  content_hash: "eb809e6d6d9b099fe1fcdf81dac716f3040580cc7e986cfdaeecb63bc5e8ac17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.Policy.EvaluateModule"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c312200668b65548cf8dbe56225481b6bc9a126a4134fb8dc3afd786c2f9f8a3"
+}
+
+bindings {
+  requirement_id: "REQ-prov-policy-eval"
+  content_hash: "eb809e6d6d9b099fe1fcdf81dac716f3040580cc7e986cfdaeecb63bc5e8ac17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestEvaluate"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f0ed8a7b909055e666d4f9f31dc3c473b6d772050ceebe77c77129ed182c38c7"
+}
+
+bindings {
+  requirement_id: "REQ-prov-policy-eval"
+  content_hash: "eb809e6d6d9b099fe1fcdf81dac716f3040580cc7e986cfdaeecb63bc5e8ac17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestEvaluateAlwaysPicksTheLongestMatch"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "33c07f57b97705435cdb26ed2cab1c5343879abfa9b9f5d21747e3d0708d14ab"
+}
+
+bindings {
+  requirement_id: "REQ-prov-origin-consistency"
+  content_hash: "36e39fcaf60bc6a57ca23f0c909e247aa44265a00acd81000b808edea0c29555"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.DefaultIdentity"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "25ec9f4c98d629077b0a3d213476b87606a83356e9ff8045e3b0ef74fab33a0d"
+}
+
+bindings {
+  requirement_id: "REQ-prov-origin-consistency"
+  content_hash: "36e39fcaf60bc6a57ca23f0c909e247aa44265a00acd81000b808edea0c29555"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestDefaultIdentity"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ef8084b58726ed5c912e3bd08574a325d99e134b89133d0b00dd753221e057e9"
+}

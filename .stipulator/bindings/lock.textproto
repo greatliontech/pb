@@ -297,3 +297,12 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "83a8c51ee22282220becce49f52f20cc9184066cb57cbaf15e9935943151d8b4"
 }
+
+bindings {
+  requirement_id: "REQ-lock-provenance-record"
+  content_hash: "481b0db9953bba23bbe01d92d4e2daa075b82c8bbcea0f13f6702c0fbd720a2c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.Record"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "494adfe8b9739798418824cd769bf211b45e69fc25025156d699b17e9ffff1ab"
+}

@@ -8,12 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"encoding/hex"
+
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/gittest"
+	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/version"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 	"pgregory.net/rapid"
@@ -339,6 +342,60 @@ func TestVerifyBindingFailsClosedUnderCorruption(t *testing.T) {
 	})
 }
 
+// TestRecord pins the evidence→lockfile record mapping
+// (REQ-lock-provenance-record): the type literal, the format carried
+// through, the hex hash of the TAG (the signed object — not the
+// commit), and the verified identity's two fields in their places.
+func TestRecord(t *testing.T) {
+	s := newVirtualSigner(t)
+	fx := newFixture(t)
+	tag := s.signedTag(t, tagPayload(fx.commitHash, "v1.2.3"), true)
+	ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
+
+	vi, err := Verify(context.Background(), ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, s.identity(), s.root)
+	if err != nil {
+		t.Fatalf("Verify: %v", err)
+	}
+	rec, err := Record(ev, vi)
+	if err != nil {
+		t.Fatalf("Record = %v, want nil", err)
+	}
+	if rec.Type != "git-signed-tag" {
+		t.Fatalf("Type = %q", rec.Type)
+	}
+	if rec.ObjectFormat != "sha1" {
+		t.Fatalf("ObjectFormat = %q", rec.ObjectFormat)
+	}
+	wantTag, err := archive.ObjectHash(archive.SHA1, "tag", tag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec.Object != hex.EncodeToString(wantTag) {
+		t.Fatalf("Object = %q, want the signed tag's own hash %x", rec.Object, wantTag)
+	}
+	wantCommit, err := archive.ObjectHash(archive.SHA1, "commit", fx.rawCommit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec.Object == hex.EncodeToString(wantCommit) {
+		t.Fatal("Object records the commit hash; the signed object is the tag")
+	}
+	if rec.SAN != testSubject || rec.Issuer != testIssuer {
+		t.Fatalf("identity = (%q,%q), want (%q,%q)", rec.SAN, rec.Issuer, testSubject, testIssuer)
+	}
+	if rec == (lockfile.Provenance{}) {
+		t.Fatal("record is the zero value, which the lockfile reads as none")
+	}
+
+	t.Run("unknown format fails closed", func(t *testing.T) {
+		bad := Evidence{Format: archive.ObjectFormat("sha512"), Tag: tag, Commit: fx.rawCommit}
+		if _, err := Record(bad, vi); err == nil ||
+			!strings.Contains(err.Error(), "hash tag") {
+			t.Fatalf("Record(bad format) = %v, want hash-stage error", err)
+		}
+	})
+}
+
 // TestProvenanceImportsCarryNoNetworkCapability pins REQ-prov-offline
 // structurally at the direct-import altitude: the provenance package
 // can reach the network only through the audited offline surfaces of
@@ -350,6 +407,7 @@ func TestProvenanceImportsCarryNoNetworkCapability(t *testing.T) {
 		"github.com/greatliontech/pb/internal/provenance": {
 			Internal: []string{
 				"github.com/greatliontech/pb/internal/archive",
+				"github.com/greatliontech/pb/internal/lockfile",
 				"github.com/greatliontech/pb/internal/version",
 			},
 			ThirdParty: []string{

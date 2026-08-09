@@ -9,6 +9,7 @@ import (
 
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/version"
 )
 
@@ -98,6 +99,23 @@ func Verify(ctx context.Context, ev Evidence, sub Subject, computedTree []byte, 
 		return nil, fmt.Errorf("provenance: %w", err)
 	}
 	return vi, nil
+}
+
+// Record renders the lockfile provenance record for accepted evidence
+// (REQ-lock-provenance-record): the evidence type, its object format,
+// the signed tag's own hash in that format, and the verified identity.
+func Record(ev Evidence, vi *gitprov.VerifiedIdentity) (lockfile.Provenance, error) {
+	h, err := archive.ObjectHash(ev.Format, "tag", ev.Tag)
+	if err != nil {
+		return lockfile.Provenance{}, fmt.Errorf("provenance: hash tag: %w", err)
+	}
+	return lockfile.Provenance{
+		Type:         "git-signed-tag",
+		ObjectFormat: string(ev.Format),
+		Object:       hex.EncodeToString(h),
+		SAN:          vi.Subject,
+		Issuer:       vi.Issuer,
+	}, nil
 }
 
 // tagHeader is the binding-relevant header block of a raw annotated

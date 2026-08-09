@@ -41,10 +41,15 @@ the archive contract. Evidence failing any binding step is rejected, not
 ignored.
 
 **REQ-prov-origin-consistency** (behavior): Absent an explicit identity
-rule, a verified identity MUST be accepted only when it corresponds to
-the module's own origin — the SAN designates the origin repository (a
-maintainer identity or a CI workflow identity of that repository); an
-identity from an unrelated repository or issuer is rejected.
+rule, a verified identity MUST be accepted only when it verifiably
+designates the module's own origin: a URI SAN under the origin
+repository's URL — a CI workflow identity of that repository — with the
+OIDC issuer being the origin forge's CI issuer. A correspondence that
+cannot be verified offline is not a designation: a maintainer's
+personal identity has no derivable binding to a repository, so it is
+acceptable only through an explicit identity rule; an origin on a forge
+with no known CI issuer has no default identity at all. An identity
+from an unrelated repository or issuer is rejected.
 
 ## Trust policy
 
@@ -52,8 +57,15 @@ identity from an unrelated repository or issuer is rejected.
 optional: `default` (`allow-unsigned`, the default, or
 `require-provenance`); `modules`, a list of rules `{prefix, require,
 identity: {san, issuer}}` matched against module paths; and `plugins`, a
-list of rules of the same shape matched against OCI references. `san` is
-a glob pattern; `issuer` is an exact string.
+list of rules of the same shape matched against the repository part of
+OCI references — any `:tag` or `@digest` stripped before matching, since
+a prefix scopes repositories, not versions. Rule prefixes within a list
+are unique: the longest-match rule presupposes one governing rule, and a
+duplicate prefix is a schema violation, not a tie to break. `san` is a
+glob pattern (full-input, `/`-separated component semantics: `*` and `?`
+within a component, `**` written as a complete component matching zero
+or more components, character classes and alternatives, backslash
+quoting); `issuer` is an exact string.
 
 **REQ-prov-policy-eval** (behavior): Policy evaluation MUST apply the
 rule with the longest matching prefix, falling back to `default` when no
