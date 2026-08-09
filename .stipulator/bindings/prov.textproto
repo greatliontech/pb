@@ -1,0 +1,74 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-prov-offline"
+  content_hash: "edaad3cf6f9dd37878ad3d3fa2f3ae2c621977ed52a67bb6685ffe6bfe588fd0"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.Verify"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c3b5c0473868bc1df9ad01cfbdd382b4ea54862093743067848f0800772df3fb"
+}
+
+bindings {
+  requirement_id: "REQ-prov-offline"
+  content_hash: "edaad3cf6f9dd37878ad3d3fa2f3ae2c621977ed52a67bb6685ffe6bfe588fd0"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.TestProvenanceImportsCarryNoNetworkCapability"
+  role: BINDING_ROLE_PROVES
+  shape_hash: "de082edb7ddf7f998f27598701bd6b7aa601e7375d893afcf2e1ec58b4698ed8"
+}
+
+bindings {
+  requirement_id: "REQ-prov-offline"
+  content_hash: "edaad3cf6f9dd37878ad3d3fa2f3ae2c621977ed52a67bb6685ffe6bfe588fd0"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.TestVerify"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b79e45accfd29a3bfa4d9ea31f69450d9f24f22c43a99622235fdc5bd3403196"
+}
+
+bindings {
+  requirement_id: "REQ-prov-signed-tag"
+  content_hash: "fe4c7b12c0ff3a99918fa2e13a2f3d36ee20316592fa2fee9ad7849ae5f086c1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.Verify"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c3b5c0473868bc1df9ad01cfbdd382b4ea54862093743067848f0800772df3fb"
+}
+
+bindings {
+  requirement_id: "REQ-prov-signed-tag"
+  content_hash: "fe4c7b12c0ff3a99918fa2e13a2f3d36ee20316592fa2fee9ad7849ae5f086c1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.TestVerify"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b79e45accfd29a3bfa4d9ea31f69450d9f24f22c43a99622235fdc5bd3403196"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.Verify"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c3b5c0473868bc1df9ad01cfbdd382b4ea54862093743067848f0800772df3fb"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.TestVerify"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b79e45accfd29a3bfa4d9ea31f69450d9f24f22c43a99622235fdc5bd3403196"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.TestVerifyBindingFailsClosedUnderCorruption"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bf45e3cbac840572b43d9d7acf0b406edb7483bf203e255f2b6c24d3861e9e58"
+}

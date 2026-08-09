@@ -16,7 +16,7 @@ module-resolution.md, module-proxy.md, provenance.md, workspace.md
 - [x] 8. Proxy client: escaping, endpoints, source list, fall-through,
       verification wiring
 - [x] 9. Direct source: git-backed fetching, proxy equivalence
-- [ ] 10. Provenance verification core (shared-library extraction
+- [x] 10. Provenance verification core (shared-library extraction
       coordinated with skillset; pb-side interface first)
 - [ ] 11. Trust policy evaluation & lockfile provenance records
 - [ ] 12. Workspace resolution root

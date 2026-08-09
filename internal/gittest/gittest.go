@@ -9,6 +9,7 @@
 package gittest
 
 import (
+	"io"
 	"time"
 
 	"github.com/go-git/go-billy/v6"
@@ -94,6 +95,26 @@ func (r *Repo) raw(typ plumbing.ObjectType, body string) plumbing.Hash {
 		r.T.Fatal(err)
 	}
 	return h
+}
+
+// Raw returns the stored object's raw content bytes — the git-core
+// body after the `<type> <len>\0` header, exactly what wire-level
+// consumers (provenance evidence, tree binding) operate on.
+func (r *Repo) Raw(typ plumbing.ObjectType, h plumbing.Hash) []byte {
+	eo, err := r.St.EncodedObject(typ, h)
+	if err != nil {
+		r.T.Fatal(err)
+	}
+	rd, err := eo.Reader()
+	if err != nil {
+		r.T.Fatal(err)
+	}
+	defer rd.Close()
+	b, err := io.ReadAll(rd)
+	if err != nil {
+		r.T.Fatal(err)
+	}
+	return b
 }
 
 // Tree writes a tree with the given entries.

@@ -270,6 +270,30 @@ func TestBuilderSurfacesStorageFailures(t *testing.T) {
 	}
 }
 
+// Raw returns exactly the stored content bytes, and a lookup of an
+// object that does not exist fails the test rather than answering.
+func TestBuilderRawObjects(t *testing.T) {
+	t.Run("round-trips stored content", func(t *testing.T) {
+		g := New(t)
+		content := "raw round-trip probe\n"
+		h := g.Blob(content)
+		if got := string(g.Raw(plumbing.BlobObject, h)); got != content {
+			t.Fatalf("Raw = %q, want %q", got, content)
+		}
+	})
+	t.Run("missing object fails the test", func(t *testing.T) {
+		rec := &recordingFailer{}
+		g := New(rec)
+		defer func() {
+			recover()
+			if !rec.hit {
+				t.Fatal("Raw answered for an object that does not exist")
+			}
+		}()
+		g.Raw(plumbing.CommitObject, plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	})
+}
+
 // Blob writes content-addressed bytes: the same content twice is one
 // object, and the hash matches git's blob hashing.
 func TestBuilderBlobIdentity(t *testing.T) {

@@ -1,0 +1,6 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-proxy-immutable"
+reason: "These clauses bind at the resolution driver, which wires sources, verification, and caching end to end; the client and core pieces they compose exist"
+lands { manual { condition: "the dep driver wires resolution end to end (dependency-core chunk 13)" } }

@@ -1,0 +1,6 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-work-default"
+reason: "Workspace resolution is its own roadmap slice after the provenance core"
+lands { manual { condition: "the workspace resolution root lands (dependency-core chunk 12)" } }
