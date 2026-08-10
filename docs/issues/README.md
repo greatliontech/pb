@@ -7,4 +7,5 @@ doc is deleted (git holds history).
 | slug | summary | Lands |
 |------|---------|-------|
 | [archive-extraction-evidence-machine-local](archive-extraction-evidence-machine-local.md) | ExtractZip/writeMember oracle scratch churn keeps mutation evidence machine-local; 37 unstable-oracle survivors unattributable | gomutant scratch-namespace declaration surface, or user decision on test redesign |
+| [client-assembly-consolidation](client-assembly-consolidation.md) | modfetch.Client assembled at three sites; collapse needs a cycle-breaking sub-package or a production options constructor | user decision |
 | [synthesis-driver-wiring](synthesis-driver-wiring.md) | REQ-resolve-synthesis include-root clause enforced when generation compiles modules | generation compile wiring |

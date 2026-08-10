@@ -9,7 +9,9 @@ package modfetchtest
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"slices"
 	"sort"
@@ -17,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
@@ -190,4 +193,104 @@ func (fx *Fixture) TreeFor(r *gittest.Repo, files map[string]string) plumbing.Ha
 		tes[i] = e.te
 	}
 	return r.Tree(tes...)
+}
+
+// ErrInjected is the sentinel every ErrFS fault returns.
+var ErrInjected = errors.New("injected storage fault")
+
+// ErrFS injects storage faults: each flag fails one operation class,
+// suffix variants scope the fault to matching names, and PutFailAfter
+// fails TempFile only after that many successes.
+type ErrFS struct {
+	billy.Filesystem
+	FailOpen       bool
+	FailOpenSuffix string
+	FailStatSuffix string
+	FailReadBody   bool
+	FailMkdirAll   bool
+	FailTempFile   bool
+	FailRename     bool
+	FailRenameSfx  string
+	FailWrite      bool
+	FailClose      bool
+	PutFailAfter   int // -1 = never; N fails the (N+1)th TempFile
+	tempFiles      int
+}
+
+// FailStat fails Stat for names with the suffix.
+func (e *ErrFS) Stat(name string) (fs.FileInfo, error) {
+	if e.FailStatSuffix != "" && strings.HasSuffix(name, e.FailStatSuffix) {
+		return nil, ErrInjected
+	}
+	return e.Filesystem.Stat(name)
+}
+
+func (e *ErrFS) Open(name string) (billy.File, error) {
+	if e.FailOpen || (e.FailOpenSuffix != "" && strings.HasSuffix(name, e.FailOpenSuffix)) {
+		return nil, ErrInjected
+	}
+	f, err := e.Filesystem.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return &errFile{File: f, failRead: e.FailReadBody}, nil
+}
+
+func (e *ErrFS) MkdirAll(name string, perm fs.FileMode) error {
+	if e.FailMkdirAll {
+		return ErrInjected
+	}
+	return e.Filesystem.MkdirAll(name, perm)
+}
+
+func (e *ErrFS) Rename(from, to string) error {
+	if e.FailRename || (e.FailRenameSfx != "" && strings.HasSuffix(to, e.FailRenameSfx)) {
+		return ErrInjected
+	}
+	return e.Filesystem.Rename(from, to)
+}
+
+func (e *ErrFS) TempFile(dir, prefix string) (billy.File, error) {
+	if e.FailTempFile {
+		return nil, ErrInjected
+	}
+	if e.PutFailAfter >= 0 {
+		if e.tempFiles >= e.PutFailAfter {
+			return nil, ErrInjected
+		}
+		e.tempFiles++
+	}
+	f, err := e.Filesystem.TempFile(dir, prefix)
+	if err != nil {
+		return nil, err
+	}
+	return &errFile{File: f, failWrite: e.FailWrite, failClose: e.FailClose}, nil
+}
+
+type errFile struct {
+	billy.File
+	failWrite bool
+	failClose bool
+	failRead  bool
+}
+
+func (f *errFile) Read(p []byte) (int, error) {
+	if f.failRead {
+		return 0, ErrInjected
+	}
+	return f.File.Read(p)
+}
+
+func (f *errFile) Write(p []byte) (int, error) {
+	if f.failWrite {
+		return 0, ErrInjected
+	}
+	return f.File.Write(p)
+}
+
+func (f *errFile) Close() error {
+	if f.failClose {
+		return ErrInjected
+	}
+	return f.File.Close()
 }

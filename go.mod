@@ -18,6 +18,7 @@ require (
 	github.com/sigstore/rekor v1.5.1
 	github.com/sigstore/sigstore v1.10.5
 	github.com/sigstore/sigstore-go v1.1.4
+	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.38.0
 	golang.org/x/net v0.57.0
 	google.golang.org/protobuf v1.36.11
@@ -158,7 +159,6 @@ require (
 	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.10.5 // indirect
 	github.com/sigstore/timestamp-authority/v2 v2.0.6 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
-	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect

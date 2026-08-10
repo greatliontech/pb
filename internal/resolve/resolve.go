@@ -159,6 +159,12 @@ func (d *Driver) Why(ctx context.Context, target string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	return WhyOver(edges, target), nil
+}
+
+// WhyOver answers Why over an already-rendered edge set, so several
+// targets share one graph computation.
+func WhyOver(edges []mvs.Edge, target string) []string {
 	// Adjacency over node names; edges are lexically sorted already, so
 	// BFS explores lexically least chains first at equal depth. The
 	// sort's version tie-break never decides sibling order: a module
@@ -195,10 +201,10 @@ func (d *Driver) Why(ctx context.Context, target string) ([]string, error) {
 			nodeName := e.Path + "@" + e.Version.String()
 			chain := append(slices.Clone(cur.chain), nodeName)
 			if e.Path == target {
-				return chain, nil
+				return chain
 			}
 			queue = append(queue, state{node: nodeName, chain: chain})
 		}
 	}
-	return nil, nil
+	return nil
 }

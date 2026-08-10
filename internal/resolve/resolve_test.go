@@ -128,10 +128,11 @@ func TestLocalPathsNeverFetched(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildList: %v", err)
 	}
-	for _, r := range list {
-		if r.Path == "example.com/b" {
-			t.Fatalf("workspace-local path in the build list: %v", list)
-		}
+	// Exactly m1: the local path is removed, not zeroed in place — a
+	// leftover zero-value entry would reach fetch paths as a module
+	// with an empty path.
+	if len(list) != 1 || list[0].Path != "example.com/m1" {
+		t.Fatalf("build list = %v, want exactly example.com/m1", list)
 	}
 	for key, n := range fx.Hits {
 		if strings.Contains(key, "example.com/b") && n > 0 {

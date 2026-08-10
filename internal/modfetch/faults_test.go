@@ -3,16 +3,15 @@ package modfetch
 import (
 	"context"
 	"errors"
-	"io/fs"
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/provenance"
 	"github.com/greatliontech/pb/internal/provtest"
@@ -20,96 +19,11 @@ import (
 	"github.com/greatliontech/pb/internal/trust"
 )
 
-// errFS injects storage faults under the cache: each flag fails one
-// operation class, and putFailAfter fails TempFile only after that many
-// successes — reaching the later Put sites (module file, provenance)
-// behind an earlier successful write.
-type errFS struct {
-	billy.Filesystem
-	failOpen       bool
-	failOpenSuffix string // fail Open only for names with this suffix
-	failReadBody   bool   // opened entries fail on Read
-	failMkdirAll   bool
-	failTempFile   bool
-	failRename     bool
-	failRenameSfx  string // fail Rename only for targets with this suffix
-	failWrite      bool
-	failClose      bool
-	putFailAfter   int // -1 = never; N fails the (N+1)th TempFile
-	tempFiles      int
-}
+// The fault-injection filesystem lives in internal/modfetchtest; local
+// aliases keep this suite reading naturally.
+type errFS = modfetchtest.ErrFS
 
-var errInjected = errors.New("injected storage fault")
-
-func (e *errFS) Open(name string) (billy.File, error) {
-	if e.failOpen || (e.failOpenSuffix != "" && strings.HasSuffix(name, e.failOpenSuffix)) {
-		return nil, errInjected
-	}
-	f, err := e.Filesystem.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	return &errFile{File: f, failRead: e.failReadBody}, nil
-}
-
-func (e *errFS) MkdirAll(name string, perm fs.FileMode) error {
-	if e.failMkdirAll {
-		return errInjected
-	}
-	return e.Filesystem.MkdirAll(name, perm)
-}
-
-func (e *errFS) Rename(from, to string) error {
-	if e.failRename || (e.failRenameSfx != "" && strings.HasSuffix(to, e.failRenameSfx)) {
-		return errInjected
-	}
-	return e.Filesystem.Rename(from, to)
-}
-
-func (e *errFS) TempFile(dir, prefix string) (billy.File, error) {
-	if e.failTempFile {
-		return nil, errInjected
-	}
-	if e.putFailAfter >= 0 {
-		if e.tempFiles >= e.putFailAfter {
-			return nil, errInjected
-		}
-		e.tempFiles++
-	}
-	f, err := e.Filesystem.TempFile(dir, prefix)
-	if err != nil {
-		return nil, err
-	}
-	return &errFile{File: f, failWrite: e.failWrite, failClose: e.failClose}, nil
-}
-
-type errFile struct {
-	billy.File
-	failWrite bool
-	failClose bool
-	failRead  bool
-}
-
-func (f *errFile) Read(p []byte) (int, error) {
-	if f.failRead {
-		return 0, errInjected
-	}
-	return f.File.Read(p)
-}
-
-func (f *errFile) Write(p []byte) (int, error) {
-	if f.failWrite {
-		return 0, errInjected
-	}
-	return f.File.Write(p)
-}
-
-func (f *errFile) Close() error {
-	if f.failClose {
-		return errInjected
-	}
-	return f.File.Close()
-}
+var errInjected = modfetchtest.ErrInjected
 
 // Every cache storage fault surfaces as the operation's error — no
 // arm of the pipeline swallows a failed read or write.
@@ -121,12 +35,12 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 		name string
 		fs   errFS
 	}{
-		{"mkdirall", errFS{failMkdirAll: true, putFailAfter: -1}},
-		{"tempfile", errFS{failTempFile: true, putFailAfter: -1}},
-		{"write", errFS{failWrite: true, putFailAfter: -1}},
-		{"close", errFS{failClose: true, putFailAfter: -1}},
-		{"rename", errFS{failRename: true, putFailAfter: -1}},
-		{"second put (module file)", errFS{putFailAfter: 1}},
+		{"mkdirall", errFS{FailMkdirAll: true, PutFailAfter: -1}},
+		{"tempfile", errFS{FailTempFile: true, PutFailAfter: -1}},
+		{"write", errFS{FailWrite: true, PutFailAfter: -1}},
+		{"close", errFS{FailClose: true, PutFailAfter: -1}},
+		{"rename", errFS{FailRename: true, PutFailAfter: -1}},
+		{"second put (module file)", errFS{PutFailAfter: 1}},
 	} {
 		t.Run("first-use "+tc.name, func(t *testing.T) {
 			fx := newFixture(t)
@@ -166,7 +80,7 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 			}
 			c := fx.Client("proxy")
 			c.Lock = seed.Lock
-			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpen: true, putFailAfter: -1}}
+			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailOpen: true, PutFailAfter: -1}}
 			if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 				t.Fatalf("err = %v, want the injected fault", err)
 			}
@@ -183,7 +97,7 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 		fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 		c := fx.Client("proxy")
 		// zip + mod cache writes succeed; the info write is the third.
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), putFailAfter: 2}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), PutFailAfter: 2}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -301,7 +215,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 
 	t.Run("underivable default identity beyond no-forge surfaces", func(t *testing.T) {
 		fx := newProvFixture(t, signer, true, "v1.0.0")
-		originOverride(fx.Fixture, "https://github.com/" + strings.Repeat("a", 8000))
+		originOverride(fx.Fixture, "https://github.com/"+strings.Repeat("a", 8000))
 		c := fx.clientWithPolicy(nil)
 		c.TrustedRoot = signer.TrustedRoot()
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
@@ -374,7 +288,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 		seed := seedPinned(t, fx)
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: ".mod", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailOpenSuffix: ".mod", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -387,7 +301,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 		seed := seedPinned(t, fx)
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: ".zip", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailOpenSuffix: ".zip", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -400,7 +314,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 		seed := seedPinned(t, fx)
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".zip", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".zip", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -414,7 +328,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 		seed := seedPinned(t, fx)
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".mod", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -423,7 +337,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	t.Run("prov write fault at first use is fatal", func(t *testing.T) {
 		fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
 		c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".prov", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".prov", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -476,7 +390,7 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest,
-			Modfile: modfileHash([]byte(bad))})
+			Modfile: ModfileHash([]byte(bad))})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("an unparsable pinned module file was accepted")
 		}
@@ -489,7 +403,7 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest,
-			Modfile: modfileHash([]byte(other))})
+			Modfile: ModfileHash([]byte(other))})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("a pinned module file declaring another identity was accepted")
 		}
@@ -749,7 +663,7 @@ func TestDownloadArms(t *testing.T) {
 		}
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".mod", PutFailAfter: -1}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -762,7 +676,7 @@ func TestDownloadArms(t *testing.T) {
 		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
 		c := fx.Client("proxy")
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".zip", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".zip", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -779,14 +693,14 @@ func TestDownloadArms(t *testing.T) {
 		}
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
-		fs := &errFS{Filesystem: memfs.New(), failReadBody: true, putFailAfter: -1}
+		fs := &errFS{Filesystem: memfs.New(), FailReadBody: true, PutFailAfter: -1}
 		c.Cache = &Cache{FS: fs}
 		// Seed an entry so the read is attempted.
-		fs.failReadBody = false
+		fs.FailReadBody = false
 		if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, zip); err != nil {
 			t.Fatal(err)
 		}
-		fs.failReadBody = true
+		fs.FailReadBody = true
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -884,7 +798,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 			s := seed(t, fx)
 			c := fx.Client("proxy")
 			c.Lock = s.Lock
-			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: sfx, putFailAfter: -1}}
+			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailOpenSuffix: sfx, PutFailAfter: -1}}
 			if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 				t.Fatalf("%s: err = %v, want the injected fault", sfx, err)
 			}
@@ -921,7 +835,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 		s := seed(t, fx)
 		c := fx.Client("proxy")
 		c.Lock = s.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".mod", PutFailAfter: -1}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -947,7 +861,7 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 		fx, s := seedVerified(t)
 		c := fx.clientWithPolicy(s.Policy)
 		c.Lock = s.Lock
-		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: ".prov", putFailAfter: -1}}
+		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailOpenSuffix: ".prov", PutFailAfter: -1}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}

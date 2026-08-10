@@ -18,9 +18,9 @@ import (
 	"github.com/greatliontech/pb/internal/version"
 )
 
-// modfileHash renders the module-file hash of exact module-file bytes
+// ModfileHash renders the module-file hash of exact module-file bytes
 // (module-lockfile.md, module-file hash term).
-func modfileHash(b []byte) string {
+func ModfileHash(b []byte) string {
 	h := sha256.Sum256(b)
 	return "sha256:" + hex.EncodeToString(h[:])
 }
@@ -61,12 +61,12 @@ func (c *Client) pinnedModule(ctx context.Context, modPath string, v version.Ver
 	}
 	if b, ok, err := c.Cache.Get(modPath, v, KindMod); err != nil {
 		return nil, err
-	} else if ok && modfileHash(b) == pin.Modfile {
+	} else if ok && ModfileHash(b) == pin.Modfile {
 		return parseModfile(modPath, b)
 	}
 	b, err := c.fetch(ctx, modPath, v, KindMod)
 	if err == nil {
-		if got := modfileHash(b); got != pin.Modfile {
+		if got := ModfileHash(b); got != pin.Modfile {
 			return nil, fmt.Errorf("%w: %s@%s modfile: expected %s, computed %s", lockfile.ErrPinMismatch, modPath, v, pin.Modfile, got)
 		}
 		if err := c.Cache.Put(modPath, v, KindMod, b); err != nil {
@@ -99,6 +99,22 @@ func parseModfile(modPath string, b []byte) (*modfile.File, error) {
 		return nil, err
 	}
 	return f, nil
+}
+
+// Zip returns a pair's verified archive bytes: an unpinned pair runs
+// the first-use pipeline on the way, a pinned pair serves the cache-or-
+// fetch path held to the pin. The bytes back import analysis and
+// verification above the pipeline; they are already accepted, never
+// Unverified.
+func (c *Client) Zip(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
+	pin, ok := c.Lock.Module(modPath, v.String())
+	if !ok {
+		if _, err := c.firstUse(ctx, modPath, v); err != nil {
+			return nil, err
+		}
+		pin, _ = c.Lock.Module(modPath, v.String())
+	}
+	return c.pinnedZip(ctx, modPath, v, pin)
 }
 
 // pinnedZip returns the pinned pair's archive bytes, digest-verified
@@ -167,7 +183,7 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	}
 	pin := lockfile.ModulePin{Path: modPath, Version: v.String(), Digest: digest, Provenance: rec}
 	if hasMod {
-		pin.Modfile = modfileHash(mb)
+		pin.Modfile = ModfileHash(mb)
 	}
 	if err := c.Lock.AddModule(pin); err != nil {
 		return nil, err

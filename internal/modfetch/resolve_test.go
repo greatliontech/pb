@@ -57,7 +57,7 @@ func TestFirstUseRecordsCompletePin(t *testing.T) {
 	if pin.Digest != digest {
 		t.Fatalf("pin digest = %s, want %s", pin.Digest, digest)
 	}
-	if pin.Modfile != modfileHash([]byte(files["pb.yaml"])) {
+	if pin.Modfile != ModfileHash([]byte(files["pb.yaml"])) {
 		t.Fatalf("pin modfile = %s", pin.Modfile)
 	}
 	if pin.Provenance != (lockfile.Provenance{}) {

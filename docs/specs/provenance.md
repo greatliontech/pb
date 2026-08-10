@@ -10,7 +10,11 @@ lockfile provenance records (`module-lockfile.md`).
 
 **trusted root** (term): The pinned sigstore TUF trusted-root material
 (Fulcio roots and intermediates, Rekor public keys) against which all
-certificate chains and transparency proofs are verified.
+certificate chains and transparency proofs are verified — loaded from
+the file named by the `PBTRUSTEDROOT` environment variable. Without
+one, no evidence can verify: absent under `allow-unsigned`, a failure
+under `require-provenance`; operations needing no evidence
+verification run without a root.
 
 **verified identity** (term): The identity extracted from a valid Fulcio
 certificate: the subject alternative name (SAN) and the OIDC issuer.

@@ -181,7 +181,7 @@ func TestDownloadVanishedEvidenceFailsClosed(t *testing.T) {
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m", Version: "v1.0.0",
 		Digest:  mustDigest(t, zip),
-		Modfile: modfileHash([]byte(files["pb.yaml"])),
+		Modfile: ModfileHash([]byte(files["pb.yaml"])),
 		Provenance: lockfile.Provenance{
 			Type: "git-signed-tag", ObjectFormat: "sha1",
 			Object: "0123456789012345678901234567890123456789",

@@ -119,9 +119,13 @@ deterministic and derives from the same graph `graph` prints.
 pinned (module path, version) pair whose artifacts are present in the
 module cache, the module digest and module-file hash against the pin,
 reporting every mismatch — exhaustively and deterministically ordered —
-and failing when any exists. Pairs with no cached artifacts are outside
-its scope: there are no local bytes to attest, and `download` followed
-by `verify` covers the full pin set. This is the one sanctioned
+and failing when any exists. The cached archive is the attested
+artifact: the module-file hash is recomputed from its in-archive copy
+(the same bytes as any standalone copy, by
+`REQ-lock-modfile-consistency`), and a pair whose archive is not
+cached is outside `verify`'s scope even when other artifact kinds are
+— there are no attestable module bytes, and `download` followed by
+`verify` covers the full pin set. This is the one sanctioned
 exception to `REQ-dep-cache-transparent`'s outcome-identity: `verify`'s
 subject IS the cache state, so its report legitimately depends on what
 is cached — never on cached content evading verification.

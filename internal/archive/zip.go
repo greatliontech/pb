@@ -217,6 +217,26 @@ func ZipTreeHash(f ObjectFormat, r io.ReaderAt, size int64) ([]byte, error) {
 	return TreeHash(f, entries)
 }
 
+// ZipFiles returns every member's content keyed by path — the whole
+// file set of an already-verified container, for consumers that walk
+// module content (import analysis). The total is bounded by
+// MaxTotalSize through the shared member discipline.
+func ZipFiles(r io.ReaderAt, size int64) (map[string][]byte, error) {
+	files := map[string][]byte{}
+	err := walkZip(r, size, func(m *zip.File) error {
+		b, err := readMember(m)
+		if err != nil {
+			return err
+		}
+		files[m.Name] = b
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // ZipFile returns the content bytes of the named member, reporting whether
 // the zip has it. The name is matched exactly against member names — the
 // file-set path rules make the module file's spelling unique.

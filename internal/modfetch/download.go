@@ -62,7 +62,7 @@ func archiveModfile(modPath string, v version.Version, pin lockfile.ModulePin, z
 	if !has {
 		return nil, fmt.Errorf("%w: %s@%s pin records a module file but the digest-verified archive has none", lockfile.ErrPinMismatch, modPath, v)
 	}
-	if got := modfileHash(b); got != pin.Modfile {
+	if got := ModfileHash(b); got != pin.Modfile {
 		return nil, fmt.Errorf("%w: %s@%s modfile (archive copy): expected %s, computed %s", lockfile.ErrPinMismatch, modPath, v, pin.Modfile, got)
 	}
 	return b, nil
@@ -76,7 +76,7 @@ func archiveModfile(modPath string, v version.Version, pin lockfile.ModulePin, z
 func (c *Client) downloadModfile(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, zip []byte) error {
 	if b, ok, err := c.Cache.Get(modPath, v, KindMod); err != nil {
 		return err
-	} else if ok && modfileHash(b) == pin.Modfile {
+	} else if ok && ModfileHash(b) == pin.Modfile {
 		return nil
 	}
 	archiveCopy, err := archiveModfile(modPath, v, pin, zip)
