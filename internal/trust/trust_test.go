@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"pgregory.net/rapid"
 )
@@ -271,4 +272,162 @@ func TestEvaluateAlwaysPicksTheLongestMatch(t *testing.T) {
 			t.Fatalf("Require = %v, want %v (subject %q, rules %+v)", d.Require, want, subject, rules)
 		}
 	})
+}
+
+// The execution block parses every key, accessors fold the defaults, and
+// scheme permission answers exactly the listed schemes
+// (REQ-prov-exec-policy).
+func TestParseExecution(t *testing.T) {
+	in := `
+execution:
+  min-tier: Minimal
+  schemes: [oci, local]
+  local-pin: false
+  plugin-overrides: false
+  limits:
+    memory: 512Mi
+    cpu: "1.5"
+    pids: 64
+    timeout: 30s
+`
+	p, err := Parse([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := &p.Execution
+	if e.EffectiveMinTier() != TierMinimal {
+		t.Errorf("min tier %q", e.EffectiveMinTier())
+	}
+	if !e.SchemeAllowed(SchemeLocal) || !e.SchemeAllowed(SchemeOCI) {
+		t.Error("listed schemes not allowed")
+	}
+	if e.LocalPinEnabled() || e.OverridesAllowed() {
+		t.Error("explicit false read as true")
+	}
+	if e.Limits.Memory != 512<<20 || e.Limits.CPU != 1.5 || e.Limits.Pids != 64 || e.Limits.Timeout != 30*time.Second {
+		t.Errorf("limits = %+v", e.Limits)
+	}
+}
+
+// The zero posture is the default posture: Strong floor, oci only,
+// pinning and overrides on, no limit overrides.
+func TestExecutionDefaults(t *testing.T) {
+	for _, in := range []string{"", "execution: {}\n", "execution:\n  schemes: [oci]\n"} {
+		p, err := Parse([]byte(in))
+		if err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+		e := &p.Execution
+		if e.EffectiveMinTier() != TierStrong {
+			t.Errorf("%q: tier %q", in, e.EffectiveMinTier())
+		}
+		if !e.SchemeAllowed(SchemeOCI) || e.SchemeAllowed(SchemeLocal) || e.SchemeAllowed("remote") {
+			t.Errorf("%q: scheme defaults wrong", in)
+		}
+		if !e.LocalPinEnabled() || !e.OverridesAllowed() {
+			t.Errorf("%q: boolean defaults wrong", in)
+		}
+		if e.Limits != (Limits{}) {
+			t.Errorf("%q: limits set: %+v", in, e.Limits)
+		}
+	}
+}
+
+func TestParseExecutionRejections(t *testing.T) {
+	cases := []struct{ name, in, msg string }{
+		{"not a mapping", "execution: strict\n", "must be a mapping"},
+		{"unknown key", "execution:\n  runner: docker\n", `unknown key "runner"`},
+		{"bad tier", "execution:\n  min-tier: strong\n", "one of Strong"},
+		{"reserved scheme", "execution:\n  schemes: [remote]\n", "oci or local"},
+		{"duplicate scheme", "execution:\n  schemes: [oci, oci]\n", `lists "oci" twice`},
+		{"non-bool pin", "execution:\n  local-pin: yes\n", "must be true or false"},
+		{"capitalized bool", "execution:\n  local-pin: True\n", "must be true or false"},
+		{"non-bool overrides", "execution:\n  plugin-overrides: 1\n", "must be true or false"},
+		{"unknown limit", "execution:\n  limits:\n    disk: 1Gi\n", `unknown key "disk"`},
+		{"zero memory", "execution:\n  limits:\n    memory: 0\n", "not positive"},
+		{"bad memory suffix", "execution:\n  limits:\n    memory: 512Ti\n", "not a positive integer"},
+		{"negative pids", "execution:\n  limits:\n    pids: -1\n", "not a positive integer"},
+		{"cpu exponent", "execution:\n  limits:\n    cpu: 1e2\n", "not a plain decimal"},
+		{"timeout no unit", "execution:\n  limits:\n    timeout: 30\n", "no s/m/h unit"},
+		{"timeout bad unit", "execution:\n  limits:\n    timeout: 30d\n", "no s/m/h unit"},
+		{"memory overflow", "execution:\n  limits:\n    memory: 99999999999999999999\n", "overflows"},
+		{"schemes not a list", "execution:\n  schemes: oci\n", "must be a list"},
+		{"limits not a mapping", "execution:\n  limits: 5\n", "must be a mapping"},
+		{"empty pids", "execution:\n  limits:\n    pids: \"\"\n", "empty value"},
+		{"empty timeout", "execution:\n  limits:\n    timeout: \"\"\n", "empty value"},
+		{"colon digit", "execution:\n  limits:\n    pids: \"1:\"\n", "not a positive integer"},
+		{"trailing dot cpu", "execution:\n  limits:\n    cpu: \"1.\"\n", "not a plain decimal"},
+		{"colon cpu", "execution:\n  limits:\n    cpu: \"1:\"\n", "not a plain decimal"},
+		{"zero cpu", "execution:\n  limits:\n    cpu: \"0\"\n", "not a positive decimal"},
+		{"double memory suffix", "execution:\n  limits:\n    memory: 1MiKi\n", "not a positive integer"},
+		{"exact overflow boundary", "execution:\n  limits:\n    memory: 18446744073709551616\n", "overflows"},
+		{"suffix overflow", "execution:\n  limits:\n    memory: 18446744073709551615Gi\n", "overflows"},
+		{"timeout bad decimal", "execution:\n  limits:\n    timeout: \"1.h\"\n", "not a plain decimal"},
+		{"mid-window suffix overflow", "execution:\n  limits:\n    memory: 17179869184Gi\n", "overflows"},
+		{"leading junk cpu", "execution:\n  limits:\n    cpu: \"x5\"\n", "not a plain decimal"},
+		{"signed cpu", "execution:\n  limits:\n    cpu: \"+5\"\n", "not a plain decimal"},
+	}
+	for _, tc := range cases {
+		_, err := Parse([]byte(tc.in))
+		if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
+			t.Errorf("%s: err = %v, want ErrInvalid with %q", tc.name, err, tc.msg)
+		}
+	}
+}
+
+// A timeout spelling past Duration's int64 range is rejected, never
+// wrapped negative.
+func TestTimeoutOverflowRejected(t *testing.T) {
+	_, err := Parse([]byte("execution:\n  limits:\n    timeout: 99999999999999h\n"))
+	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "overflows") {
+		t.Fatalf("err = %v, want overflow rejection", err)
+	}
+	// The largest representable hour count still parses positive.
+	p, err := Parse([]byte("execution:\n  limits:\n    timeout: 2562047h\n"))
+	if err != nil || p.Execution.Limits.Timeout <= 0 {
+		t.Fatalf("in-range timeout: %v %v", p, err)
+	}
+}
+
+// Every tier name is accepted; explicit-true booleans stay true; each
+// limit grammar's valid spellings land on the declared values.
+func TestExecutionValidSpellings(t *testing.T) {
+	for _, tier := range []string{TierStrong, TierOS, TierMinimal, TierNone} {
+		p, err := Parse([]byte("execution:\n  min-tier: " + tier + "\n"))
+		if err != nil || p.Execution.EffectiveMinTier() != tier {
+			t.Errorf("tier %s: %v", tier, err)
+		}
+	}
+	p, err := Parse([]byte("execution:\n  local-pin: true\n  plugin-overrides: true\n"))
+	if err != nil || !p.Execution.LocalPinEnabled() || !p.Execution.OverridesAllowed() {
+		t.Fatalf("explicit true read as false (%v)", err)
+	}
+	for in, want := range map[string]uint64{
+		"512":                  512,
+		"1Ki":                  1 << 10,
+		"3Mi":                  3 << 20,
+		"2Gi":                  2 << 30,
+		"18446744073709551615": 1<<64 - 1, // exactly max: the overflow guard must not fire
+	} {
+		p, err := Parse([]byte("execution:\n  limits:\n    memory: " + in + "\n"))
+		if err != nil || p.Execution.Limits.Memory != want {
+			t.Errorf("memory %s = %d, %v; want %d", in, p.Execution.Limits.Memory, err, want)
+		}
+	}
+	// Non-dyadic decimal: exact float64 equality separates the 64-bit
+	// parse from a float32 detour (0.1 is not float32-representable).
+	p2, err := Parse([]byte("execution:\n  limits:\n    cpu: \"0.1\"\n"))
+	if err != nil || p2.Execution.Limits.CPU != 0.1 {
+		t.Fatalf("cpu 0.1 = %v, %v; want exactly 0.1", p2.Execution.Limits.CPU, err)
+	}
+	for in, want := range map[string]time.Duration{
+		"45s": 45 * time.Second,
+		"2m":  2 * time.Minute,
+		"1h":  time.Hour,
+	} {
+		p, err := Parse([]byte("execution:\n  limits:\n    timeout: " + in + "\n"))
+		if err != nil || p.Execution.Limits.Timeout != want {
+			t.Errorf("timeout %s = %v, %v; want %v", in, p.Execution.Limits.Timeout, err, want)
+		}
+	}
 }

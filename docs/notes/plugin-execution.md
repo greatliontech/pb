@@ -51,11 +51,30 @@ and schemas never leave the machine.
   privileged source, digest pinning via the lockfile's `plugins` entries,
   strict platform refusal, verify-before-run, sandboxed single process,
   response authority).
+- Backend taxonomy: identity schemes (`oci` default with the full
+  guarantee set; `local` host binaries as an explicit policy-gated
+  downgrade, content-hash pinned by default; `remote` reserved as its
+  own trust category — it ships descriptors off-machine) are per-entry
+  and committed; runners (`native`, `docker`) are machine-scoped
+  mechanism, never committed, capability-defaulted, no silent fallback.
+  Generated output is runner-independent by contract. Core does pin,
+  verification, and platform checks off the manifest; runners only
+  execute — blob acquisition may ride the daemon (`docker pull` by
+  digest) as machine-scoped opt-in because content addressing makes the
+  byte path trust-neutral.
+- Dev loop: no committed dev-mode entries — an invocation-scoped
+  `--plugin-override` substitutes content behind a declared ref, loudly,
+  with the lockfile untouched in both directions.
 - Verification policy: `docs/specs/provenance.md` — one trust policy file
   (`pb.trust.yaml`) governs modules and plugin images alike; unsigned
-  allowed-and-recorded by default, `require-provenance` opt-in.
+  allowed-and-recorded by default, `require-provenance` opt-in. Its
+  `execution` block is the committed home of the whole plugin-execution
+  posture: tier floor, permitted schemes, local-pin opt-out, override
+  permission, resource ceilings. Generation configuration (`pb.gen.yaml`)
+  carries none of it.
 - Default MinTier: `Strong` (core is Linux-only where namespaces afford
   it); unattainable tier fails loudly with the explicit-lowering path
-  stated. Other platforms document their own defaults when they arrive.
+  stated. Platform scope: Linux (native+docker) and macOS (docker);
+  Windows is a named non-goal with WSL2 as the sanctioned route.
 - Generation attestation: deferred — recorded in
   [feature-set.md](./feature-set.md)'s deferred bucket.

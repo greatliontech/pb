@@ -162,3 +162,39 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "e1c72716688d72760a7cd588db3f8fff489b8e6aebc0b54f1ca947c21aa364b4"
 }
+
+bindings {
+  requirement_id: "REQ-prov-exec-policy"
+  content_hash: "2f8cc26208fa5c9b6ef44026f4bdce4574b4b3a7e69c3cb817dacfdeca72ab17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.parseExecution"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "d407a13d82c162c46982c297c519ab1383efc072e985c65e1b455d4c76ba9024"
+}
+
+bindings {
+  requirement_id: "REQ-prov-exec-policy"
+  content_hash: "2f8cc26208fa5c9b6ef44026f4bdce4574b4b3a7e69c3cb817dacfdeca72ab17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestParseExecution"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a9aecb0866628fb759ecd34df60e6bfea7ef5f043955add8ea2fbc8dccb9cbfa"
+}
+
+bindings {
+  requirement_id: "REQ-prov-exec-policy"
+  content_hash: "2f8cc26208fa5c9b6ef44026f4bdce4574b4b3a7e69c3cb817dacfdeca72ab17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestExecutionDefaults"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "48466e348539c95e32446a6107eeffe17c589a0fd2bc7bf2ed90740b83157bae"
+}
+
+bindings {
+  requirement_id: "REQ-prov-exec-policy"
+  content_hash: "2f8cc26208fa5c9b6ef44026f4bdce4574b4b3a7e69c3cb817dacfdeca72ab17"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestParseExecutionRejections"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "901dfdf9f20a6b9f67e732b97ac5aaf680d161865c74acc984e86c5f129ae927"
+}

@@ -45,10 +45,20 @@ verified Fulcio identity. No other evidence types are defined by this
 document; new types extend this record with their own fields.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
-`ref` (the OCI reference as written in generation configuration, without a
-digest), `digest` (the manifest-list digest the reference resolved to),
-and `provenance` (a provenance record for the image signature, `none` when
-unsigned). Plugin entries are sorted by `ref` in raw-byte order.
+`ref` (the plugin identity as written in generation configuration, without
+a digest), `scheme` (its identity scheme, `oci` or `local` —
+`plugin-execution.md`), then the scheme's own facts and no others. An
+`oci` entry carries `digest` (the manifest-list digest the reference
+resolved to) and `provenance` (a provenance record for the image
+signature, `none` when unsigned). A `local` entry carries `binary`, a
+mapping from host platform (`<os>/<arch>`) to the content hash
+(`sha256:` + 64 lowercase hex digits) of the resolved binary on that
+platform, and no provenance key — a host binary has no evidence to
+record, and its absence is not spelled `none`. The scheme is stated,
+never inferred from which fields are present; a pin satisfies only
+lookups in its own scheme, so an entry migrated between schemes takes a
+fresh first-use pin. Plugin entries are sorted by `ref` then `scheme` in
+raw-byte order.
 
 **REQ-lock-scalar-values** (wire): Every free-string fact — `version`,
 `san`, `issuer`, and `ref` — MUST be printable non-space ASCII, start

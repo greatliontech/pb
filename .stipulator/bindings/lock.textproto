@@ -48,7 +48,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "9f9e1a57246b4fa07f7c53bac17adad7ac85b0b5a2e58f5cec7f788bd0db0e8f"
+  content_hash: "f799758c8da1819f8032238f3da22497bc4834ad59e7abc60a4859f515432599"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lockfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -57,7 +57,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "9f9e1a57246b4fa07f7c53bac17adad7ac85b0b5a2e58f5cec7f788bd0db0e8f"
+  content_hash: "f799758c8da1819f8032238f3da22497bc4834ad59e7abc60a4859f515432599"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lockfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS

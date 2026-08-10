@@ -29,7 +29,11 @@ func goldenFile() *File {
 			{Path: "example.com/a", Version: "v1.0.0", Modfile: "sha256:" + strings.Repeat("44", 32), Provenance: Provenance{}},
 		},
 		Plugins: []PluginPin{
-			{Ref: "ghcr.io/acme/protoc-gen-x:v2", Digest: "sha256:" + strings.Repeat("55", 32), Provenance: Provenance{}},
+			{Ref: "tools/protoc-gen-local", Scheme: SchemeLocal, Binary: map[string]string{
+				"linux/amd64":  "sha256:" + strings.Repeat("66", 32),
+				"darwin/arm64": "sha256:" + strings.Repeat("77", 32),
+			}},
+			{Ref: "ghcr.io/acme/protoc-gen-x:v2", Scheme: SchemeOCI, Digest: "sha256:" + strings.Repeat("55", 32), Provenance: Provenance{}},
 		},
 	}
 }
@@ -57,8 +61,14 @@ modules:
     provenance: none
 plugins:
   - ref: ghcr.io/acme/protoc-gen-x:v2
+    scheme: oci
     digest: sha256:` + "5555555555555555555555555555555555555555555555555555555555555555" + `
     provenance: none
+  - ref: tools/protoc-gen-local
+    scheme: local
+    binary:
+      darwin/arm64: sha256:` + "7777777777777777777777777777777777777777777777777777777777777777" + `
+      linux/amd64: sha256:` + "6666666666666666666666666666666666666666666666666666666666666666" + `
 `
 
 func TestEncodeGolden(t *testing.T) {
@@ -76,15 +86,23 @@ func TestParseGoldenRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(f.Modules) != 3 || len(f.Plugins) != 1 {
+	if len(f.Modules) != 3 || len(f.Plugins) != 2 {
 		t.Fatalf("parsed %d modules, %d plugins", len(f.Modules), len(f.Plugins))
 	}
 	pin, ok := f.Module("example.com/a", "v1.2.3")
 	if !ok || pin.Provenance != goldenProv {
 		t.Fatalf("rich pin lost: %+v", pin)
 	}
-	if _, ok := f.Plugin("ghcr.io/acme/protoc-gen-x:v2"); !ok {
-		t.Fatalf("plugin pin lost")
+	if _, ok := f.Plugin("ghcr.io/acme/protoc-gen-x:v2", SchemeOCI); !ok {
+		t.Fatalf("oci plugin pin lost")
+	}
+	lp, ok := f.Plugin("tools/protoc-gen-local", SchemeLocal)
+	if !ok || lp.Binary["linux/amd64"] != "sha256:"+strings.Repeat("66", 32) {
+		t.Fatalf("local plugin pin lost: %+v", lp)
+	}
+	// A pin satisfies only lookups in its own scheme.
+	if _, ok := f.Plugin("tools/protoc-gen-local", SchemeOCI); ok {
+		t.Fatal("local pin answered an oci lookup")
 	}
 	again, err := Encode(f)
 	if err != nil || string(again) != goldenEncoded {
@@ -128,9 +146,20 @@ func TestParseRejections(t *testing.T) {
 		{"empty provenance record", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: {}\n", "provenance record is empty"},
 		{"null key defeating strict decode", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      null: x\n", "mapping keys are strings"},
 		{"null key at top level", "version: 1\nnull: x\nmodules:\n" + mod, "mapping keys are strings"},
-		{"plugin digest in ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b@sha256:" + strings.Repeat("11", 32) + "\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "carries a digest"},
-		{"plugin bad digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "not sha256:"},
-		{"duplicate plugin pin", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n  - ref: ghcr.io/a/b:v1\n    digest: sha256:" + strings.Repeat("22", 32) + "\n    provenance: none\n", "duplicate plugin pin"},
+		{"plugin digest in ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b@sha256:" + strings.Repeat("11", 32) + "\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "carries a digest"},
+		{"plugin bad digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "not sha256:"},
+		{"duplicate plugin pin", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("22", 32) + "\n    provenance: none\n", "duplicate plugin pin"},
+		{"plugin missing scheme", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "unknown scheme"},
+		{"plugin unknown scheme", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: remote\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "unknown scheme"},
+		{"local pin with digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
+		{"local pin with empty digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest: \"\"\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
+		{"local pin with null digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest:\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
+		{"oci pin with null binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n    binary:\n", "oci pins carry no binary"},
+		{"local pin with provenance key", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    provenance: none\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "carry no provenance key"},
+		{"local pin without binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n", "has no binary hashes"},
+		{"local pin bad platform", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux: sha256:" + strings.Repeat("11", 32) + "\n", "not <os>/<arch>"},
+		{"local pin bad hash", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux/amd64: pb1:" + strings.Repeat("11", 32) + "\n", "not sha256:"},
+		{"oci pin with binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "oci pins carry no binary"},
 	}
 	for _, tc := range cases {
 		_, err := Parse([]byte(tc.in))
@@ -285,7 +314,18 @@ func TestFixedPointProperty(t *testing.T) {
 			f.Modules = append(f.Modules, pin)
 		}
 		if rapid.Bool().Draw(t, "hasPlugin") {
-			f.Plugins = append(f.Plugins, PluginPin{Ref: plain("ref", printableNoAt), Digest: "sha256:" + hex64("pdigest")})
+			if rapid.Bool().Draw(t, "pluginLocal") {
+				platforms := rapid.SliceOfNDistinct(rapid.SampledFrom([]string{
+					"linux/amd64", "linux/arm64", "darwin/arm64", "darwin/amd64",
+				}), 1, 4, rapid.ID).Draw(t, "platforms")
+				binary := map[string]string{}
+				for _, platform := range platforms {
+					binary[platform] = "sha256:" + hex64("binary-"+platform)
+				}
+				f.Plugins = append(f.Plugins, PluginPin{Ref: plain("lref", printable), Scheme: SchemeLocal, Binary: binary})
+			} else {
+				f.Plugins = append(f.Plugins, PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")})
+			}
 		}
 		out1, err := Encode(&f)
 		if err != nil {
@@ -377,8 +417,10 @@ func TestPinsOnlyStructural(t *testing.T) {
 	)
 	structural.ExportedData[PluginPin](t,
 		structural.FieldOf[string]("Ref"),
+		structural.FieldOf[string]("Scheme"),
 		structural.FieldOf[string]("Digest"),
 		structural.FieldOf[Provenance]("Provenance"),
+		structural.FieldOf[map[string]string]("Binary"),
 	)
 	structural.ExportedData[Provenance](t,
 		structural.FieldOf[string]("Type"),
@@ -655,7 +697,7 @@ func TestScalarSpellingsPreserved(t *testing.T) {
 	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: 0x1f\n    provenance:\n" +
 		"      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n" +
 		"      identity:\n        san: 'a\\b'\n        issuer: y\n" +
-		"plugins:\n  - ref: True\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n"
+		"plugins:\n  - ref: True\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n"
 	f, err := Parse([]byte(in))
 	if err != nil {
 		t.Fatal(err)
@@ -681,14 +723,40 @@ func TestMutationResidue(t *testing.T) {
 
 	// Plugin lookup miss path and second-entry hit.
 	f := &File{Plugins: []PluginPin{
-		{Ref: "ghcr.io/a/one:v1", Digest: "sha256:" + h64},
-		{Ref: "ghcr.io/a/two:v1", Digest: "sha256:" + h64},
+		{Ref: "ghcr.io/a/one:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64},
+		{Ref: "ghcr.io/a/two:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64},
 	}}
-	if _, ok := f.Plugin("ghcr.io/a/none:v1"); ok {
+	if _, ok := f.Plugin("ghcr.io/a/none:v1", SchemeOCI); ok {
 		t.Fatal("missing plugin ref reported found")
 	}
-	if p, ok := f.Plugin("ghcr.io/a/two:v1"); !ok || p.Ref != "ghcr.io/a/two:v1" {
+	if p, ok := f.Plugin("ghcr.io/a/two:v1", SchemeOCI); !ok || p.Ref != "ghcr.io/a/two:v1" {
 		t.Fatalf("second plugin lookup: %+v %v", p, ok)
+	}
+
+	// One ref pinned in both schemes coexists: distinct pins, distinct
+	// lookups, sorted local-before-oci under one ref (raw-byte order).
+	// Input deliberately oci-first: sorted output is local-first, so a
+	// dropped scheme tie-break leaves the input order and fails below.
+	both := &File{Plugins: []PluginPin{
+		{Ref: "protoc-gen-x", Scheme: SchemeOCI, Digest: "sha256:" + h64},
+		{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + h64}},
+	}}
+	enc, err := Encode(both)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Index(string(enc), "scheme: local") > strings.Index(string(enc), "scheme: oci") {
+		t.Fatalf("schemes not sorted under one ref:\n%s", enc)
+	}
+	reparsed, err := Parse(enc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := reparsed.Plugin("protoc-gen-x", SchemeOCI); !ok {
+		t.Fatal("oci pin lost beside local")
+	}
+	if _, ok := reparsed.Plugin("protoc-gen-x", SchemeLocal); !ok {
+		t.Fatal("local pin lost beside oci")
 	}
 
 	// Two-plugin emission is ref-sorted regardless of input order.
@@ -722,7 +790,7 @@ func TestMutationResidue(t *testing.T) {
 	}
 
 	// Plugin pin with an invalid provenance record.
-	bad := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Digest: "sha256:" + h64,
+	bad := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64,
 		Provenance: Provenance{Type: "pgp", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}}}}
 	if _, err := Encode(bad); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "unknown provenance type") {
 		t.Fatalf("plugin bad provenance: %v", err)
@@ -836,5 +904,63 @@ func TestForbiddenYAMLConstructs(t *testing.T) {
 	in2 := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: ''\n        issuer: y\n"
 	if _, err := Parse([]byte(in2)); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "san and issuer") {
 		t.Fatalf("empty-quoted san: %v", err)
+	}
+}
+
+// The platform grammar admits exactly <os>/<arch> in lowercase
+// alphanumerics — boundary characters on every range edge.
+func TestPlatformGrammar(t *testing.T) {
+	for _, ok := range []string{"linux/amd64", "linux/386", "a0/z9", "darwin/arm64"} {
+		if err := checkPlatform(ok); err != nil {
+			t.Errorf("%q rejected: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{
+		"", "linux", "linux/", "/amd64", "Linux/amd64", "linux/AMD64",
+		"linux/amd_64", "linux/amd/64", "linux/amd`", "linux/amd{", "li:nux/a",
+	} {
+		if err := checkPlatform(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}
+
+// The scheme/field agreement holds on the Encode path too: a
+// hand-built pin carrying another scheme's facts never emits.
+func TestEncodeSchemeFieldMismatch(t *testing.T) {
+	h64 := strings.Repeat("ab", 32)
+	cases := []struct {
+		name string
+		pin  PluginPin
+		msg  string
+	}{
+		{"oci with binary", PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64,
+			Binary: map[string]string{"linux/amd64": "sha256:" + h64}}, "carry no binary"},
+		{"local with digest", PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Digest: "sha256:" + h64,
+			Binary: map[string]string{"linux/amd64": "sha256:" + h64}}, "carry no digest"},
+		{"local with provenance", PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal,
+			Binary:     map[string]string{"linux/amd64": "sha256:" + h64},
+			Provenance: goldenProv}, "carry no provenance"},
+	}
+	for _, tc := range cases {
+		if _, err := Encode(&File{Plugins: []PluginPin{tc.pin}}); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
+			t.Errorf("%s: err = %v, want ErrInvalid with %q", tc.name, err, tc.msg)
+		}
+	}
+}
+
+// An oci pin's provenance record survives the parse into the pin.
+func TestPluginProvenanceRecordParsed(t *testing.T) {
+	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n" +
+		"plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n" +
+		"    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n" +
+		"      identity:\n        san: " + goldenProv.SAN + "\n        issuer: " + goldenProv.Issuer + "\n"
+	f, err := Parse([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, ok := f.Plugin("ghcr.io/a/b:v1", SchemeOCI)
+	if !ok || p.Provenance != goldenProv {
+		t.Fatalf("plugin provenance lost: %+v", p.Provenance)
 	}
 }

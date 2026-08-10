@@ -13,11 +13,18 @@ option (such as `go_package`) applied to matching files' descriptors
 before plugins run.
 
 **REQ-gen-schema** (wire): The generation file MUST contain `plugins`, a
-list of entries `{ref, out, opt}` — a plugin reference, an output
-directory, and optional plugin parameters — and optionally `overrides`, a
-list of entries `{files, option, value}` where `files` is a glob pattern
-over module-relative proto file paths within the workspace and its
-dependencies. No other top-level keys exist.
+list of entries carrying exactly one identity-scheme key — `ref` (a
+plugin reference, the `oci` scheme) or `local` (a host binary per
+`plugin-execution.md`) — plus `out`, an output directory relative to the
+resolution root, and optional `opt`, plugin parameters; and optionally
+`overrides`, a list of entries `{files, option, value}` where `files` is
+a glob pattern over module-relative proto file paths within the
+workspace and its dependencies. No other top-level keys and no other
+entry keys exist: there is no bare plugin-name key, and an entry with
+zero or several scheme keys is a schema violation — which scheme an
+entry lives in is always written, never inferred. Runner selection,
+trust posture, and resource limits are not generation configuration and
+have no keys here (`plugin-execution.md`, `provenance.md`).
 
 **REQ-gen-overrides-declarative** (behavior): Option overrides MUST be
 applied exactly as declared to the descriptors of matching files before

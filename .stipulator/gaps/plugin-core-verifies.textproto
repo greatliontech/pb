@@ -1,0 +1,6 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-plugin-core-verifies"
+reason: "The core/runner verification split is a plugin-execution mechanism; nothing executes plugins yet"
+lands { manual { condition: "the plugin execution subsystem is built" } }

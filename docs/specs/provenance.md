@@ -71,6 +71,25 @@ within a component, `**` written as a complete component matching zero
 or more components, character classes and alternatives, backslash
 quoting); `issuer` is an exact string.
 
+**REQ-prov-exec-policy** (wire): The trust policy file MAY additionally
+contain `execution`, the resolution root's plugin-execution posture
+(`plugin-execution.md`), with each key optional: `min-tier` (the sandbox
+tier floor for `oci` plugins; default `Strong`), `schemes` (the
+permitted identity schemes; default `[oci]` — listing `local` is the
+root's explicit acceptance of unsandboxed execution), `local-pin`
+(whether local binaries are content-hash pinned; `true` or `false`,
+lowercase, default `true`), `plugin-overrides` (whether
+invocation-scoped overrides are permitted; same spellings, default
+`true`), and `limits` (plugin resource bounds overriding the
+implementation defaults, each optional: `memory`, a positive integer
+byte count with optional `Ki`/`Mi`/`Gi` suffix; `cpu`, a positive plain
+decimal core count — digits with an optional fractional part, no signs
+or exponents; `pids`, a positive integer; `timeout`, a positive plain
+decimal with unit `s`, `m`, or `h`, within the representable duration
+range). No other keys exist. This block is the only committed home of
+these facts: generation configuration never carries them, and runner
+selection — mechanism, not posture — has no committed home at all.
+
 **REQ-prov-policy-eval** (behavior): Policy evaluation MUST apply the
 rule with the longest matching prefix, falling back to `default` when no
 rule matches; a subject governed by `require-provenance` (globally or by

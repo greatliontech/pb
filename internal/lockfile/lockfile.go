@@ -16,10 +16,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/modpath"
@@ -57,11 +59,24 @@ type ModulePin struct {
 	Provenance Provenance
 }
 
-// PluginPin is one plugin entry (REQ-lock-plugin-entry).
+// Plugin identity schemes (REQ-lock-plugin-entry; the scheme taxonomy is
+// plugin-execution.md's).
+const (
+	SchemeOCI   = "oci"
+	SchemeLocal = "local"
+)
+
+// PluginPin is one plugin entry (REQ-lock-plugin-entry): identity facts
+// for the (ref, scheme) pair. An oci pin carries Digest and Provenance;
+// a local pin carries Binary — platform-keyed content hashes — and no
+// provenance at all: a host binary has no evidence to record, and its
+// absence is not spelled `none`.
 type PluginPin struct {
-	Ref        string // OCI reference as written in generation configuration, without a digest
-	Digest     string // "sha256:" + 64 hex manifest-list digest
+	Ref        string // plugin identity as written in generation configuration, without a digest
+	Scheme     string // SchemeOCI or SchemeLocal — stated, never inferred from fields
+	Digest     string // oci: "sha256:" + 64 hex manifest-list digest
 	Provenance Provenance
+	Binary     map[string]string // local: "<os>/<arch>" -> "sha256:" + 64 hex
 }
 
 // File is a parsed lockfile: pins only.
@@ -173,21 +188,64 @@ func checkModulePin(m ModulePin) error {
 	return nil
 }
 
+// checkPlatform bounds a Binary key to "<os>/<arch>": two non-empty
+// lowercase-alphanumeric segments.
+func checkPlatform(s string) error {
+	osPart, arch, ok := strings.Cut(s, "/")
+	bad := !ok || osPart == "" || arch == ""
+	for _, part := range []string{osPart, arch} {
+		for i := 0; !bad && i < len(part); i++ {
+			c := part[i]
+			bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z')
+		}
+	}
+	if bad {
+		return fmt.Errorf("platform %q is not <os>/<arch> in lowercase alphanumerics", s)
+	}
+	return nil
+}
+
 func checkPluginPin(p PluginPin) error {
 	if p.Ref == "" {
 		return errors.New("plugin entry has no ref")
 	}
-	if strings.Contains(p.Ref, "@") {
-		return fmt.Errorf("plugin ref %q carries a digest; refs are pinned by the digest field", p.Ref)
-	}
 	if err := checkPlainScalar("ref", p.Ref); err != nil {
 		return err
 	}
-	if err := checkHashRef("sha256:", p.Digest); err != nil {
-		return fmt.Errorf("plugin %q: %v", p.Ref, err)
-	}
-	if err := checkProvenance(p.Provenance); err != nil {
-		return fmt.Errorf("plugin %q: %v", p.Ref, err)
+	switch p.Scheme {
+	case SchemeOCI:
+		if strings.Contains(p.Ref, "@") {
+			return fmt.Errorf("plugin ref %q carries a digest; refs are pinned by the digest field", p.Ref)
+		}
+		if p.Binary != nil {
+			return fmt.Errorf("plugin %q: oci pins carry no binary hashes", p.Ref)
+		}
+		if err := checkHashRef("sha256:", p.Digest); err != nil {
+			return fmt.Errorf("plugin %q: %v", p.Ref, err)
+		}
+		if err := checkProvenance(p.Provenance); err != nil {
+			return fmt.Errorf("plugin %q: %v", p.Ref, err)
+		}
+	case SchemeLocal:
+		if p.Digest != "" {
+			return fmt.Errorf("plugin %q: local pins carry no digest", p.Ref)
+		}
+		if p.Provenance != (Provenance{}) {
+			return fmt.Errorf("plugin %q: local pins carry no provenance", p.Ref)
+		}
+		if len(p.Binary) == 0 {
+			return fmt.Errorf("plugin %q: local pin has no binary hashes", p.Ref)
+		}
+		for platform, hash := range p.Binary {
+			if err := checkPlatform(platform); err != nil {
+				return fmt.Errorf("plugin %q: %v", p.Ref, err)
+			}
+			if err := checkHashRef("sha256:", hash); err != nil {
+				return fmt.Errorf("plugin %q, platform %s: %v", p.Ref, platform, err)
+			}
+		}
+	default:
+		return fmt.Errorf("plugin %q: unknown scheme %q", p.Ref, p.Scheme)
 	}
 	return nil
 }
@@ -207,15 +265,16 @@ func validate(f *File) error {
 		}
 		seenM[k] = struct{}{}
 	}
-	seenP := make(map[string]struct{}, len(f.Plugins))
+	seenP := make(map[[2]string]struct{}, len(f.Plugins))
 	for _, p := range f.Plugins {
 		if err := checkPluginPin(p); err != nil {
 			return fmt.Errorf("%w: %v", ErrInvalid, err)
 		}
-		if _, dup := seenP[p.Ref]; dup {
-			return fmt.Errorf("%w: duplicate plugin pin %q", ErrInvalid, p.Ref)
+		k := [2]string{p.Ref, p.Scheme}
+		if _, dup := seenP[k]; dup {
+			return fmt.Errorf("%w: duplicate plugin pin %q (%s)", ErrInvalid, p.Ref, p.Scheme)
 		}
-		seenP[p.Ref] = struct{}{}
+		seenP[k] = struct{}{}
 	}
 	return nil
 }
@@ -227,7 +286,12 @@ func sortPins(f *File) {
 		}
 		return strings.Compare(a.Version, b.Version)
 	})
-	slices.SortFunc(f.Plugins, func(a, b PluginPin) int { return strings.Compare(a.Ref, b.Ref) })
+	slices.SortFunc(f.Plugins, func(a, b PluginPin) int {
+		if c := strings.Compare(a.Ref, b.Ref); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Scheme, b.Scheme)
+	})
 }
 
 // Encode renders the lockfile canonically (REQ-lock-canonical-emission,
@@ -259,8 +323,17 @@ func Encode(f *File) ([]byte, error) {
 		b.WriteString("plugins:\n")
 		for _, p := range c.Plugins {
 			fmt.Fprintf(&b, "  - ref: %s\n", p.Ref)
-			fmt.Fprintf(&b, "    digest: %s\n", p.Digest)
-			writeProvenance(&b, "    ", p.Provenance)
+			fmt.Fprintf(&b, "    scheme: %s\n", p.Scheme)
+			switch p.Scheme {
+			case SchemeOCI:
+				fmt.Fprintf(&b, "    digest: %s\n", p.Digest)
+				writeProvenance(&b, "    ", p.Provenance)
+			case SchemeLocal:
+				b.WriteString("    binary:\n")
+				for _, platform := range slices.Sorted(maps.Keys(p.Binary)) {
+					fmt.Fprintf(&b, "      %s: %s\n", platform, p.Binary[platform])
+				}
+			}
 		}
 	}
 	return []byte(b.String()), nil
@@ -364,9 +437,53 @@ type rawModule struct {
 }
 
 type rawPlugin struct {
-	Ref        rawScalar `yaml:"ref"`
-	Digest     string    `yaml:"digest"`
-	Provenance provNode  `yaml:"provenance"`
+	Ref        rawScalar            `yaml:"ref"`
+	Scheme     string               `yaml:"scheme"`
+	Digest     string               `yaml:"digest"`
+	Provenance provNode             `yaml:"provenance"`
+	Binary     map[string]rawScalar `yaml:"binary"`
+}
+
+// pluginEntryKeys are the keys each scheme's entries may carry — "the
+// scheme's own facts and no others" (REQ-lock-plugin-entry). The claim
+// is about KEYS: an empty or null value decodes to a zero struct field
+// indistinguishable from absence, and goccy skips custom unmarshalers
+// for null entirely, so presence is read off the AST, not the value.
+var pluginEntryKeys = map[string]map[string]bool{
+	SchemeOCI:   {"ref": true, "scheme": true, "digest": true, "provenance": true},
+	SchemeLocal: {"ref": true, "scheme": true, "binary": true},
+}
+
+// pluginKeySets walks the plugins sequence of the document mapping and
+// returns each entry's key names, index-aligned with the decoded
+// entries. Non-mapping shapes yield nil; the strict decode has its own
+// error for them.
+func pluginKeySets(mapping *ast.MappingNode) [][]string {
+	var sets [][]string
+	for _, kv := range mapping.Values {
+		if s, ok := kv.Key.(*ast.StringNode); !ok || s.Value != "plugins" {
+			continue
+		}
+		seq, ok := kv.Value.(*ast.SequenceNode)
+		if !ok {
+			return nil
+		}
+		for _, entry := range seq.Values {
+			em, ok := entry.(*ast.MappingNode)
+			if !ok {
+				sets = append(sets, nil)
+				continue
+			}
+			var keys []string
+			for _, ekv := range em.Values {
+				if s, ok := ekv.Key.(*ast.StringNode); ok {
+					keys = append(keys, s.Value)
+				}
+			}
+			sets = append(sets, keys)
+		}
+	}
+	return sets
 }
 
 type rawFile struct {
@@ -404,12 +521,34 @@ func Parse(data []byte) (*File, error) {
 			Path: m.Path, Version: string(m.Version), Digest: m.Digest, Modfile: m.Modfile, Provenance: prov,
 		})
 	}
-	for _, p := range raw.Plugins {
-		prov, err := p.Provenance.record()
-		if err != nil {
-			return nil, fmt.Errorf("%w: plugin %q: %v", ErrInvalid, p.Ref, err)
+	pluginKeys := pluginKeySets(mapping)
+	for i, p := range raw.Plugins {
+		pin := PluginPin{Ref: string(p.Ref), Scheme: p.Scheme, Digest: p.Digest}
+		// Scheme/key agreement is checked against the entry's AST keys
+		// (see pluginEntryKeys); the value shapes are validate's job.
+		if allowed, known := pluginEntryKeys[p.Scheme]; known && i < len(pluginKeys) {
+			for _, key := range pluginKeys[i] {
+				if !allowed[key] {
+					return nil, fmt.Errorf("%w: plugin %q: %s pins carry no %s key", ErrInvalid, p.Ref, p.Scheme, key)
+				}
+			}
 		}
-		f.Plugins = append(f.Plugins, PluginPin{Ref: string(p.Ref), Digest: p.Digest, Provenance: prov})
+		if p.Scheme != SchemeLocal {
+			// oci — and unknown schemes fail in validate with the better
+			// error.
+			prov, err := p.Provenance.record()
+			if err != nil {
+				return nil, fmt.Errorf("%w: plugin %q: %v", ErrInvalid, p.Ref, err)
+			}
+			pin.Provenance = prov
+		}
+		if p.Binary != nil {
+			pin.Binary = make(map[string]string, len(p.Binary))
+			for platform, hash := range p.Binary {
+				pin.Binary[platform] = string(hash)
+			}
+		}
+		f.Plugins = append(f.Plugins, pin)
 	}
 	if err := validate(f); err != nil {
 		return nil, err
@@ -427,10 +566,12 @@ func (f *File) Module(path, version string) (ModulePin, bool) {
 	return ModulePin{}, false
 }
 
-// Plugin returns the pin for ref.
-func (f *File) Plugin(ref string) (PluginPin, bool) {
+// Plugin returns the pin for (ref, scheme): a pin satisfies only lookups
+// in its own scheme, so an entry migrated between schemes takes a fresh
+// first-use pin.
+func (f *File) Plugin(ref, scheme string) (PluginPin, bool) {
 	for _, p := range f.Plugins {
-		if p.Ref == ref {
+		if p.Ref == ref && p.Scheme == scheme {
 			return p, true
 		}
 	}
