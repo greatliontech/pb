@@ -13,6 +13,7 @@ import (
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/modfetchtest"
+	"github.com/greatliontech/pb/internal/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/protoimport"
 	"github.com/greatliontech/pb/internal/version"
 )
@@ -38,14 +39,7 @@ func newDep(t *testing.T, files map[string]string) *depFixture {
 }
 
 func (fx *depFixture) client(pbproxy string) *modfetch.Client {
-	return &modfetch.Client{
-		HTTP:          fx.HTTPClient(),
-		Sources:       fx.Sources(pbproxy),
-		Cache:         &modfetch.Cache{FS: memfs.New()},
-		Lock:          &lockfile.File{},
-		ResolveOrigin: fx.Resolve,
-		Fetcher:       fx.Fetcher(),
-	}
+	return assemble.Client(fx.Fixture, pbproxy)
 }
 
 func (fx *depFixture) session(t *testing.T, dir string) *Session {
@@ -197,10 +191,10 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 // changes nothing.
 func TestTidy(t *testing.T) {
 	fx := newDep(t, map[string]string{
-		"pb.work":     "use:\n  - a\n  - lib\n",
-		"a/pb.yaml":   ws("example.com/a", "  example.com/m1: v1.0.0\n  example.com/unused: v1.0.0\n  example.com/lib: v0.1.0\n"),
-		"a/x.proto":   "syntax = \"proto3\";\nimport \"m1.proto\";\nimport \"m2.proto\";\nimport \"lib.proto\";\n",
-		"lib/pb.yaml": ws("example.com/lib", ""),
+		"pb.work":       "use:\n  - a\n  - lib\n",
+		"a/pb.yaml":     ws("example.com/a", "  example.com/m1: v1.0.0\n  example.com/unused: v1.0.0\n  example.com/lib: v0.1.0\n"),
+		"a/x.proto":     "syntax = \"proto3\";\nimport \"m1.proto\";\nimport \"m2.proto\";\nimport \"lib.proto\";\n",
+		"lib/pb.yaml":   ws("example.com/lib", ""),
 		"lib/lib.proto": "syntax = \"proto3\";\n",
 	})
 	fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{
@@ -415,10 +409,10 @@ func TestVerifyVerb(t *testing.T) {
 // writes only on change.
 func TestSessionLoad(t *testing.T) {
 	fx := newDep(t, map[string]string{
-		"pb.work":        "use:\n  - a\n",
-		"a/pb.yaml":      ws("example.com/a", ""),
-		"b/pb.yaml":      ws("example.com/b", ""),
-		"pb.trust.yaml":  "default: require-provenance\n",
+		"pb.work":       "use:\n  - a\n",
+		"a/pb.yaml":     ws("example.com/a", ""),
+		"b/pb.yaml":     ws("example.com/b", ""),
+		"pb.trust.yaml": "default: require-provenance\n",
 	})
 	if _, err := Load(Config{WS: fx.ws, Dir: "b", Client: fx.client("proxy")}); err == nil {
 		t.Fatal("membership violation tolerated")

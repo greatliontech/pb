@@ -36,7 +36,9 @@ func moduleZip(t *testing.T, files map[string]string) ([]byte, string) {
 }
 
 // Client assembles the client under test over the fixture's transport,
-// with a fresh in-memory cache and empty pin store.
+// with a fresh in-memory cache and empty pin store. This is the one
+// copy of modfetchtest/assemble.Client the import cycle forces: this
+// suite is package modfetch, and assemble imports modfetch.
 func (fx *fixture) Client(pbproxy string) *Client {
 	return &Client{
 		HTTP:          fx.HTTPClient(),

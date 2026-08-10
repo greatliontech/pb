@@ -8,10 +8,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/go-git/go-billy/v6/memfs"
-	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/modfetchtest"
+	"github.com/greatliontech/pb/internal/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/modfile"
 	"github.com/greatliontech/pb/internal/mvs"
 	"github.com/greatliontech/pb/internal/workspace"
@@ -42,14 +41,7 @@ func newDriver(t *testing.T, files map[string]string) (*Driver, *driverFixture) 
 }
 
 func (fx *driverFixture) client(pbproxy string) *modfetch.Client {
-	return &modfetch.Client{
-		HTTP:          fx.HTTPClient(),
-		Sources:       fx.Sources(pbproxy),
-		Cache:         &modfetch.Cache{FS: memfs.New()},
-		Lock:          &lockfile.File{},
-		ResolveOrigin: fx.Resolve,
-		Fetcher:       fx.Fetcher(),
-	}
+	return assemble.Client(fx.Fixture, pbproxy)
 }
 
 // serveModule registers an external module's archive on the proxy host.
@@ -548,7 +540,7 @@ func TestGraphDeterministicAcrossCalls(t *testing.T) {
 // substitutes for the sort.
 func TestGraphOrderAcrossRequirers(t *testing.T) {
 	d, fx := newDriver(t, map[string]string{
-		"pb.work":   "use:\n  - zz\n  - aa\n",
+		"pb.work":    "use:\n  - zz\n  - aa\n",
 		"zz/pb.yaml": ws("example.com/zz", "  example.com/dep: v1.0.0\n"),
 		"aa/pb.yaml": ws("example.com/aa", "  example.com/dep: v1.0.0\n"),
 	})
