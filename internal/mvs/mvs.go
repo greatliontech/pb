@@ -91,12 +91,13 @@ func requirerName(r string) string {
 	return r
 }
 
-// BuildList selects one version per reachable module path. The returned
-// list is sorted by path; crossings holds every major crossing, accepted
-// (warnings for the caller to report) and, when any crossing is
-// unaccepted, the error is a *CrossingError naming them all — the list is
-// still returned for diagnostics.
-func BuildList(root []Requirement, load LoadFunc) (list []Requirement, crossings []Crossing, err error) {
+// Graph walks the reachable requirement graph (REQ-resolve-mvs's node
+// set) and returns every edge in traversal order: the root's
+// requirements first, then each reached pair's declarations, a pair's
+// requirements expanded once however many edges reach it. BuildList
+// selects over exactly this edge set — one definition of reachability
+// serves selection and the graph-rendering consumers above it.
+func Graph(root []Requirement, load LoadFunc) ([]Edge, error) {
 	type node struct {
 		path string
 		ver  string
@@ -118,13 +119,26 @@ func BuildList(root []Requirement, load LoadFunc) (list []Requirement, crossings
 		visited[n] = true
 		reqs, err := load(e.Path, e.Version)
 		if err != nil {
-			return nil, nil, fmt.Errorf("loading requirements of %s@%s (required by %s): %w",
+			return nil, fmt.Errorf("loading requirements of %s@%s (required by %s): %w",
 				e.Path, e.Version, requirerName(e.Requirer), err)
 		}
 		requirer := e.Path + "@" + e.Version.String()
 		for _, r := range sortedReqs(reqs) {
 			queue = append(queue, Edge{Requirer: requirer, Path: r.Path, Version: r.Version})
 		}
+	}
+	return edges, nil
+}
+
+// BuildList selects one version per reachable module path. The returned
+// list is sorted by path; crossings holds every major crossing, accepted
+// (warnings for the caller to report) and, when any crossing is
+// unaccepted, the error is a *CrossingError naming them all — the list is
+// still returned for diagnostics.
+func BuildList(root []Requirement, load LoadFunc) (list []Requirement, crossings []Crossing, err error) {
+	edges, err := Graph(root, load)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	selected := make(map[string]version.Version)

@@ -21,7 +21,10 @@ root of a declared module.
 **REQ-work-local-resolution** (invariant): A requirement on a workspace
 module's path MUST resolve to its local working copy, at whatever state
 it is in — never to a published version, regardless of what version any
-requirement declares.
+requirement declares. Version disagreements among requirements on such
+a path — major crossings included — never fail selection: no external
+version answers for the path, so no disagreement about one can make
+the working copy wrong.
 
 **REQ-work-external-resolution** (behavior): Requirements on non-
 workspace modules MUST resolve normally, with version selection running

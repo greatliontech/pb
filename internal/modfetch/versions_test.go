@@ -14,8 +14,8 @@ import (
 // not-here (REQ-proxy-endpoints, REQ-proxy-fallthrough).
 func TestVersionsFromProxy(t *testing.T) {
 	fx := newFixture(t)
-	fx.endpoints[proxyHost+"/example.com/m/@v/list"] = []byte("v1.0.0\nv1.2.0\nv0.9.0\n")
-	c := fx.client("proxy")
+	fx.Endpoints[proxyHost+"/example.com/m/@v/list"] = []byte("v1.0.0\nv1.2.0\nv0.9.0\n")
+	c := fx.Client("proxy")
 	vs, err := c.Versions(ctx, "example.com/m")
 	if err != nil {
 		t.Fatalf("Versions: %v", err)
@@ -43,16 +43,16 @@ func TestVersionsFromOrigin(t *testing.T) {
 		"bare/b.proto":    "syntax = \"proto3\";\n",
 		"proto/svc.proto": "syntax = \"proto3\";\n",
 	}
-	commit := fx.commitFor(rootFiles, gitWhen)
-	fx.repo.Ref("refs/heads/main", commit)
-	fx.repo.Symref("HEAD", "refs/heads/main")
-	fx.repo.Ref("refs/tags/v1.0.0", commit)
-	fx.repo.Ref("refs/tags/v1.1.0", commit)
-	fx.repo.Ref("refs/tags/sub/v2.0.0", commit)
+	commit := fx.CommitFor(rootFiles, gitWhen)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Repo.Ref("refs/tags/v1.0.0", commit)
+	fx.Repo.Ref("refs/tags/v1.1.0", commit)
+	fx.Repo.Ref("refs/tags/sub/v2.0.0", commit)
 
-	fx.subtrees["example.com/m/sub"] = "sub"
-	fx.subtrees["example.com/m/bare"] = "bare"
-	c := fx.client("direct")
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	fx.Subtrees["example.com/m/bare"] = "bare"
+	c := fx.Client("direct")
 
 	list := func(path string) []string {
 		vs, err := c.Versions(ctx, path)
@@ -86,20 +86,20 @@ func TestVersionsFromOrigin(t *testing.T) {
 // released fails loudly when actually resolved.
 func TestVersionsSubtreeDeletedAtHeadListsRepoTags(t *testing.T) {
 	fx := newFixture(t)
-	old := fx.commitFor(map[string]string{
+	old := fx.CommitFor(map[string]string{
 		"pb.yaml":     "module: example.com/m\n",
 		"sub/pb.yaml": "module: example.com/m/sub\n",
 	}, gitWhen)
-	head := fx.commitFor(map[string]string{
+	head := fx.CommitFor(map[string]string{
 		"pb.yaml": "module: example.com/m\n",
 	}, gitWhen.Add(time.Hour))
-	fx.repo.Ref("refs/heads/main", head)
-	fx.repo.Symref("HEAD", "refs/heads/main")
-	fx.repo.Ref("refs/tags/sub/v2.0.0", old)
-	fx.repo.Ref("refs/tags/v1.0.0", old)
+	fx.Repo.Ref("refs/heads/main", head)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Repo.Ref("refs/tags/sub/v2.0.0", old)
+	fx.Repo.Ref("refs/tags/v1.0.0", old)
 
-	fx.subtrees["example.com/m/sub"] = "sub"
-	c := fx.client("direct")
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	c := fx.Client("direct")
 	vs, err := c.Versions(ctx, "example.com/m/sub")
 	if err != nil {
 		t.Fatalf("Versions: %v", err)
@@ -115,10 +115,10 @@ func TestDownloadMaterializesArtifacts(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0","time":"2023-11-14T22:13:20Z"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0","time":"2023-11-14T22:13:20Z"}`)
+	c := fx.Client("proxy")
 
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatalf("Download: %v", err)
@@ -136,10 +136,10 @@ func TestDownloadRejectsMisaddressedInfo(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.1"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.1"}`)
+	c := fx.Client("proxy")
 
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 		t.Fatal("Download accepted an info object naming another version")
@@ -152,15 +152,15 @@ func TestDownloadModfileInconsistencyFails(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	c := fx.Client("proxy")
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
 	// The standalone copy appears afterwards, disagreeing.
-	fx.endpoint("example.com/m", "v1.0.0", "mod", "module: example.com/m\n# drifted\n")
-	c2 := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", "module: example.com/m\n# drifted\n")
+	c2 := fx.Client("proxy")
 	c2.Lock = c.Lock
 	if err := c2.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, lockfile.ErrPinMismatch) {
 		t.Fatalf("err = %v, want ErrPinMismatch", err)
@@ -174,9 +174,9 @@ func TestDownloadVanishedEvidenceFailsClosed(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	c := fx.Client("proxy")
 	// Simulate an earlier explicit resolution having verified evidence.
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m", Version: "v1.0.0",
@@ -212,7 +212,7 @@ func TestCacheLayoutGolden(t *testing.T) {
 // serves a partial entry.
 func TestCachePutGet(t *testing.T) {
 	fx := newFixture(t)
-	c := fx.client("proxy")
+	c := fx.Client("proxy")
 	v := ver(t, "v1.0.0")
 	if _, ok, err := c.Cache.Get("example.com/m", v, KindZip); ok || err != nil {
 		t.Fatalf("Get on empty cache: ok=%v err=%v", ok, err)

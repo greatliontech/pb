@@ -558,3 +558,21 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "1763736a91db94932a2112ca3a99545649d478d8b9fb60bd2d40cd4e0bd9f1ad"
 }
+
+bindings {
+  requirement_id: "REQ-resolve-determinism"
+  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/resolve.TestSelectionSourceIndependent"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c10c00c39e35b38e23dcd11597215306d8295fd0a469d8588711f9837e989569"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-mvs"
+  content_hash: "e2c56139e4c59246c7018bb61bcce28b79e7fbc36654f7925295181c8c3811d4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/mvs.Graph"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "e27489a26531a17972a5219c2a36394849df30806b32cda22a9eec3ea322f2a2"
+}

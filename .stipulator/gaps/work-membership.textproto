@@ -1,6 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-work-membership"
-reason: "Membership enforcement is resolver behavior: the workspace layer exposes the root and its members, and the driver decides where the operation runs from"
-lands { manual { condition: "the dep driver wires resolution end to end (dependency-core chunk 13)" } }

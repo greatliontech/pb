@@ -1,190 +1,60 @@
 package modfetch
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"slices"
-	"sort"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing"
-	"github.com/go-git/go-git/v6/plumbing/filemode"
-	"github.com/go-git/go-git/v6/plumbing/object"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/version"
 )
 
-// proxyHost and altHost are the fixture's in-process proxy hosts:
-// "proxy" and "alt" in a client's source list resolve to them.
+// The shared client fixture lives in internal/modfetchtest; the local
+// wrapper assembles this package's Client over it, keeping the tests
+// reading naturally.
+type fixture struct {
+	*modfetchtest.Fixture
+}
+
 const (
-	proxyHost = "proxy.test"
-	altHost   = "alt.test"
+	proxyHost = modfetchtest.ProxyHost
+	altHost   = modfetchtest.AltHost
 )
 
-// fixture is one origin repository (in-memory, served over the file
-// transport for the direct source) plus an in-process proxy transport
-// serving a mutable endpoint map — no sockets: real listeners read
-// volatile OS state (net.core.somaxconn), which destabilizes
-// mutation-test oracles and puts network I/O in the observed inputs.
-type fixture struct {
-	t    *testing.T
-	repo *gittest.Repo
+var gitWhen = modfetchtest.GitWhen
 
-	// endpoints maps "host/path" keys
-	// ("proxy.test/example.com/m/@v/v1.0.0.zip") to response bytes;
-	// absent keys answer 404. status overrides the answer for a key.
-	// hits counts requests per key.
-	endpoints map[string][]byte
-	status    map[string]int
-	hits      map[string]int
+func newFixture(t *testing.T) *fixture { return &fixture{modfetchtest.New(t)} }
 
-	// subtrees maps module paths to their origin subtree; every module
-	// path resolves to the fixture repository unless resolveOverride is
-	// set.
-	subtrees        map[string]string
-	resolveOverride func(ctx context.Context, modPath string) (origin.Origin, error)
-}
-
-func newFixture(t *testing.T) *fixture {
-	return &fixture{
-		t:         t,
-		repo:      gittest.New(t),
-		endpoints: map[string][]byte{},
-		status:    map[string]int{},
-		hits:      map[string]int{},
-		subtrees:  map[string]string{},
-	}
-}
-
-// RoundTrip serves the endpoint map in-process.
-func (fx *fixture) RoundTrip(r *http.Request) (*http.Response, error) {
-	key := r.URL.Host + r.URL.Path
-	fx.hits[key]++
-	code, body := http.StatusNotFound, []byte(nil)
-	if c, ok := fx.status[key]; ok {
-		code = c
-	} else if b, ok := fx.endpoints[key]; ok {
-		code, body = http.StatusOK, b
-	}
-	return &http.Response{
-		StatusCode:    code,
-		Status:        http.StatusText(code),
-		Body:          io.NopCloser(bytes.NewReader(body)),
-		ContentLength: int64(len(body)),
-		Header:        http.Header{},
-		Request:       r,
-	}, nil
-}
-
-// client builds a Client over the fixture. pbproxy is the PBPROXY
-// value, with the literal tokens "proxy" and "alt" substituted by the
-// fixture's proxy hosts.
-func (fx *fixture) client(pbproxy string) *Client {
-	pbproxy = strings.ReplaceAll(pbproxy, "alt", "http://"+altHost)
-	pbproxy = strings.ReplaceAll(pbproxy, "proxy", "http://"+proxyHost)
-	cfg, err := proxy.ParseConfig(pbproxy, "")
-	if err != nil {
-		fx.t.Fatal(err)
-	}
-	return &Client{
-		HTTP:    &http.Client{Transport: fx},
-		Sources: cfg,
-		Cache:   &Cache{FS: memfs.New()},
-		Lock:    &lockfile.File{},
-		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {
-			if fx.resolveOverride != nil {
-				return fx.resolveOverride(ctx, modPath)
-			}
-			return origin.Origin{Repo: "file:///", Subtree: fx.subtrees[modPath]}, nil
-		},
-		Fetcher: direct.Fetcher{ClientOptions: fx.repo.ClientOptions()},
-	}
-}
-
-func (fx *fixture) endpoint(modPath string, v, kind, body string) string {
-	p := proxyHost + "/" + proxy.Escape(modPath) + "/@v/" + proxy.Escape(v) + "." + kind
-	fx.endpoints[p] = []byte(body)
-	return p
-}
-
-// moduleZip renders a file set as the canonical wire container.
 func moduleZip(t *testing.T, files map[string]string) ([]byte, string) {
-	t.Helper()
-	var af []archive.File
-	for p, body := range files {
-		af = append(af, archive.File{Path: p, Body: strings.NewReader(body)})
-	}
-	slices.SortFunc(af, func(a, b archive.File) int { return strings.Compare(a.Path, b.Path) })
-	var buf bytes.Buffer
-	digest, err := archive.WriteZip(&buf, af)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return buf.Bytes(), digest
+	return modfetchtest.ModuleZip(t, files)
 }
 
-// commitFor writes the file set as real git trees plus a commit, and
-// returns the commit hash. Used by provenance binding (the archive's
-// recomputed tree must match) and the direct source.
-func (fx *fixture) commitFor(files map[string]string, when time.Time) plumbing.Hash {
-	tree := fx.treeFor(files)
-	return fx.repo.CommitTree(tree, "release", when)
+// Client assembles the client under test over the fixture's transport,
+// with a fresh in-memory cache and empty pin store.
+func (fx *fixture) Client(pbproxy string) *Client {
+	return &Client{
+		HTTP:          fx.HTTPClient(),
+		Sources:       fx.Sources(pbproxy),
+		Cache:         &Cache{FS: memfs.New()},
+		Lock:          &lockfile.File{},
+		ResolveOrigin: fx.Resolve,
+		Fetcher:       fx.Fetcher(),
+	}
 }
 
-// treeFor builds nested git trees for a file set, entries in git's sort
-// order (directories compare as name + "/").
-func (fx *fixture) treeFor(files map[string]string) plumbing.Hash {
-	type node struct {
-		blobs map[string]string
-		dirs  map[string]map[string]string
+// originOverride points every module path at the given repository URL
+// (identity derivation input) while keeping subtree resolution.
+func originOverride(fx *modfetchtest.Fixture, repoURL string) {
+	fx.ResolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
+		return origin.Origin{Repo: repoURL, Subtree: fx.Subtrees[modPath]}, nil
 	}
-	n := node{blobs: map[string]string{}, dirs: map[string]map[string]string{}}
-	for p, body := range files {
-		name, rest, nested := strings.Cut(p, "/")
-		if !nested {
-			n.blobs[name] = body
-			continue
-		}
-		if n.dirs[name] == nil {
-			n.dirs[name] = map[string]string{}
-		}
-		n.dirs[name][rest] = body
-	}
-	type entry struct {
-		name    string
-		sortKey string
-		te      object.TreeEntry
-	}
-	var entries []entry
-	for name, body := range n.blobs {
-		entries = append(entries, entry{name, name, object.TreeEntry{Name: name, Mode: filemode.Regular, Hash: fx.repo.Blob(body)}})
-	}
-	for name, sub := range n.dirs {
-		entries = append(entries, entry{name, name + "/", object.TreeEntry{Name: name, Mode: filemode.Dir, Hash: fx.treeFor(sub)}})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].sortKey < entries[j].sortKey })
-	tes := make([]object.TreeEntry, len(entries))
-	for i, e := range entries {
-		tes[i] = e.te
-	}
-	return fx.repo.Tree(tes...)
 }
-
-// gitWhen is the fixed commit time fixtures use.
-var gitWhen = time.Unix(1700000000, 0)
 
 // tagPayload renders an unsigned annotated-tag body naming the commit.
 func tagPayload(commit plumbing.Hash, name string) []byte {

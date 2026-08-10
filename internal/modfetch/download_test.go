@@ -18,10 +18,10 @@ func TestDownloadHealsCorruptCachedInfo(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	c := fx.Client("proxy")
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
@@ -45,8 +45,8 @@ func TestDownloadHealsCorruptCachedInfo(t *testing.T) {
 func TestDownloadReverifiesEvidence(t *testing.T) {
 	signer := provtest.New(t)
 	fx := newProvFixture(t, signer, true, "v1.0.0")
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	fx.endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
@@ -67,8 +67,8 @@ func TestDownloadReverifiesEvidence(t *testing.T) {
 
 	t.Run("served tampered evidence aborts", func(t *testing.T) {
 		misbound := signer.SignedTag(t, tagPayload(fx.commit, "v9.9.9"), true)
-		env := envelope(t, "sha1", misbound, fx.repo.Raw(plumbing.CommitObject, fx.commit), nil)
-		fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = env
+		env := envelope(t, "sha1", misbound, fx.Repo.Raw(plumbing.CommitObject, fx.commit), nil)
+		fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = env
 		c2 := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 		c2.Lock = c.Lock
 		err := c2.Download(ctx, "example.com/m", ver(t, "v1.0.0"))
@@ -85,9 +85,9 @@ func TestDownloadConvictsBogusModfilePin(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, digest := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	c := fx.Client("proxy")
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m", Version: "v1.0.0", Digest: digest,
 		Modfile: "sha256:" + strings.Repeat("0", 64),

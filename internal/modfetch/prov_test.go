@@ -24,17 +24,17 @@ type provFixture struct {
 func newProvFixture(t *testing.T, signer *provtest.Signer, embedProof bool, tagName string) *provFixture {
 	fx := newFixture(t)
 	files := declaredFiles()
-	commit := fx.commitFor(files, gitWhen)
+	commit := fx.CommitFor(files, gitWhen)
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 	tag := signer.SignedTag(t, tagPayload(commit, tagName), embedProof)
-	env := envelope(t, "sha1", tag, fx.repo.Raw(plumbing.CommitObject, commit), nil)
-	fx.endpoint("example.com/m", "v1.0.0", "prov", string(env))
+	env := envelope(t, "sha1", tag, fx.Repo.Raw(plumbing.CommitObject, commit), nil)
+	fx.Endpoint("example.com/m", "v1.0.0", "prov", string(env))
 	return &provFixture{fixture: fx, signer: signer, commit: commit}
 }
 
 func (fx *provFixture) clientWithPolicy(p *trust.Policy) *Client {
-	c := fx.client("proxy")
+	c := fx.Client("proxy")
 	c.Policy = p
 	c.TrustedRoot = fx.signer.TrustedRoot()
 	return c
@@ -84,8 +84,8 @@ func TestAcceptedEvidenceRecorded(t *testing.T) {
 func TestRequireProvenanceNoEvidenceFails(t *testing.T) {
 	fx := newFixture(t)
 	zip, _ := moduleZip(t, declaredFiles())
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	c := fx.Client("proxy")
 	c.Policy = &trust.Policy{Default: trust.RequireProvenance}
 
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
@@ -167,7 +167,7 @@ func TestDefaultIdentityAcceptsOriginWorkflow(t *testing.T) {
 	)
 	signer := provtest.NewWithIdentity(t, ciSAN, ciIssuer)
 	fx := newProvFixture(t, signer, true, "v1.0.0")
-	fx.originOverride(repoURL)
+	originOverride(fx.Fixture, repoURL)
 	c := fx.clientWithPolicy(&trust.Policy{Default: trust.RequireProvenance})
 
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
@@ -210,7 +210,7 @@ func TestDefaultIdentityUnknownForge(t *testing.T) {
 // originOverride points every module path at the given repository URL
 // (identity derivation input) while keeping subtree resolution.
 func (fx *fixture) originOverride(repoURL string) {
-	fx.resolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
-		return origin.Origin{Repo: repoURL, Subtree: fx.subtrees[modPath]}, nil
+	fx.ResolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
+		return origin.Origin{Repo: repoURL, Subtree: fx.Subtrees[modPath]}, nil
 	}
 }

@@ -1,15 +1,14 @@
-# Synthesized-module file set and include root: driver enforcement
+# Synthesized-module include root: generation enforcement
 
-Lands: 13
+Lands: when generation compiles modules (the generation subsystem's
+compile wiring)
 
-`modfile.FromFileSet` implements REQ-resolve-synthesis's decision half:
-no module file at the root ⇒ synthesized identity with no dependencies.
-The requirement's other clauses — "its file set is the subtree's (per
-the archive contract)" and "its include root is the subtree root" — are
-term-level facts (module-archive.md: module root, file set) with no
-enforcing symbol yet: they constrain how the resolution driver
-materializes a synthesized module (extract the subtree as the file set;
-compile with the subtree root as the include root). When the driver
-assembles modules for the dep verbs, bind its wiring (or a test walking
-a synthesized module end-to-end) to REQ-resolve-synthesis alongside
-FromFileSet.
+REQ-resolve-synthesis's file-set clause is enforced end to end: the
+archive constructed for a synthesized subtree is the subtree's file set
+(direct-source construction) and the resolution pipeline consumes a
+module-file-less archive as a synthesized module (identity from the
+required path, no dependencies). The remaining clause — "its include
+root is the subtree root" — constrains how compilation materializes a
+synthesized module's files and has no enforcing symbol until the
+generation subsystem compiles modules; bind its wiring (or a
+compile-through test) to REQ-resolve-synthesis then.

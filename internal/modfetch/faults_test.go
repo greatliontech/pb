@@ -131,8 +131,8 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 		t.Run("first-use "+tc.name, func(t *testing.T) {
 			fx := newFixture(t)
 			zip, _ := moduleZip(t, files)
-			fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-			c := fx.client("proxy")
+			fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+			c := fx.Client("proxy")
 			fs := tc.fs
 			fs.Filesystem = memfs.New()
 			c.Cache = &Cache{FS: &fs}
@@ -153,18 +153,18 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fx := newFixture(t)
 			zip, _ := moduleZip(t, mod)
-			fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+			fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 			if !synthesized {
-				fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.zip"], _ = moduleZip(t, map[string]string{
+				fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.zip"], _ = moduleZip(t, map[string]string{
 					"pb.yaml":       "module: example.com/m\ndeps:\n  example.com/dep: v1.2.0\n",
 					"proto/a.proto": "syntax = \"proto3\";\n",
 				})
 			}
-			seed := fx.client("proxy")
+			seed := fx.Client("proxy")
 			if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 				t.Fatal(err)
 			}
-			c := fx.client("proxy")
+			c := fx.Client("proxy")
 			c.Lock = seed.Lock
 			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpen: true, putFailAfter: -1}}
 			if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -178,10 +178,10 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 	t.Run("download info put", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-		fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-		c := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+		c := fx.Client("proxy")
 		// zip + mod cache writes succeed; the info write is the third.
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), putFailAfter: 2}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -194,8 +194,8 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 // first use before anything is recorded.
 func TestFirstUseUnparsableArchiveFails(t *testing.T) {
 	fx := newFixture(t)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", "not a zip container")
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", "not a zip container")
+	c := fx.Client("proxy")
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 		t.Fatal("Module accepted unparsable archive bytes")
 	}
@@ -209,8 +209,8 @@ func TestFirstUseUnparsableArchiveFails(t *testing.T) {
 func TestPinnedSynthesizedRejectsArchiveWithModfile(t *testing.T) {
 	fx := newFixture(t)
 	zip, digest := moduleZip(t, map[string]string{"pb.yaml": "module: example.com/m\n"})
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	c := fx.Client("proxy")
 	if err := c.Lock.AddModule(lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest}); err != nil {
 		t.Fatal(err)
 	}
@@ -228,18 +228,18 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 		t.Helper()
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		if provStatus != 0 {
-			fx.status[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = provStatus
+			fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = provStatus
 		} else if prov != "" {
-			fx.endpoint("example.com/m", "v1.0.0", "prov", prov)
+			fx.Endpoint("example.com/m", "v1.0.0", "prov", prov)
 		}
 		return fx
 	}
 
 	t.Run("malformed envelope aborts even under allow-unsigned", func(t *testing.T) {
 		fx := serve(t, "not json", 0)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("malformed envelope tolerated")
 		}
@@ -247,7 +247,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 
 	t.Run("prov transport failure aborts the fetch", func(t *testing.T) {
 		fx := serve(t, "", 500)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "unexpected status") {
 			t.Fatalf("err = %v, want the transport failure itself", err)
@@ -256,14 +256,14 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 
 	t.Run("envelope with only unrecognized evidence is unsigned", func(t *testing.T) {
 		fx := serve(t, `{"formatVersion":1,"evidence":[{"type":"future-kind"}]}`, 0)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatalf("Module under allow-unsigned: %v", err)
 		}
 		if pin, _ := c.Lock.Module("example.com/m", "v1.0.0"); pin.Provenance != (lockfile.Provenance{}) {
 			t.Fatalf("provenance = %+v, want none", pin.Provenance)
 		}
-		c2 := fx.client("proxy")
+		c2 := fx.Client("proxy")
 		c2.Policy = &trust.Policy{Default: trust.RequireProvenance}
 		if _, err := c2.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "no recognized evidence") {
@@ -275,14 +275,14 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 
 	t.Run("evidence with no trusted root configured", func(t *testing.T) {
 		fx := newProvFixture(t, signer, true, "v1.0.0")
-		c := fx.client("proxy") // no TrustedRoot, no Policy: allow-unsigned
+		c := fx.Client("proxy") // no TrustedRoot, no Policy: allow-unsigned
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatalf("Module: %v", err)
 		}
 		if pin, _ := c.Lock.Module("example.com/m", "v1.0.0"); pin.Provenance != (lockfile.Provenance{}) {
 			t.Fatalf("provenance = %+v, want none", pin.Provenance)
 		}
-		c2 := fx.client("proxy")
+		c2 := fx.Client("proxy")
 		c2.Policy = &trust.Policy{Default: trust.RequireProvenance}
 		if _, err := c2.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "trusted root") {
@@ -301,7 +301,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 
 	t.Run("underivable default identity beyond no-forge surfaces", func(t *testing.T) {
 		fx := newProvFixture(t, signer, true, "v1.0.0")
-		fx.originOverride("https://github.com/" + strings.Repeat("a", 8000))
+		originOverride(fx.Fixture, "https://github.com/" + strings.Repeat("a", 8000))
 		c := fx.clientWithPolicy(nil)
 		c.TrustedRoot = signer.TrustedRoot()
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
@@ -316,12 +316,12 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 func TestOriginResolutionMemoized(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
-	commit := fx.commitFor(files, gitWhen)
-	fx.repo.Ref("refs/tags/v1.0.0", commit)
-	fx.repo.Ref("refs/heads/main", commit)
-	fx.repo.Symref("HEAD", "refs/heads/main")
+	commit := fx.CommitFor(files, gitWhen)
+	fx.Repo.Ref("refs/tags/v1.0.0", commit)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
 
-	c := fx.client("direct")
+	c := fx.Client("direct")
 	calls := 0
 	inner := c.ResolveOrigin
 	c.ResolveOrigin = func(ctx context.Context, modPath string) (origin.Origin, error) {
@@ -341,7 +341,7 @@ func TestOriginResolutionMemoized(t *testing.T) {
 	// the third resolution goes through Versions, which always needs
 	// the origin — a pinned Module would ride the cache and see
 	// nothing.
-	fx.subtrees["example.com/m2"] = ""
+	fx.Subtrees["example.com/m2"] = ""
 	if _, err := c.Versions(ctx, "example.com/m2"); err != nil {
 		t.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	files := declaredFiles()
 	seedPinned := func(t *testing.T, fx *fixture) *Client {
 		t.Helper()
-		seed := fx.client("proxy")
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
@@ -370,9 +370,9 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	t.Run("mod entry read fault is fatal despite the archive fallback", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		seed := seedPinned(t, fx)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: ".mod", putFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -383,9 +383,9 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	t.Run("zip entry read fault in the fallback is fatal", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		seed := seedPinned(t, fx)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: ".zip", putFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -396,9 +396,9 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	t.Run("zip write fault on the pinned refetch is fatal", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		seed := seedPinned(t, fx)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".zip", putFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -409,10 +409,10 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	t.Run("mod write fault on the pinned refetch is fatal", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
 		seed := seedPinned(t, fx)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -439,7 +439,7 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		t.Helper()
 		fx := newFixture(t)
 		zip, digest := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		return fx, zip, digest
 	}
 	pin := func(t *testing.T, c *Client, p lockfile.ModulePin) {
@@ -451,7 +451,7 @@ func TestHandCraftedPinCorners(t *testing.T) {
 
 	t.Run("digestless pin cannot serve the archive", func(t *testing.T) {
 		fx, _, _ := fxFor(t)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0"})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "no digest") {
@@ -461,7 +461,7 @@ func TestHandCraftedPinCorners(t *testing.T) {
 
 	t.Run("pin modfile hash disagreeing with the archive copy", func(t *testing.T) {
 		fx, _, digest := fxFor(t)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest,
 			Modfile: "sha256:" + strings.Repeat("0", 64)})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, lockfile.ErrPinMismatch) {
@@ -473,8 +473,8 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		fx := newFixture(t)
 		bad := "not: [valid: modfile"
 		zip, digest := moduleZip(t, map[string]string{"pb.yaml": bad})
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		c := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest,
 			Modfile: modfileHash([]byte(bad))})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
@@ -486,8 +486,8 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		fx := newFixture(t)
 		other := "module: example.com/other\n"
 		zip, digest := moduleZip(t, map[string]string{"pb.yaml": other})
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		c := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		c := fx.Client("proxy")
 		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Digest: digest,
 			Modfile: modfileHash([]byte(other))})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
@@ -505,13 +505,13 @@ func TestPinnedFetchFailureClasses(t *testing.T) {
 	t.Run("zip transport failure surfaces as such", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		fx.status[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = 500
-		c := fx.client("proxy")
+		fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = 500
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "unexpected status") {
@@ -522,13 +522,13 @@ func TestPinnedFetchFailureClasses(t *testing.T) {
 	t.Run("mod transport failure surfaces without falling back", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		fx.status[proxyHost+"/example.com/m/@v/v1.0.0.mod"] = 500
-		c := fx.client("proxy")
+		fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.mod"] = 500
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "unexpected status") {
@@ -539,14 +539,14 @@ func TestPinnedFetchFailureClasses(t *testing.T) {
 	t.Run("served wrong-content archive is a digest mismatch", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
 		wrong, _ := moduleZip(t, map[string]string{"pb.yaml": "module: example.com/m\n"})
-		fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = wrong
-		c := fx.client("proxy")
+		fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = wrong
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, archive.ErrDigestMismatch) {
 			t.Fatalf("err = %v, want ErrDigestMismatch", err)
@@ -559,10 +559,10 @@ func TestPinnedFetchFailureClasses(t *testing.T) {
 func TestDirectSourceFailureArms(t *testing.T) {
 	t.Run("origin resolution failure aborts", func(t *testing.T) {
 		fx := newFixture(t)
-		fx.resolveOverride = func(context.Context, string) (origin.Origin, error) {
+		fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 			return origin.Origin{}, errInjected
 		}
-		c := fx.client("direct")
+		c := fx.Client("direct")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -570,10 +570,10 @@ func TestDirectSourceFailureArms(t *testing.T) {
 
 	t.Run("repository fetch failure aborts", func(t *testing.T) {
 		fx := newFixture(t)
-		fx.resolveOverride = func(context.Context, string) (origin.Origin, error) {
+		fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 			return origin.Origin{Repo: ""}, nil // no URL: the clone cannot start
 		}
-		c := fx.client("direct")
+		c := fx.Client("direct")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("a failing repository fetch was tolerated")
 		}
@@ -582,11 +582,11 @@ func TestDirectSourceFailureArms(t *testing.T) {
 	t.Run("base-inconsistent pseudo-version aborts, not not-here", func(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
-		commit := fx.commitFor(files, gitWhen)
-		fx.repo.Ref("refs/tags/v1.0.0", commit)
-		fx.repo.Ref("refs/heads/main", commit)
-		fx.repo.Symref("HEAD", "refs/heads/main")
-		c := fx.client("direct")
+		commit := fx.CommitFor(files, gitWhen)
+		fx.Repo.Ref("refs/tags/v1.0.0", commit)
+		fx.Repo.Ref("refs/heads/main", commit)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		c := fx.Client("direct")
 		// v1.0.0 is tagged on the commit itself, so a zero-base
 		// pseudo-version over the same commit is base-inconsistent
 		// (REQ-resolve-pseudo-base).
@@ -602,12 +602,12 @@ func TestDirectSourceFailureArms(t *testing.T) {
 
 	t.Run("subtree module root missing at the resolved commit aborts", func(t *testing.T) {
 		fx := newFixture(t)
-		commit := fx.commitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
-		fx.repo.Ref("refs/tags/sub/v1.0.0", commit) // tag namespace without the subtree
-		fx.repo.Ref("refs/heads/main", commit)
-		fx.repo.Symref("HEAD", "refs/heads/main")
-		fx.subtrees["example.com/m/sub"] = "sub"
-		c := fx.client("direct")
+		commit := fx.CommitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", commit) // tag namespace without the subtree
+		fx.Repo.Ref("refs/heads/main", commit)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
 		if _, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); !errors.Is(err, direct.ErrNoModuleRoot) {
 			t.Fatalf("err = %v, want ErrNoModuleRoot", err)
 		}
@@ -619,7 +619,7 @@ func TestDirectSourceFailureArms(t *testing.T) {
 func TestVersionsFailureArms(t *testing.T) {
 	t.Run("no source knows the module", func(t *testing.T) {
 		fx := newFixture(t)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if _, err := c.Versions(ctx, "example.com/unknown"); !errors.Is(err, proxy.ErrNotHere) {
 			t.Fatalf("err = %v, want ErrNotHere", err)
 		}
@@ -627,14 +627,14 @@ func TestVersionsFailureArms(t *testing.T) {
 
 	t.Run("headless origin fails a subtree listing", func(t *testing.T) {
 		fx := newFixture(t)
-		commit := fx.commitFor(map[string]string{"sub/pb.yaml": "module: example.com/m/sub\n"}, gitWhen)
-		fx.repo.Ref("refs/tags/sub/v1.0.0", commit)
-		fx.repo.Ref("refs/heads/main", commit)
+		commit := fx.CommitFor(map[string]string{"sub/pb.yaml": "module: example.com/m/sub\n"}, gitWhen)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", commit)
+		fx.Repo.Ref("refs/heads/main", commit)
 		// No HEAD symref: go-git refuses the clone itself, so the
 		// failure surfaces at the repository seam — the later
 		// Head-resolution arm is unreachable through a healthy fetch.
-		fx.subtrees["example.com/m/sub"] = "sub"
-		c := fx.client("direct")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
 		if _, err := c.Versions(ctx, "example.com/m/sub"); err == nil {
 			t.Fatalf("a headless origin was tolerated")
 		}
@@ -647,7 +647,7 @@ func TestVersionsFailureArms(t *testing.T) {
 func TestReverifySkipsNonReproducingEvidence(t *testing.T) {
 	signer := provtest.New(t)
 	fx := newProvFixture(t, signer, true, "v1.0.0")
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
@@ -658,10 +658,10 @@ func TestReverifySkipsNonReproducingEvidence(t *testing.T) {
 	// reproducing object is the exact tag first use recorded — CMS
 	// signing is randomized, so only the original bytes reproduce.
 	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), true)
-	pinned := servedTag(t, fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"])
-	rawCommit := fx.repo.Raw(plumbing.CommitObject, fx.commit)
+	pinned := servedTag(t, fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"])
+	rawCommit := fx.Repo.Raw(plumbing.CommitObject, fx.commit)
 	env := twoEvidenceEnvelope(t, other, pinned, rawCommit)
-	fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = env
+	fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = env
 
 	c2 := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	c2.Lock = c.Lock
@@ -675,7 +675,7 @@ func TestReverifySkipsNonReproducingEvidence(t *testing.T) {
 func TestDownloadArms(t *testing.T) {
 	t.Run("first-use failure propagates", func(t *testing.T) {
 		fx := newFixture(t)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if err := c.Download(ctx, "example.com/absent", ver(t, "v1.0.0")); !errors.Is(err, proxy.ErrNotHere) {
 			t.Fatalf("err = %v, want ErrNotHere", err)
 		}
@@ -685,13 +685,13 @@ func TestDownloadArms(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		fx.status[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = 500
-		c := fx.client("proxy")
+		fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.zip"] = 500
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "unexpected status") {
@@ -702,9 +702,9 @@ func TestDownloadArms(t *testing.T) {
 	t.Run("synthesized module downloads without a module-file entry", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, map[string]string{"a.proto": "syntax = \"proto3\";\n"})
-		fx.endpoint("example.com/syn", "v2.1.0", "zip", string(zip))
-		fx.endpoint("example.com/syn", "v2.1.0", "info", `{"version":"v2.1.0"}`)
-		c := fx.client("proxy")
+		fx.Endpoint("example.com/syn", "v2.1.0", "zip", string(zip))
+		fx.Endpoint("example.com/syn", "v2.1.0", "info", `{"version":"v2.1.0"}`)
+		c := fx.Client("proxy")
 		if err := c.Download(ctx, "example.com/syn", ver(t, "v2.1.0")); err != nil {
 			t.Fatalf("Download: %v", err)
 		}
@@ -719,20 +719,20 @@ func TestDownloadArms(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
 		zip, _ := moduleZip(t, files)
-		zipKey := fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		modKey := fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-		infoKey := fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-		c := fx.client("proxy")
+		zipKey := fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		modKey := fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		infoKey := fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+		c := fx.Client("proxy")
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		before := map[string]int{zipKey: fx.hits[zipKey], modKey: fx.hits[modKey], infoKey: fx.hits[infoKey]}
+		before := map[string]int{zipKey: fx.Hits[zipKey], modKey: fx.Hits[modKey], infoKey: fx.Hits[infoKey]}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
 		for k, n := range before {
-			if fx.hits[k] != n {
-				t.Fatalf("second download refetched %s (%d -> %d)", k, n, fx.hits[k])
+			if fx.Hits[k] != n {
+				t.Fatalf("second download refetched %s (%d -> %d)", k, n, fx.Hits[k])
 			}
 		}
 	})
@@ -741,13 +741,13 @@ func TestDownloadArms(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -759,9 +759,9 @@ func TestDownloadArms(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-		c := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		c := fx.Client("proxy")
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".zip", putFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
@@ -772,12 +772,12 @@ func TestDownloadArms(t *testing.T) {
 		fx := newFixture(t)
 		files := declaredFiles()
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		seed := fx.client("proxy")
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		seed := fx.Client("proxy")
 		if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = seed.Lock
 		fs := &errFS{Filesystem: memfs.New(), failReadBody: true, putFailAfter: -1}
 		c.Cache = &Cache{FS: fs}
@@ -797,10 +797,10 @@ func TestDownloadArms(t *testing.T) {
 func TestVersionsSeamFailures(t *testing.T) {
 	t.Run("origin resolution failure", func(t *testing.T) {
 		fx := newFixture(t)
-		fx.resolveOverride = func(context.Context, string) (origin.Origin, error) {
+		fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 			return origin.Origin{}, errInjected
 		}
-		c := fx.client("direct")
+		c := fx.Client("direct")
 		if _, err := c.Versions(ctx, "example.com/m"); !errors.Is(err, errInjected) {
 			t.Fatalf("err = %v, want the injected fault", err)
 		}
@@ -808,10 +808,10 @@ func TestVersionsSeamFailures(t *testing.T) {
 
 	t.Run("repository fetch failure", func(t *testing.T) {
 		fx := newFixture(t)
-		fx.resolveOverride = func(context.Context, string) (origin.Origin, error) {
+		fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 			return origin.Origin{Repo: ""}, nil
 		}
-		c := fx.client("direct")
+		c := fx.Client("direct")
 		if _, err := c.Versions(ctx, "example.com/m"); err == nil {
 			t.Fatal("a failing repository fetch was tolerated")
 		}
@@ -824,7 +824,7 @@ func TestVersionsSeamFailures(t *testing.T) {
 func TestReverifyRequiresExactRecord(t *testing.T) {
 	signer := provtest.New(t)
 	fx := newProvFixture(t, signer, true, "v1.0.0")
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
@@ -832,8 +832,8 @@ func TestReverifyRequiresExactRecord(t *testing.T) {
 	// Serve only a re-signed tag: verifies, but is a different signed
 	// object than the pin records.
 	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), true)
-	rawCommit := fx.repo.Raw(plumbing.CommitObject, fx.commit)
-	fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = envelope(t, "sha1", other, rawCommit, nil)
+	rawCommit := fx.Repo.Raw(plumbing.CommitObject, fx.commit)
+	fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = envelope(t, "sha1", other, rawCommit, nil)
 
 	c2 := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	c2.Lock = c.Lock
@@ -846,7 +846,7 @@ func TestReverifyRequiresExactRecord(t *testing.T) {
 // bind a subject and fails.
 func TestEvidenceWithUnresolvableOriginFails(t *testing.T) {
 	fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
-	fx.resolveOverride = func(context.Context, string) (origin.Origin, error) {
+	fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 		return origin.Origin{}, errInjected
 	}
 	c := fx.clientWithPolicy(nil)
@@ -862,7 +862,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 	files := declaredFiles()
 	seed := func(t *testing.T, fx *fixture) *Client {
 		t.Helper()
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
 		}
@@ -872,9 +872,9 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 		t.Helper()
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-		fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-		fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 		return fx
 	}
 
@@ -882,7 +882,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 		t.Run("cache read fault on "+sfx, func(t *testing.T) {
 			fx := base(t)
 			s := seed(t, fx)
-			c := fx.client("proxy")
+			c := fx.Client("proxy")
 			c.Lock = s.Lock
 			c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failOpenSuffix: sfx, putFailAfter: -1}}
 			if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -894,8 +894,8 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 	t.Run("info transport failure", func(t *testing.T) {
 		fx := base(t)
 		s := seed(t, fx)
-		fx.status[proxyHost+"/example.com/m/@v/v1.0.0.info"] = 500
-		c := fx.client("proxy")
+		fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.info"] = 500
+		c := fx.Client("proxy")
 		c.Lock = s.Lock
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "unexpected status") {
@@ -906,8 +906,8 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 	t.Run("served junk info is a malformed response", func(t *testing.T) {
 		fx := base(t)
 		s := seed(t, fx)
-		fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.info"] = []byte("junk")
-		c := fx.client("proxy")
+		fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.info"] = []byte("junk")
+		c := fx.Client("proxy")
 		c.Lock = s.Lock
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, proxy.ErrMalformed) {
 			t.Fatalf("err = %v, want ErrMalformed", err)
@@ -917,9 +917,9 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 	t.Run("archive-copy write fault with no standalone source", func(t *testing.T) {
 		fx := newFixture(t)
 		zip, _ := moduleZip(t, files)
-		fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 		s := seed(t, fx)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Lock = s.Lock
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), failRenameSfx: ".mod", putFailAfter: -1}}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -935,7 +935,7 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 	seedVerified := func(t *testing.T) (*provFixture, *Client) {
 		t.Helper()
 		fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
-		fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+		fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 		c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatal(err)
@@ -955,7 +955,7 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 
 	t.Run("prov transport failure is not a downgrade", func(t *testing.T) {
 		fx, s := seedVerified(t)
-		fx.status[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = 500
+		fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = 500
 		c := fx.clientWithPolicy(s.Policy)
 		c.Lock = s.Lock
 		err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0"))
@@ -966,7 +966,7 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 
 	t.Run("served junk envelope is malformed, not a downgrade", func(t *testing.T) {
 		fx, s := seedVerified(t)
-		fx.endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = []byte("junk")
+		fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = []byte("junk")
 		c := fx.clientWithPolicy(s.Policy)
 		c.Lock = s.Lock
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, provenance.ErrEnvelopeMalformed) {
@@ -976,7 +976,7 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 
 	t.Run("missing trusted root fails re-verification", func(t *testing.T) {
 		fx, s := seedVerified(t)
-		c := fx.client("proxy")
+		c := fx.Client("proxy")
 		c.Policy = s.Policy
 		c.TrustedRoot = nil
 		c.Lock = s.Lock
@@ -993,13 +993,13 @@ func TestDownloadProvFailureClasses(t *testing.T) {
 func TestDirectDeclaredPinWithModfileAbsentAtOrigin(t *testing.T) {
 	fx := newFixture(t)
 	files := map[string]string{"a.proto": "syntax = \"proto3\";\n"}
-	commit := fx.commitFor(files, gitWhen)
-	fx.repo.Ref("refs/tags/v1.0.0", commit)
-	fx.repo.Ref("refs/heads/main", commit)
-	fx.repo.Symref("HEAD", "refs/heads/main")
+	commit := fx.CommitFor(files, gitWhen)
+	fx.Repo.Ref("refs/tags/v1.0.0", commit)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
 	_, digest := moduleZip(t, files)
 
-	c := fx.client("direct")
+	c := fx.Client("direct")
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m", Version: "v1.0.0", Digest: digest,
 		Modfile: "sha256:" + strings.Repeat("0", 64),
@@ -1016,9 +1016,9 @@ func TestDirectDeclaredPinWithModfileAbsentAtOrigin(t *testing.T) {
 // use that needs one, never with a nil-dereference.
 func TestNilOriginResolverGuard(t *testing.T) {
 	fx := newFixture(t)
-	c := fx.client("direct")
+	c := fx.Client("direct")
 	c.ResolveOrigin = nil
-	fx.resolveOverride = nil
+	fx.ResolveOverride = nil
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 		!strings.Contains(err.Error(), "no origin resolver") {
 		t.Fatalf("err = %v, want the miswiring guard", err)
@@ -1032,10 +1032,10 @@ func TestDownloadRepairsPoisonedModEntry(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	c := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	c := fx.Client("proxy")
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
@@ -1057,15 +1057,15 @@ func TestDownloadModfileTransportFailureAborts(t *testing.T) {
 	fx := newFixture(t)
 	files := declaredFiles()
 	zip, _ := moduleZip(t, files)
-	fx.endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	seed := fx.client("proxy")
+	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	seed := fx.Client("proxy")
 	if _, err := seed.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
-	fx.status[proxyHost+"/example.com/m/@v/v1.0.0.mod"] = 500
+	fx.Status[proxyHost+"/example.com/m/@v/v1.0.0.mod"] = 500
 	// Fresh cache: the module-file entry must come from the sources.
-	c := fx.client("proxy")
+	c := fx.Client("proxy")
 	c.Lock = seed.Lock
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 		!strings.Contains(err.Error(), "unexpected status") {
@@ -1077,19 +1077,19 @@ func TestDownloadModfileTransportFailureAborts(t *testing.T) {
 // envelope: re-verification runs against local bytes, no refetch.
 func TestSecondDownloadReusesCachedEnvelope(t *testing.T) {
 	fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
-	fx.endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-	fx.endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
 	provKey := proxyHost + "/example.com/m/@v/v1.0.0.prov"
-	before := fx.hits[provKey]
+	before := fx.Hits[provKey]
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
-	if fx.hits[provKey] != before {
-		t.Fatalf("second download refetched the envelope (%d -> %d)", before, fx.hits[provKey])
+	if fx.Hits[provKey] != before {
+		t.Fatalf("second download refetched the envelope (%d -> %d)", before, fx.Hits[provKey])
 	}
 }
 
@@ -1098,13 +1098,13 @@ func TestSecondDownloadReusesCachedEnvelope(t *testing.T) {
 // module root rather than treating it as a healthy not-here.
 func TestDirectPinnedSubtreeMissingModuleRoot(t *testing.T) {
 	fx := newFixture(t)
-	commit := fx.commitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
-	fx.repo.Ref("refs/tags/sub/v1.0.0", commit)
-	fx.repo.Ref("refs/heads/main", commit)
-	fx.repo.Symref("HEAD", "refs/heads/main")
-	fx.subtrees["example.com/m/sub"] = "sub"
+	commit := fx.CommitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
+	fx.Repo.Ref("refs/tags/sub/v1.0.0", commit)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Subtrees["example.com/m/sub"] = "sub"
 
-	c := fx.client("direct")
+	c := fx.Client("direct")
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m/sub", Version: "v1.0.0",
 		Digest:  "pb1:" + strings.Repeat("0", 64),

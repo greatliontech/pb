@@ -433,3 +433,133 @@ func TestLockfilePlacementStructural(t *testing.T) {
 		t.Fatalf("Root fields changed: the lockfile's home must stay derivable from the root alone")
 	}
 }
+
+func file(body string) *fstest.MapFile { return &fstest.MapFile{Data: []byte(body)} }
+
+// LoadFor enforces membership (REQ-work-membership): a module inside a
+// workspace that does not use it must not resolve — the governing root
+// would neither treat it as local nor carry its requirements.
+func TestLoadForMembership(t *testing.T) {
+	fsys := fstest.MapFS{
+		"pb.work":            file("use:\n  - a\n"),
+		"a/pb.yaml":          file("module: example.com/a\n"),
+		"a/deep/x.proto":     file(""),
+		"stray/pb.yaml":      file("module: example.com/stray\n"),
+		"stray/deep/y.proto": file(""),
+		"docs/readme.md":     file(""),
+		"solo/pb.yaml":       file("module: example.com/solo\n"),
+	}
+
+	t.Run("member module resolves", func(t *testing.T) {
+		for _, dir := range []string{"a", "a/deep"} {
+			root, err := LoadFor(fsys, dir)
+			if err != nil {
+				t.Fatalf("LoadFor(%s): %v", dir, err)
+			}
+			if root.Dir != "." || root.File == nil {
+				t.Fatalf("LoadFor(%s) root = %+v", dir, root)
+			}
+		}
+	})
+
+	t.Run("unlisted module fails closed", func(t *testing.T) {
+		for _, dir := range []string{"stray", "stray/deep"} {
+			if _, err := LoadFor(fsys, dir); !errors.Is(err, ErrNotMember) {
+				t.Fatalf("LoadFor(%s) err = %v, want ErrNotMember", dir, err)
+			}
+		}
+	})
+
+	t.Run("non-module directory operates against the workspace", func(t *testing.T) {
+		root, err := LoadFor(fsys, "docs")
+		if err != nil || root.File == nil {
+			t.Fatalf("LoadFor(docs) = %+v, %v", root, err)
+		}
+	})
+
+	t.Run("single-module default outside any workspace", func(t *testing.T) {
+		solo := fstest.MapFS{
+			"m/pb.yaml":      file("module: example.com/m\n"),
+			"m/deep/x.proto": file(""),
+		}
+		root, err := LoadFor(solo, "m/deep")
+		if err != nil || root.File != nil || root.Dir != "m" {
+			t.Fatalf("LoadFor single-module = %+v, %v", root, err)
+		}
+	})
+
+	t.Run("no root at all", func(t *testing.T) {
+		if _, err := LoadFor(fstest.MapFS{"x.txt": file("")}, "."); !errors.Is(err, ErrNoRoot) {
+			t.Fatalf("err = %v, want ErrNoRoot", err)
+		}
+	})
+}
+
+// LoadFor's remaining arms: nested roots exercise the relative-path
+// computation, "." membership, load failures, walk containment, and
+// seam errors.
+func TestLoadForArms(t *testing.T) {
+	t.Run("nested root: member and non-member relative paths", func(t *testing.T) {
+		fsys := fstest.MapFS{
+			"ws/pb.work":      file("use:\n  - a\n"),
+			"ws/a/pb.yaml":    file("module: example.com/a\n"),
+			"ws/b/pb.yaml":    file("module: example.com/b\n"),
+			"ws/a/sub/x.txt":  file(""),
+			"ws/b/deep/y.txt": file(""),
+		}
+		if _, err := LoadFor(fsys, "ws/a/sub"); err != nil {
+			t.Fatalf("nested member: %v", err)
+		}
+		if _, err := LoadFor(fsys, "ws/b/deep"); !errors.Is(err, ErrNotMember) {
+			t.Fatalf("nested non-member err = %v, want ErrNotMember", err)
+		}
+	})
+
+	t.Run("workspace using its own root as a member", func(t *testing.T) {
+		fsys := fstest.MapFS{
+			"ws/pb.work":     file("use:\n  - .\n"),
+			"ws/pb.yaml":     file("module: example.com/root\n"),
+			"ws/docs/x.txt":  file(""),
+			"ws/deep/y.yaml": file(""),
+		}
+		for _, dir := range []string{"ws", "ws/docs", "ws/deep"} {
+			if _, err := LoadFor(fsys, dir); err != nil {
+				t.Fatalf("LoadFor(%s): %v", dir, err)
+			}
+		}
+	})
+
+	t.Run("load failure propagates", func(t *testing.T) {
+		fsys := fstest.MapFS{
+			"ws/pb.work":  file("use:\n  - missing\n"),
+			"ws/a/x.txt":  file(""),
+		}
+		if _, err := LoadFor(fsys, "ws/a"); err == nil ||
+			!strings.Contains(err.Error(), "not a declared module root") {
+			t.Fatalf("err = %v, want the missing-member load failure", err)
+		}
+	})
+
+	t.Run("module above the workspace root never decides membership", func(t *testing.T) {
+		fsys := fstest.MapFS{
+			"pb.yaml":       file("module: example.com/outer\n"),
+			"ws/pb.work":    file("use:\n  - a\n"),
+			"ws/a/pb.yaml":  file("module: example.com/a\n"),
+			"ws/docs/x.txt": file(""),
+		}
+		// docs has no module of its own; the outer pb.yaml sits above
+		// the workspace and must not be consulted.
+		root, err := LoadFor(fsys, "ws/docs")
+		if err != nil || root.Dir != "ws" {
+			t.Fatalf("LoadFor(ws/docs) = %+v, %v", root, err)
+		}
+	})
+
+	t.Run("find seam failure propagates", func(t *testing.T) {
+		boom := errors.New("seam gone")
+		base := fstest.MapFS{"ws/pb.work": file("use:\n  - a\n"), "ws/a/pb.yaml": file("module: example.com/a\n")}
+		if _, err := LoadFor(errFS{base, boom}, "ws/a"); !errors.Is(err, boom) {
+			t.Fatalf("err = %v, want the seam failure", err)
+		}
+	})
+}

@@ -459,3 +459,30 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "4c2775352096450a6b6e0392c4cda927840199a6eeb71d4dbfde77047dfeff98"
 }
+
+bindings {
+  requirement_id: "REQ-proxy-list-advisory"
+  content_hash: "bc57a2f2d08249de9ee306f1ff84946ea8dd7bb2d91d94588a480c781fa71224"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/resolve.Driver.BuildList"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "3fdd2edd2ecb71e2e546a6c62a0f40f215b1d9a49e50cd0569aa0818b066a607"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-list-advisory"
+  content_hash: "bc57a2f2d08249de9ee306f1ff84946ea8dd7bb2d91d94588a480c781fa71224"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/resolve.TestSelectionIndependentOfListProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1b2a7a854bc53b7c0c23a28cbae4265f25904d4dd25315e292885f28e4740e27"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-client-verification"
+  content_hash: "42c09accb0051ff31c4651c585f4f3562bea98c53394ea65643b738381117e82"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/resolve.TestTamperedGraphNodeFailsResolution"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0b08c9f7c850a793fe8e9ac81af8480536633a2b7abc329f59d8e197a7bb575d"
+}

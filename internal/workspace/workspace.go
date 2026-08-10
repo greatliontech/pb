@@ -275,3 +275,62 @@ func (r *Root) Requirements() ([]mvs.Requirement, error) {
 	})
 	return union, nil
 }
+
+// ErrNotMember marks a directory whose own module a governing workspace
+// does not use (REQ-work-membership).
+var ErrNotMember = errors.New("module is not used by the governing workspace")
+
+// LoadFor locates and loads the resolution root governing dir — Find
+// then Load — and enforces membership (REQ-work-membership): when the
+// governing root is a workspace and dir sits inside a module of its
+// own, that module must be one the workspace uses; resolving from an
+// unlisted module would neither treat it as local nor carry its
+// requirements, answering for the wrong root. A directory inside the
+// workspace but under no module operates against the workspace itself.
+func LoadFor(fsys fs.FS, dir string) (*Root, error) {
+	rootDir, isWorkspace, err := Find(fsys, dir)
+	if err != nil {
+		return nil, err
+	}
+	root, err := Load(fsys, rootDir)
+	if err != nil {
+		return nil, err
+	}
+	if !isWorkspace {
+		return root, nil
+	}
+	moduleDir, hasModule, err := nearestModule(fsys, dir, rootDir)
+	if err != nil {
+		return nil, err
+	}
+	if !hasModule {
+		return root, nil
+	}
+	rel := "."
+	if moduleDir != rootDir {
+		rel = strings.TrimPrefix(moduleDir, rootDir+"/")
+	}
+	for _, m := range root.Modules {
+		if m.Dir == rel {
+			return root, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: module at %q is inside the workspace at %q but not in its use list", ErrNotMember, moduleDir, rootDir)
+}
+
+// nearestModule walks up from dir to rootDir looking for the nearest
+// module file — the module dir itself belongs to, if any.
+func nearestModule(fsys fs.FS, dir, rootDir string) (string, bool, error) {
+	for d := path.Clean(dir); ; d = path.Dir(d) {
+		ok, err := exists(fsys, d, modfile.ModuleFileName)
+		if err != nil {
+			return "", false, err
+		}
+		if ok {
+			return d, true, nil
+		}
+		if d == rootDir || d == "." {
+			return "", false, nil
+		}
+	}
+}
