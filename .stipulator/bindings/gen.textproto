@@ -63,3 +63,66 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "864a2a5565dd5a7b22af3ff16a233f1222b7f641ba3c279f46291e2b7db4085f"
 }
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.Compile"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b4006adf2871514cbe5009e6a296b13e8dfd79ed3dce595bab8b7a31056a1b3f"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfiles.Load"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "38e6b44919e200879d41efad27de2b0b02128f5f3b88b59f19f9ef9a26f7be39"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "88d045a662ac1158c122d3776042b987e35b4ccc33c9717238a383aa58fcc2ac"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ead7f7ef29a934d29cb2616a88df7bebf293cfdfc6b9b3b2b1a0c94cf7a3804a"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileOrderProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "42ae7aa3e6f4fe16ed5e7176042b3ef45bff6a65175ddd48828008210c3548b9"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2281c5557cd9d35ad781b1fb333fbc84f5ac05e05b942ba5c48b55ea916cbed0"
+}
+
+bindings {
+  requirement_id: "REQ-gen-compile"
+  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5f09aaa25617bc4ec0450f8ab13bcfad09b525e2579b32fe4d8f6a796fb448d5"
+}

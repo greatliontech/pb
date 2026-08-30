@@ -1,21 +1,17 @@
 package dep
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
-	"maps"
 	"path"
 	"slices"
-	"strings"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
-	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfile"
+	"github.com/greatliontech/pb/internal/modfiles"
 	"github.com/greatliontech/pb/internal/protoimport"
-	"github.com/greatliontech/pb/internal/workspace"
+	"github.com/greatliontech/pb/internal/version"
 )
 
 // tidyRounds bounds the tidy fixpoint. Rewriting declarations to the
@@ -59,16 +55,40 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 		selected[r.Path] = r.Version.String()
 	}
 
-	// The import-relevant view of every module: workspace modules from
-	// the working tree, externals from their verified archives.
+	// The import-relevant view of every module, from the shared file-set
+	// loader (modfiles): workspace modules from the working tree,
+	// externals from their verified archives.
 	type moduleFiles struct {
 		path  string
 		files map[string][]string // proto file -> imports
 	}
+	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath, ver string) ([]byte, error) {
+		v, err := version.Parse(ver)
+		if err != nil {
+			return nil, err
+		}
+		return s.Client.Zip(ctx, modPath, v)
+	})
+	if err != nil {
+		return false, err
+	}
 	var views []moduleFiles
 	provider := map[string]string{} // proto file -> module path
-	addView := func(modPath string, protos map[string][]string) {
-		views = append(views, moduleFiles{path: modPath, files: protos})
+	for _, m := range mods {
+		protos := map[string][]string{}
+		// Sorted iteration keeps this loop's control flow a function of
+		// the file set alone.
+		for _, p := range m.Protos() {
+			imports, err := protoimport.Imports(p, m.Files[p])
+			if err != nil {
+				if m.Local {
+					return false, fmt.Errorf("%s: %w", path.Join(s.Root.Dir, m.Dir, p), err)
+				}
+				return false, fmt.Errorf("%s@%s: %s: %w", m.Path, m.Version, p, err)
+			}
+			protos[p] = imports
+		}
+		views = append(views, moduleFiles{path: m.Path, files: protos})
 		for f := range protos {
 			// First provider wins, deterministically: views are added in
 			// deterministic order (workspace use order, then build-list
@@ -78,41 +98,9 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 			// adjudicate — any provider serves for attribution, and
 			// generation owns the conflict.
 			if _, ok := provider[f]; !ok {
-				provider[f] = modPath
+				provider[f] = m.Path
 			}
 		}
-	}
-
-	for _, m := range s.Root.Modules {
-		protos, err := workspaceProtos(s, m)
-		if err != nil {
-			return false, err
-		}
-		addView(m.File.Module, protos)
-	}
-	for _, r := range list {
-		zip, err := s.Client.Zip(ctx, r.Path, r.Version)
-		if err != nil {
-			return false, err
-		}
-		files, err := archive.ZipFiles(bytes.NewReader(zip), int64(len(zip)))
-		if err != nil {
-			return false, err
-		}
-		protos := map[string][]string{}
-		// Sorted iteration keeps this loop's control flow a function of
-		// the file set alone.
-		for _, p := range slices.Sorted(maps.Keys(files)) {
-			if !strings.HasSuffix(p, ".proto") {
-				continue
-			}
-			imports, err := protoimport.Imports(p, files[p])
-			if err != nil {
-				return false, fmt.Errorf("%s@%s: %s: %w", r.Path, r.Version, p, err)
-			}
-			protos[p] = imports
-		}
-		addView(r.Path, protos)
 	}
 
 	// Satisfaction over the whole set (REQ-resolve-unsatisfied-imports):
@@ -190,47 +178,6 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 		s.Lock.Modules = kept
 	}
 	return false, nil
-}
-
-// workspaceProtos walks a workspace module's directory for protobuf
-// files and their imports, module-root-relative — the include root of
-// a workspace module is its own directory.
-func workspaceProtos(s *Session, m workspace.Module) (map[string][]string, error) {
-	fsys := iofs.New(s.WS)
-	base := path.Join(s.Root.Dir, m.Dir)
-	protos := map[string][]string{}
-	err := fs.WalkDir(fsys, base, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			// A nested module's files belong to the nested module.
-			if p != base {
-				if _, err := fs.Stat(fsys, path.Join(p, modfile.ModuleFileName)); err == nil {
-					return fs.SkipDir
-				}
-			}
-			return nil
-		}
-		if !strings.HasSuffix(p, ".proto") {
-			return nil
-		}
-		rel := strings.TrimPrefix(p, base+"/")
-		b, err := fs.ReadFile(fsys, p)
-		if err != nil {
-			return err
-		}
-		imports, err := protoimport.Imports(rel, b)
-		if err != nil {
-			return fmt.Errorf("%s: %w", p, err)
-		}
-		protos[rel] = imports
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return protos, nil
 }
 
 func depsEqual(a, b map[string]string) bool {

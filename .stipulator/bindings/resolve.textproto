@@ -576,3 +576,12 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "e27489a26531a17972a5219c2a36394849df30806b32cda22a9eec3ea322f2a2"
 }
+
+bindings {
+  requirement_id: "REQ-resolve-synthesis"
+  content_hash: "368034f77be652dcd36550a2a9c7b7594f7e5cbcc2ecafa72db8eb488ec6d3df"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "88d045a662ac1158c122d3776042b987e35b4ccc33c9717238a383aa58fcc2ac"
+}

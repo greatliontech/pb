@@ -40,6 +40,21 @@ boolean is still the text the author wrote. Runner selection, trust
 posture, and resource limits are not generation configuration and
 have no keys here (`plugin-execution.md`, `provenance.md`).
 
+**REQ-gen-compile** (behavior): Generation MUST compile every protobuf
+file of every workspace module — a module's files being those under
+its directory outside any nested module, with the module directory as
+include root — resolving each import first against the well-known
+imports — a module shipping a well-known path is ignored in favor of
+the toolchain's copy, never an ambiguity — and then against the build
+list's modules at their selected versions, each external module's archive root (a synthesized module's
+subtree root, `REQ-resolve-synthesis`) serving as its include root. An
+import satisfied by no module fails per
+`REQ-resolve-unsatisfied-imports`; an import path that more than one
+module provides fails naming the path and every provider — pb never
+picks a provider by heuristic. Compilation output is ordered by
+workspace module in use order, then by file path, independent of
+filesystem iteration.
+
 **REQ-gen-overrides-declarative** (behavior): Option overrides MUST be
 applied exactly as declared to the descriptors of matching files before
 plugin invocation — later entries win on overlap, and no option value is

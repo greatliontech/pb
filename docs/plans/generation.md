@@ -6,7 +6,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
 
 - [x] 1. Generation file: parse and validate `pb.gen.yaml` — discriminated
       plugin entries, root-relative `out`, `opt`, `overrides`
-- [ ] 2. Compilation over the resolution driver: workspace modules and
+- [x] 2. Compilation over the resolution driver: workspace modules and
       build-list archives through protocompile; synthesized-module
       include roots
 - [ ] 3. Option overrides and `CodeGeneratorRequest` construction —
