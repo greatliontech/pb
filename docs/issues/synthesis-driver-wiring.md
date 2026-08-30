@@ -1,7 +1,6 @@
 # Synthesized-module include root: generation enforcement
 
-Lands: when generation compiles modules (the generation subsystem's
-compile wiring)
+Lands: 2 (generation plan — compilation over the resolution driver)
 
 REQ-resolve-synthesis's file-set clause is enforced end to end: the
 archive constructed for a synthesized subtree is the subtree's file set

@@ -1,6 +1,6 @@
 # Plugin scheme/tier vocabulary: two homes, soon three
 
-Lands: the plugin execution subsystem is built
+Lands: 4 (generation plan — the plugin package created for OCI acquisition becomes the vocabulary home)
 
 `trust.SchemeOCI/SchemeLocal` and `lockfile.SchemeOCI/SchemeLocal` are
 two homes for the same closed vocabulary (plugin-execution.md's
