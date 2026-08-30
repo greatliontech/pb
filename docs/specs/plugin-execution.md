@@ -68,7 +68,9 @@ serve only optional convenience.
 
 **REQ-plugin-no-privileged-source** (structural): Plugin references MUST
 be full OCI references: no default registry, no privileged namespace, no
-short-name expansion.
+short-name expansion — a reference is fetched at the repository path
+exactly as written (`docker.io/ubuntu` is `/v2/ubuntu`, never rewritten
+to `library/ubuntu`).
 
 **REQ-plugin-digest-pin** (invariant): A plugin MUST execute only at the
 manifest-list digest its reference is pinned to in the lockfile; a tag is

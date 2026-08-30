@@ -22,6 +22,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/greatliontech/pb/internal/contractfile"
+	"github.com/greatliontech/pb/internal/plugexec"
 )
 
 // FileName is the trust policy file, at the resolution root next to the
@@ -56,20 +57,15 @@ type Rule struct {
 	Identity *IdentityRule // nil = origin-consistency default
 }
 
-// Sandbox tiers (plugin-execution.md's sandbox tier term), for the
-// execution posture's tier floor.
+// Vocabulary re-exported for callers already naming it through this
+// package; the one home is plugexec.
 const (
-	TierStrong  = "Strong"
-	TierOS      = "OS"
-	TierMinimal = "Minimal"
-	TierNone    = "None"
-)
-
-// Plugin identity schemes the execution posture can permit
-// (plugin-execution.md; `remote` is reserved and not a valid value).
-const (
-	SchemeOCI   = "oci"
-	SchemeLocal = "local"
+	TierStrong  = plugexec.TierStrong
+	TierOS      = plugexec.TierOS
+	TierMinimal = plugexec.TierMinimal
+	TierNone    = plugexec.TierNone
+	SchemeOCI   = plugexec.SchemeOCI
+	SchemeLocal = plugexec.SchemeLocal
 )
 
 // Limits are plugin resource bounds overriding the implementation
@@ -265,7 +261,7 @@ func parseExecution(n ast.Node) (*Execution, error) {
 		switch key {
 		case "min-tier":
 			s, ok := kv.Value.(*ast.StringNode)
-			if !ok || (s.Value != TierStrong && s.Value != TierOS && s.Value != TierMinimal && s.Value != TierNone) {
+			if !ok || !plugexec.ValidTier(s.Value) {
 				return nil, fmt.Errorf("%w: execution.min-tier must be one of Strong, OS, Minimal, None", ErrInvalid)
 			}
 			e.MinTier = s.Value
@@ -277,7 +273,7 @@ func parseExecution(n ast.Node) (*Execution, error) {
 			schemes := make([]string, 0, len(seq.Values))
 			for _, sn := range seq.Values {
 				s, ok := sn.(*ast.StringNode)
-				if !ok || (s.Value != SchemeOCI && s.Value != SchemeLocal) {
+				if !ok || !plugexec.ValidScheme(s.Value) {
 					return nil, fmt.Errorf("%w: execution.schemes entries are oci or local", ErrInvalid)
 				}
 				if slices.Contains(schemes, s.Value) {

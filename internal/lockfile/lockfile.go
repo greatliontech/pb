@@ -25,6 +25,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/plugexec"
 )
 
 // ErrInvalid is wrapped by every lockfile rejection.
@@ -59,11 +60,11 @@ type ModulePin struct {
 	Provenance Provenance
 }
 
-// Plugin identity schemes (REQ-lock-plugin-entry; the scheme taxonomy is
-// plugin-execution.md's).
+// Plugin identity schemes (REQ-lock-plugin-entry), named from their one
+// home for callers already reaching them through this package.
 const (
-	SchemeOCI   = "oci"
-	SchemeLocal = "local"
+	SchemeOCI   = plugexec.SchemeOCI
+	SchemeLocal = plugexec.SchemeLocal
 )
 
 // PluginPin is one plugin entry (REQ-lock-plugin-entry): identity facts

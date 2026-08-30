@@ -13,17 +13,31 @@ option (such as `go_package`) applied to matching files' descriptors
 before plugins run.
 
 **REQ-gen-schema** (wire): The generation file MUST contain `plugins`, a
-list of entries carrying exactly one identity-scheme key — `ref` (a
-plugin reference, the `oci` scheme) or `local` (a host binary per
-`plugin-execution.md`) — plus `out`, an output directory relative to the
-resolution root, and optional `opt`, plugin parameters; and optionally
-`overrides`, a list of entries `{files, option, value}` where `files` is
-a glob pattern over module-relative proto file paths within the
-workspace and its dependencies. No other top-level keys and no other
-entry keys exist: there is no bare plugin-name key, and an entry with
-zero or several scheme keys is a schema violation — which scheme an
-entry lives in is always written, never inferred. Runner selection,
-trust posture, and resource limits are not generation configuration and
+non-empty list of entries carrying exactly one identity-scheme key —
+`ref` (a plugin reference, the `oci` scheme) or `local` (a host binary
+per `plugin-execution.md`) — plus `out`, an output directory, and
+optional `opt`, the plugin parameter string handed to the plugin
+verbatim; and optionally `overrides`, a list of entries `{files,
+option, value}` where `files` is a glob pattern (the `/`-separated
+component semantics `provenance.md` REQ-prov-trust-schema defines)
+over module-relative proto file paths within the workspace and its
+dependencies, `option` a protobuf option name — dotted identifiers
+with parenthesized extension names, so custom file options are
+expressible — and `value` the option value's spelling. No other top-level
+keys and no other entry keys exist: there is no bare plugin-name key,
+and an entry with zero or several scheme keys is a schema violation —
+which scheme an entry lives in is always written, never inferred. A
+`ref` value is `<registry>/<repository>:<tag>` in full: the registry
+is a lowercase DNS host (no IPv6 literals, no uppercase — spellings pb
+declines to normalize) naming itself unambiguously (containing a dot
+or a port, or `localhost`), the repository follows the OCI
+distribution grammar, the tag is written (no implicit `latest`), and
+no `@digest` appears — the lockfile pins the digest. An `out` value is a
+clean relative path written with forward slashes, never absolute and
+never escaping the resolution root through `..`. Every scalar is
+recorded with its written spelling — a value that looks numeric or
+boolean is still the text the author wrote. Runner selection, trust
+posture, and resource limits are not generation configuration and
 have no keys here (`plugin-execution.md`, `provenance.md`).
 
 **REQ-gen-overrides-declarative** (behavior): Option overrides MUST be
