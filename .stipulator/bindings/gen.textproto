@@ -3,7 +3,7 @@
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -12,7 +12,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.CheckReference"
   role: BINDING_ROLE_IMPLEMENTS
@@ -21,7 +21,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.TestParse"
   role: BINDING_ROLE_TESTS
@@ -30,7 +30,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.TestParseRejections"
   role: BINDING_ROLE_TESTS
@@ -39,7 +39,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.TestScalarSpellingsPreserved"
   role: BINDING_ROLE_TESTS
@@ -48,7 +48,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.TestReferenceGrammarProperty"
   role: BINDING_ROLE_TESTS
@@ -57,7 +57,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-schema"
-  content_hash: "8b72c3f8ce010c0007f8346c5dd7d54794ad531ee083a5527201c6e34a4c6c75"
+  content_hash: "1d3682d83caaa31517c14556edf4027e96a7d85154113de7907239da153f0d1a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/genfile.FuzzParse"
   role: BINDING_ROLE_TESTS
@@ -66,7 +66,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/protocomp.Compile"
   role: BINDING_ROLE_IMPLEMENTS
@@ -75,7 +75,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfiles.Load"
   role: BINDING_ROLE_IMPLEMENTS
@@ -84,7 +84,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
   role: BINDING_ROLE_TESTS
@@ -93,7 +93,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
   role: BINDING_ROLE_TESTS
@@ -102,7 +102,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileOrderProperty"
   role: BINDING_ROLE_TESTS
@@ -111,7 +111,7 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
   role: BINDING_ROLE_TESTS
@@ -120,9 +120,90 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-compile"
-  content_hash: "3887c16fa391f4c412008877668300e1f6fabd3625b22d976dacb71ee8caabd9"
+  content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
   role: BINDING_ROLE_TESTS
   shape_hash: "5f09aaa25617bc4ec0450f8ab13bcfad09b525e2579b32fe4d8f6a796fb448d5"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request"
+  content_hash: "3c6ffe1b8f6b5e9e950c2f97b98fa4d018626b6fcaa3e70db235ef6e3a6f512e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "922dec89116065596e3138a1bdea1875fc4c909cb5d2480b34cfefeb5c9a72fb"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request"
+  content_hash: "3c6ffe1b8f6b5e9e950c2f97b98fa4d018626b6fcaa3e70db235ef6e3a6f512e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.TestBuildShape"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a1d121b2cb6f4df227d03897d5c4e0a6715b9c68c17c6e01a82122f4ad65f318"
+}
+
+bindings {
+  requirement_id: "REQ-gen-overrides-declarative"
+  content_hash: "c8d98e84afef3129e0eda479a27c8b63bb324a9e15d7a2ee9e99da76536cd211"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.applyOverrides"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "11da21e5defdf9dd88ac4012c1ac00af50fe5f2e9f266071b85856fa4763a75f"
+}
+
+bindings {
+  requirement_id: "REQ-gen-overrides-declarative"
+  content_hash: "c8d98e84afef3129e0eda479a27c8b63bb324a9e15d7a2ee9e99da76536cd211"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.setOption"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "615b54c7348af6fefcc2f5e950a975c196fa9b73da3f6f0fcdda9fe5aa7ccb83"
+}
+
+bindings {
+  requirement_id: "REQ-gen-overrides-declarative"
+  content_hash: "c8d98e84afef3129e0eda479a27c8b63bb324a9e15d7a2ee9e99da76536cd211"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.TestOverridesApply"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f471941b10c551b0aed9ce2600517d915a70863efef5e108886ba292ca403160"
+}
+
+bindings {
+  requirement_id: "REQ-gen-overrides-declarative"
+  content_hash: "c8d98e84afef3129e0eda479a27c8b63bb324a9e15d7a2ee9e99da76536cd211"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.TestOverrideFailures"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c663333301b940d35fea4dd2439922f46c749a7f1c8acea4855090c72065f0c2"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request-determinism"
+  content_hash: "ae04f84654b792d28f075d326e46b23462be1cd4b436b5fc7abdf7ebbe231c4d"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.topological"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "561ab2eb5b8f0cfd03b574bec109efe1074452a8e55b183c61cd94e3222e0fe9"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request-determinism"
+  content_hash: "ae04f84654b792d28f075d326e46b23462be1cd4b436b5fc7abdf7ebbe231c4d"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.TestBuildDeterminism"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "213cc2597fcd0e8fb64e596b6c3b0e8452caa64086706a4523745975e4fc1a3d"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request-determinism"
+  content_hash: "ae04f84654b792d28f075d326e46b23462be1cd4b436b5fc7abdf7ebbe231c4d"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genrequest.TestBuildIsolation"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "39bc10ca100f5ba62e66cb6147e6a0a5becd8b1dda425bbbfa102d4fbdcf9b22"
 }

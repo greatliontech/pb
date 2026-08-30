@@ -35,8 +35,8 @@ func TestGrammarEdges(t *testing.T) {
 			bad: []string{"", "a", "a:0", "a:65536", "a:x", "a:", ":5", "a..b", ".a", "a.", "A.b", "a.b:1:2", "a_b.c", "a.b:00000", "a.b:-1", "a.b:.5", "a.b:1.0"},
 		}},
 		"option": {checkOptionName, tc{
-			ok:  []string{"a", "z", "A", "Z", "_", "a0", "a9", "a_b", "a.b", "a.b.c", "(a)", "(a.b)", "(a.b).c", "(a.b).c.d", "a.(b)", "(a).(b)"},
-			bad: []string{"", "9a", "a-b", "a`", "a{", "a[", "a@", "a/", "a:", "(", ")", "(a", "a)", "(a)b", "(a)bc", "(a..b)", "()", "a.", ".a", "a..b", "(a.b).", "a.9", "a./"},
+			ok:  []string{"a", "z", "A", "Z", "_", "a0", "a9", "a_b", "a.b", "a.b.c", "(a)", "(a.b)", "(a.b).c", "(a.b).c.d"},
+			bad: []string{"", "9a", "a-b", "a`", "a{", "a[", "a@", "a/", "a:", "(", ")", "(a", "a)", "(a)b", "(a)bc", "(a..b)", "()", "a.", ".a", "a..b", "(a.b).", "a.9", "a./", "a.(b)", "(a).(b)"},
 		}},
 		"out": {checkOut, tc{
 			ok:  []string{"a", "a/b", "..a", "a..", ".", "gen/go", "..."},
@@ -57,6 +57,39 @@ func TestGrammarEdges(t *testing.T) {
 			if err := suite.check(in); err == nil {
 				t.Errorf("%s: %q accepted", name, in)
 			}
+		}
+	}
+}
+
+// SplitOption's exact tuples for every navigable form — success and
+// error alike — so no component can swap or leak.
+func TestSplitOptionTuples(t *testing.T) {
+	cases := []struct{ in, ext, field, builtin, wantErr string }{
+		{"go_package", "", "", "go_package", ""},
+		{"a.b.c", "", "", "a.b.c", ""},
+		{"(a.b)", "a.b", "", "", ""},
+		{"(a)", "a", "", "", ""},
+		{"(a.b).c", "a.b", "c", "", ""},
+		{"(a.b).c.d", "a.b", "c.d", "", ""},
+		{"", "", "", "", "empty"},
+		{"(a", "", "", "", "unclosed extension name"},
+		{"(a..b)", "", "", "", "invalid extension name"},
+		{"(a)b", "", "", "", "not a protobuf option name"},
+		{"(a)bc", "", "", "", "not a protobuf option name"},
+		{"(a).", "", "", "", "not a protobuf option name"},
+		{"9a", "", "", "", "not a protobuf option name"},
+		{"(a).9b", "", "", "", "not a protobuf option name"},
+	}
+	for _, tc := range cases {
+		ext, field, builtin, err := SplitOption(tc.in)
+		if tc.wantErr != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) || ext != "" || field != "" || builtin != "" {
+				t.Errorf("%q: (%q,%q,%q,%v), want error %q with zero tuple", tc.in, ext, field, builtin, err, tc.wantErr)
+			}
+			continue
+		}
+		if err != nil || ext != tc.ext || field != tc.field || builtin != tc.builtin {
+			t.Errorf("%q: (%q,%q,%q,%v), want (%q,%q,%q)", tc.in, ext, field, builtin, err, tc.ext, tc.field, tc.builtin)
 		}
 	}
 }

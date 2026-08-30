@@ -9,7 +9,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
 - [x] 2. Compilation over the resolution driver: workspace modules and
       build-list archives through protocompile; synthesized-module
       include roots
-- [ ] 3. Option overrides and `CodeGeneratorRequest` construction —
+- [x] 3. Option overrides and `CodeGeneratorRequest` construction —
       declarative application, deterministic request
 - [ ] 4. OCI plugin acquisition: manifest-list fetch, signature
       verification against the trust policy, platform-strict selection,

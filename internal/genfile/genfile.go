@@ -435,65 +435,77 @@ func parseOverrides(n ast.Node) ([]Override, error) {
 	return overrides, nil
 }
 
-// checkOptionName accepts a protobuf option name: dot-joined parts,
-// each an identifier (letters, digits, underscores; not starting with
-// a digit) or a parenthesized fully-qualified extension name of
-// identifiers — the language's own option syntax, so custom file
-// options ("(pkg.ext).field") are expressible alongside built-in ones.
-func checkOptionName(s string) error {
+// SplitOption parses a protobuf option name into its one navigable
+// shape: a built-in field name, or an extension's fully-qualified name
+// with an optional one-level field selector. It is the single home of
+// the option-name grammar — validation and navigation share it, so a
+// spelling that validates always navigates.
+func SplitOption(s string) (extension, field, builtin string, err error) {
 	if s == "" {
-		return errors.New("empty")
+		return "", "", "", errors.New("empty")
 	}
-	ident := func(id string) bool {
-		if id == "" {
+	if s[0] != '(' {
+		if err := checkDottedIdent(s, s); err != nil {
+			return "", "", "", err
+		}
+		return "", "", s, nil
+	}
+	end := strings.IndexByte(s, ')')
+	if end < 0 {
+		return "", "", "", fmt.Errorf("%q has an unclosed extension name", s)
+	}
+	extension = s[1:end]
+	if !qualifiedIdent(extension) {
+		return "", "", "", fmt.Errorf("%q has an invalid extension name", s)
+	}
+	rest := s[end+1:]
+	if rest == "" {
+		return extension, "", "", nil
+	}
+	if rest[0] != '.' || len(rest) == 1 {
+		return "", "", "", fmt.Errorf("%q is not a protobuf option name", s)
+	}
+	field = rest[1:]
+	if err := checkDottedIdent(field, s); err != nil {
+		return "", "", "", err
+	}
+	return extension, field, "", nil
+}
+
+// checkOptionName accepts what SplitOption parses.
+func checkOptionName(s string) error {
+	_, _, _, err := SplitOption(s)
+	return err
+}
+
+func ident(id string) bool {
+	if id == "" {
+		return false
+	}
+	for i := 0; i < len(id); i++ {
+		c := id[i]
+		letter := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
+		if !(letter || (i > 0 && c >= '0' && c <= '9')) {
 			return false
 		}
-		for i := 0; i < len(id); i++ {
-			c := id[i]
-			letter := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
-			if !(letter || (i > 0 && c >= '0' && c <= '9')) {
-				return false
-			}
-		}
-		return true
 	}
-	qualified := func(q string) bool {
-		for _, id := range strings.Split(q, ".") {
-			if !ident(id) {
-				return false
-			}
+	return true
+}
+
+func qualifiedIdent(q string) bool {
+	for _, id := range strings.Split(q, ".") {
+		if !ident(id) {
+			return false
 		}
-		return true
 	}
-	rest := s
-	for rest != "" {
-		var part string
-		if rest[0] == '(' {
-			end := strings.IndexByte(rest, ')')
-			if end < 0 {
-				return fmt.Errorf("%q has an unclosed extension name", s)
-			}
-			if !qualified(rest[1:end]) {
-				return fmt.Errorf("%q has an invalid extension name", s)
-			}
-			part, rest = rest[:end+1], rest[end+1:]
-		} else {
-			end := strings.IndexByte(rest, '.')
-			if end < 0 {
-				end = len(rest)
-			}
-			part, rest = rest[:end], rest[end:]
-			if !ident(part) {
-				return fmt.Errorf("%q is not a protobuf option name", s)
-			}
-		}
-		_ = part
-		if rest != "" {
-			if rest[0] != '.' || len(rest) == 1 {
-				return fmt.Errorf("%q is not a protobuf option name", s)
-			}
-			rest = rest[1:]
-		}
+	return true
+}
+
+// checkDottedIdent accepts dot-joined identifiers, reporting against
+// the whole written name.
+func checkDottedIdent(s, whole string) error {
+	if !qualifiedIdent(s) {
+		return fmt.Errorf("%q is not a protobuf option name", whole)
 	}
 	return nil
 }

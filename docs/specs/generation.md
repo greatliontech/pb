@@ -21,9 +21,11 @@ verbatim; and optionally `overrides`, a list of entries `{files,
 option, value}` where `files` is a glob pattern (the `/`-separated
 component semantics `provenance.md` REQ-prov-trust-schema defines)
 over module-relative proto file paths within the workspace and its
-dependencies, `option` a protobuf option name — dotted identifiers
-with parenthesized extension names, so custom file options are
-expressible — and `value` the option value's spelling. No other top-level
+dependencies, `option` a protobuf option name in its navigable forms —
+a built-in option's dotted field name, or a parenthesized
+fully-qualified extension name with at most one field selector
+(`(pkg.ext)`, `(pkg.ext).field`) — and `value` the option value's
+spelling. No other top-level
 keys and no other entry keys exist: there is no bare plugin-name key,
 and an entry with zero or several scheme keys is a schema violation —
 which scheme an entry lives in is always written, never inferred. A
@@ -56,15 +58,35 @@ workspace module in use order, then by file path, independent of
 filesystem iteration.
 
 **REQ-gen-overrides-declarative** (behavior): Option overrides MUST be
-applied exactly as declared to the descriptors of matching files before
-plugin invocation — later entries win on overlap, and no option value is
-ever synthesized from a heuristic.
+applied exactly as declared to the descriptors of matching files —
+workspace and dependency files alike, matched by include-root-relative
+path — before plugin invocation: entries apply in declaration order,
+later entries winning on overlap; a built-in option resolves by field
+name on the file options, a custom option through the compiled set's
+extension declarations; scalar-kind values parse by the field's kind
+(strings verbatim, `true`/`false`, enum value names, Go integer and
+float syntax); a name resolving to nothing, a non-scalar target, or a
+value outside the kind fails — no option value is ever synthesized
+from a heuristic.
+
+**REQ-gen-request** (wire): The `CodeGeneratorRequest` delivered to a
+plugin MUST carry: `file_to_generate` — the workspace modules' files in
+compile order; `proto_file` — every reachable file in topological order,
+dependencies before importers, each file's imports visited in
+declaration order; `source_file_descriptors` — the generated files'
+descriptors; the entry's `opt` string as `parameter` verbatim; and
+nothing else — no compiler version, no timestamp, no environment.
+Descriptors carry full options in both descriptor fields: pb does not
+strip source-retention options — a deliberate divergence from protoc
+that only ever hands plugins more information.
 
 **REQ-gen-request-determinism** (invariant): The `CodeGeneratorRequest`
 delivered to a plugin MUST be a pure function of the compiled descriptor
 set, the applied overrides, and the entry's declared parameters — files
 in deterministic order, independent of filesystem iteration, cache
-state, and prior runs.
+state, and prior runs. One entry's applied overrides never leak into
+another entry's request: each request's descriptors are built fresh
+from the compiled set.
 
 **REQ-gen-out-containment** (invariant): Generated files MUST land only
 under the entry's declared output directory; a response naming a file
