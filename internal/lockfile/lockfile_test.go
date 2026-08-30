@@ -964,3 +964,28 @@ func TestPluginProvenanceRecordParsed(t *testing.T) {
 		t.Fatalf("plugin provenance lost: %+v", p.Provenance)
 	}
 }
+
+// AddPlugin guards first use per (ref, scheme): a duplicate pair is
+// refused, a different scheme under the same ref is not, and an
+// invalid pin never lands (REQ-lock-first-use).
+func TestAddPlugin(t *testing.T) {
+	h64 := strings.Repeat("ab", 32)
+	f := &File{}
+	oci := PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64}
+	if err := f.AddPlugin(oci); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.AddPlugin(oci); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("duplicate pair: %v", err)
+	}
+	local := PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + h64}}
+	if err := f.AddPlugin(local); err != nil {
+		t.Fatalf("same ref, other scheme: %v", err)
+	}
+	if err := f.AddPlugin(PluginPin{Ref: "x", Scheme: "remote"}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("invalid pin: %v", err)
+	}
+	if len(f.Plugins) != 2 {
+		t.Fatalf("plugins = %d", len(f.Plugins))
+	}
+}

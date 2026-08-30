@@ -178,6 +178,19 @@ func checkIdentity(p Plugin) error {
 	return fmt.Errorf("unknown scheme %q", p.Scheme)
 }
 
+// ReferenceRepository returns a reference's registry/repository part —
+// the tag stripped — for digest-form addressing. The reference must
+// already satisfy CheckReference; the split mirrors its parsing (the
+// tag is the last colon after the last slash).
+func ReferenceRepository(ref string) string {
+	registry, rest, _ := strings.Cut(ref, "/")
+	slash := strings.LastIndexByte(rest, '/')
+	if colon := strings.LastIndexByte(rest, ':'); colon > slash {
+		rest = rest[:colon]
+	}
+	return registry + "/" + rest
+}
+
 // CheckReference validates a plugin reference (REQ-gen-schema,
 // plugin-execution.md REQ-plugin-no-privileged-source):
 // <registry>/<repository>:<tag>, where the registry names itself

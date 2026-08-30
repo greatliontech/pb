@@ -2,5 +2,5 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-platform-strict"
-reason: "The plugin execution subsystem is a later feature; plugin-image provenance rides it"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "checkPlatforms refuses with executed example witnesses (foreign-only index, bare manifest); the invariant-class property witness is outstanding"
+lands { manual { condition: "a property witness over arbitrary manifest lists exists" } }

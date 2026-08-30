@@ -306,3 +306,21 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "494adfe8b9739798418824cd769bf211b45e69fc25025156d699b17e9ffff1ab"
 }
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lockfile.File.AddPlugin"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2c4a6303a8ac378b9c85b1126e5c28f7115bca619c04e5da00dddc67f674ce88"
+}
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireFirstUse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7f74c83fc65d5f1a138080ff5a6c031ac94a46d0bd051572b945aa48033fdd34"
+}

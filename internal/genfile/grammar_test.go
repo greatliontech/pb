@@ -61,6 +61,20 @@ func TestGrammarEdges(t *testing.T) {
 	}
 }
 
+// ReferenceRepository strips exactly the tag, keeping registry ports
+// and nested repositories.
+func TestReferenceRepository(t *testing.T) {
+	for in, want := range map[string]string{
+		"ghcr.io/o/p:v1":        "ghcr.io/o/p",
+		"localhost:5000/a/b:v2": "localhost:5000/a/b",
+		"r.io:443/x:latest":     "r.io:443/x",
+	} {
+		if got := ReferenceRepository(in); got != want {
+			t.Errorf("%q -> %q, want %q", in, got, want)
+		}
+	}
+}
+
 // SplitOption's exact tuples for every navigable form — success and
 // error alike — so no component can swap or leak.
 func TestSplitOptionTuples(t *testing.T) {

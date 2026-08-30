@@ -79,12 +79,19 @@ implicitly.
 
 **REQ-plugin-platform-strict** (invariant): A plugin whose manifest list
 contains no entry matching the host platform MUST be refused with an
-error attributing the gap to the image; no emulation, substitution, or
-fallback exists.
+error attributing the gap to the image — an artifact that is not a
+manifest list is refused the same way, since the manifest list is the
+author's platform declaration (the plugin image term) — and no
+emulation, substitution, or fallback exists. Matching granularity is
+`<os>/<arch>`, deliberately: the platform variant is not consulted, and
+variant-aware selection is a future amendment, not implied behavior.
 
 **REQ-plugin-verify-before-run** (behavior): A plugin image MUST pass
 trust-policy evaluation (`provenance.md`) before any process from it is
-executed.
+executed — on every acquisition, cached content included, so a
+tightened policy gates immediately. The module pipeline's
+pin-is-the-record posture deliberately does not apply here: the
+stricter per-run posture sits on the side that executes code.
 
 **REQ-plugin-core-verifies** (invariant): Pin resolution, trust-policy
 evaluation, and the platform check MUST be performed by pb against the

@@ -198,3 +198,12 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "901dfdf9f20a6b9f67e732b97ac5aaf680d161865c74acc984e86c5f129ae927"
 }
+
+bindings {
+  requirement_id: "REQ-prov-unsigned-recorded"
+  content_hash: "052d2fd4aad4257f8527a3329a5df4d4b11f1300cd6642edd85dae2a55f5305c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireFirstUse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7f74c83fc65d5f1a138080ff5a6c031ac94a46d0bd051572b945aa48033fdd34"
+}

@@ -1,0 +1,83 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-plugin-digest-pin"
+  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.Acquire"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7863b2dce2fef9391290604df0d94684711dcfbeedc7b374c24737d8235bf2e0"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-digest-pin"
+  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinnedIgnoresMovedTag"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b37a333b7153fc8ee7c43081bda5cd659d48a544cfa5bd9d048ca486ff6e1c27"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-digest-pin"
+  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinMismatchFailsClosed"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "06c3a6bd85e28de6c57b586946d7881759893c94dfc8488444c082834bf317a4"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-platform-strict"
+  content_hash: "3d298e3b06d908cc46f82432af81c9bdb561b27c454c605184511801a155ffe3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.checkPlatforms"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6213414b0c4084bdd60c8cc96e6f62a8e0c11c7f5705cc2d4132da341248e9ce"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-platform-strict"
+  content_hash: "3d298e3b06d908cc46f82432af81c9bdb561b27c454c605184511801a155ffe3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePlatformStrict"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4cd21ccd72cc233fa8f2decd53d3c85aeed370fea142e33b4b25eca40fe34861"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-verify-before-run"
+  content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.verify"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2b559b4a772d20c7295db293b159a5da7e4584e7be8b6d33ad1a20e676bfb078"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-verify-before-run"
+  content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireProvenancePolicy"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "eb110873bab985f195cf0588f97d08a48c168822aabe256127cd35eb01122eb1"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.verify"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2b559b4a772d20c7295db293b159a5da7e4584e7be8b6d33ad1a20e676bfb078"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireIdentityRuleFlows"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5bee0672019505f76e6631941a88645e7a7e757367408d02335be6b6e93cf63a"
+}

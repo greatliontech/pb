@@ -579,6 +579,21 @@ func (f *File) Plugin(ref, scheme string) (PluginPin, bool) {
 	return PluginPin{}, false
 }
 
+// AddPlugin records a plugin's first-use pin (REQ-lock-first-use,
+// REQ-lock-plugin-entry): it is an error if a pin for (ref, scheme)
+// already exists — pins are only added or explicitly updated, never
+// silently rewritten.
+func (f *File) AddPlugin(pin PluginPin) error {
+	if err := checkPluginPin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if _, exists := f.Plugin(pin.Ref, pin.Scheme); exists {
+		return fmt.Errorf("%w: plugin pin for %s (%s) already exists", ErrPinMismatch, pin.Ref, pin.Scheme)
+	}
+	f.Plugins = append(f.Plugins, pin)
+	return nil
+}
+
 // AddModule records a first-use pin (REQ-lock-first-use): it is an error if
 // any pin for (path, version) already exists — pins are only added or
 // explicitly updated, never silently rewritten.

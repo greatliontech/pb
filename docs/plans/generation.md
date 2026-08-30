@@ -11,7 +11,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
       include roots
 - [x] 3. Option overrides and `CodeGeneratorRequest` construction —
       declarative application, deterministic request
-- [ ] 4. OCI plugin acquisition: manifest-list fetch, signature
+- [x] 4. OCI plugin acquisition: manifest-list fetch, signature
       verification against the trust policy, platform-strict selection,
       digest pins, materialization through ocifs
 - [ ] 5. Native runner: export to rootfs, container backend behind the
