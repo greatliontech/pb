@@ -307,3 +307,34 @@ func (c *idCapture) VerifyImage(_ context.Context, _, _ string, id *trust.Identi
 	c.got = id
 	return lockfile.Provenance{}, errors.New("no evidence")
 }
+
+// An export that cannot materialize fails the acquisition — no
+// Acquired with an empty root filesystem, no pin recorded for it.
+func TestAcquireExportFailureFailsClosed(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root writes through permission bits")
+	}
+	fx := newFixture(t)
+	lock := &lockfile.File{}
+	work := t.TempDir()
+	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { a.Close() })
+	exports := filepath.Join(work, "exports")
+	if err := os.MkdirAll(exports, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(exports, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(exports, 0o755) })
+	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1")
+	if err == nil || got != nil {
+		t.Fatalf("acquisition with an unwritable export cache returned %+v, %v", got, err)
+	}
+	if _, pinned := lock.Plugin(fx.host+"/org/plugin:v1", lockfile.SchemeOCI); pinned {
+		t.Fatal("a pin was recorded for an acquisition whose export failed")
+	}
+}

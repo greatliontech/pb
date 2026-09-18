@@ -160,11 +160,14 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	}
 	defer a.leave(target)
 
-	rootfs, err := a.fs.Export(ctx, target)
+	// One acquisition: the pull resolves and runs the seam, and the
+	// export of the image it returned materializes exactly that,
+	// resolving nothing again (ocifs api.md REQ-api-export).
+	img, err := a.fs.Pull(ctx, target)
 	if err != nil {
 		return nil, err
 	}
-	img, err := a.fs.Pull(ctx, target)
+	rootfs, err := img.Export(ctx)
 	if err != nil {
 		return nil, err
 	}

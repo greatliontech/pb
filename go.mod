@@ -14,7 +14,7 @@ require (
 	github.com/greatliontech/container v0.0.0-20260901072710-3fbf8ac1abe8
 	github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc
 	github.com/greatliontech/glob v0.2.0
-	github.com/greatliontech/ocifs v0.5.1-0.20260823151515-604a0dbe323a
+	github.com/greatliontech/ocifs v0.6.0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/sigstore/gitsign v0.16.0
 	github.com/sigstore/protobuf-specs v0.5.1
