@@ -21,13 +21,14 @@ and schemas never leave the machine.
   responsible for platform support. This also removes the micro-VM sandbox
   tier from pb's critical path — if it ever lands in `sandbox` it's a bonus,
   not a dependency.
-- **The native runner is `container` behind pb's runner seam.** A protoc
+- **The native runner is `sandbox` behind pb's runner seam.** A protoc
   plugin is the ideal create-only tenant: one process, stdio, no
-  exec-into-running, no lifecycle. pb's contract is "run this image's
-  plugin process with this stdin, satisfying the tier floor" and pb
-  consumes the *reported* tier — never assumes one. The rootfs is an
-  ocifs `Export` (no FUSE on the critical path); sandbox is parked and
-  ociplug is not in pb's path ([sandbox-consolidation.md](./sandbox-consolidation.md),
+  exec-into-running, no lifecycle. pb's request is intent only — the
+  ocifs export as `Root`, no grants, the trust policy's limits, the
+  tier floor as `MinTier` — and pb consumes the *reported* tier and
+  bounds accounting, never assumes either. The rootfs is an ocifs
+  `Export` (no FUSE on the critical path); container is not in pb's
+  path ([sandbox-consolidation.md](./sandbox-consolidation.md),
   [ecosystem.md](./ecosystem.md)).
 - **The sandbox is a differentiator, not plumbing.** A signed plugin image
   running with no network and a read-only rootfs is a security story neither

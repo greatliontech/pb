@@ -10,11 +10,11 @@ and go stale fast — verify against the repos before relying on them.
 | --- | --- |
 | [protocompile] (bufbuild) | Compiler foundation: parse, resolve, descriptors, position info. Apache-licensed and stable; the irony of building on bufbuild's compiler is accepted — forking concerns wait for an actual provocation. |
 | `../skillset` | Sigstore provenance machinery proven in another tool, and the architectural template for pb's provenance: gitsign-signed git objects with embedded Rekor proofs, verified fully offline against a pinned TUF trusted root. Settled: extract its provenance core as a shared library both tools consume; the extraction is the moment to lift its SHA-1-only fail-closed scope (SHA-256 object-format repos). |
-| `../sandbox` | **Parked.** A create-only, cross-platform sandbox contract (tier reporting, `MinTier` refusal) at spike level: namespace core only, no rootfs/seccomp/caps/cgroups. No consumer needs it today — pb and ociplug both run on `container`. Its one load-bearing idea, the tier contract, is lifted into `container` instead of container's machinery being lifted into it; sandbox becomes worth building when a consumer with a genuine cross-platform requirement appears. |
+| `../sandbox` | **pb's native runner backend.** Un-parked 2026-09-01 with a policy-level contract (intent in, derived tier and reported bounds accounting out, `MinTier` failing closed, no timeout of its own, whole-tree cancellation kills) and its own pure-Go Linux mechanism layer, seeded from container's create path and maintained as an independent replica. The strong-backend plan delivers the Linux Strong row; pb's runner moves onto it when that row is whole ([sandbox-consolidation.md](./sandbox-consolidation.md)). |
 | `../ocifs` | **The layer-semantics owner and pb's image store.** Specced (store, layer semantics, export, projection, writable, verification seam, api) with gmdb bookkeeping and GC. pb consumes it as a library: acquire by digest with explicit platform (pb verifies manifest-list signatures itself and plugs in through the seam), then `Export` — the unified view materialized into a content-addressed, immutable rootfs directory. FUSE is not on pb's path (CI containers often lack `/dev/fuse`); the mount stays ocifs's other consumer surface. The writable layer + commit is the road to native image building in pb. ocifs-side addition pb wants: export from an already-pulled image, so acquisition resolves once. |
 | `../projfs-go` | Windows: ProjFS binding — the rootfs-projection equivalent. Most proven of the three FS repos (extensive test surface, spec'd callback contract). Requires the ProjFS optional Windows feature enabled. |
 | `../fskit-go` | macOS: FSKit binding. Portable core done; Tier-2 open question — whether a *third-party* signed appex actually gets dispatched. macOS 15.4+, signed/notarized appex, user enablement: real distribution friction. |
-| `../container` | **pb's native runner backend.** Full pure-Go create path (`/proc/self/exe` re-exec, `SysProcAttr` clone; cgo only for exec-into-running, which pb never calls): pivot_root, capability drop, seccomp, minimal `/dev`, cgroup v2 memory/cpu/pids with OOM notification, masked/readonly paths, all namespaces. pb's runner seam wraps it: `Root` = the ocifs export, read-only, no network, stdio only, bounds from the trust policy. Container-side additions pb still needs: an applied-mechanism/tier report (the sandbox contract lifted here), a pivot that needs no scratch directory inside the new root (`pivot_root(".", ".")` — pb binds a shared read-only export as the root), the payload's wait status and cgroup path as API rather than error text, vacating a delegated cgroup (moving the caller into a leaf child) before enabling controllers so rootless and in-container placement works, and dropping its stale ocifs example pin; the cgroup-delegation behavior landed (`CgroupsAvailable`, `CgroupsRequired`, rootless delegated-subtree placement). |
+| `../container` | Mechanism-level, Linux-only container runtime (full create path, exec-into-running, OCI compliance tracker). **Not pb's path** since the sandbox reversal: pb's chunk-5 runner ran on it and moves to sandbox; its create path and sandbox's mechanism layer are replica twins under a shared kernel-rule obligation. |
 | `../ociplug` | gRPC-over-unix-socket plugin system (stdio handshake, mTLS, manifest permissions). **Not in pb's path**: pb plugins speak the stdio protoc protocol. ociplug consumes ocifs and container like pb does; its `internal/verify` (sigstore-go, cosign discovery) is the cosign verifier that plugs into ocifs's seam for consumers who want it — pb never depends on it. |
 | `../pbr` | Today: a buf-compatible registry (workaround for BSR restrictions). Settled future roles: implements the pb proxy protocol, serves as the BSR protocol bridge (repacking BSR-only modules into canonical archives) so pb itself never learns anything about BSR, and its hosted instance at **pbr.dev** is the recommended opt-in public proxy (deliberately not a default; see the dependency-management note for the revisit trigger). See [dependency-management.md](./dependency-management.md). Execution owned by that repo. |
 
@@ -35,7 +35,7 @@ Two distinct problems, only one of which the sandbox stack solves:
 
 Consequence (per the committed platform scope in
 [plugin-execution.md](../specs/plugin-execution.md)): **pb ships linux +
-darwin** — the container runner on Linux, the docker runner covering darwin —
+darwin** — the native (sandbox) runner on Linux, the docker runner covering darwin —
 and **Windows is a named non-goal** (WSL2 covers it). The ProjFS/FSKit
 projections are not in pb's path; they remain ecosystem roles for other
 consumers (ociplug, direct mounts). Rootfs materialization for pb is ocifs
@@ -44,11 +44,11 @@ lack `/dev/fuse`, and export needs no mount at all.
 
 ## Maturity snapshot (2026-08)
 
-- `sandbox`: parked at spike level (see the roles table).
+- `sandbox`: contract specced; Linux mechanism verbs and the Strong world landed (2026-09); hardening, bounds, and row selection in flight.
 - `ocifs`: specced and landed — store on gmdb with GC, export, seam,
   writable layer with acceptance workloads.
 - `container`: pure-Go create path complete with an OCI runtime-spec
-  compliance tracker; pb's native backend.
+  compliance tracker; delegated-cgroup placement fixed 2026-09; not pb's backend.
 - `projfs-go`: most mature; v0 but heavily tested with a documented contract.
 - `fskit-go`: portable core complete; darwin binding registrable on CI; the
   signed-appex mount (the thing that proves dispatch) not yet demonstrated.

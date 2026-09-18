@@ -1,46 +1,54 @@
-# Sandbox consolidation: superseded — the tier contract moves to container
+# Sandbox consolidation: sandbox is pb's native backend
 
-Direction revised (2026-08). The original plan lifted container's
-create-path machinery into sandbox so sandbox became the shared
-create-only core. Reading both repos settled it the other way:
+Direction revised again (2026-09-19). The August reversal parked
+sandbox and lifted its tier contract into container; on 2026-09-01
+sandbox was un-parked with a policy-level contract
+(`../sandbox/docs/specs/sandbox.md`) and its own Linux mechanism
+layer seeded from container's create path, maintained as an
+independent replica (twin records: sandbox's
+`docs/issues/linux-mechanism-replica.md`, container's
+`docs/issues/sandbox-create-path-replica.md`; any kernel-rule fix
+lands in both copies).
 
-- container's create path is already pure Go (the cgo seam is exactly
-  where the original note put it — joining, never creating) and
-  carries everything pb's runner contract needs: pivot_root, caps,
-  seccomp, minimal /dev, cgroup v2 bounds, masked paths, namespaces.
-- sandbox is a spike whose `Spec` is narrower than container's
-  `Config` (rlimit-based memory caps, no seccomp/caps surface), so a
-  lift would first have to redesign the target contract.
-- Neither real consumer points at sandbox: pb and ociplug both run on
-  container.
+Read from first principles, sandbox's contract is pb's runner
+contract, and container's is not:
 
-So the consolidation runs in the cheap direction: **sandbox's one
-load-bearing idea — honest tier reporting and `MinTier` refusal — is
-lifted into container as a small API**, and sandbox is parked until a
-consumer with a genuine cross-platform requirement exists. If that day
-comes, "container's create path extracted behind sandbox's contract"
-remains available, cheaper then, with the tier surface already in
-place.
+- intent, never mechanism, in the request (Root as world-restriction,
+  path grants, limits, `MinTier`); pb has nothing mechanism-shaped to
+  say;
+- tier derived from the row that fully applied, never asserted —
+  REQ-plugin-reported-tier without pb deriving anything;
+- the bounds accounting reported as a fact of the run — the mechanism
+  clause of REQ-plugin-resource-bounds, owned by the backend;
+- `MinTier` failing closed before exec; no timeout of its own (the
+  wall clock is pb's); cancellation kills the whole tree by the
+  strongest tie the host affords (pid namespace, `cgroup.kill`);
+- a shared, read-only tree is a valid Root and is never written.
+
+Everything pb had to build around container — deriving Strong,
+parsing wait-error text, locating the run's cgroup, the pivot scratch
+written into the shared export, the delegated-cgroup placement — is
+either sandbox's stated obligation or its API. So the consolidation
+runs the original way after all: **pb's native runner is sandbox**;
+container stays the mechanism-level, Linux-only runtime it is,
+independent by design, and leaves pb's dependency graph once the
+runner moves.
 
 ## Layering for pb
 
 ```
 pb (fetch manifest-list + verify + platform-strict)
   ──► ocifs (acquire by digest, Export → prepared rootfs dir)
-  ──► container (namespaces, pivot ro, cgroups, exec with stdio)
+  ──► sandbox (Root = the export, no grants, stdio, Limits, MinTier)
 ```
 
-ociplug is out of pb's path (socket-shaped transport; pb plugins are
-stdio). FUSE is off pb's critical path (export, not mount). See
-[ecosystem.md](./ecosystem.md) and `docs/specs/plugin-execution.md`.
+## Sandbox-side work pb's runner needs
 
-## Container-side work pb's runner needs
-
-- Applied-mechanism / tier report (`Strong` derived from what actually
-  applied, never assumed).
-- ~~Defined behavior when cgroup v2 delegation is unavailable~~ —
-  landed in container (`CgroupsAvailable` probe, `CgroupsRequired`
-  making cgroup failures fatal, rootless placement via the delegated
-  subtree); pb's runner folds to POSIX rlimits and reports the
-  mechanism when placement is unavailable.
-- Drop or update the stale ocifs example pin in container's go.mod.
+Tracked in `../sandbox/docs/plans/strong-backend.md`: the Strong world
+(landed), hardening (capability drop, seccomp, no_new_privs, network
+denial), bounds with reported accounting — folding in the
+delegated-cgroup placement rule container landed (vacate the
+delegated cgroup into a leaf, enable controllers in one write) and
+the honest CPU attribution (a namespace init never receives SIGXCPU)
+— and row selection with derived tiers. pb's runner moves once the
+Strong row is delivered whole.

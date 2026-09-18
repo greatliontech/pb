@@ -1,2 +1,4 @@
 *.campaign
 *.lock
+mcp.log
+mcp.log.1

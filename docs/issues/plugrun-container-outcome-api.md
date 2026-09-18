@@ -1,7 +1,7 @@
 # The runner re-derives what container already holds
 
-Lands: container exposes the payload's wait status and the run's
-cgroup path as API, and pb pins that container
+Lands: pb's native runner runs on sandbox, whose API reports the
+exit status (code or signal) and the bounds accounting
 
 Two facts the native runner needs are container's own but reach pb
 only indirectly:
@@ -19,3 +19,8 @@ only indirectly:
 
 Both are container-side additions; the ecosystem note lists them with
 the tier report and the pivot change.
+
+Retargeted 2026-09-19: the runner moves from container to sandbox
+(docs/notes/sandbox-consolidation.md); sandbox's `ExitStatus` and
+its reported accounting are the typed outcome, so the parse and the
+procfs derivation go with the move.

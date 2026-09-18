@@ -1,7 +1,7 @@
 # Cgroup bounds fail to start wherever pb is a direct member of the delegated cgroup
 
-Lands: container vacates the delegated cgroup before enabling
-controllers for the run's cgroup, and pb pins that container
+Lands: pb's native runner runs on sandbox with cgroup accounting
+available inside a delegated scope
 
 Where `container.CgroupsAvailable` is true because pb's own cgroup is
 writable — a `systemd-run --scope -p Delegate=yes` session, or a CI
@@ -27,3 +27,8 @@ child, permanently for the cgroup's lifetime. Accounting outside the
 delegated cgroup is unchanged; a reader of that cgroup's own
 `cgroup.procs` sees its processes one level down. Whether the spec
 should state this effect is relayed to the user.
+
+Retargeted 2026-09-19: container landed the fix (vacate into a leaf,
+one-write controller enable) on its master; the runner moves to
+sandbox, whose mechanism layer must carry the same kernel rule (the
+replica twin obligation) before this closes.
