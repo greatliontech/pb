@@ -38,7 +38,9 @@ stdio). FUSE is off pb's critical path (export, not mount). See
 
 - Applied-mechanism / tier report (`Strong` derived from what actually
   applied, never assumed).
-- Defined behavior when cgroup v2 delegation is unavailable — fail
-  naming the gap, or a reportable degraded-bounds state; pb's spec
-  treats bounds as mandatory, so silence is not an option.
+- ~~Defined behavior when cgroup v2 delegation is unavailable~~ —
+  landed in container (`CgroupsAvailable` probe, `CgroupsRequired`
+  making cgroup failures fatal, rootless placement via the delegated
+  subtree); pb's runner folds to POSIX rlimits and reports the
+  mechanism when placement is unavailable.
 - Drop or update the stale ocifs example pin in container's go.mod.

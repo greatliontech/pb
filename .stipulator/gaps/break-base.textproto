@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-break-base"
 reason: "The breaking-change checker is not yet built"
+content_hash: "1f9f90d86aed06012436febcd7ff3559dd329e478c78a2378b13bca61521214b"
+source_hash: "5b0697449dd4b71a40136e14e9cdf8def394a0bf7a51feef0bc5cb58a59a70b9"
 lands { manual { condition: "the breaking-change checker is built" } }

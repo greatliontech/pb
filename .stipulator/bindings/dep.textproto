@@ -4,6 +4,7 @@
 bindings {
   requirement_id: "REQ-dep-cache-layout"
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.entryPath"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,6 +14,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-layout"
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Cache"
   role: BINDING_ROLE_IMPLEMENTS
@@ -22,6 +24,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-layout"
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheLayoutGolden"
   role: BINDING_ROLE_TESTS
@@ -31,6 +34,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-layout"
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.TestCachePutGet"
   role: BINDING_ROLE_TESTS
@@ -40,6 +44,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
@@ -49,6 +54,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.firstUse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -58,6 +64,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheTransparencyProperty"
   role: BINDING_ROLE_TESTS
@@ -67,6 +74,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
+  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIgnoresCache"
   role: BINDING_ROLE_TESTS
@@ -76,6 +84,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-init"
   content_hash: "de4edf0954b60c4de741287f3b9c8b1f64ca46538a1ae8f15d14f2631198e1ab"
+  source_hash: "e5e2d717fa7c48afd4fa30188433df1f5046b1836654af931fc77352d52446bd"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Init"
   role: BINDING_ROLE_IMPLEMENTS
@@ -85,6 +94,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-init"
   content_hash: "de4edf0954b60c4de741287f3b9c8b1f64ca46538a1ae8f15d14f2631198e1ab"
+  source_hash: "e5e2d717fa7c48afd4fa30188433df1f5046b1836654af931fc77352d52446bd"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestInit"
   role: BINDING_ROLE_TESTS
@@ -94,6 +104,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-tidy"
   content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
+  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Tidy"
   role: BINDING_ROLE_IMPLEMENTS
@@ -103,6 +114,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-tidy"
   content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
+  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidy"
   role: BINDING_ROLE_TESTS
@@ -112,6 +124,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-tidy"
   content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
+  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidyUnsatisfiedImportFails"
   role: BINDING_ROLE_TESTS
@@ -121,6 +134,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-tidy"
   content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
+  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidyLocalImportNeedsDeclaredVersion"
   role: BINDING_ROLE_TESTS
@@ -130,6 +144,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-download"
   content_hash: "bea6e94a489550f82f74948fb3ae7335e4fa8f93e0a85ff80d4edb7f18389f23"
+  source_hash: "c70052c0531aac28fda028a6bdbb4b0c901f58100fb3782b7107bf1f0a039500"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Download"
   role: BINDING_ROLE_IMPLEMENTS
@@ -139,6 +154,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-download"
   content_hash: "bea6e94a489550f82f74948fb3ae7335e4fa8f93e0a85ff80d4edb7f18389f23"
+  source_hash: "c70052c0531aac28fda028a6bdbb4b0c901f58100fb3782b7107bf1f0a039500"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestDownloadVerb"
   role: BINDING_ROLE_TESTS
@@ -148,6 +164,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-update"
   content_hash: "65655bef7cb626ab9a3315d099d991763f00888b495494a55f7cb68f6e60969e"
+  source_hash: "a8cbead418398165abba05a8566c63405e2b6f1434db69a4e59c7b080c914add"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Update"
   role: BINDING_ROLE_IMPLEMENTS
@@ -157,6 +174,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-update"
   content_hash: "65655bef7cb626ab9a3315d099d991763f00888b495494a55f7cb68f6e60969e"
+  source_hash: "a8cbead418398165abba05a8566c63405e2b6f1434db69a4e59c7b080c914add"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateVerb"
   role: BINDING_ROLE_TESTS
@@ -166,6 +184,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-graph"
   content_hash: "73be946c0a039cfc55c34f50fa2c549393be4e4b290ed56724a0676479ca8854"
+  source_hash: "2d2ef3a8d1164842b2de92c5079ebeb142e9597a9dd8487f07643c276d5ea170"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Graph"
   role: BINDING_ROLE_IMPLEMENTS
@@ -175,6 +194,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-graph"
   content_hash: "73be946c0a039cfc55c34f50fa2c549393be4e4b290ed56724a0676479ca8854"
+  source_hash: "2d2ef3a8d1164842b2de92c5079ebeb142e9597a9dd8487f07643c276d5ea170"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGraphAndWhyVerbs"
   role: BINDING_ROLE_TESTS
@@ -184,6 +204,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-why"
   content_hash: "1cde9b27ba5316fa781cfd919b8698e795d7b3fb93a3672c8d92f81e3a7b56c7"
+  source_hash: "de5b01f3f026aa06661fb2ec9ea879d340b6bffee00d15d112aba72335d94539"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Why"
   role: BINDING_ROLE_IMPLEMENTS
@@ -193,6 +214,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-why"
   content_hash: "1cde9b27ba5316fa781cfd919b8698e795d7b3fb93a3672c8d92f81e3a7b56c7"
+  source_hash: "de5b01f3f026aa06661fb2ec9ea879d340b6bffee00d15d112aba72335d94539"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGraphAndWhyVerbs"
   role: BINDING_ROLE_TESTS
@@ -202,6 +224,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-verify"
   content_hash: "9cb67ce8213c284afe0719dc359d094535e3a5dbf4cc52f128a7a7aa55e204dd"
+  source_hash: "a40859170530cc5f8d1f87ecd9e9288a4539cee8ff9f253efba46cb1a43411eb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -211,6 +234,7 @@ bindings {
 bindings {
   requirement_id: "REQ-dep-verify"
   content_hash: "9cb67ce8213c284afe0719dc359d094535e3a5dbf4cc52f128a7a7aa55e204dd"
+  source_hash: "a40859170530cc5f8d1f87ecd9e9288a4539cee8ff9f253efba46cb1a43411eb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestVerifyVerb"
   role: BINDING_ROLE_TESTS

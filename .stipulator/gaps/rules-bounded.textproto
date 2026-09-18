@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-rules-bounded"
 reason: "The rules engine is not yet built"
+content_hash: "abd1197ac4ebd653e5af2c59abc44ee00432ff31601773efd381d5d00ce7cfce"
+source_hash: "01b36e2210ca04ea91dc7a72057a0921a0fce55e06f87c74055acbf9e86f48db"
 lands { manual { condition: "the rules engine is built" } }

@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -79,6 +80,16 @@ type Limits struct {
 	Timeout time.Duration // wall clock
 }
 
+// Implementation-declared resource-bound defaults
+// (REQ-plugin-resource-bounds), folded into unset limit fields by
+// EffectiveLimits. The CPU default is the host's CPU count — "no more
+// than the machine" — declared explicitly rather than implied.
+const (
+	DefaultMemoryBytes uint64 = 2 << 30
+	DefaultPids        uint64 = 512
+	DefaultTimeout            = 5 * time.Minute
+)
+
 // Execution is the resolution root's plugin-execution posture
 // (REQ-prov-exec-policy). Nil-able fields distinguish "unset" from an
 // explicit choice; the Effective* / *Allowed accessors fold in the
@@ -97,6 +108,26 @@ func (e *Execution) EffectiveMinTier() string {
 		return TierStrong
 	}
 	return e.MinTier
+}
+
+// EffectiveLimits folds the declared defaults into unset limit fields;
+// every field of the result is set, so a runner never sees an
+// unbounded resource.
+func (e *Execution) EffectiveLimits() Limits {
+	l := e.Limits
+	if l.Memory == 0 {
+		l.Memory = DefaultMemoryBytes
+	}
+	if l.CPU == 0 {
+		l.CPU = float64(runtime.NumCPU())
+	}
+	if l.Pids == 0 {
+		l.Pids = DefaultPids
+	}
+	if l.Timeout == 0 {
+		l.Timeout = DefaultTimeout
+	}
+	return l
 }
 
 // SchemeAllowed reports whether the posture permits an identity scheme.

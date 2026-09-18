@@ -4,6 +4,7 @@
 bindings {
   requirement_id: "REQ-modfile-schema"
   content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  source_hash: "afd148efefc8d6d6392bc574800e9e0fcec29c3a4dbcc00e5d3d0403c4f8e6d6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,6 +14,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-schema"
   content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  source_hash: "afd148efefc8d6d6392bc574800e9e0fcec29c3a4dbcc00e5d3d0403c4f8e6d6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestParseGolden"
   role: BINDING_ROLE_TESTS
@@ -22,6 +24,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-schema"
   content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  source_hash: "afd148efefc8d6d6392bc574800e9e0fcec29c3a4dbcc00e5d3d0403c4f8e6d6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
   role: BINDING_ROLE_TESTS
@@ -31,6 +34,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-schema"
   content_hash: "5d9e058a1e5b0c9f1ff475337b7f1e6f8ef7f55222331045c0934b5c5326452e"
+  source_hash: "afd148efefc8d6d6392bc574800e9e0fcec29c3a4dbcc00e5d3d0403c4f8e6d6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.FuzzParse"
   role: BINDING_ROLE_TESTS
@@ -40,6 +44,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-identity"
   content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  source_hash: "19fe387691118e6ecad9b739b07cf91df7e8a54ccfc91bcfcc3f621782ffc559"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.CheckIdentity"
   role: BINDING_ROLE_IMPLEMENTS
@@ -49,6 +54,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-identity"
   content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  source_hash: "19fe387691118e6ecad9b739b07cf91df7e8a54ccfc91bcfcc3f621782ffc559"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestCheckIdentityProperty"
   role: BINDING_ROLE_TESTS
@@ -58,6 +64,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-identity"
   content_hash: "fc980a4f7144d6366e71313bfa6898871e61c184b1c63a843e70d684a9b33f20"
+  source_hash: "19fe387691118e6ecad9b739b07cf91df7e8a54ccfc91bcfcc3f621782ffc559"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestCheckIdentity"
   role: BINDING_ROLE_TESTS
@@ -67,6 +74,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-versions"
   content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  source_hash: "33d5f8c7ae8c4c8b30ce27200c4d7d39ac1336ea352d7b40c1c32c7fc8d285b3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.checkVersion"
   role: BINDING_ROLE_IMPLEMENTS
@@ -76,6 +84,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-versions"
   content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  source_hash: "33d5f8c7ae8c4c8b30ce27200c4d7d39ac1336ea352d7b40c1c32c7fc8d285b3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestParseRejections"
   role: BINDING_ROLE_TESTS
@@ -85,6 +94,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-emission"
   content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -94,6 +104,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-emission"
   content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS
@@ -103,6 +114,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-emission"
   content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
+  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestRoundTripProperty"
   role: BINDING_ROLE_TESTS
@@ -112,6 +124,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-acceptance"
   content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  source_hash: "d16289de8bce6900e56d816440ae3fa4a1a8bab8a645ea95f8382e84818e44da"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -121,6 +134,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-acceptance"
   content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  source_hash: "d16289de8bce6900e56d816440ae3fa4a1a8bab8a645ea95f8382e84818e44da"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestForbiddenYAMLConstructs"
   role: BINDING_ROLE_TESTS
@@ -130,6 +144,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-acceptance"
   content_hash: "a6fdd7d0f373e6d72066bd5eecfc38ee9980675492ffc0f8f0b1a6a3bb3ef361"
+  source_hash: "d16289de8bce6900e56d816440ae3fa4a1a8bab8a645ea95f8382e84818e44da"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfile.TestAcceptanceVariants"
   role: BINDING_ROLE_TESTS
@@ -139,6 +154,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-versions"
   content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  source_hash: "33d5f8c7ae8c4c8b30ce27200c4d7d39ac1336ea352d7b40c1c32c7fc8d285b3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/version.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -148,6 +164,7 @@ bindings {
 bindings {
   requirement_id: "REQ-modfile-versions"
   content_hash: "e6563cd0355b032eaa8674462c82686b04a7a4e1767c738d43c26f7ea57c59b9"
+  source_hash: "33d5f8c7ae8c4c8b30ce27200c4d7d39ac1336ea352d7b40c1c32c7fc8d285b3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/version.TestGrammarAgreesWithCanonicalSemver"
   role: BINDING_ROLE_TESTS

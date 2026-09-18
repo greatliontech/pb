@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-plain-oci"
-reason: "The plugin execution subsystem is a later feature; plugin-image provenance rides it"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "Acquisition consumes only standard image content and fetches references at the repository path exactly as written, pinned by executed example and property witnesses; the structural-kind analyzer proof (no annotation read, no reference rewriting) is outstanding"
+content_hash: "86b93a0dd03c11196750ec0c5705af4b07d62fb68558a283a88b084c8ac7bdee"
+source_hash: "9754576d8c06b57926da516b5eb03f49c51876a3c279f20e0a983297f9d927b1"
+lands { manual { condition: "a structural analyzer witness over plugin acquisition exists" } }

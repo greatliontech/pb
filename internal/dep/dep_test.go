@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/trust"
 	"github.com/greatliontech/pb/internal/version"
 )
 
@@ -29,7 +31,15 @@ type depFixture struct {
 
 func newDep(t *testing.T, files map[string]string) *depFixture {
 	t.Helper()
-	fx := &depFixture{Fixture: modfetchtest.New(t), ws: memfs.New()}
+	return newDepOn(t, memfs.New(), files)
+}
+
+// newDepOn is newDep over a caller-chosen filesystem — a real one
+// where in-memory semantics (implicit directories) would hide a write
+// path's behavior.
+func newDepOn(t *testing.T, fs billy.Filesystem, files map[string]string) *depFixture {
+	t.Helper()
+	fx := &depFixture{Fixture: modfetchtest.New(t), ws: fs}
 	for p, body := range files {
 		if err := util.WriteFile(fx.ws, p, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
@@ -458,8 +468,8 @@ func TestLoadResetsPolicyOnReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s2.Client.Policy != nil {
-		t.Fatal("the previous root's trust policy leaked into a policy-less root")
+	if s2.Client.Policy == nil || !reflect.DeepEqual(*s2.Client.Policy, trust.Policy{}) {
+		t.Fatalf("the previous root's trust policy leaked into a policy-less root: %+v", s2.Client.Policy)
 	}
 }
 

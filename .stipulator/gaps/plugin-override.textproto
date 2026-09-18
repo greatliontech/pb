@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-override"
-reason: "Plugin overrides are a generation-invocation affordance; generation is not yet built"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "Plugin overrides are not implemented: the generation verb accepts no override flag, so no substitution path exists"
+content_hash: "6f4e833fef159000fad6530ecfbd5d73595585c35a956b04c5de0fbc444c576c"
+source_hash: "c10356fa46516faf7ee0a919e7c7834f8236a06400ad6f2f9268a27180903eb6"
+lands { manual { condition: "invocation-scoped plugin overrides are implemented" } }

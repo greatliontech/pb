@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-rules-verdict"
 reason: "The rules engine is not yet built"
+content_hash: "bfe3aef064cc497656da52c2a3a2728124c44a3ffedc62153168694bb27d3b84"
+source_hash: "39b2063f220d97432e7d24e772a2fdbd1f8f47286f36b9d6d03282ed84fd4336"
 lands { manual { condition: "the rules engine is built" } }

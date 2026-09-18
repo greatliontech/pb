@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-no-privileged-source"
-reason: "The plugin execution subsystem is a later feature; plugin-image provenance rides it"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "Acquisition consumes only standard image content and fetches references at the repository path exactly as written, pinned by executed example and property witnesses; the structural-kind analyzer proof (no annotation read, no reference rewriting) is outstanding"
+content_hash: "8b621bc0757aa7d83f5afaefcfab271231193e128e406313f2731d692fb122d5"
+source_hash: "483db0761e0c33977c3c10040b3c2d2bb43c0f76357b5fe2950e50b50a15e387"
+lands { manual { condition: "a structural analyzer witness over plugin acquisition exists" } }

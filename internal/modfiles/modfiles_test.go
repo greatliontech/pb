@@ -49,6 +49,9 @@ func TestLoadOrderAndMembership(t *testing.T) {
 		"b/pb.yaml":            {Data: []byte(ws("example.com/b", ""))},
 		"b/deep/dir/w.proto":   {Data: []byte("syntax = \"proto3\";\n")},
 		"b/deep/dir/notes.txt": {Data: []byte("x")},
+		// A directory whose name ends .proto is a directory: walked
+		// through, never read as a file.
+		"b/odd.proto/inner.txt": {Data: []byte("x")},
 	}
 	root, err := workspace.LoadFor(fsys, ".")
 	if err != nil {
@@ -62,7 +65,10 @@ func TestLoadOrderAndMembership(t *testing.T) {
 	})
 	var asked []string
 	mods, err := Load(ctx, fsys, root, []mvs.Requirement{{Path: "example.com/m1", Version: ver(t, "v1.0.0")}},
-		func(_ context.Context, p, v string) ([]byte, error) { asked = append(asked, p+"@"+v); return zip, nil })
+		func(_ context.Context, p string, v version.Version) ([]byte, error) {
+			asked = append(asked, p+"@"+v.String())
+			return zip, nil
+		})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +124,10 @@ func TestLoadWorkspaceFaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	noZip := func(context.Context, string, string) ([]byte, error) { t.Fatal("no externals"); return nil, nil }
+	noZip := func(context.Context, string, version.Version) ([]byte, error) {
+		t.Fatal("no externals")
+		return nil, nil
+	}
 	if _, err := Load(ctx, errFS{MapFS: base, failRead: "sub/x.proto"}, root, nil, noZip); err == nil || !strings.Contains(err.Error(), "injected read failure") {
 		t.Fatalf("read fault: %v", err)
 	}
@@ -138,10 +147,10 @@ func TestLoadErrors(t *testing.T) {
 	list := []mvs.Requirement{{Path: "example.com/m1", Version: ver(t, "v1.0.0")}}
 	// The zip error itself must surface — nil bytes failing the archive
 	// reader is a different (masking) failure.
-	if _, err := Load(ctx, fsys, root, list, func(context.Context, string, string) ([]byte, error) { return nil, context.Canceled }); !errors.Is(err, context.Canceled) {
+	if _, err := Load(ctx, fsys, root, list, func(context.Context, string, version.Version) ([]byte, error) { return nil, context.Canceled }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("zip error = %v, want context.Canceled", err)
 	}
-	if _, err := Load(ctx, fsys, root, list, func(context.Context, string, string) ([]byte, error) { return []byte("not a zip"), nil }); err == nil {
+	if _, err := Load(ctx, fsys, root, list, func(context.Context, string, version.Version) ([]byte, error) { return []byte("not a zip"), nil }); err == nil {
 		t.Fatal("bad archive accepted")
 	}
 }

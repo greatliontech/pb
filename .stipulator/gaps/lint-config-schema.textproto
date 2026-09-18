@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-lint-config-schema"
 reason: "The lint subsystem is not yet built"
+content_hash: "d55dbdd2c6cac95520ba2c7efbd54c7e99b78f3245ac96b3ed77e9b9bb9e3003"
+source_hash: "60d91e88b9af9bf5ce6bf7a79abefdaf7fa2e734b536750e7935a2564f900ac4"
 lands { manual { condition: "the lint subsystem is built" } }

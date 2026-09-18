@@ -37,3 +37,33 @@ func ValidTier(s string) bool {
 	}
 	return false
 }
+
+// TierBelow reports whether got ranks below floor in the declaration
+// order. An unrecognized tier ranks with TierNone — below every other
+// tier — so a comparison against any floor fails closed.
+func TierBelow(got, floor string) bool {
+	return tierRank(got) < tierRank(floor)
+}
+
+func tierRank(t string) int {
+	switch t {
+	case TierMinimal:
+		return 1
+	case TierOS:
+		return 2
+	case TierStrong:
+		return 3
+	}
+	return 0
+}
+
+// Process is a plugin's process description as OCI image configuration
+// composes it: argv (Entrypoint followed by Cmd), environment, and
+// working directory ("" = the root). It is the one shape acquisition
+// produces and a runner consumes, whichever identity scheme produced
+// it.
+type Process struct {
+	Argv    []string
+	Env     []string
+	WorkDir string
+}

@@ -20,6 +20,8 @@ import (
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/plugoci"
+	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +41,57 @@ func rootCmd() *cobra.Command {
 		SilenceErrors: true,
 	}
 	root.AddCommand(depCmd())
+	root.AddCommand(generateCmd())
 	return root
+}
+
+// loadSession assembles the resolution session at the working
+// directory: the working tree, the fetch-verify client, and the root's
+// module files, lockfile, and trust policy.
+func loadSession() (*dep.Session, error) {
+	ws, dir, err := workingTree()
+	if err != nil {
+		return nil, err
+	}
+	client, err := assembleClient()
+	if err != nil {
+		return nil, err
+	}
+	return dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
+}
+
+// generateCmd is the generation verb (generation.md REQ-gen-verb): the
+// native runner over pb's plugin store, which sits beside the module
+// cache rather than inside it — the module cache root holds module
+// artifacts only (dep-verbs.md REQ-dep-cache-layout).
+func generateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "generate", Short: "generate code from the workspace's protobuf files", Args: cobra.NoArgs,
+		RunE: func(c *cobra.Command, _ []string) error {
+			s, err := loadSession()
+			if err != nil {
+				return err
+			}
+			runner, err := plugrun.NativeRunner()
+			if err != nil {
+				return err
+			}
+			base, err := os.UserCacheDir()
+			if err != nil {
+				return fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
+			}
+			acq, err := plugoci.New(plugoci.Config{
+				WorkDir: filepath.Join(base, "pb", "plugins"),
+				Lock:    s.Lock,
+				Policy:  s.Client.Policy,
+			})
+			if err != nil {
+				return err
+			}
+			defer acq.Close()
+			return dep.Gen(c.Context(), s, dep.GenDeps{Acquirer: acq, Runner: runner}, os.Stdout)
+		},
+	}
 }
 
 func depCmd() *cobra.Command {
@@ -58,17 +110,7 @@ func depCmd() *cobra.Command {
 		},
 	})
 
-	session := func() (*dep.Session, error) {
-		ws, dir, err := workingTree()
-		if err != nil {
-			return nil, err
-		}
-		client, err := assembleClient()
-		if err != nil {
-			return nil, err
-		}
-		return dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
-	}
+	session := loadSession
 	run := func(f func(context.Context, *dep.Session) error) func(*cobra.Command, []string) error {
 		return func(c *cobra.Command, _ []string) error {
 			s, err := session()
@@ -171,4 +213,3 @@ func assembleClient() (*modfetch.Client, error) {
 		Fetcher: direct.Fetcher{},
 	}, nil
 }
-

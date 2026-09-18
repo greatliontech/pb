@@ -19,6 +19,7 @@ import (
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/modfile"
 	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/version"
 	"github.com/greatliontech/pb/internal/workspace"
 )
 
@@ -40,7 +41,7 @@ func (m Module) Protos() []string {
 // Load returns the build's file sets in deterministic order: workspace
 // modules in the root's order, then build-list modules in build-list
 // order. fsys is the working tree the root was loaded from.
-func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath, version string) ([]byte, error)) ([]Module, error) {
+func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Module, error) {
 	var out []Module
 	for _, m := range root.Modules {
 		files, err := workspaceFiles(fsys, path.Join(root.Dir, m.Dir))
@@ -50,7 +51,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir, Files: files})
 	}
 	for _, r := range list {
-		b, err := zip(ctx, r.Path, r.Version.String())
+		b, err := zip(ctx, r.Path, r.Version)
 		if err != nil {
 			return nil, err
 		}

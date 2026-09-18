@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-prov-plugin-signature"
-reason: "The plugin execution subsystem is a later feature; plugin-image provenance rides it"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "No offline image-signature verifier exists in the ecosystem (docs/issues/image-signature-verifier-home.md); acquisition fails closed under require-provenance and records unsigned images as provenance none, so nothing passes silently"
+content_hash: "d1c67a7d6c58a0e2459a6917601464a1169a7976a5292650ae6b71fdbed0371a"
+source_hash: "29800b792ad75d911b998bc6cf8713230e9ae104e41bdc75b4780a3ccea314b7"
+lands { manual { condition: "an offline image-signature verifier is homed and plugged into the acquisition seam" } }

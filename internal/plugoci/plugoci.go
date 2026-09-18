@@ -23,6 +23,7 @@ import (
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/genfile"
 	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/trust"
 )
 
@@ -133,6 +134,10 @@ type Acquired struct {
 	// Rootfs is the exported root filesystem — the store's shared
 	// export-cache entry; treat it as read-only.
 	Rootfs string
+	// Process is the image config's process: argv as Entrypoint then
+	// Cmd, exactly as OCI runtimes compose them, environment, and
+	// working directory.
+	Process plugexec.Process
 	// Pin is the lockfile pin the acquisition ran under, freshly
 	// recorded on first use.
 	Pin lockfile.PluginPin
@@ -159,6 +164,13 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if err != nil {
 		return nil, err
 	}
+	img, err := a.fs.Pull(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	// The pin records what resolved (REQ-lock-first-use) before the
+	// image's fitness as a plugin is judged: a resolution that
+	// happened is the record, entrypoint or not.
 	if !pinned {
 		if acq.resolved == "" {
 			return nil, fmt.Errorf("plugoci: %s: acquisition ran no verification seam", ref)
@@ -168,7 +180,16 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 			return nil, err
 		}
 	}
-	return &Acquired{Rootfs: rootfs, Pin: pin}, nil
+	cfg := img.ConfigFile()
+	argv := append(append([]string{}, cfg.Config.Entrypoint...), cfg.Config.Cmd...)
+	if len(argv) == 0 {
+		return nil, fmt.Errorf("plugoci: %s declares no entrypoint: a plugin image's entrypoint is its plugin process", ref)
+	}
+	return &Acquired{
+		Rootfs:  rootfs,
+		Process: plugexec.Process{Argv: argv, Env: cfg.Config.Env, WorkDir: cfg.Config.WorkingDir},
+		Pin:     pin,
+	}, nil
 }
 
 func (a *Acquirer) enter(target string, acq *acquisition) error {

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "attestations": [
+    {
+      "editDigest": "6cf00d97bf0a9929c15d11411cdac59fe6d8a2b6d3f7dcbf99f9870954a11ed6",
+      "rawEditDigest": "6cf00d97bf0a9929c15d11411cdac59fe6d8a2b6d3f7dcbf99f9870954a11ed6",
+      "files": [
+        "internal/dep/gen.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/dep",
+      "run": "TestGen",
+      "reason": "Equivalent: Deterministic governs map-field ordering only, and neither CodeGeneratorRequest nor the descriptor protos it carries declare a map field, so the wire bytes are identical either way (TestGenRequestDeterministic pins the byte-identity across runs). The flag stays as the declared intent of REQ-gen-request-determinism.",
+      "commit": "056697bc02d2d8a4c95d0d0eaf794109314bfe19",
+      "dirty": true
+    }
+  ]
+}

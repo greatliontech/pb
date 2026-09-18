@@ -62,11 +62,7 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 		path  string
 		files map[string][]string // proto file -> imports
 	}
-	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath, ver string) ([]byte, error) {
-		v, err := version.Parse(ver)
-		if err != nil {
-			return nil, err
-		}
+	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
 		return s.Client.Zip(ctx, modPath, v)
 	})
 	if err != nil {

@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-local-pin"
-reason: "Local-scheme binaries execute only within the plugin execution subsystem, not yet built"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "The local identity scheme is not implemented: generation refuses non-oci entries with an explicit error, so no local binary ever executes"
+content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
+source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
+lands { manual { condition: "the local identity scheme is implemented" } }

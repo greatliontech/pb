@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-rules-no-defaults"
 reason: "The rules engine is not yet built"
+content_hash: "b2772214745b35ae10f0bfe4464a48ffcb0b1e396daef1290388aecd649f07b4"
+source_hash: "2a6f781a791a25852a060646e646cf8dd263d514bd1e318a75ff4e5c4ade4f10"
 lands { manual { condition: "the rules engine is built" } }

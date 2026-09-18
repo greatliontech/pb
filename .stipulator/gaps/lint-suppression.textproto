@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-lint-suppression"
 reason: "The lint subsystem is not yet built"
+content_hash: "c3c82950021ea28e8f2f64da7dbe17b7c0d3bdea0f623b91343ae5f11b4067a5"
+source_hash: "9a2450d15fd1b2bf63eea331a93e28a7da1d51d8c7dc1cc12a0ed09e7838c943"
 lands { manual { condition: "the lint subsystem is built" } }

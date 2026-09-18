@@ -90,5 +90,21 @@ from the compiled set.
 
 **REQ-gen-out-containment** (invariant): Generated files MUST land only
 under the entry's declared output directory; a response naming a file
-that escapes it (absolute, or traversing above via `..`) fails
-generation.
+that escapes it (absolute, unclean, or traversing above via `..`)
+fails generation. Insertion points are unsupported: a response file
+carrying one fails generation rather than patching content pb never
+verified it against.
+
+**REQ-gen-verb** (behavior): `generate` MUST run generation at the
+working directory's resolution root: parse the generation file, compile
+the build (`REQ-gen-compile`), acquire every entry's plugin — verified
+and pinned, with the pins first use records persisted before any
+plugin executes and whatever follows, per `REQ-lock-first-use` — and
+then for each entry in declaration order build its request, execute
+its plugin under the trust policy's execution posture
+(`plugin-execution.md`, `provenance.md`), and land the response's
+files (`REQ-gen-out-containment`) — reporting each completed entry on
+standard output with its plugin reference, file count, output
+directory, reported sandbox tier, and the bound-enforcing mechanism in
+effect. An entry's failure fails the verb naming the entry; later
+entries do not run.

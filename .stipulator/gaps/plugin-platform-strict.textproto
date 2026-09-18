@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-plugin-platform-strict"
 reason: "checkPlatforms refuses with executed example witnesses (foreign-only index, bare manifest); the invariant-class property witness is outstanding"
+content_hash: "3d298e3b06d908cc46f82432af81c9bdb561b27c454c605184511801a155ffe3"
+source_hash: "957b9cc322ab4e8d6d8af669a385fd20b2110104fec26371515b279556bddbae"
 lands { manual { condition: "a property witness over arbitrary manifest lists exists" } }

@@ -45,7 +45,7 @@ func pushIndex(t *testing.T, ref string, platforms ...v1.Platform) string {
 		if err != nil {
 			t.Fatal(err)
 		}
-		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture})
+		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"A=1"}}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -103,6 +103,9 @@ func TestAcquireFirstUse(t *testing.T) {
 	}
 	if got.Pin.Digest != fx.digest || got.Pin.Scheme != lockfile.SchemeOCI || got.Pin.Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("pin = %+v, want digest %s provenance none", got.Pin, fx.digest)
+	}
+	if len(got.Process.Argv) != 1 || got.Process.Argv[0] != "/plugin" || len(got.Process.Env) != 1 {
+		t.Fatalf("image config not surfaced: %+v", got)
 	}
 	if _, ok := lock.Plugin(fx.host+"/org/plugin:v1", lockfile.SchemeOCI); !ok {
 		t.Fatal("pin not recorded")

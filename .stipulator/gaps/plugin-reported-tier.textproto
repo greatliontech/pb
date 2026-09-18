@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-reported-tier"
-reason: "The plugin execution subsystem is a later feature; plugin-image provenance rides it"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "The native runner derives Strong from the all-or-nothing application of its mechanisms, pinned by executed example witnesses; the invariant-class witness — and a second runner whose report could differ — is outstanding"
+content_hash: "e8d4789d7f0382fb9b6b0cc558a3d30d94fcd2efa5175008c2aa29bae2f4c7b1"
+source_hash: "78662996cda8b042e6242e9350cdc663dfaa215576f10523b2d6e736898d122a"
+lands { manual { condition: "the docker runner reports its own tier" } }

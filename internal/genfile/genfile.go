@@ -17,6 +17,7 @@ import (
 	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/rootpath"
 )
 
 // FileName is the generation file, at the resolution root.
@@ -378,24 +379,14 @@ func checkLocal(s string) error {
 }
 
 // checkOut accepts a clean relative forward-slash path that never
-// escapes the resolution root.
+// escapes the resolution root: the written-spelling rule of
+// committed configuration (backslashes are never separators) over the
+// shared containment judgment.
 func checkOut(s string) error {
-	if s == "" {
-		return errors.New("empty")
-	}
 	if strings.ContainsRune(s, '\\') {
 		return errors.New("paths are written with forward slashes")
 	}
-	if path.IsAbs(s) {
-		return fmt.Errorf("%q is absolute; out is relative to the resolution root", s)
-	}
-	if path.Clean(s) != s {
-		return fmt.Errorf("%q is not a clean path", s)
-	}
-	if s == ".." || strings.HasPrefix(s, "../") {
-		return fmt.Errorf("%q escapes the resolution root", s)
-	}
-	return nil
+	return rootpath.Check(s, "the resolution root")
 }
 
 func parseOverrides(n ast.Node) ([]Override, error) {

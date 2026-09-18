@@ -4,6 +4,7 @@
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
   content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,6 +14,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
   content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinnedIgnoresMovedTag"
   role: BINDING_ROLE_TESTS
@@ -22,6 +24,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
   content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
+  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinMismatchFailsClosed"
   role: BINDING_ROLE_TESTS
@@ -31,6 +34,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-platform-strict"
   content_hash: "3d298e3b06d908cc46f82432af81c9bdb561b27c454c605184511801a155ffe3"
+  source_hash: "957b9cc322ab4e8d6d8af669a385fd20b2110104fec26371515b279556bddbae"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.checkPlatforms"
   role: BINDING_ROLE_IMPLEMENTS
@@ -40,6 +44,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-platform-strict"
   content_hash: "3d298e3b06d908cc46f82432af81c9bdb561b27c454c605184511801a155ffe3"
+  source_hash: "957b9cc322ab4e8d6d8af669a385fd20b2110104fec26371515b279556bddbae"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePlatformStrict"
   role: BINDING_ROLE_TESTS
@@ -49,6 +54,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-verify-before-run"
   content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
+  source_hash: "4607207c0f0732b83d38eb7032c6a6d68e86a93b291008202ed769399ec819db"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -58,6 +64,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-verify-before-run"
   content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
+  source_hash: "4607207c0f0732b83d38eb7032c6a6d68e86a93b291008202ed769399ec819db"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireProvenancePolicy"
   role: BINDING_ROLE_TESTS
@@ -67,6 +74,7 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-core-verifies"
   content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
+  source_hash: "db9aaabd40d18604ae19de6a423708015b278107b77a16a70910c5666bce8a02"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -76,8 +84,279 @@ bindings {
 bindings {
   requirement_id: "REQ-plugin-core-verifies"
   content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
+  source_hash: "db9aaabd40d18604ae19de6a423708015b278107b77a16a70910c5666bce8a02"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireIdentityRuleFlows"
   role: BINDING_ROLE_TESTS
   shape_hash: "5bee0672019505f76e6631941a88645e7a7e757367408d02335be6b6e93cf63a"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-sandboxed"
+  content_hash: "0494e4368868a584fe67cca248ee106c54916a9cf92ed2a1e3fcc31e87add561"
+  source_hash: "de245ad882ba7cc17a5fc27e055a75cd28e8d8ccae758200e8ffb39c33d95cff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.ContainerRunner.Run"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4c26fb7c6766888aa1967dc67ceed8630f2074cd55c2a09dc53e04b2f2805ba4"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-sandboxed"
+  content_hash: "0494e4368868a584fe67cca248ee106c54916a9cf92ed2a1e3fcc31e87add561"
+  source_hash: "de245ad882ba7cc17a5fc27e055a75cd28e8d8ccae758200e8ffb39c33d95cff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunHappyPath"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "405f6530f9737b522e9335a5eaa5205693274861ff36422e8b1cba1a30185956"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-sandboxed"
+  content_hash: "0494e4368868a584fe67cca248ee106c54916a9cf92ed2a1e3fcc31e87add561"
+  source_hash: "de245ad882ba7cc17a5fc27e055a75cd28e8d8ccae758200e8ffb39c33d95cff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunNoNetwork"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "668f87ec653a9230be4cf09acb74434e5eac287e31c240f2eeba8dc363973a4c"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.ContainerRunner.Run"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4c26fb7c6766888aa1967dc67ceed8630f2074cd55c2a09dc53e04b2f2805ba4"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunWallClock"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7c3d1864e0749c1c101a1cf805f6862e793f3a1291761ef07e8a6d595c83a022"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunMemoryBound"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ea4903a96cde966c28829908de4fb431456cbece59d1e7e6363a7fc2e6be15f6"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-response-authority"
+  content_hash: "496d77949a59235e3800f320f8cc79959b75c3c09db26243ba39c40cbfa0331f"
+  source_hash: "e237b4d778724e5443afaee7c39734389fd33ea55cc07e1e72a82aea1bd52b83"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.Respond"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9d06897bf5feece7f056592557864a7a543185697ae323e877ddd3eab5e77b2d"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-response-authority"
+  content_hash: "496d77949a59235e3800f320f8cc79959b75c3c09db26243ba39c40cbfa0331f"
+  source_hash: "e237b4d778724e5443afaee7c39734389fd33ea55cc07e1e72a82aea1bd52b83"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRespond"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ab48576ed22a94d3cd98b3453cb351717930b270056eb8dc5f6d77ed6ee36046"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-min-tier"
+  content_hash: "f89f6770e46415ec69fb7eac2289acf075f616d0dbed9c5e7c2a1a471ae08e91"
+  source_hash: "482c9e63ffe84560e3eedec0325fdaeff364a00b51d434c77e3f2fd7e36490d9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Gen"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "200a1e94823381d3d017caa3f9a8f7a05965d59532e4ad90d368e3d8d95bf608"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-min-tier"
+  content_hash: "f89f6770e46415ec69fb7eac2289acf075f616d0dbed9c5e7c2a1a471ae08e91"
+  source_hash: "482c9e63ffe84560e3eedec0325fdaeff364a00b51d434c77e3f2fd7e36490d9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestGenTierFloor"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "630b4daeaa2d965ea3051f93436e437cfbfb79043213e3461d371ec1fde7b53d"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-no-privileged-source"
+  content_hash: "8b621bc0757aa7d83f5afaefcfab271231193e128e406313f2731d692fb122d5"
+  source_hash: "483db0761e0c33977c3c10040b3c2d2bb43c0f76357b5fe2950e50b50a15e387"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genfile.CheckReference"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "1867623bff25dcfbf64adf2b93a1e5440657d02cef39ba88166694f208606bff"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-no-privileged-source"
+  content_hash: "8b621bc0757aa7d83f5afaefcfab271231193e128e406313f2731d692fb122d5"
+  source_hash: "483db0761e0c33977c3c10040b3c2d2bb43c0f76357b5fe2950e50b50a15e387"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genfile.TestReferenceAccepts"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ef716fd51d55d14604656a4b1e3a12c94187f2123df35efc7e20c094eae21739"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-no-privileged-source"
+  content_hash: "8b621bc0757aa7d83f5afaefcfab271231193e128e406313f2731d692fb122d5"
+  source_hash: "483db0761e0c33977c3c10040b3c2d2bb43c0f76357b5fe2950e50b50a15e387"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/genfile.TestReferenceGrammarProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "45f861ed34085c8ab59f64b5adebc40f6a974a647057849e240ba6e969709bef"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-plain-oci"
+  content_hash: "86b93a0dd03c11196750ec0c5705af4b07d62fb68558a283a88b084c8ac7bdee"
+  source_hash: "9754576d8c06b57926da516b5eb03f49c51876a3c279f20e0a983297f9d927b1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.Acquire"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7863b2dce2fef9391290604df0d94684711dcfbeedc7b374c24737d8235bf2e0"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-plain-oci"
+  content_hash: "86b93a0dd03c11196750ec0c5705af4b07d62fb68558a283a88b084c8ac7bdee"
+  source_hash: "9754576d8c06b57926da516b5eb03f49c51876a3c279f20e0a983297f9d927b1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireFirstUse"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7f74c83fc65d5f1a138080ff5a6c031ac94a46d0bd051572b945aa48033fdd34"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestCgroupResources"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "84999549d58e1b21076d8084171c455ef17aed2604aa9f5a8726b156eab732cc"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRlimits"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0a93a2070985cf6a456e89d69319c5323cd8a54ff7d352a492f330baba2b1835"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestCgroupEventsExceeded"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "30cc7f8118530d5ed1641fff750bb06bdaa1881c8cef6fa58d55d34c00e0bcfd"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestCheckLimits"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "3ff51f2762617efd2a3b72ff90ec923800c3f499348761d6f41a88597ead95d3"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.TestEffectiveLimits"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4e4130fbfba9d8fef5633d34345c5a69fd9545eb5cdac50c488c9dc77059a072"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/trust.Execution.EffectiveLimits"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2b057329738c6247433f6d295179ba8f6370638cfbfd276f61638d0d3c75bb29"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-sandboxed"
+  content_hash: "0494e4368868a584fe67cca248ee106c54916a9cf92ed2a1e3fcc31e87add561"
+  source_hash: "de245ad882ba7cc17a5fc27e055a75cd28e8d8ccae758200e8ffb39c33d95cff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunReadonlyRoot"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "66f3374375877a6e92caf31dc3c1c2f02ec30ec5f1a45559cbc7f0c29bab0336"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunCancelled"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "adcacbc38105abdd9719017d2ab72184ebfe6e6510e58dbb0a77e2ab7b3bdb34"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestExitStatus"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e76a31c4c1a3a0efe28dfd46f00416fd288782de11793160322045b946aeeb78"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunCPUBoundRlimits"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "cbf2d2ec788afc305b90576149279ecdc2a84f551e17fc9ceee9fbf3962c9fc6"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestCgroup2Mount"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4b125ebaf8b430ba454741439f802e519f585d40e64ca6658a9bc5d757953ee6"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-resource-bounds"
+  content_hash: "2e4dcbad8c89758f85e4e40ee6da02e44cfd91c5127c405c03d81bdd36594262"
+  source_hash: "cd9230f030f9e94c6d35bc5be7f705cc2f4660e7f74a37d619ad01de33b29e2e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestCgroupDirOf"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "967d8995b4094617b46d4d5d201c91394e6d035efe58b83393af54f6d9ee73de"
 }

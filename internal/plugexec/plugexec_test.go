@@ -27,3 +27,22 @@ func TestVocabularyClosed(t *testing.T) {
 		}
 	}
 }
+
+// The tier order is total over the declared tiers, and an unrecognized
+// tier ranks with TierNone so any floor above None refuses it.
+func TestTierBelow(t *testing.T) {
+	order := []string{TierNone, TierMinimal, TierOS, TierStrong}
+	for i, lo := range order {
+		for j, hi := range order {
+			if got := TierBelow(lo, hi); got != (i < j) {
+				t.Errorf("TierBelow(%s, %s) = %v", lo, hi, got)
+			}
+		}
+	}
+	if !TierBelow("VM", TierMinimal) || !TierBelow("", TierStrong) {
+		t.Error("unrecognized tier did not rank below a raised floor")
+	}
+	if TierBelow("VM", TierNone) {
+		t.Error("unrecognized tier ranked below TierNone")
+	}
+}

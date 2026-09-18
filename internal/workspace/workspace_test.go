@@ -38,7 +38,7 @@ func TestParse(t *testing.T) {
 		"unknown key":           {"use: [.]\nextra: 1\n", `unknown key "extra"`},
 		"use not a list":        {"use: yes\n", "use must be a list"},
 		"entry not a string":    {"use:\n  - [a]\n", "use[0] must be a string"},
-		"empty entry":           {"use:\n  - \"\"\n", "empty directory"},
+		"empty entry":           {"use:\n  - \"\"\n", "empty path"},
 		"absolute entry":        {"use:\n  - /abs\n", "is absolute"},
 		"escaping entry":        {"use:\n  - ../out\n", "escapes the workspace root"},
 		"bare parent entry":     {"use:\n  - ..\n", "escapes the workspace root"},
@@ -531,8 +531,8 @@ func TestLoadForArms(t *testing.T) {
 
 	t.Run("load failure propagates", func(t *testing.T) {
 		fsys := fstest.MapFS{
-			"ws/pb.work":  file("use:\n  - missing\n"),
-			"ws/a/x.txt":  file(""),
+			"ws/pb.work": file("use:\n  - missing\n"),
+			"ws/a/x.txt": file(""),
 		}
 		if _, err := LoadFor(fsys, "ws/a"); err == nil ||
 			!strings.Contains(err.Error(), "not a declared module root") {

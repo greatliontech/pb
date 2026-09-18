@@ -2,5 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-plugin-runner-independence"
-reason: "A second runner is what makes independence falsifiable; no runner exists yet"
-lands { manual { condition: "the plugin execution subsystem is built" } }
+reason: "Only the native runner exists; a second runner is what makes runner independence falsifiable (the Result carries the tier and bounds mechanism and nothing the response could depend on)"
+content_hash: "0a9a6bc9804a99a4f571849e5d70130b923150dac940c84819262bc6269d7545"
+source_hash: "498022f858b6a7f702cb12bbc63195ee24b27fc13d14d1c3731774c3d50d39b8"
+lands { manual { condition: "the docker runner exists" } }

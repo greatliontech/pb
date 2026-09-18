@@ -76,8 +76,10 @@ func Load(cfg Config) (*Session, error) {
 
 	// The policy is the root's alone: reset before the conditional read
 	// so a reused client never carries the previous root's trust
-	// configuration into this session.
-	s.Client.Policy = nil
+	// configuration into this session. An absent policy file is the
+	// empty policy — the one place that default is folded, so no
+	// consumer handles a nil policy.
+	s.Client.Policy = &trust.Policy{}
 	trustPath := path.Join(root.Dir, trust.FileName)
 	if b, err := fs.ReadFile(fsys, trustPath); err == nil {
 		p, err := trust.Parse(b)

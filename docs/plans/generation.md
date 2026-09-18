@@ -14,12 +14,22 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
 - [x] 4. OCI plugin acquisition: manifest-list fetch, signature
       verification against the trust policy, platform-strict selection,
       digest pins, materialization through ocifs
-- [ ] 5. Native runner: export to rootfs, container backend behind the
+- [x] 5. Native runner: export to rootfs, container backend behind the
       runner seam, resource bounds, tier reporting, response authority,
-      out containment — `pb gen` end to end
-- [ ] 6. Runner selection and the docker runner: flag/env/config/
-      capability default, no silent fallback, runner independence
-- [ ] 7. `local` scheme: resolution, content-hash pins, policy gating,
-      bounds
-- [ ] 8. Plugin overrides: invocation-scoped substitution, lockfile
-      untouched, policy gating
+      out containment — `pb generate` end to end
+- [ ] 6. Runner selection: flag over environment over user configuration
+      over the capability default, an unavailable selected runner fails
+      naming it, no silent fallback — the seam `pb generate` picks its
+      runner through, with the native runner its only member
+- [ ] 7. Docker runner: verified store content into the daemon by a
+      trust-neutral byte path, `--network none --read-only` plus the
+      bounds, tier and bounds mechanism derived from the daemon's own
+      record of the created container, contract tests over a fake
+      `docker` on PATH and a live test where a daemon exists; runner
+      independence becomes falsifiable
+- [ ] 8. `local` scheme: PATH and root-relative resolution, content-hash
+      pins keyed by host platform, policy gating, bounds without a
+      sandbox (tier `None`)
+- [ ] 9. Plugin overrides: invocation-scoped substitution from an OCI
+      layout or archive, lockfile untouched in both directions, policy
+      gating, reported on standard error

@@ -3,4 +3,6 @@
 
 requirement_id: "REQ-archive-file-set"
 reason: "ValidateFileSet enforces the file-set rules with executed example witnesses; the structural-kind analyzer proof the clause calls for is outstanding"
+content_hash: "d3662ea885978841276d26675ebdfb0afcfa8295b335625b04205bba8651fe5a"
+source_hash: "9c8880165c6517f314e7c6e3c1a2e99d4d61760671dab5eefb5533f0733ae583"
 lands { manual { condition: "a structural analyzer witness for the file-set rules exists" } }

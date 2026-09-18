@@ -27,6 +27,7 @@ import (
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/modfile"
 	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/rootpath"
 	"github.com/greatliontech/pb/internal/version"
 )
 
@@ -95,17 +96,11 @@ func Parse(data []byte) (*File, error) {
 }
 
 // cleanUseDir validates a use entry: a relative, root-contained
-// directory path. "." is the workspace root itself.
+// directory path, cleaned in place. "." is the workspace root itself.
 func cleanUseDir(s string) (string, error) {
-	if s == "" {
-		return "", errors.New("empty directory")
-	}
-	if strings.HasPrefix(s, "/") {
-		return "", fmt.Errorf("directory %q is absolute; use entries are workspace-relative", s)
-	}
-	c := path.Clean(s)
-	if c == ".." || strings.HasPrefix(c, "../") {
-		return "", fmt.Errorf("directory %q escapes the workspace root", s)
+	c, err := rootpath.Clean(s, "the workspace root")
+	if err != nil {
+		return "", fmt.Errorf("use directory: %w", err)
 	}
 	return c, nil
 }

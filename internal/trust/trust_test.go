@@ -2,6 +2,7 @@ package trust
 
 import (
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -429,5 +430,22 @@ func TestExecutionValidSpellings(t *testing.T) {
 		if err != nil || p.Execution.Limits.Timeout != want {
 			t.Errorf("timeout %s = %v, %v; want %v", in, p.Execution.Limits.Timeout, err, want)
 		}
+	}
+}
+
+// EffectiveLimits folds each declared default independently and
+// leaves set fields alone; every field of the result is bounded.
+func TestEffectiveLimits(t *testing.T) {
+	got := (&Execution{}).EffectiveLimits()
+	if got.Memory != DefaultMemoryBytes || got.Pids != DefaultPids || got.Timeout != DefaultTimeout || got.CPU != float64(runtime.NumCPU()) {
+		t.Fatalf("zero limits = %+v", got)
+	}
+	set := Limits{Memory: 1 << 20, CPU: 2, Pids: 3, Timeout: time.Second}
+	if got := (&Execution{Limits: set}).EffectiveLimits(); got != set {
+		t.Fatalf("set limits changed: %+v", got)
+	}
+	partial := (&Execution{Limits: Limits{Pids: 9}}).EffectiveLimits()
+	if partial.Pids != 9 || partial.Memory != DefaultMemoryBytes || partial.Timeout != DefaultTimeout || partial.CPU <= 0 {
+		t.Fatalf("partial limits = %+v", partial)
 	}
 }

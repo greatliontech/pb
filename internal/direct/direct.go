@@ -75,9 +75,9 @@ type Repo struct {
 	refs     []origin.Ref
 	refsDone bool
 
-	commits  map[string]*object.Commit // full hash -> commit
-	hashes   []string                  // commit hashes, sorted
-	indexed  bool
+	commits map[string]*object.Commit // full hash -> commit
+	hashes  []string                  // commit hashes, sorted
+	indexed bool
 
 	ancestry map[string]map[string]bool // commit hash -> reachability set
 }
