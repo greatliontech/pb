@@ -29,6 +29,10 @@ import (
 // reorganize that cgroup to place the run's beside pb: its member
 // processes, pb's included, move into a leaf child for the cgroup's
 // lifetime; accounting outside the delegated cgroup is unchanged.
+// The memory bound is the whole of what the plugin may hold: under
+// cgroups the sandbox closes swap to the run, and under rlimits the
+// address-space cap includes it — as the docker runner's record must
+// show swap capped at the bound.
 type SandboxRunner struct {
 	// create makes the run's sandbox; nil means sandbox.New. Tests set
 	// it to drive the post-wait reading with a sandbox of their own.

@@ -14,5 +14,4 @@ doc is deleted (git holds history).
 | [image-signature-verifier-home](image-signature-verifier-home.md) | offline cosign-envelope verification has no home; require-provenance plugins fail closed until it does | user decision |
 | [runner-user-configuration](runner-user-configuration.md) | runner selection ranks a user-configuration layer that pb has no home for; flag, environment and the platform default are applied | user decision |
 | [docker-daemon-mounts](docker-daemon-mounts.md) | a Docker daemon binds its own /etc files and /dev/shm over the image root and injects PATH; REQ-plugin-sandboxed does not admit it | user decision |
-| [plugrun-native-memory-swap](plugrun-native-memory-swap.md) | sandbox bounds memory.max only, leaving swap unbounded under the native runner | sandbox writes memory.swap.max beside memory.max |
 | [local-scheme-darwin](local-scheme-darwin.md) | local plugins need the native runner, which exists on Linux only; macOS refuses every local entry | sandbox's darwin backend delivers a row |
