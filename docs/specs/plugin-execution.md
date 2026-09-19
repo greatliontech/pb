@@ -200,11 +200,20 @@ reported as a plugin failure naming the bound exceeded wherever the
 enforcing mechanism attributes the termination: the wall clock always,
 and otherwise as the mechanism's own accounting affords — under
 cgroups, memory kills and refused forks from the kernel's event
-counters where the runner reads them (the native runner) — a
-refused fork attributed only when the plugin then failed, since a
-refused fork the plugin survived terminated nothing — and the
-memory kill alone where the runner reads a daemon's record of the
-container (the `docker` runner), a refused fork there being the
+counters where the runner reads them (the native runner) — a memory
+kill attributed when the plugin died by a kill and one was counted
+over the run, the counter placing no kill in time; a refused fork
+when the plugin then failed — and the memory kill alone where the
+runner reads a daemon's record of the container (the `docker`
+runner): a plugin that died by a kill is read against the daemon's
+event log for the container around its finish, on the daemon's own
+clock, before the container's release, an oom event there being the
+memory bound — the record's own flag is set from that same event
+and places it nowhere in time, and a kill the daemon recorded
+nowhere is a death the record cannot tell apart; a kill or a
+refusal the plugin outlived terminated nothing of it, and its
+response, or its own failure, stands; a refused fork under the
+daemon being the
 plugin's own failure surfaced verbatim and an exit status of 137
 there being the CPU-time bound, an external kill, or the plugin's own
 exit 137, which that record cannot tell apart; CPU time, a POSIX

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,6 +47,19 @@ func fakeDocker(args []string) int {
 		}
 		fmt.Println("linux fakearch")
 	case "info":
+		if slices.Contains(args, "{{.SystemTime}}") {
+			// The daemon's clock: past the fake's finish stamp by a
+			// planted offset (daemon-now), a second by default, so a
+			// read sees the log up to then.
+			finished, _ := os.ReadFile(filepath.Join(dir, "finished"))
+			at, _ := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(finished)))
+			ahead := time.Second
+			if b, err := os.ReadFile(filepath.Join(dir, "daemon-now")); err == nil {
+				ahead, _ = time.ParseDuration(strings.TrimSpace(string(b)))
+			}
+			fmt.Println(at.Add(ahead).Format(time.RFC3339Nano))
+			return 0
+		}
 		if b, err := os.ReadFile(filepath.Join(dir, "info.json")); err == nil {
 			os.Stdout.Write(b)
 		} else {
@@ -100,6 +114,34 @@ func fakeDocker(args []string) int {
 		}
 	case "kill":
 		os.WriteFile(filepath.Join(dir, "killed"), nil, 0o644)
+	case "events":
+		// The planted oom event sits at an offset from the record's
+		// finish stamp; it is reported only inside the --since/--until
+		// window, as the daemon filters its log.
+		if _, err := os.Stat(filepath.Join(dir, "events-fail")); err == nil {
+			fmt.Fprintln(os.Stderr, "Error response from daemon: events refused by the fake")
+			return 1
+		}
+		offset, err := os.ReadFile(filepath.Join(dir, "oom-event"))
+		if err != nil {
+			return 0
+		}
+		d, _ := time.ParseDuration(strings.TrimSpace(string(offset)))
+		finished, _ := os.ReadFile(filepath.Join(dir, "finished"))
+		at, _ := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(finished)))
+		at = at.Add(d)
+		var since, until time.Time
+		for i := 0; i+1 < len(args); i++ {
+			switch args[i] {
+			case "--since":
+				since, _ = time.Parse(time.RFC3339Nano, args[i+1])
+			case "--until":
+				until, _ = time.Parse(time.RFC3339Nano, args[i+1])
+			}
+		}
+		if !at.Before(since) && !at.After(until) {
+			fmt.Println("oom")
+		}
 	case "rm", "rmi":
 		if _, err := os.Stat(filepath.Join(dir, "release-fails")); err == nil {
 			fmt.Fprintln(os.Stderr, "Error response from daemon: release refused by the fake")
@@ -182,6 +224,12 @@ func fakeRecord(dir string) map[string]any {
 	state := map[string]any{"Status": "created", "ExitCode": 0, "OOMKilled": false}
 	if b, err := os.ReadFile(filepath.Join(dir, "state.json")); err == nil {
 		json.Unmarshal(b, &state)
+	}
+	if _, planted := state["FinishedAt"]; state["Status"] == "exited" && !planted {
+		// The daemon stamps a finished container's finish on its own
+		// clock; it is kept for the event log. A planted stamp stands.
+		state["FinishedAt"] = time.Now().UTC().Format(time.RFC3339Nano)
+		os.WriteFile(filepath.Join(dir, "finished"), []byte(state["FinishedAt"].(string)), 0o644)
 	}
 	rec["State"] = state
 	return rec

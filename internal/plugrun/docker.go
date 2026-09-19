@@ -33,10 +33,17 @@ import (
 // before it starts, never from the flags pb passed
 // (REQ-plugin-reported-tier): a record that does not show the
 // boundary, or that recorded other bounds, refuses the run before it
-// runs. Attribution reads the record after the run: the daemon
-// records a memory kill; it exposes no refused-fork counter, so a
-// fork the process bound refused is not attributable here and the
-// plugin's own failure is surfaced verbatim.
+// runs. Attribution reads the daemon after the run: a plugin that
+// died by a kill is read against the daemon's event log for the
+// container around its finish, an oom event there being the memory
+// bound — the record's own flag is set from that same event and
+// places it nowhere in time, so a kill the plugin outlived sets it
+// too; a kill the daemon recorded nowhere, which it can lose under
+// load, is a death the record cannot tell apart and is reported as
+// such (docs/issues/docker-oom-event-lost.md); the daemon exposes
+// no refused-fork counter, so a fork the process bound refused is
+// not attributable here and the plugin's own failure is surfaced
+// verbatim.
 type DockerRunner struct {
 	// CLI is the docker command, resolved on PATH; "docker" when
 	// empty.
@@ -139,10 +146,10 @@ type dockerRecord struct {
 	}
 	AppArmorProfile string
 	State           struct {
-		Status    string
-		ExitCode  int
-		OOMKilled bool
-		Error     string
+		Status     string
+		ExitCode   int
+		Error      string
+		FinishedAt string // the daemon's clock, RFC 3339 with nanoseconds
 	}
 }
 
@@ -246,7 +253,20 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 		// exit status is the daemon's, not the plugin's.
 		return nil, fmt.Errorf("plugrun: starting the plugin process: %s (stderr: %s)", after.State.Error, tailBytes(stderr.Bytes()))
 	}
-	if err := dockerOutcome(after, limits, runCtx.Err(), ctx.Err()); err != nil {
+	// A death by kill is read against the daemon's event log for the
+	// container around its finish, before the container is released
+	// (REQ-plugin-resource-bounds): the record's flag is set from that
+	// same oom event but places it nowhere in time — a kill the plugin
+	// outlived early in the run sets it too. The clock's kill emits no
+	// oom event.
+	memoryKill := false
+	if after.diedByKill() {
+		memoryKill, err = r.oomEvent(ctx, container, after)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := dockerOutcome(after, limits, runCtx.Err(), ctx.Err(), memoryKill); err != nil {
 		return nil, fmt.Errorf("%w (stderr: %s)", err, tailBytes(stderr.Bytes()))
 	}
 	return &Result{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), ExitCode: after.State.ExitCode, Tier: tier, Bounds: bounds}, nil
@@ -357,6 +377,64 @@ func (r *DockerRunner) inspect(ctx context.Context, container string) (dockerRec
 		return dockerRecord{}, fmt.Errorf("plugrun: the daemon's record of the container is unreadable: %v", err)
 	}
 	return recs[0], nil
+}
+
+// The window around a container's finish, on the daemon's clock, in
+// which the oom event that ended it lands. Measured on Docker 29.7.2
+// (cgroup v2, the systemd driver), idle and loaded, the event
+// followed the finish by three to seven milliseconds in every run
+// and never preceded it; the arm before the finish admits a driver
+// ordering the two the other way by a little, and no more, since
+// every millisecond of it admits a kill the plugin outlived as its
+// death. A kill it outlived lies further back.
+const (
+	oomEventBefore = 100 * time.Millisecond
+	oomEventAfter  = 250 * time.Millisecond
+)
+
+// diedByKill reports the death a bound's kill is: status 137, the
+// daemon's report of a SIGKILL.
+func (rec dockerRecord) diedByKill() bool { return rec.State.ExitCode == 137 }
+
+// oomEvent reads the daemon's event log for the container around its
+// finish, on the daemon's own clock — the record's finish stamp, and
+// the daemon's time now — so no skew between this host and the
+// daemon moves the window: an oom event there is the daemon's record
+// of the kill the plugin died by, the one record that places it in
+// time. The log's end is the daemon's present, or
+// the finish plus the event's lag where the read comes sooner, so
+// the read waits that lag at most. The log is a ring the daemon
+// keeps in memory, read right after the run. The read is bounded in
+// its own right, the caller's cancellation notwithstanding: the
+// outcome is reported even to a caller that gave up.
+func (r *DockerRunner) oomEvent(ctx context.Context, container string, rec dockerRecord) (bool, error) {
+	finished, err := time.Parse(time.RFC3339Nano, rec.State.FinishedAt)
+	if err != nil || finished.IsZero() {
+		return false, fmt.Errorf("plugrun: the daemon's record of the container carries no finish time (%q)", rec.State.FinishedAt)
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	out, err := r.docker(ctx, nil, "info", "--format", "{{.SystemTime}}")
+	if err != nil {
+		return false, fmt.Errorf("plugrun: reading the daemon's time: %w", err)
+	}
+	now, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(out)))
+	if err != nil {
+		return false, fmt.Errorf("plugrun: the daemon's time is unreadable: %v", err)
+	}
+	until := finished.Add(oomEventAfter)
+	if now.After(until) {
+		until = now
+	}
+	out, err = r.docker(ctx, nil, "events",
+		"--since", finished.Add(-oomEventBefore).UTC().Format(time.RFC3339Nano),
+		"--until", until.UTC().Format(time.RFC3339Nano),
+		"--filter", "container="+container, "--filter", "event=oom",
+		"--format", "{{.Action}}")
+	if err != nil {
+		return false, fmt.Errorf("plugrun: reading the daemon's event log for the container: %w", err)
+	}
+	return slices.Contains(strings.Fields(string(out)), "oom"), nil
 }
 
 // deriveTier reads the tier off the daemon's record: Strong where the
@@ -473,14 +551,17 @@ func deriveBounds(rec dockerRecord, l trust.Limits) (Accounting, error) {
 }
 
 // dockerOutcome reads a finished container into its report, in the
-// order the facts bind: the memory kill the daemon recorded; then a
+// order the facts bind: the memory kill the daemon's event log
+// places at the plugin's death (memoryKill, read for a death by kill
+// alone — a kill the plugin outlived terminated nothing of it, and
+// its response, or its own failure, stands); then a
 // container that never ran to an exit — the run context ended before
 // or during the start, the caller's cancellation or the wall clock,
 // or else a daemon fault; then a status of 137, which the record
 // cannot tell apart between the CPU-time bound, an external kill and
 // the plugin's own exit 137; and nothing otherwise.
-func dockerOutcome(rec dockerRecord, l trust.Limits, clock, parent error) error {
-	if rec.State.OOMKilled {
+func dockerOutcome(rec dockerRecord, l trust.Limits, clock, parent error, memoryKill bool) error {
+	if memoryKill {
 		return fmt.Errorf("%w: memory (%d bytes) (enforced by %s)", ErrBoundExceeded, l.Memory, BoundsCgroups)
 	}
 	ended := clock != nil && (rec.State.ExitCode == 137 || rec.State.Status != "exited")

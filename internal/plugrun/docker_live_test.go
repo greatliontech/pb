@@ -99,8 +99,48 @@ func TestDockerLive(t *testing.T) {
 	if time.Since(start) > 30*time.Second {
 		t.Fatal("the kill did not end the run promptly")
 	}
-	if _, err := liveRun(t, r, behavior.Hog, limits(func(l *trust.Limits) { l.Memory = 64 << 20; l.Timeout = time.Minute })); !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "memory (67108864 bytes) (enforced by cgroups)") {
+	// The memory bound is the daemon's recorded kill. The daemon can
+	// lose that record under load (docs/issues/docker-oom-event-lost.md;
+	// measured at 14% to 27% of loaded runs on Docker 29.7.2), in
+	// which case the death is reported as one the record cannot tell
+	// apart; a run so reported is retried, and the loss counted, so
+	// the arm proves the attribution where the daemon recorded the
+	// kill and states each time it did not. Six attempts put a total
+	// loss below one run in two thousand at the higher rate.
+	const attempts = 6
+	lost := 0
+	for attempt := 1; ; attempt++ {
+		_, err := liveRun(t, r, behavior.Hog, limits(func(l *trust.Limits) { l.Memory = 64 << 20; l.Timeout = time.Minute }))
+		if errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "memory (67108864 bytes) (enforced by cgroups)") {
+			break
+		}
+		if err != nil && !errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "the plugin's own exit 137") {
+			lost++
+			t.Logf("memory bound, attempt %d: the daemon recorded no kill (%v)", attempt, err)
+			if attempt < attempts {
+				continue
+			}
+			t.Fatalf("the daemon lost the memory kill's record %d of %d times (docs/issues/docker-oom-event-lost.md), so the attribution went unwitnessed", lost, attempts)
+		}
 		t.Fatalf("memory bound: %v", err)
+	}
+	if lost > 0 {
+		t.Logf("the daemon lost the memory kill's record %d time(s) before recording one", lost)
+	}
+	// A CPU-time death is a 137 with no memory kill: the daemon's
+	// event log is consulted on its own clock and finds none, within
+	// the read's bounded wait.
+	if runtime.NumCPU() < 2 {
+		t.Log("one core: the CPU-time death, and the event log read it exercises, not run — a harness cap")
+	} else {
+		start := time.Now()
+		_, err := liveRun(t, r, behavior.Spin, limits(func(l *trust.Limits) { l.CPU = 1; l.Timeout = 20 * time.Second }))
+		if err == nil || errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "the CPU-time bound (20s over 1 cores, enforced by rlimits), an external kill, or the plugin's own exit 137") {
+			t.Fatalf("CPU-time death: %v", err)
+		}
+		if elapsed := time.Since(start); elapsed > 20*time.Second {
+			t.Fatalf("the event log read outran the run: %s", elapsed)
+		}
 	}
 }
 

@@ -244,25 +244,52 @@ func TestDockerOutcome(t *testing.T) {
 	cases := []struct {
 		name   string
 		state  string
+		plant  string // a fake-daemon marker file, or an oom event's offset from the finish
+		now    string // the daemon's clock past the finish at the read; a second when empty
 		hang   bool
 		cancel bool
 		is     error
 		text   string
 		exit   int
+		events bool // the daemon's event log consulted
 	}{
-		{"memory kill", `{"Status":"exited","ExitCode":137,"OOMKilled":true}`, false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0},
-		{"wall clock", "", true, false, ErrBoundExceeded, "wall clock (300ms, enforced by the runner)", 0},
-		{"cancelled", "", true, true, context.Canceled, "cancelled", 0},
-		{"status 137", `{"Status":"exited","ExitCode":137}`, false, false, nil, "the CPU-time bound (1m30s over 2 cores, enforced by rlimits), an external kill, or the plugin's own exit 137", 0},
-		{"plugin exit", `{"Status":"exited","ExitCode":7}`, false, false, nil, "", 7},
-		{"never ran", `{"Status":"created","ExitCode":0}`, false, false, nil, `did not run to an exit (status "created")`, 0},
-		{"start error", `{"Status":"created","ExitCode":127,"Error":"exec: \"/nope\": no such file"}`, false, false, nil, `starting the plugin process: exec: "/nope": no such file`, 0},
-		{"clean", `{"Status":"exited","ExitCode":0}`, false, false, nil, "", 0},
+		{"memory kill", `{"Status":"exited","ExitCode":137,"OOMKilled":true}`, "5ms", "", false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0, true},
+		{"memory kill in the event log alone", `{"Status":"exited","ExitCode":137}`, "5ms", "", false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0, true},
+		{"memory kill just before the exit", `{"Status":"exited","ExitCode":137}`, "-50ms", "", false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0, true},
+		{"memory kill outlived a second, then a death by another kill", `{"Status":"exited","ExitCode":137}`, "-1s", "", false, false, nil, "the CPU-time bound (1m30s over 2 cores, enforced by rlimits), an external kill, or the plugin's own exit 137", 0, true},
+		{"memory kill logged late, before the read", `{"Status":"exited","ExitCode":137}`, "600ms", "", false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0, true},
+		{"memory kill logged after a quick read, within the floor", `{"Status":"exited","ExitCode":137}`, "100ms", "10ms", false, false, ErrBoundExceeded, "memory (67108864 bytes) (enforced by cgroups)", 0, true},
+		{"memory kill logged after a quick read, past the floor", `{"Status":"exited","ExitCode":137}`, "300ms", "10ms", false, false, nil, "the CPU-time bound (1m30s over 2 cores, enforced by rlimits), an external kill, or the plugin's own exit 137", 0, true},
+		{"flag alone, the log placing no kill at the death", `{"Status":"exited","ExitCode":137,"OOMKilled":true}`, "", "", false, false, nil, "the CPU-time bound (1m30s over 2 cores, enforced by rlimits), an external kill, or the plugin's own exit 137", 0, true},
+		{"memory kill the plugin outlived", `{"Status":"exited","ExitCode":0,"OOMKilled":true}`, "-30s", "", false, false, nil, "", 0, false},
+		{"memory kill outlived, then its own failure", `{"Status":"exited","ExitCode":7,"OOMKilled":true}`, "-30s", "", false, false, nil, "", 7, false},
+		{"memory kill outlived, then the clock", "", "-30s", "", true, false, ErrBoundExceeded, "wall clock (300ms, enforced by the runner)", 0, true},
+		{"event log unreadable", `{"Status":"exited","ExitCode":137}`, "events-fail", "", false, false, nil, "reading the daemon's event log for the container", 0, true},
+		{"record without a finish stamp", `{"Status":"exited","ExitCode":137,"FinishedAt":"yesterday"}`, "", "", false, false, nil, "carries no finish time", 0, false},
+		{"record with a zero finish stamp", `{"Status":"exited","ExitCode":137,"FinishedAt":"0001-01-01T00:00:00Z"}`, "", "", false, false, nil, "carries no finish time", 0, false},
+		{"wall clock", "", "", "", true, false, ErrBoundExceeded, "wall clock (300ms, enforced by the runner)", 0, true},
+		{"cancelled", "", "", "", true, true, context.Canceled, "cancelled", 0, true},
+		{"status 137", `{"Status":"exited","ExitCode":137}`, "", "", false, false, nil, "the CPU-time bound (1m30s over 2 cores, enforced by rlimits), an external kill, or the plugin's own exit 137", 0, true},
+		{"plugin exit", `{"Status":"exited","ExitCode":7}`, "", "", false, false, nil, "", 7, false},
+		{"never ran", `{"Status":"created","ExitCode":0}`, "", "", false, false, nil, `did not run to an exit (status "created")`, 0, false},
+		{"start error", `{"Status":"created","ExitCode":127,"Error":"exec: \"/nope\": no such file"}`, "", "", false, false, nil, `starting the plugin process: exec: "/nope": no such file`, 0, false},
+		{"clean", `{"Status":"exited","ExitCode":0}`, "", "", false, false, nil, "", 0, false},
 	}
 	for _, c := range cases {
 		dir := fakeDaemon(t)
 		if c.state != "" {
 			os.WriteFile(filepath.Join(dir, "state.json"), []byte(c.state), 0o644)
+		}
+		if c.now != "" {
+			os.WriteFile(filepath.Join(dir, "daemon-now"), []byte(c.now), 0o644)
+		}
+		if c.plant == "events-fail" {
+			os.WriteFile(filepath.Join(dir, c.plant), nil, 0o644)
+		} else if c.plant != "" {
+			// An oom event at an offset from the finish: the kill that
+			// ended the plugin lands milliseconds around it; one the
+			// plugin outlived lies further back.
+			os.WriteFile(filepath.Join(dir, "oom-event"), []byte(c.plant), 0o644)
 		}
 		if c.hang {
 			os.WriteFile(filepath.Join(dir, "start"), []byte("hang"), 0o644)
@@ -292,9 +319,30 @@ func TestDockerOutcome(t *testing.T) {
 		}
 		res, err := r.Run(ctx, dockerSpec(t, exportFixture(t), limits))
 		cancel()
-		verbs, _ := fakeLog(t, dir)
+		verbs, argv := fakeLog(t, dir)
 		if c.hang && !slices.Contains(verbs, "kill") {
 			t.Errorf("%s: the container was not killed: %v", c.name, verbs)
+		}
+		// The event log is consulted exactly where the record leaves
+		// a 137 unattributed, for this container's oom events, and
+		// before the container's release.
+		if i := slices.Index(verbs, "events"); (i >= 0) != c.events {
+			t.Errorf("%s: event log consulted %v: %v", c.name, i >= 0, verbs)
+		} else if i >= 0 {
+			if rm := slices.Index(verbs, "rm"); rm >= 0 && rm < i {
+				t.Errorf("%s: the event log read after the release: %v", c.name, verbs)
+			}
+			for _, want := range []string{"container=fakecontainer", "event=oom"} {
+				if !slices.Contains(argv[i], want) {
+					t.Errorf("%s: events %q lacks %s", c.name, argv[i], want)
+				}
+			}
+			if !slices.Contains(argv[i], "--until") || !slices.Contains(argv[i], "--since") {
+				t.Errorf("%s: an event read without a window: %q", c.name, argv[i])
+			}
+			if j := slices.IndexFunc(argv, func(a []string) bool { return a[0] == "info" && slices.Contains(a, "{{.SystemTime}}") }); j < 0 || j > i {
+				t.Errorf("%s: the daemon's time not read before its log: %v", c.name, verbs)
+			}
 		}
 		if c.text == "" {
 			if err != nil || res.ExitCode != c.exit {

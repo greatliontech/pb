@@ -181,6 +181,10 @@ func startError(scheme string, err error, stderr []byte) error {
 	return fmt.Errorf("plugrun: starting the plugin process: %w (stderr: %s)", err, tailBytes(stderr))
 }
 
+// diedByKill reports the death a bound's kill is: the plugin ended by
+// SIGKILL, not by an exit of its own.
+func diedByKill(es sandbox.ExitStatus) bool { return es.Signaled && es.Signal == syscall.SIGKILL }
+
 // waitFailed tells a wait that failed from a wait that reports the
 // run context's own end: the kill the context issued can land on a
 // payload already exiting, and the sandbox then returns the context's
@@ -192,9 +196,12 @@ func waitFailed(werr, clock error) bool {
 
 // outcome reads a finished run into its report, in the order the
 // facts bind (REQ-plugin-resource-bounds): a bound the accounting
-// counted names itself whatever else happened — a memory kill the
-// cgroup counted is the memory bound, a fork it refused the process
-// bound if the plugin then failed; then the run context's end — the
+// counted names itself where it ended the plugin — a memory kill the
+// cgroup counted is the memory bound when the plugin died by a kill,
+// the counter placing no kill in time; a fork it refused the process
+// bound when the plugin then failed; a kill or refusal the plugin
+// outlived terminated nothing of it, and its response, or its own
+// failure, stands; then the run context's end — the
 // caller's cancellation, or the wall clock, whose kill can land on a
 // payload already exiting, in which case the wait error is the
 // context's own and reads the same way; then a SIGKILL nothing
@@ -208,7 +215,7 @@ func waitFailed(werr, clock error) bool {
 // cgroup before reading the counters, so a bound counted in that
 // same instant is not seen and the clock names the end.
 func outcome(es sandbox.ExitStatus, st sandbox.Stats, l trust.Limits, clock, parent, werr error) error {
-	if st.MemoryKills > 0 {
+	if st.MemoryKills > 0 && diedByKill(es) {
 		return fmt.Errorf("%w: memory (%d bytes) (enforced by %s)", ErrBoundExceeded, l.Memory, st.Accounting)
 	}
 	if st.ForksRefused > 0 && es.Code != 0 {
