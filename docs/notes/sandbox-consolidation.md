@@ -5,10 +5,10 @@ sandbox and lifted its tier contract into container; on 2026-09-01
 sandbox was un-parked with a policy-level contract
 (`../sandbox/docs/specs/sandbox.md`) and its own Linux mechanism
 layer seeded from container's create path, maintained as an
-independent replica (twin records: sandbox's
-`docs/issues/linux-mechanism-replica.md`, container's
-`docs/issues/sandbox-create-path-replica.md`; any kernel-rule fix
-lands in both copies).
+independent twin (each copy's own: sandbox's `internal/nslinux`
+package doc and container's package doc state the obligation; a
+kernel-rule fix lands in both copies, a contract-level rule is each
+copy's own).
 
 Read from first principles, sandbox's contract is pb's runner
 contract, and container's is not:

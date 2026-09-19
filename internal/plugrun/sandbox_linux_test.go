@@ -74,12 +74,20 @@ func probeSandbox() (unavailable string, err error) {
 	return "", nil
 }
 
+// requireSandbox skips a live native arm where the Strong row is
+// unavailable, unless PB_TEST_REQUIRE_SANDBOX demands it: a host that
+// was meant to deliver the row — continuous integration, the
+// user-namespace knob opened — fails instead of skipping past every
+// native arm.
 func requireSandbox(t *testing.T) {
 	t.Helper()
 	if harnessErr != nil {
 		t.Fatal(harnessErr)
 	}
 	if sandboxUnavailable != "" {
+		if os.Getenv("PB_TEST_REQUIRE_SANDBOX") != "" {
+			t.Fatalf("PB_TEST_REQUIRE_SANDBOX is set and the Strong row is unavailable on this host: %s", sandboxUnavailable)
+		}
 		t.Skipf("the Strong row is unavailable on this host: %s", sandboxUnavailable)
 	}
 }
@@ -107,8 +115,16 @@ func (s Spec) withParam(t *testing.T, param string) Spec {
 
 // accounting reports which bounds accounting this host affords the
 // runner — the sandbox's choice, not the runner's — and fails where
-// PB_TEST_REQUIRE_CGROUPS demands cgroups the host does not give
-// (docs/issues/plugrun-cgroups-live-coverage.md).
+// PB_TEST_REQUIRE_CGROUPS demands cgroups the host does not give.
+// The sandbox places a run in a cgroup only inside a delegated
+// subtree, which a plain interactive session is not: the live
+// cgroups arms run locally under
+//
+//	systemd-run --user --scope -p Delegate=yes env PB_TEST_REQUIRE_CGROUPS=1 go test ./internal/plugrun/
+//
+// and continuous integration demands them that way, the Strong row
+// itself (PB_TEST_REQUIRE_SANDBOX) and the docker arms
+// (PB_TEST_REQUIRE_DOCKER) beside them.
 func accounting(t *testing.T) Accounting {
 	t.Helper()
 	requireSandbox(t)

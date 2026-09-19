@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # No toolchain is fetched: the one installed below is the one
+      # every step runs with.
+      GOTOOLCHAIN: local
+      # Two of the organization's modules are private: the module
+      # proxy cannot serve them, and the job's own token reads this
+      # repository alone.
+      GOPRIVATE: github.com/greatliontech/sandbox,github.com/greatliontech/gitprov
+    steps:
+      - uses: actions/checkout@v4
+      # The current release, tracking patches: it satisfies go.mod's
+      # floor and the pinned spec verifier's own, so neither pins the
+      # other's toolchain.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      # The organization's app, whose token reads the sibling
+      # modules; go fetches them through git with it.
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.GLT_RELEASER_APP_ID }}
+          private-key: ${{ secrets.GLT_RELEASER_APP_KEY }}
+          owner: greatliontech
+      - name: Read the organization's modules with the app's token
+        run: git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+      # The native runner's Strong row needs unprivileged user
+      # namespaces; Ubuntu 24.04 restricts them through AppArmor for
+      # unconfined programs. A host without the knob has no such
+      # restriction; a host with it that refuses the write fails here.
+      - name: Allow unprivileged user namespaces
+        run: |
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          else
+            echo "no AppArmor user-namespace restriction on this host"
+          fi
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "$unformatted"; exit 1; fi
+      - run: go mod tidy -diff
+      - run: go build ./...
+      - run: go vet ./...
+      - run: GOOS=darwin go vet ./...
+      # The runner suite runs once, below, with its live arms demanded;
+      # running it here too would only double its exposure to the
+      # daemon's own losses.
+      - run: go test $(go list ./... | grep -v /internal/plugrun) -count=1 -timeout=30m
+      # The runner suite's live arms — the Strong row, the cgroups bound
+      # accounting the sandbox places a run under only inside a delegated
+      # cgroup subtree, and the docker runner against the daemon the
+      # runner image carries — are demanded: a host that cannot deliver
+      # the row or delegate, or whose daemon does not answer, fails this
+      # leg instead of letting the arms skip.
+      - name: Live runner arms under a delegated scope, against the daemon
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 go test ./internal/plugrun/ -count=1 -timeout=30m
+      # The spec corpus against the tree: every requirement's witnesses
+      # executed, the live ones included — the runner suite's bound
+      # witnesses run a second time here, the whole suite having run
+      # above (its unbound tests are the leg's alone); the memory
+      # arm's exposure to the daemon's own record loss doubles with
+      # it, from about one job in three thousand to one in fifteen
+      # hundred at the worst measured rate, which is accepted.
+      - name: Spec verification
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 go run github.com/greatliontech/stipulator/cmd/stipulator@v0.64.11 check

@@ -224,6 +224,9 @@ func TestDockerLivePull(t *testing.T) {
 	// daemon on this host reaches: a remote daemon, or one in a
 	// virtual machine (Docker Desktop), is skipped, not failed.
 	if host := os.Getenv("DOCKER_HOST"); runtime.GOOS != "linux" || (host != "" && !strings.HasPrefix(host, "unix://")) {
+		if os.Getenv("PB_TEST_REQUIRE_DOCKER") != "" {
+			t.Fatalf("PB_TEST_REQUIRE_DOCKER is set and the daemon is not on this host's loopback (GOOS %s, DOCKER_HOST %q)", runtime.GOOS, host)
+		}
 		t.Skipf("the daemon is not on this host's loopback (GOOS %s, DOCKER_HOST %q)", runtime.GOOS, host)
 	}
 	srv := httptest.NewServer(registry.New(registry.Logger(log.New(io.Discard, "", 0))))
@@ -296,7 +299,9 @@ func TestDockerLivePull(t *testing.T) {
 	}
 	// A digest the registry does not hold is the daemon's refusal.
 	unknown := host + "/live/plugin@sha256:" + strings.Repeat("1", 64)
-	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: unknown, Pull: true, Platform: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	if _, err := r.Run(ctx, Spec{Scheme: plugexec.SchemeOCI, Image: unknown, Pull: true, Platform: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
 		t.Fatalf("an unknown digest: %v", err)
 	}
 }
