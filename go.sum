@@ -297,8 +297,6 @@ github.com/googleapis/enterprise-certificate-proxy v0.3.14 h1:yh8ncqsbUY4shRD5dA
 github.com/googleapis/enterprise-certificate-proxy v0.3.14/go.mod h1:vqVt9yG9480NtzREnTlmGSBmFrA+bzb0yl0TxoBQXOg=
 github.com/googleapis/gax-go/v2 v2.19.0 h1:fYQaUOiGwll0cGj7jmHT/0nPlcrZDFPrZRhTsoCr8hE=
 github.com/googleapis/gax-go/v2 v2.19.0/go.mod h1:w2ROXVdfGEVFXzmlciUU4EdjHgWvB5h2n6x/8XSTTJA=
-github.com/greatliontech/container v0.0.0-20260901072710-3fbf8ac1abe8 h1:jv5zx1/j6nvQHR2xRdXhY+3QLOX3QX6PyCIuzDdACYU=
-github.com/greatliontech/container v0.0.0-20260901072710-3fbf8ac1abe8/go.mod h1:z26t3/GC4PPal1EshGPym+JhamxUm7Jvrp+Qd69SV0U=
 github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc h1:Cu0Pt0ba4CjEOvTZhzHKzTNvN8ILDHKRDN1MBTyQ8Mk=
 github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc/go.mod h1:jtWzTgVyGS88Sb1+hXAykPyCjAMIvxEJeWS4r2PO3B8=
 github.com/greatliontech/glob v0.2.0 h1:OmPq3qe+eyaMykavqdqRF6ChmC+FWwpd7b7O4up5IWU=
@@ -309,6 +307,8 @@ github.com/greatliontech/ocifs v0.6.0 h1:vz6DHLmEtqCq1FJS6ODYc9pvaTRCENEuwqNHFNc
 github.com/greatliontech/ocifs v0.6.0/go.mod h1:Utxj5RqUP1hSUkARXsIpaeLVNekoHzvuOk9sDm4ce30=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f h1:ULmJKRCC/FL9qFX1C2vlBC5ZOUnijeKaLCbrwx/iZQI=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f/go.mod h1:sCgbiWNeAJbqqg8yp0ywR2XTc59q8hpZJ8nzm538dnc=
+github.com/greatliontech/sandbox v0.0.0-20260919004508-9fbed1dac4b0 h1:AuOI9ntUKsGmGPzIdodXSVe5pgtQxBSxfehs46junpQ=
+github.com/greatliontech/sandbox v0.0.0-20260919004508-9fbed1dac4b0/go.mod h1:MVcyyIHa1BH+vo2+Tk1CT0kC1jDcLuLS1kr+waKMGuc=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0 h1:VlS2R0BC1oTBRePffJtkwjzy1jf0Cozphab/fqD/AJw=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0/go.mod h1:EamD9lGjaQ52lCU4ja1oKftZ7PMrDTC1Th9kVxBgSWk=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=
@@ -437,8 +437,6 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
-github.com/opencontainers/runtime-spec v1.3.0 h1:YZupQUdctfhpZy3TM39nN9Ika5CBWT5diQ8ibYCRkxg=
-github.com/opencontainers/runtime-spec v1.3.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
 github.com/pborman/getopt v0.0.0-20180811024354-2b5b3bfb099b/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
@@ -749,10 +747,6 @@ honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 k8s.io/klog/v2 v2.130.1 h1:n9Xl7H1Xvksem4KFG4PYbdQCQxqc/tTUyrgXaOhHSzk=
 k8s.io/klog/v2 v2.130.1/go.mod h1:3Jpz1GvMt720eyJH1ckRHK1EDfpxISzJ7I9OYgaDtPE=
-kernel.org/pub/linux/libs/security/libcap/cap v1.2.77 h1:iQtQTjFUOcTT19fI8sTCzYXsjeVs56et3D8AbKS2Uks=
-kernel.org/pub/linux/libs/security/libcap/cap v1.2.77/go.mod h1:oV+IO8kGh0B7TxErbydDe2+BRmi9g/W0CkpVV+QBTJU=
-kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 h1:Z06sMOzc0GNCwp6efaVrIrz4ywGJ1v+DP0pjVkOfDuA=
-kernel.org/pub/linux/libs/security/libcap/psx v1.2.77/go.mod h1:+l6Ee2F59XiJ2I6WR5ObpC1utCQJZ/VLsEbQCD8RG24=
 pgregory.net/rapid v1.3.0 h1:vBvO0VSqti75J1jjYqpgPNBLKMd1+gxa9fYo7vk/Exc=
 pgregory.net/rapid v1.3.0/go.mod h1:dPlE4OBBxgXPqkP79flB6sJL1dx5azpI7HQ9MY9Z7uk=
 sigs.k8s.io/yaml v1.6.0 h1:G8fkbMSAFqgEFgh4b1wmtzDnioxFCUgTZhlbj5P9QYs=

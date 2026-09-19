@@ -2,6 +2,18 @@
   "version": 2,
   "attestations": [
     {
+      "editDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
+      "rawEditDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
+      "files": [
+        "internal/plugrun/sandbox_linux.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/plugrun",
+      "run": "^Test",
+      "reason": "checkLimits refuses a Spec with any zero limit before New, and sandbox's contract reports AccountingNone only when no limit was stated, so a bounded run never reaches this branch with AccountingNone; the guard is the runtime check of the Structural-check gate over a state the seam cannot construct",
+      "commit": "c505c53c5845acf18c3cd5ed55137b5dca3bc484",
+      "dirty": true
+    },
+    {
       "editDigest": "6cf00d97bf0a9929c15d11411cdac59fe6d8a2b6d3f7dcbf99f9870954a11ed6",
       "rawEditDigest": "6cf00d97bf0a9929c15d11411cdac59fe6d8a2b6d3f7dcbf99f9870954a11ed6",
       "files": [

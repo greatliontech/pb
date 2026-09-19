@@ -17,15 +17,21 @@ import (
 )
 
 // Spec is one plugin run: the image rootfs, its process, the request
-// bytes on stdin, and the bounds. Limits is the trust policy's
-// effective posture (trust.Execution.EffectiveLimits): every field
-// set. A zero field is an unbounded resource, and a runner refuses it
-// rather than guessing (REQ-plugin-resource-bounds).
+// bytes on stdin, the bounds, and the tier floor. Limits is the trust
+// policy's effective posture (trust.Execution.EffectiveLimits): every
+// field set. A zero field is an unbounded resource, and a runner
+// refuses it rather than guessing (REQ-plugin-resource-bounds).
+// MinTier is the policy's effective floor (trust.Execution
+// .EffectiveMinTier), a plugexec tier name: a runner whose host
+// cannot reach it runs nothing and fails with ErrTierUnreachable
+// (REQ-plugin-min-tier); an absent floor is refused like an
+// unbounded resource.
 type Spec struct {
 	Rootfs  string
 	Process plugexec.Process
 	Stdin   []byte
 	Limits  trust.Limits
+	MinTier string
 }
 
 // Result is what a run reports: the plugin's stdout and stderr bytes,
@@ -52,6 +58,11 @@ const (
 // bound; the wrapping error names the bound and the mechanism that
 // enforced it.
 var ErrBoundExceeded = errors.New("plugin exceeded a resource bound")
+
+// ErrTierUnreachable is the class of a run refused because the host
+// reaches no sandbox tier at or above Spec.MinTier; the wrapping
+// error states the tier the host reaches and why. Nothing ran.
+var ErrTierUnreachable = errors.New("the host cannot reach the required sandbox tier")
 
 // Runner executes one plugin process (REQ-plugin-sandboxed for the
 // native runner; each runner reports its own tier).

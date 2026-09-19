@@ -31,8 +31,8 @@ written into the shared export, the delegated-cgroup placement — is
 either sandbox's stated obligation or its API. So the consolidation
 runs the original way after all: **pb's native runner is sandbox**;
 container stays the mechanism-level, Linux-only runtime it is,
-independent by design, and leaves pb's dependency graph once the
-runner moves.
+independent by design, and has left pb's dependency graph with the
+runner's move.
 
 ## Layering for pb
 
@@ -44,11 +44,17 @@ pb (fetch manifest-list + verify + platform-strict)
 
 ## Sandbox-side work pb's runner needs
 
-Tracked in `../sandbox/docs/plans/strong-backend.md`: the Strong world
-(landed), hardening (capability drop, seccomp, no_new_privs, network
-denial), bounds with reported accounting — folding in the
-delegated-cgroup placement rule container landed (vacate the
-delegated cgroup into a leaf, enable controllers in one write) and
-the honest CPU attribution (a namespace init never receives SIGXCPU)
-— and row selection with derived tiers. pb's runner moves once the
-Strong row is delivered whole.
+Delivered by sandbox's strong-backend plan: the Strong world,
+hardening (capability drop, seccomp behind an arch guard,
+no_new_privs, network denial), bounds with reported accounting —
+carrying the delegated-cgroup placement rule container landed (vacate
+the delegated cgroup into a leaf, enable controllers in one write) —
+and row selection with derived tiers and `MinTier` failing closed.
+pb's native runner runs on it. Two consequences pb's runner states:
+the CPU-time bound is RLIMIT_CPU under every accounting (sandbox has
+no CPU quota), so an uncounted SIGKILL reads the same under cgroups
+and rlimits; and on a host reaching only the Minimal row an `oci`
+plugin cannot run at all — the row can neither deny the network nor
+restrict the world to the export, both of which REQ-plugin-sandboxed
+requires on every tier — so lowering the policy's floor below `OS`
+admits nothing until an `OS` row exists.

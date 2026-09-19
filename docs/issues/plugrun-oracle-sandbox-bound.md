@@ -3,10 +3,10 @@
 Lands: gomutant grows an allowance for oracles that construct kernel
 sandboxes (namespaces, mounts, cgroups)
 
-plugrun's runner suite executes a real container per test — fresh
+plugrun's runner suite executes a real sandbox per test — fresh
 namespaces, a pivoted read-only root, cgroup or rlimit bounds — so its
 runtime inputs (kernel state, mount tables, cgroup filesystems) fall
-outside gomutant's observation bracket and every ContainerRunner.Run
+outside gomutant's observation bracket and every SandboxRunner.Run
 mutant is classified unstable-oracle. The suite is genuinely
 adversarial (isolation, network absence, exit codes, wall clock,
 memory bounds, and read-only root are each asserted against a live

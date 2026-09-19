@@ -2,8 +2,8 @@
 
 package plugrun
 
-// NativeRunner returns the platform's native runner: container's
-// pure-Go create path on Linux.
+// NativeRunner returns the platform's native runner: sandbox's
+// create-only backend on Linux.
 func NativeRunner() (Runner, error) {
-	return &ContainerRunner{}, nil
+	return &SandboxRunner{}, nil
 }

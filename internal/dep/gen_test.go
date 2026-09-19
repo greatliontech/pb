@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	iofs "io/fs"
@@ -117,6 +118,16 @@ func TestGenTierFloor(t *testing.T) {
 	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierOS, Bounds: plugrun.BoundsCgroups}}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "tier OS, below the required Strong") || !strings.Contains(err.Error(), "lower the floor explicitly") {
+		t.Fatalf("err = %v", err)
+	}
+	// The floor reaches the runner, and a runner refusing below it
+	// before anything runs is reported with the same lowering path.
+	if run.spec.MinTier != plugexec.TierStrong {
+		t.Fatalf("runner received floor %q", run.spec.MinTier)
+	}
+	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the minimal row; strong required", plugrun.ErrTierUnreachable)}
+	err = Gen(ctx, s, GenDeps{Acquirer: acq, Runner: refusing}, &strings.Builder{})
+	if !errors.Is(err, plugrun.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the minimal row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
 	// An explicitly lowered floor accepts the same run.

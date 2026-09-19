@@ -17,7 +17,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
 - [x] 5. Native runner: export to rootfs, container backend behind the
       runner seam, resource bounds, tier reporting, response authority,
       out containment — `pb generate` end to end
-- [ ] 6. Native runner over sandbox: the runner seam's Spec mapped to
+- [x] 6. Native runner over sandbox: the runner seam's Spec mapped to
       intent (the export as `Root`, no grants, the policy's limits, the
       tier floor as `MinTier`), tier and bounds accounting consumed as
       reported, container out of the dependency graph; the three

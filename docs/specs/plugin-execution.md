@@ -145,14 +145,14 @@ reported as a plugin failure naming the bound exceeded wherever the
 enforcing mechanism attributes the termination: the wall clock always,
 and otherwise as the mechanism's own accounting affords — under
 cgroups, memory kills and refused forks from the kernel's event
-counters; under POSIX rlimits, CPU-time exhaustion arrives as an
-unlabeled kill and is reported as either the CPU-time bound or an
-external kill — never claimed as one — and a refused allocation or
-fork is not a termination and the plugin's own resulting failure is
-surfaced verbatim. The mechanism
-enforcing the bounds is machine-scoped, not mandated; a run's report
-names the mechanism actually in effect, so every failure is read
-against a named enforcement.
+counters; CPU time, a POSIX rlimit under every accounting, whose
+exhaustion arrives as an unlabeled kill and is reported as either the
+CPU-time bound or an external kill — never claimed as one; and under
+POSIX rlimits a refused allocation or fork is not a termination and
+the plugin's own resulting failure is surfaced verbatim. The
+mechanism enforcing the memory and process bounds is machine-scoped,
+not mandated; a run's report names the mechanism actually in effect,
+so every failure is read against a named enforcement.
 
 **REQ-plugin-min-tier** (behavior): `oci` execution MUST require sandbox
 tier `Strong` unless the trust policy explicitly lowers the requirement;

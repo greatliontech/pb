@@ -11,10 +11,10 @@ require (
 	github.com/go-openapi/swag/conv v0.26.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-containerregistry v0.22.0
-	github.com/greatliontech/container v0.0.0-20260901072710-3fbf8ac1abe8
 	github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/ocifs v0.6.0
+	github.com/greatliontech/sandbox v0.0.0-20260919004508-9fbed1dac4b0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/sigstore/gitsign v0.16.0
 	github.com/sigstore/protobuf-specs v0.5.1
@@ -24,10 +24,11 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.39.0
 	golang.org/x/net v0.58.0
-	golang.org/x/sys v0.47.0
 	google.golang.org/protobuf v1.36.11
 	pgregory.net/rapid v1.3.0
 )
+
+require golang.org/x/sys v0.47.0 // indirect
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
@@ -147,7 +148,6 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/opencontainers/runtime-spec v1.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -200,7 +200,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260316180232-0b37fe3546d5 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	kernel.org/pub/linux/libs/security/libcap/cap v1.2.77 // indirect
-	kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

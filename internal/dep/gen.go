@@ -105,6 +105,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 
 	limits := exec.EffectiveLimits()
 	minTier := exec.EffectiveMinTier()
+	// The one way past a tier refusal (REQ-plugin-min-tier).
+	const lowerFloorHint = "lower the floor explicitly in the trust policy's execution block to accept a weaker tier"
 	for i, entry := range gf.Plugins {
 		req, err := genrequest.Build(compiled.Files, gf.Overrides, entry.Opt)
 		if err != nil {
@@ -119,7 +121,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			Process: acquired[i].Process,
 			Stdin:   reqBytes,
 			Limits:  limits,
+			MinTier: minTier,
 		})
+		if errors.Is(err, plugrun.ErrTierUnreachable) {
+			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)
+		}
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
 		}
@@ -130,7 +136,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			return fmt.Errorf("generate: plugin %s: the runner reported no sandbox tier or bounds mechanism (tier %q, bounds %q)", entry.Ref, res.Tier, res.Bounds)
 		}
 		if plugexec.TierBelow(res.Tier, minTier) {
-			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; lower the floor explicitly in the trust policy's execution block to accept this", entry.Ref, res.Tier, minTier)
+			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Ref, res.Tier, minTier, lowerFloorHint)
 		}
 		resp, err := plugrun.Respond(res)
 		if err != nil {
