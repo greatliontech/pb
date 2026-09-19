@@ -702,16 +702,6 @@ bindings {
 }
 
 bindings {
-  requirement_id: "REQ-plugin-override"
-  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
-  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestStagingRequiresToken"
-  role: BINDING_ROLE_TESTS
-  shape_hash: "bee581e02cff486d5d1820bd580ceae55499b00bb7f311d079174913bf777445"
-}
-
-bindings {
   requirement_id: "REQ-plugin-core-verifies"
   content_hash: "7b925d944f77e13e156735a5b7dae196f375f351f60a1b39364c7cd8467c7e80"
   source_hash: "f95b524a17d0aaff4fcb09d5208f298494830fc937dc3ed836477bc683530b0c"
@@ -869,4 +859,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireAdmittedPlatform"
   role: BINDING_ROLE_TESTS
   shape_hash: "cce0b6b5cd1c3f58090e1bfbf139c154bfa05c16c8a10063139c2e3e9330d799"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestStagingIsInProcess"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ab821da6f5b55968f67d59ad12ae6be89a30065143a7ecc5adbe7974ed817a1f"
 }

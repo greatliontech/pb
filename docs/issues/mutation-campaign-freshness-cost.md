@@ -20,3 +20,14 @@ The change set's mutation evidence therefore rests on hand probes through
 attested) rather than a campaign record, and the clean-tree
 promotion commit the previous change sets made is outstanding for this
 one.
+
+The acquisition suite's campaign, once its registries were served
+in-process, measured its one target twice (eleven probes, forty-seven
+confirmations, one narrowed survivor re-scored under the full oracle
+with no disagreement) and was refused at the record both times for a
+tree change under it — a sibling's edits through a replace, then a
+re-staged binding; a third and fourth run were stopped by the
+session's memory guard, and a fifth, capped at 6 GiB with another
+campaign resident, died in gofresh's package-graph load. The
+oracle attributes; the record is unbanked for the same class of
+cost.

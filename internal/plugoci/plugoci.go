@@ -14,11 +14,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/genfile"
@@ -71,6 +73,10 @@ type Config struct {
 	Verifier    ImageVerifier
 	Platform    Platform
 	Credentials map[string]authn.AuthConfig
+	// Transport carries every round trip to a registry outside this
+	// process; nil is the registry client's own. A suite serving its
+	// registries in this process hands the transport serving them.
+	Transport http.RoundTripper
 	// Pull is the byte path an acquisition yields (plugin-execution.md
 	// REQ-plugin-core-verifies): the zero value exports from the store.
 	Pull PullMode
@@ -91,14 +97,13 @@ const (
 // Acquirer materializes plugin images: verified through the seam,
 // pinned in the lockfile, exported to a root filesystem.
 type Acquirer struct {
-	fs         *ocifs.OCIFS
-	staging    *staging // nil where the loopback bind failed; stagingErr says why
-	stagingErr error
-	lock       *lockfile.File
-	policy     *trust.Policy
-	verifier   ImageVerifier
-	platform   Platform
-	pull       PullMode
+	fs        *ocifs.OCIFS
+	transport *inProcessTransport // the staging in this process, then Config.Transport
+	lock      *lockfile.File
+	policy    *trust.Policy
+	verifier  ImageVerifier
+	platform  Platform
+	pull      PullMode
 
 	mu      sync.Mutex
 	pending map[string]*acquisition // digest-or-tag target -> in-flight state
@@ -135,36 +140,29 @@ func New(cfg Config) (*Acquirer, error) {
 		ocifs.WithDefaultPlatform(v1.Platform{OS: platform.OS, Architecture: platform.Arch}),
 		ocifs.WithVerifier(a.verify),
 	}
-	// The override staging binds a loopback port whose credential the
-	// store's keychain must hold from construction; a host refusing
-	// the bind refuses overrides alone, never acquisition.
-	if st, err := newStaging(); err != nil {
-		a.stagingErr = err
-	} else {
-		a.staging = st
-		opts = append(opts, ocifs.WithAuthSource(st.repo, st.auth()))
+	// The override staging is a registry in this process, served by
+	// the acquirer's own transport ahead of the one the caller hands.
+	base := cfg.Transport
+	if base == nil {
+		base = remote.DefaultTransport
 	}
+	a.transport = newInProcessTransport(base)
+	a.transport.serve(stagingHost, newStagingRegistry())
+	opts = append(opts, ocifs.WithTransport(a.transport))
 	for prefix, auth := range cfg.Credentials {
 		opts = append(opts, ocifs.WithAuthSource(prefix, auth))
 	}
 	fs, err := ocifs.New(opts...)
 	if err != nil {
-		if a.staging != nil {
-			a.staging.close()
-		}
 		return nil, err
 	}
 	a.fs = fs
 	return a, nil
 }
 
-// Close releases the store and the override staging.
+// Close releases the store.
 func (a *Acquirer) Close() error {
-	var stagingErr error
-	if a.staging != nil {
-		stagingErr = a.staging.close()
-	}
-	return errors.Join(stagingErr, a.fs.Close())
+	return a.fs.Close()
 }
 
 // Acquired is one materialized plugin image.

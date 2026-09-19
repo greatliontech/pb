@@ -6,18 +6,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/v1/layout"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"io"
 	"io/fs"
 	"log"
-	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -33,12 +33,22 @@ import (
 
 var ctx = context.Background()
 
-// fixture starts an in-memory registry and pushes a multi-platform
-// index (host platform + one foreign) at :v1.
+// fixture is an in-process registry, served by fixtures at a
+// reserved host, with a multi-platform index (host platform + one
+// foreign) pushed at :v1. No socket is bound: the suite's registry
+// round trips are calls, which is what lets a mutation oracle over
+// the acquirer be attributed.
 type fixture struct {
 	host   string
 	digest string // the index digest as pushed
 }
+
+// fixtures serves every fixture registry in this process, at a
+// reserved host each, and has no transport beyond them: the suite
+// dials nothing.
+var fixtures = newInProcessTransport(nil)
+
+var fixtureSerial atomic.Int64
 
 func hostPlatform() v1.Platform {
 	p := HostPlatform()
@@ -95,7 +105,7 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := remote.WriteIndex(r, idx); err != nil {
+	if err := remote.WriteIndex(r, idx, remote.WithTransport(fixtures)); err != nil {
 		t.Fatal(err)
 	}
 	h, err := idx.Digest()
@@ -107,9 +117,9 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	srv := httptest.NewServer(registry.New(registry.Logger(log.New(io.Discard, "", 0))))
-	t.Cleanup(srv.Close)
-	host := strings.TrimPrefix(srv.URL, "http://")
+	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
+	fixtures.serve(host, registry.New(registry.Logger(log.New(io.Discard, "", 0))))
+	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform(), v1.Platform{OS: "plan9", Architecture: "mips"})
 	return &fixture{host: host, digest: digest}
 }
@@ -117,10 +127,11 @@ func newFixture(t *testing.T) *fixture {
 func newAcquirer(t *testing.T, fx *fixture, lock *lockfile.File, policy *trust.Policy, verifier ImageVerifier) *Acquirer {
 	t.Helper()
 	a, err := New(Config{
-		WorkDir:  t.TempDir(),
-		Lock:     lock,
-		Policy:   policy,
-		Verifier: verifier,
+		WorkDir:   t.TempDir(),
+		Lock:      lock,
+		Policy:    policy,
+		Verifier:  verifier,
+		Transport: fixtures,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -222,7 +233,7 @@ func TestAcquirePlatformStrict(t *testing.T) {
 	bare := fx.host + "/org/bare:v1"
 	img, _ := random.Image(64, 1)
 	r, _ := name.ParseReference(bare)
-	if err := remote.Write(r, img); err != nil {
+	if err := remote.Write(r, img, remote.WithTransport(fixtures)); err != nil {
 		t.Fatal(err)
 	}
 	_, err = a.Acquire(ctx, bare)
@@ -252,7 +263,7 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 	// The host's entry sits second: the admitted entry is the one
 	// that matched, not the first listed.
 	pushIndex(t, ref, v1.Platform{OS: "plan9", Architecture: "mips"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v9"})
-	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}, Pull: PullDaemon})
+	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -404,7 +415,7 @@ func TestAcquireExportFailureFailsClosed(t *testing.T) {
 	fx := newFixture(t)
 	lock := &lockfile.File{}
 	work := t.TempDir()
-	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}})
+	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -690,52 +701,182 @@ func TestAcquireOverrideRefusals(t *testing.T) {
 	}
 }
 
-// The staging registry answers the store alone: a request without
-// the acquirer's token is refused, the ping excepted.
-func TestStagingRequiresToken(t *testing.T) {
-	fx := newFixture(t)
-	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	for _, c := range []struct {
-		path   string
-		token  string
-		status int
-	}{
-		{"/v2/", "", http.StatusOK},
-		{"/v2/override/tags/list", "", http.StatusUnauthorized},
-		{"/v2/override/tags/list", "wrong", http.StatusUnauthorized},
-		{"/v2/override/tags/list", a.staging.token, http.StatusNotFound},
-	} {
-		req, _ := http.NewRequest("GET", "http://"+a.staging.host+c.path, nil)
-		if c.token != "" {
-			req.Header.Set("Authorization", "Bearer "+c.token)
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-		resp.Body.Close()
-		if resp.StatusCode != c.status {
-			t.Errorf("%s with token %q: %d, want %d", c.path, c.token, resp.StatusCode, c.status)
-		}
+// closeRecorder is a request body that records its close.
+type closeRecorder struct {
+	io.Reader
+	closed bool
+}
+
+func (c *closeRecorder) Close() error { c.closed = true; return nil }
+
+// recordingBase is a transport beyond the in-process hosts that
+// records what reaches it and answers nothing.
+type recordingBase struct{ hosts []string }
+
+func (b *recordingBase) RoundTrip(req *http.Request) (*http.Response, error) {
+	b.hosts = append(b.hosts, req.URL.Host)
+	if req.Body != nil {
+		req.Body.Close()
+	}
+	return nil, errors.New("beyond this process")
+}
+
+// The in-process transport keeps the round tripper's contract: the
+// caller's request is served through a copy — a handler mutating
+// what it is served leaves the caller's headers and URL as they
+// were — its body left in place and closed after the trip, and a
+// request without a body is served one, so a handler reading it
+// sees the wire's non-nil body.
+func TestInProcessTransportKeepsTheCallersRequest(t *testing.T) {
+	seen := make(chan *http.Request, 1)
+	mutating := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Set("X-Served", "mutated")
+		r.URL.Path = "/mutated"
+		seen <- r
+		w.WriteHeader(http.StatusNoContent)
+	})
+	tr := newInProcessTransport(nil)
+	host := "contract" + reservedDomain
+	tr.serve(host, mutating)
+	body := &closeRecorder{Reader: strings.NewReader("payload")}
+	req, err := http.NewRequest(http.MethodPost, "https://"+host+"/v2/", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Body = body
+	req.Header.Set("X-Served", "caller")
+	resp, err := tr.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	served := <-seen
+	if served == req {
+		t.Fatal("the handler was served the caller's own request")
+	}
+	if got := req.Header.Get("X-Served"); got != "caller" {
+		t.Fatalf("the caller's header reads %q after the handler mutated its copy", got)
+	}
+	if req.URL.Path != "/v2/" {
+		t.Fatalf("the caller's path reads %q after the handler mutated its copy", req.URL.Path)
+	}
+	if req.Body != body {
+		t.Fatal("the caller's body was replaced")
+	}
+	if !body.closed {
+		t.Fatal("the caller's body was not closed")
+	}
+	if resp.Request != req {
+		t.Fatal("the response does not name the caller's request")
+	}
+	bare, err := http.NewRequest(http.MethodGet, "https://"+host+"/v2/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tr.RoundTrip(bare); err != nil {
+		t.Fatal(err)
+	}
+	if got := <-seen; got.Body == nil {
+		t.Fatal("a request without a body served without one")
 	}
 }
 
-// A host refusing the loopback bind refuses overrides alone: ordinary
-// acquisition runs, and an override names the staging failure.
-func TestStagingBindFailureIsOverridesOnly(t *testing.T) {
-	prev := listenStaging
-	listenStaging = func() (net.Listener, error) { return nil, errors.New("loopback bind denied by policy") }
-	t.Cleanup(func() { listenStaging = prev })
+// A host the transport does not hold goes to the transport beyond
+// it, and with none is refused with its body closed — a suite built
+// on the transport alone dials nothing; a released host is refused
+// the same way.
+func TestInProcessTransportRefusesUnknownHosts(t *testing.T) {
+	host := "held" + reservedDomain
+	held := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	get := func(tr http.RoundTripper, host string) error {
+		body := &closeRecorder{Reader: strings.NewReader("")}
+		req, err := http.NewRequest(http.MethodGet, "https://"+host+"/v2/", body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Body = body
+		resp, err := tr.RoundTrip(req)
+		if err == nil {
+			resp.Body.Close()
+		}
+		if !body.closed {
+			t.Fatalf("%s: the body left open", host)
+		}
+		return err
+	}
+
+	alone := newInProcessTransport(nil)
+	alone.serve(host, held)
+	if err := get(alone, host); err != nil {
+		t.Fatalf("a held host: %v", err)
+	}
+	if err := get(alone, "unknown"+reservedDomain); err == nil || !strings.Contains(err.Error(), "no transport beyond it") {
+		t.Fatalf("an unknown host with no transport beyond: %v", err)
+	}
+	alone.serve(host, nil)
+	if err := get(alone, host); err == nil || !strings.Contains(err.Error(), "no transport beyond it") {
+		t.Fatalf("a released host: %v", err)
+	}
+
+	base := &recordingBase{}
+	beyond := newInProcessTransport(base)
+	beyond.serve(host, held)
+	if err := get(beyond, host); err != nil {
+		t.Fatalf("a held host beside a base: %v", err)
+	}
+	if err := get(beyond, "example.com"); err == nil || err.Error() != "beyond this process" {
+		t.Fatalf("an unknown host beside a base: %v", err)
+	}
+	if len(base.hosts) != 1 || base.hosts[0] != "example.com" {
+		t.Fatalf("the base saw %v, want the one unknown host", base.hosts)
+	}
+}
+
+// With no transport handed, the acquirer's round trips beyond this
+// process go through the registry client's own transport, as the
+// store's own default does (ocifs REQ-api-construction).
+func TestAcquirerDefaultsToTheRegistryClientsTransport(t *testing.T) {
+	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	if a.transport.base != remote.DefaultTransport {
+		t.Fatal("the transport beyond this process is not the registry client's own")
+	}
+}
+
+// The staging is a registry in this process: its host is under the
+// reserved domain no resolver answers (RFC 2606), an override staged
+// in one acquirer is invisible to another, and an acquisition
+// through the same transport still reaches the fixture registry
+// beside it.
+func TestStagingIsInProcess(t *testing.T) {
 	fx := newFixture(t)
 	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	if _, err := a.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil {
-		t.Fatalf("acquisition without staging: %v", err)
-	}
-	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", t.TempDir()); err == nil || !strings.Contains(err.Error(), "override staging: loopback bind denied by policy") {
-		t.Fatalf("override without staging: %v", err)
-	}
-	if err := a.Close(); err != nil {
+	b := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	dir := t.TempDir()
+	if _, err := layout.Write(dir, indexFor(t, hostPlatform())); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", dir); err != nil {
+		t.Fatal(err)
+	}
+	staged, err := name.ParseReference(stagingRepo + ":override")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := remote.Index(staged, remote.WithTransport(a.transport)); err != nil {
+		t.Fatalf("the staged index through its own acquirer's transport: %v", err)
+	}
+	if _, err := remote.Index(staged, remote.WithTransport(b.transport)); err == nil {
+		t.Fatal("an override staged in one acquirer is visible to another")
+	}
+	if !strings.HasSuffix(stagingHost, ".invalid") {
+		t.Fatalf("the staging host %q is not under the reserved domain", stagingHost)
+	}
+	if _, err := b.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil {
+		t.Fatalf("an acquisition beside the staging: %v", err)
 	}
 }
 
@@ -761,7 +902,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	fx := newFixture(t)
 	lock := &lockfile.File{}
 	work := t.TempDir()
-	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Pull: PullDaemon})
+	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -811,7 +952,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if err := wrong.AddPlugin(lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("0", 64)}); err != nil {
 		t.Fatal(err)
 	}
-	b, err := New(Config{WorkDir: t.TempDir(), Lock: wrong, Policy: &trust.Policy{}, Pull: PullDaemon})
+	b, err := New(Config{WorkDir: t.TempDir(), Lock: wrong, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}

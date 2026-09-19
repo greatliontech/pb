@@ -3,18 +3,16 @@ package plugoci
 import (
 	"archive/tar"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -25,67 +23,96 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
 
-// staging is the acquirer's loopback registry for overrides: content
-// pb read from the invocation's own files reaches the store by the
-// one byte path the store verifies. It answers only the store's
-// requests — a bearer token minted at construction, held by the
-// store's keychain for this repository and by nothing else — so no
-// other local process reads what is staged or pushes into it.
-type staging struct {
-	srv   *http.Server
-	host  string
-	token string
-	repo  string
+// reservedDomain is the domain the acquirer's in-process hosts are
+// named under: reserved (RFC 2606), so no resolver answers them and
+// a round trip for one that escaped the acquirer's transport fails
+// rather than reaches a host.
+const reservedDomain = ".pb.invalid"
+
+// stagingHost names the override staging; stagingRepo is the
+// repository overrides are staged under.
+const (
+	stagingHost = "override" + reservedDomain
+	stagingRepo = stagingHost + "/override"
+)
+
+// newStagingRegistry returns the acquirer's registry for overrides,
+// the handler its transport serves in this process at stagingHost:
+// content pb read from the invocation's own files reaches the store
+// by the one byte path the store verifies, and nothing else reads
+// what is staged or pushes into it.
+func newStagingRegistry() http.Handler {
+	return registry.New(registry.Logger(log.New(io.Discard, "", 0)))
 }
 
-// stagingRepository is the loopback repository overrides are staged
-// under.
-const stagingRepository = "override"
+// inProcessTransport serves round trips for the hosts it holds by
+// their handlers in this process — no socket is bound — and every
+// other by base; with no base, a host it does not hold is refused,
+// so a suite built on it dials nothing. A response is buffered
+// whole, so a staged blob is held in memory as it is read where a
+// socket would stream it, and a HEAD's carries the content length
+// beside an empty body, which the registry client reads by header.
+type inProcessTransport struct {
+	base     http.RoundTripper
+	mu       sync.Mutex
+	handlers map[string]http.Handler
+}
 
-// listenStaging binds the staging registry's loopback port; tests
-// point it at a host that refuses.
-var listenStaging = func() (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
+func newInProcessTransport(base http.RoundTripper) *inProcessTransport {
+	return &inProcessTransport{base: base, handlers: map[string]http.Handler{}}
+}
 
-func newStaging() (*staging, error) {
-	l, err := listenStaging()
-	if err != nil {
-		return nil, fmt.Errorf("override staging: %w", err)
+// serve holds h for host; a nil h releases the host.
+func (t *inProcessTransport) serve(host string, h http.Handler) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if h == nil {
+		delete(t.handlers, host)
+		return
 	}
-	var tok [24]byte
-	rand.Read(tok[:])
-	s := &staging{host: l.Addr().String(), token: hex.EncodeToString(tok[:])}
-	s.repo = s.host + "/" + stagingRepository
-	inner := registry.New(registry.Logger(log.New(io.Discard, "", 0)))
-	s.srv = &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// The version ping is open, as every client sends it before
-		// authenticating; everything else carries the token.
-		if r.URL.Path != "/v2/" && r.Header.Get("Authorization") != "Bearer "+s.token {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		inner.ServeHTTP(w, r)
-	})}
-	go s.srv.Serve(l)
-	return s, nil
+	t.handlers[host] = h
 }
 
-func (s *staging) auth() authn.AuthConfig { return authn.AuthConfig{RegistryToken: s.token} }
-
-func (s *staging) close() error { return s.srv.Close() }
+func (t *inProcessTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	h, ok := t.handlers[req.URL.Host]
+	t.mu.Unlock()
+	if !ok {
+		if t.base == nil {
+			if req.Body != nil {
+				req.Body.Close()
+			}
+			return nil, fmt.Errorf("%s: no handler in this process and no transport beyond it", req.URL.Host)
+		}
+		return t.base.RoundTrip(req)
+	}
+	// The round tripper's contract: the caller's request is not
+	// mutated and its body is closed. The handler is served a copy
+	// with the non-nil body the wire would give it.
+	served := req.Clone(req.Context())
+	if served.Body == nil {
+		served.Body = http.NoBody
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, served)
+	if req.Body != nil {
+		req.Body.Close()
+	}
+	resp := rec.Result()
+	resp.Request = req
+	return resp, nil
+}
 
 // AcquireOverride materializes an override for the entry declared as
 // ref from source — a directory holding an OCI layout, or a file
 // holding an OCI layout archive or a docker-save tarball — leaving
 // the lockfile untouched in both directions: no pin is written and
 // the entry's pin is not consulted (REQ-plugin-override). The content
-// is staged on the acquirer's loopback registry and pulled through
-// the seam by digest, which runs the platform check and the trust
+// is staged on the acquirer's registry in this process and pulled
+// through the seam by digest, which runs the platform check and the trust
 // policy against the declared reference exactly as for any
 // acquisition (REQ-plugin-verify-before-run, REQ-plugin-core-verifies).
 func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*Acquired, error) {
-	if a.staging == nil {
-		return nil, fmt.Errorf("plugoci: override %s for %s: %w", source, ref, a.stagingErr)
-	}
 	idx, release, err := loadOverride(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("plugoci: override %s for %s: %w", source, ref, err)
@@ -99,14 +126,14 @@ func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*Ac
 	if err != nil {
 		return nil, fmt.Errorf("plugoci: override %s for %s: %w", source, ref, err)
 	}
-	tag, err := name.ParseReference(a.staging.repo + ":override")
+	tag, err := name.ParseReference(stagingRepo + ":override")
 	if err != nil {
 		return nil, err
 	}
-	if err := remote.WriteIndex(tag, idx, remote.WithContext(ctx), remote.WithAuth(authn.FromConfig(a.staging.auth()))); err != nil {
+	if err := remote.WriteIndex(tag, idx, remote.WithContext(ctx), remote.WithTransport(a.transport)); err != nil {
 		return nil, fmt.Errorf("plugoci: override %s for %s: staging: %w", source, ref, err)
 	}
-	target := a.staging.repo + "@" + digest.String()
+	target := stagingRepo + "@" + digest.String()
 	acq := &acquisition{declaredRef: ref}
 	if err := a.enter(target, acq); err != nil {
 		return nil, err

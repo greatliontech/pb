@@ -303,8 +303,8 @@ github.com/greatliontech/glob v0.2.0 h1:OmPq3qe+eyaMykavqdqRF6ChmC+FWwpd7b7O4up5
 github.com/greatliontech/glob v0.2.0/go.mod h1:2GCLEmzSHTM+1L3ZxH7gr4CEAOwPM1N1SEyk8R25Ke0=
 github.com/greatliontech/gmdb v0.5.1 h1:/QFjIqP3ggaeb8kK2AH6s5DGG8tXK2adfoM5gJJkt2o=
 github.com/greatliontech/gmdb v0.5.1/go.mod h1:CJu3Qd3W9XbT/vB8sVOUZBjrqmY9ULxVmJHSrHLeOgE=
-github.com/greatliontech/ocifs v0.7.0 h1:EMIBl0EP4xNOEmJ4A4err90XIQy3aPXIGDPzuNXi/W0=
-github.com/greatliontech/ocifs v0.7.0/go.mod h1:Utxj5RqUP1hSUkARXsIpaeLVNekoHzvuOk9sDm4ce30=
+github.com/greatliontech/ocifs v0.7.1 h1:wM4RiIvI3wkNHRZQWQC0vRJlcPP4DYVBKdShkCJFXd0=
+github.com/greatliontech/ocifs v0.7.1/go.mod h1:Utxj5RqUP1hSUkARXsIpaeLVNekoHzvuOk9sDm4ce30=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f h1:ULmJKRCC/FL9qFX1C2vlBC5ZOUnijeKaLCbrwx/iZQI=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f/go.mod h1:sCgbiWNeAJbqqg8yp0ywR2XTc59q8hpZJ8nzm538dnc=
 github.com/greatliontech/sandbox v0.2.0 h1:Z+Ift/sL1XkLqLDTduV7gpZp4DLpJn6+xYwcWxWQvPo=
