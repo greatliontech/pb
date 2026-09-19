@@ -62,7 +62,10 @@ raw-byte order.
 
 **REQ-lock-scalar-values** (wire): Every free-string fact — `version`,
 `san`, `issuer`, and `ref` — MUST be printable non-space ASCII, start
-with an alphanumeric character, not end with `:`, and not be a YAML null
+with an alphanumeric character — a `ref` alone may also start with
+`/` or `./`, the starts a `local` plugin's path is written with; `.`
+alone leads YAML's float spellings and is excluded — not end with
+`:`, and not be a YAML null
 spelling (`null`, `Null`, `NULL`, `~`). This bound is exactly what lets
 canonical emission write every value as an unquoted plain scalar that
 re-parses to the same bytes; values outside it are rejected on parse and

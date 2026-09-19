@@ -26,7 +26,15 @@ import (
 // cannot reach it runs nothing and fails with ErrTierUnreachable
 // (REQ-plugin-min-tier); an absent floor is refused like an
 // unbounded resource.
+//
+// Scheme is the entry's identity scheme: an oci run has Rootfs — the
+// image export — as its world; a local run has none, its Process a
+// host binary run in the host's world with the host's environment,
+// under the bounds alone, and reports sandbox tier None whatever the
+// substrate applied (plugin-execution.md, "Local binaries": the
+// downgrade is the scheme's, stated by the policy that admitted it).
 type Spec struct {
+	Scheme  string
 	Rootfs  string
 	Process plugexec.Process
 	Stdin   []byte
@@ -86,6 +94,24 @@ type Runner interface {
 func checkLimits(l trust.Limits) error {
 	if l.Memory == 0 || l.CPU <= 0 || l.Pids == 0 || l.Timeout <= 0 {
 		return fmt.Errorf("plugrun: refusing an unbounded run (memory %d, cpu %g, pids %d, timeout %s)", l.Memory, l.CPU, l.Pids, l.Timeout)
+	}
+	return nil
+}
+
+// checkScheme refuses a Spec whose scheme and world disagree: an oci
+// run has a rootfs, a local run has none, and no other scheme runs.
+func checkScheme(spec Spec) error {
+	switch spec.Scheme {
+	case plugexec.SchemeOCI:
+		if spec.Rootfs == "" {
+			return errors.New("plugrun: an oci run has no rootfs")
+		}
+	case plugexec.SchemeLocal:
+		if spec.Rootfs != "" {
+			return errors.New("plugrun: a local run carries a rootfs")
+		}
+	default:
+		return fmt.Errorf("plugrun: refusing a run with no identity scheme (%q)", spec.Scheme)
 	}
 	return nil
 }

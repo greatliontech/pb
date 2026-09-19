@@ -110,13 +110,23 @@ func checkPlainScalar(kind, s string) error {
 	bad := s == "" || s[len(s)-1] == ':' || s == "null" || s == "Null" || s == "NULL"
 	if !bad {
 		c := s[0]
-		bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
+		// A ref is a local plugin's path as written where it names
+		// one, so it may start with "/" or "./" — neither a YAML
+		// indicator, both re-parsing as themselves; "." alone leads
+		// the float spellings (.inf, .nan) and stays out. No other
+		// fact has a reason to start so.
+		pathStart := kind == "ref" && (c == '/' || strings.HasPrefix(s, "./"))
+		bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || pathStart)
 	}
 	for i := 0; !bad && i < len(s); i++ {
 		bad = s[i] < '!' || s[i] > '~'
 	}
 	if bad {
-		return fmt.Errorf("%s %q is not plain-scalar safe: values start alphanumeric, use printable non-space ASCII, are not a null spelling, and do not end with %q", kind, s, ":")
+		starts := "alphanumeric"
+		if kind == "ref" {
+			starts = `alphanumeric, with "/" or with "./"`
+		}
+		return fmt.Errorf("%s %q is not plain-scalar safe: values start %s, use printable non-space ASCII, are not a null spelling, and do not end with %q", kind, s, starts, ":")
 	}
 	return nil
 }
@@ -592,6 +602,35 @@ func (f *File) AddPlugin(pin PluginPin) error {
 	}
 	f.Plugins = append(f.Plugins, pin)
 	return nil
+}
+
+// SetPluginBinary records a local plugin's content hash for one host
+// platform (REQ-plugin-local-pin, REQ-lock-plugin-entry): a first use
+// on that platform adds the key to the existing local pin; a key
+// already recorded must agree, a differing hash being a pin mismatch
+// naming both. The pin itself must exist and be local — a first use
+// on the first platform goes through AddPlugin.
+func (f *File) SetPluginBinary(ref, platform, hash string) error {
+	for i := range f.Plugins {
+		p := &f.Plugins[i]
+		if p.Ref != ref || p.Scheme != SchemeLocal {
+			continue
+		}
+		if have, ok := p.Binary[platform]; ok {
+			if have != hash {
+				return fmt.Errorf("%w: plugin %s on %s is pinned to %s, resolved %s", ErrPinMismatch, ref, platform, have, hash)
+			}
+			return nil
+		}
+		next := PluginPin{Ref: p.Ref, Scheme: p.Scheme, Binary: maps.Clone(p.Binary)}
+		next.Binary[platform] = hash
+		if err := checkPluginPin(next); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvalid, err)
+		}
+		p.Binary = next.Binary
+		return nil
+	}
+	return fmt.Errorf("%w: no local pin for plugin %s", ErrInvalid, ref)
 }
 
 // AddModule records a first-use pin (REQ-lock-first-use): it is an error if

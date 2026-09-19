@@ -20,6 +20,7 @@ import (
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/pluglocal"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/proxy"
@@ -98,7 +99,18 @@ func generateCmd() *cobra.Command {
 				return err
 			}
 			defer acq.Close()
-			return dep.Gen(c.Context(), s, dep.GenDeps{Acquirer: acq, Runner: runner}, os.Stdout)
+			deps := dep.GenDeps{Acquirer: acq, Runner: runner}
+			// Local plugins run on the native runner wherever it exists.
+			// The session's root is a path within the working tree,
+			// which is rooted at the host's filesystem root.
+			if native, err := plugrun.NativeRunner(); err == nil {
+				root := filepath.Join(string(filepath.Separator), filepath.FromSlash(s.Root.Dir))
+				deps.Local = &dep.LocalDeps{
+					Acquirer: &pluglocal.Acquirer{Root: root, Lock: s.Lock, Policy: s.Client.Policy},
+					Runner:   native,
+				}
+			}
+			return dep.Gen(c.Context(), s, deps, os.Stdout)
 		},
 	}
 	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+plugrun.EnvRunner+", over the platform default)")

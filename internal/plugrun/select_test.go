@@ -38,7 +38,7 @@ func TestRunnerSpellings(t *testing.T) {
 type fakeRunner struct{}
 
 func (fakeRunner) Run(context.Context, Spec) (*Result, error) { return nil, errors.New("fake") }
-func (fakeRunner) Platform() (string, string)               { return "linux", "fake" }
+func (fakeRunner) Platform() (string, string)                 { return "linux", "fake" }
 
 func TestOpenSelects(t *testing.T) {
 	t.Setenv("PATH", t.TempDir()) // no docker here

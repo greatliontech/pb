@@ -23,6 +23,7 @@ import (
 func dockerSpec(t *testing.T, rootfs string, l trust.Limits) Spec {
 	t.Helper()
 	return Spec{
+		Scheme:  plugexec.SchemeOCI,
 		Rootfs:  rootfs,
 		Process: plugexec.Process{Argv: []string{"/plugin", "--flag"}, Env: []string{"A=1", "B=two"}, WorkDir: "/w"},
 		Stdin:   request(t, ""),
@@ -377,6 +378,23 @@ func TestDockerRefusesBareEnv(t *testing.T) {
 		t.Fatalf("bare env: %v", err)
 	}
 	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "create") || slices.Contains(verbs, "import") {
+		t.Fatalf("the daemon was reached: %v", verbs)
+	}
+}
+
+// The docker runner runs images only: a local plugin is refused
+// before the daemon is reached.
+func TestDockerRefusesLocal(t *testing.T) {
+	dir := fakeDaemon(t)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeLocal, Process: plugexec.Process{Argv: []string{"/usr/bin/gen"}}, Limits: trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: time.Minute}, MinTier: plugexec.TierNone})
+	if err == nil || !strings.Contains(err.Error(), "runs images only") {
+		t.Fatalf("local on docker: %v", err)
+	}
+	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "import") {
 		t.Fatalf("the daemon was reached: %v", verbs)
 	}
 }

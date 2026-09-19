@@ -119,7 +119,12 @@ image root filesystem, so REQ-plugin-digest-pin, verify-before-run,
 platform-strict, and the sandbox contract cannot hold for it. A `local`
 entry executes only when the trust policy permits the scheme
 (`provenance.md`); that permission is the root's explicit acceptance of
-unsandboxed execution, and the run reports sandbox tier `None`.
+an execution none of the sandbox's guarantees hold for. The run
+reports the tier the sandbox reports
+for the row that ran it (`REQ-plugin-reported-tier`), and that tier
+grades nothing of the world: the binary runs in the host's, with the
+host's environment and network, under the resource bounds alone —
+no floor is required of it.
 
 **REQ-plugin-local-resolution** (behavior): A `local` value containing no
 path separator MUST resolve through the `PATH` environment variable

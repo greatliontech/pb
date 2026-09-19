@@ -53,6 +53,9 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	if len(spec.Process.Argv) == 0 {
 		return nil, errors.New("plugrun: the plugin process has no argv")
 	}
+	if err := checkScheme(spec); err != nil {
+		return nil, err
+	}
 	floor, err := isolationOf(spec.MinTier)
 	if err != nil {
 		return nil, err
@@ -72,7 +75,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	runCtx, cancel := context.WithTimeout(ctx, limits.Timeout)
 	defer cancel()
 	if err := sb.Start(runCtx); err != nil {
-		return nil, startError(err, stderr.Bytes())
+		return nil, startError(spec.Scheme, err, stderr.Bytes())
 	}
 	defer func() {
 		// Destroy releases the run's accounting; a leak is a runner
@@ -110,20 +113,20 @@ func accountingOf(a sandbox.Accounting) Accounting {
 	return Accounting(a.String())
 }
 
-// specOf is the whole of pb's intent for one run: the image export as
-// the Root, the process from the image's config, an empty network, a
-// fixed hostname — a plugin never observes the host's, so its output
-// cannot depend on it (REQ-plugin-runner-independence) — the policy's
-// limits, and the policy's floor.
+// specOf is the whole of pb's intent for one run. An oci run: the
+// image export as the Root, the process from the image's config, an
+// empty network, a fixed hostname — a plugin never observes the
+// host's, so its output cannot depend on it
+// (REQ-plugin-runner-independence) — the policy's limits, and the
+// policy's floor. A local run: the host binary in the host's world,
+// the host's environment and network, no hostname of its own, the
+// policy's limits, and any row the host affords.
 func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbox.Spec {
-	return sandbox.Spec{
-		Exec:     spec.Process.Argv[0],
-		Args:     spec.Process.Argv[1:],
-		Env:      spec.Process.Env,
-		WorkDir:  spec.Process.WorkDir,
-		Root:     spec.Rootfs,
-		Network:  false,
-		Hostname: "pb-plugin",
+	out := sandbox.Spec{
+		Exec:    spec.Process.Argv[0],
+		Args:    spec.Process.Argv[1:],
+		Env:     spec.Process.Env,
+		WorkDir: spec.Process.WorkDir,
 		Limits: sandbox.Limits{
 			MemoryBytes: spec.Limits.Memory,
 			CPUSeconds:  cpuSeconds(spec.Limits),
@@ -134,6 +137,14 @@ func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbo
 		Stdout:  stdout,
 		Stderr:  stderr,
 	}
+	if spec.Scheme == plugexec.SchemeLocal {
+		out.Network = true
+		return out
+	}
+	out.Root = spec.Rootfs
+	out.Network = false
+	out.Hostname = "pb-plugin"
+	return out
 }
 
 // startError reads a Start refusal: a host below the tier floor is
@@ -143,11 +154,14 @@ func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbo
 // — is named as such, since no floor lowers past what
 // REQ-plugin-sandboxed requires of every run; anything else is the
 // run failing to start, with the plugin's stderr so far.
-func startError(err error, stderr []byte) error {
+func startError(scheme string, err error, stderr []byte) error {
 	if errors.Is(err, sandbox.ErrWeakerThanRequired) {
 		return fmt.Errorf("%w: %v", ErrTierUnreachable, err)
 	}
 	if errors.Is(err, sandbox.ErrUndeliverable) {
+		if scheme == plugexec.SchemeLocal {
+			return fmt.Errorf("plugrun: the sandbox row this host reaches cannot run this local plugin: %w", err)
+		}
 		return fmt.Errorf("plugrun: the sandbox row this host reaches cannot deliver an oci plugin's isolation (a read-only image root and no network are required at every tier, so lowering the tier floor cannot help): %w", err)
 	}
 	return fmt.Errorf("plugrun: starting the plugin process: %w (stderr: %s)", err, tailBytes(stderr))

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -82,13 +83,12 @@ func requireSandbox(t *testing.T) {
 	}
 }
 
-
-
 func run(t *testing.T, param string, l trust.Limits) (*Result, error) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	return (&SandboxRunner{}).Run(ctx, Spec{
+		Scheme:  plugexec.SchemeOCI,
 		Rootfs:  rootfsDir,
 		Process: plugexec.Process{Argv: []string{"/plugin"}},
 		Stdin:   request(t, ""),
@@ -103,7 +103,6 @@ func (s Spec) withParam(t *testing.T, param string) Spec {
 	s.Stdin = request(t, param)
 	return s
 }
-
 
 // accounting reports which bounds accounting this host affords the
 // runner — the sandbox's choice, not the runner's — and fails where
@@ -224,6 +223,7 @@ func TestRunCancelled(t *testing.T) {
 		cancel()
 	}()
 	_, err := (&SandboxRunner{}).Run(ctx, Spec{
+		Scheme:  plugexec.SchemeOCI,
 		Rootfs:  rootfsDir,
 		Process: plugexec.Process{Argv: []string{"/plugin"}},
 		Stdin:   request(t, "sleep"),
@@ -287,17 +287,26 @@ func TestRunCPUBound(t *testing.T) {
 // never starts a process.
 func TestRunRefusesIncomplete(t *testing.T) {
 	r := &SandboxRunner{}
-	_, err := r.Run(context.Background(), Spec{Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, MinTier: plugexec.TierStrong})
+	_, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, MinTier: plugexec.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "unbounded") {
 		t.Fatalf("err = %v", err)
 	}
-	_, err = r.Run(context.Background(), Spec{Rootfs: "/nonexistent", Limits: limits(nil), MinTier: plugexec.TierStrong})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Rootfs: "/nonexistent", Limits: limits(nil), MinTier: plugexec.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "no argv") {
 		t.Fatalf("err = %v", err)
 	}
-	_, err = r.Run(context.Background(), Spec{Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil)})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil)})
 	if err == nil || !strings.Contains(err.Error(), "no sandbox tier floor") {
 		t.Fatalf("err = %v", err)
+	}
+	for _, spec := range []Spec{
+		{Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierStrong},
+		{Scheme: plugexec.SchemeLocal, Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierNone},
+		{Scheme: plugexec.SchemeOCI, Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierStrong},
+	} {
+		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "scheme") && !strings.Contains(err.Error(), "rootfs") {
+			t.Errorf("scheme/world mismatch %+v accepted: %v", spec, err)
+		}
 	}
 }
 
@@ -305,15 +314,19 @@ func TestRunRefusesIncomplete(t *testing.T) {
 // the sandbox's statement; any other Start failure is a start failure
 // with the stderr so far.
 func TestStartError(t *testing.T) {
-	err := startError(fmt.Errorf("%w: this host reaches the minimal row (namespaces: EPERM); strong required", sandbox.ErrWeakerThanRequired), nil)
+	err := startError(plugexec.SchemeOCI, fmt.Errorf("%w: this host reaches the minimal row (namespaces: EPERM); strong required", sandbox.ErrWeakerThanRequired), nil)
 	if !errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the minimal row") {
 		t.Fatalf("tier refusal: %v", err)
 	}
-	err = startError(fmt.Errorf("%w: the minimal row cannot restrict the world to a Root", sandbox.ErrUndeliverable), nil)
+	err = startError(plugexec.SchemeOCI, fmt.Errorf("%w: the minimal row cannot restrict the world to a Root", sandbox.ErrUndeliverable), nil)
 	if errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "lowering the tier floor cannot help") || !strings.Contains(err.Error(), "cannot restrict the world") {
 		t.Fatalf("undeliverable intent: %v", err)
 	}
-	err = startError(errors.New("sandbox: start: fork/exec: too many open files"), []byte("boom"))
+	err = startError(plugexec.SchemeLocal, fmt.Errorf("%w: exec /x: built for EM_386; this row runs EM_X86_64 only", sandbox.ErrUndeliverable), nil)
+	if errors.Is(err, ErrTierUnreachable) || strings.Contains(err.Error(), "oci plugin") || !strings.Contains(err.Error(), "cannot run this local plugin") {
+		t.Fatalf("undeliverable local: %v", err)
+	}
+	err = startError(plugexec.SchemeOCI, errors.New("sandbox: start: fork/exec: too many open files"), []byte("boom"))
 	if errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "starting the plugin process") || !strings.Contains(err.Error(), "boom") {
 		t.Fatalf("start failure: %v", err)
 	}
@@ -327,6 +340,7 @@ func TestStartError(t *testing.T) {
 func TestSpecOf(t *testing.T) {
 	var out, errs strings.Builder
 	got := specOf(Spec{
+		Scheme:  plugexec.SchemeOCI,
 		Rootfs:  "/export",
 		Process: plugexec.Process{Argv: []string{"/bin/plugin", "--x"}, Env: []string{"A=1"}, WorkDir: "/w"},
 		Stdin:   []byte("req"),
@@ -342,6 +356,41 @@ func TestSpecOf(t *testing.T) {
 	}
 	if string(stdin) != "req" || !reflect.DeepEqual(got, want) {
 		t.Fatalf("specOf = %+v (stdin %q), want %+v", got, stdin, want)
+	}
+	// A local run: the host binary in the host's world, network and
+	// environment, no Root, no hostname, any row.
+	local := specOf(Spec{Scheme: plugexec.SchemeLocal, Process: plugexec.Process{Argv: []string{"/usr/bin/gen"}}, Stdin: []byte("req"), Limits: trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}}, sandbox.None, &out, &errs)
+	local.Stdin = nil
+	wantLocal := sandbox.Spec{Exec: "/usr/bin/gen", Args: []string{}, Network: true, Limits: sandbox.Limits{MemoryBytes: 1 << 20, CPUSeconds: 181, MaxProcs: 7}, MinTier: sandbox.None, Stdout: &out, Stderr: &errs}
+	if !reflect.DeepEqual(local, wantLocal) {
+		t.Fatalf("specOf(local) = %+v, want %+v", local, wantLocal)
+	}
+}
+
+// A local plugin runs as a host binary under the bounds, in the
+// host's world, and reports the tier of the row the sandbox put
+// around it — a row that graded nothing of the world
+// (plugin-execution.md, "Local binaries").
+func TestRunLocal(t *testing.T) {
+	requireSandbox(t)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	res, err := (&SandboxRunner{}).Run(ctx, Spec{
+		Scheme:  plugexec.SchemeLocal,
+		Process: plugexec.Process{Argv: []string{filepath.Join(rootfsDir, "plugin")}},
+		Stdin:   request(t, "host"),
+		Limits:  limits(nil),
+		MinTier: plugexec.TierNone,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plugexec.ValidTier(res.Tier) || res.Tier == plugexec.TierNone || (res.Bounds != BoundsCgroups && res.Bounds != BoundsRlimits) {
+		t.Fatalf("result = tier %s bounds %s: the sandbox's own report, never None", res.Tier, res.Bounds)
+	}
+	host, _ := os.Hostname()
+	if got := content(t, res); got != "hostname="+host {
+		t.Fatalf("a local plugin runs in the host's world: %q", got)
 	}
 }
 
@@ -518,6 +567,7 @@ func TestRunReadsContextEnds(t *testing.T) {
 		}
 		r := &SandboxRunner{create: func(sandbox.Spec) (sandbox.Sandbox, error) { return c.fake, nil }}
 		res, err := r.Run(ctx, Spec{
+			Scheme:  plugexec.SchemeOCI,
 			Rootfs:  "/export",
 			Process: plugexec.Process{Argv: []string{"/plugin"}},
 			Limits:  limits(func(l *trust.Limits) { l.Timeout = 300 * time.Millisecond }),

@@ -32,7 +32,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
       record of the created container, contract tests over a fake
       `docker` on PATH and a live test where a daemon exists; runner
       independence becomes falsifiable
-- [ ] 9. `local` scheme: PATH and root-relative resolution, content-hash
+- [x] 9. `local` scheme: PATH and root-relative resolution, content-hash
       pins keyed by host platform, policy gating, bounds without a
       sandbox (tier `None`)
 - [ ] 10. Plugin overrides: invocation-scoped substitution from an OCI

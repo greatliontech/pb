@@ -154,6 +154,12 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 	if len(spec.Process.Argv) == 0 {
 		return nil, errors.New("plugrun: the plugin process has no argv")
 	}
+	if err := checkScheme(spec); err != nil {
+		return nil, err
+	}
+	if spec.Scheme == plugexec.SchemeLocal {
+		return nil, errors.New("plugrun: a local plugin is a host binary; the docker runner runs images only")
+	}
 	if _, err := isolationOf(spec.MinTier); err != nil {
 		return nil, err
 	}

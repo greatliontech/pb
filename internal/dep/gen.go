@@ -14,6 +14,7 @@ import (
 	"github.com/greatliontech/pb/internal/genrequest"
 	"github.com/greatliontech/pb/internal/modfiles"
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/pluglocal"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/protocomp"
@@ -32,10 +33,34 @@ type Acquirer interface {
 	Acquire(ctx context.Context, ref string) (*plugoci.Acquired, error)
 }
 
-// GenDeps are the seams the gen verb runs over.
+// LocalAcquirer resolves and pins a local-scheme plugin;
+// pluglocal.Acquirer is the production implementation.
+type LocalAcquirer interface {
+	Acquire(ctx context.Context, value string) (*pluglocal.Acquired, error)
+}
+
+// LocalDeps are the local scheme's seams, present together or not at
+// all: the acquirer, and the native runner a host binary runs on —
+// whichever runner the oci entries selected.
+type LocalDeps struct {
+	Acquirer LocalAcquirer
+	Runner   plugrun.Runner
+}
+
+// GenDeps are the seams the gen verb runs over: the oci acquirer and
+// the selected runner for oci entries, and the local scheme's pair
+// where the host has a native runner — without one, no local plugin
+// runs.
 type GenDeps struct {
 	Acquirer Acquirer
 	Runner   plugrun.Runner
+	Local    *LocalDeps
+}
+
+// acquired is one entry's plugin, whichever scheme produced it.
+type acquired struct {
+	rootfs  string
+	process plugexec.Process
 }
 
 // Gen is the generate verb (REQ-gen-verb): parse pb.gen.yaml, compile
@@ -60,8 +85,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if !exec.SchemeAllowed(p.Scheme) {
 			return fmt.Errorf("generate: the trust policy does not permit %s-scheme plugins (plugin %s)", p.Scheme, p.Ref)
 		}
-		if p.Scheme != plugexec.SchemeOCI {
-			return fmt.Errorf("generate: local plugins are not yet supported (plugin %s)", p.Ref)
+		if p.Scheme == plugexec.SchemeLocal && deps.Local == nil {
+			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Ref)
 		}
 	}
 
@@ -84,10 +109,23 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	// runs, and the pins persist whatever follows: a first-use
 	// resolution is the record even when a later entry fails
 	// (REQ-plugin-digest-pin, REQ-lock-first-use).
-	acquired := make([]*plugoci.Acquired, len(gf.Plugins))
+	plugins := make([]acquired, len(gf.Plugins))
 	var acqErr error
 	for i, entry := range gf.Plugins {
-		acquired[i], acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
+		switch entry.Scheme {
+		case plugexec.SchemeLocal:
+			var a *pluglocal.Acquired
+			a, acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref)
+			if acqErr == nil {
+				plugins[i] = acquired{process: a.Process}
+			}
+		default:
+			var a *plugoci.Acquired
+			a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
+			if acqErr == nil {
+				plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
+			}
+		}
 		if acqErr != nil {
 			acqErr = fmt.Errorf("generate: plugin %s: %w", entry.Ref, acqErr)
 			break
@@ -116,12 +154,22 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
 		}
-		res, err := deps.Runner.Run(ctx, plugrun.Spec{
-			Rootfs:  acquired[i].Rootfs,
-			Process: acquired[i].Process,
+		// A local entry runs on the native runner under no floor: the
+		// policy admitted the scheme as a downgrade of every guarantee
+		// a sandbox row gives an image, so whatever row the host puts
+		// around the binary is reported and none is required
+		// (plugin-execution.md, "Local binaries").
+		runner, floor := deps.Runner, minTier
+		if entry.Scheme == plugexec.SchemeLocal {
+			runner, floor = deps.Local.Runner, plugexec.TierNone
+		}
+		res, err := runner.Run(ctx, plugrun.Spec{
+			Scheme:  entry.Scheme,
+			Rootfs:  plugins[i].rootfs,
+			Process: plugins[i].process,
 			Stdin:   reqBytes,
 			Limits:  limits,
-			MinTier: minTier,
+			MinTier: floor,
 		})
 		if errors.Is(err, plugrun.ErrTierUnreachable) {
 			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)
@@ -135,8 +183,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if !plugexec.ValidTier(res.Tier) || res.Bounds == "" {
 			return fmt.Errorf("generate: plugin %s: the runner reported no sandbox tier or bounds mechanism (tier %q, bounds %q)", entry.Ref, res.Tier, res.Bounds)
 		}
-		if plugexec.TierBelow(res.Tier, minTier) {
-			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Ref, res.Tier, minTier, lowerFloorHint)
+		if plugexec.TierBelow(res.Tier, floor) {
+			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Ref, res.Tier, floor, lowerFloorHint)
 		}
 		resp, err := plugrun.Respond(res)
 		if err != nil {

@@ -19,6 +19,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/pluglocal"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/trust"
@@ -191,7 +192,8 @@ func TestGenContainment(t *testing.T) {
 }
 
 // Scheme gating: a local entry is refused while the policy permits
-// only oci; permitting local reaches the (unimplemented) local arm.
+// only oci; permitting local reaches the local arm, which needs the
+// native runner.
 func TestGenSchemeGate(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - local: protoc-gen-x\n    out: gen\n")
 	err := Gen(ctx, s, GenDeps{}, &strings.Builder{})
@@ -200,7 +202,7 @@ func TestGenSchemeGate(t *testing.T) {
 	}
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{"oci", "local"}}}
 	err = Gen(ctx, s, GenDeps{}, &strings.Builder{})
-	if err == nil || !strings.Contains(err.Error(), "local plugins are not yet supported") {
+	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and none is wired here") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -600,5 +602,50 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 	}
 	if got := fx.read(t, "pb.lock"); !strings.Contains(got, "ghcr.io/o/p:v1") {
 		t.Fatalf("first entry's pin lost when the second failed: %q", got)
+	}
+}
+
+type stubLocal struct {
+	value string
+	acq   *pluglocal.Acquired
+	err   error
+}
+
+func (s *stubLocal) Acquire(_ context.Context, value string) (*pluglocal.Acquired, error) {
+	s.value = value
+	return s.acq, s.err
+}
+
+// A local entry resolves through the local acquirer, runs on the
+// native runner with no rootfs and no floor, and is reported at the
+// tier that runner reports; without a native runner it is refused
+// before anything runs; the oci entries still run on the selected
+// runner.
+func TestGenLocalEntry(t *testing.T) {
+	_, s := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen2\n")
+	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugexec.SchemeOCI, plugexec.SchemeLocal}}}
+	local := &stubLocal{acq: &pluglocal.Acquired{Process: plugexec.Process{Argv: []string{"/abs/tools/gen"}}}}
+	localRun := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"a.go": "x"}), Tier: plugexec.TierMinimal, Bounds: plugrun.BoundsRlimits}}
+	ociRun := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	var out strings.Builder
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: local, Runner: localRun}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if local.value != "tools/gen" {
+		t.Fatalf("local acquirer got %q", local.value)
+	}
+	if localRun.spec.Scheme != plugexec.SchemeLocal || localRun.spec.Rootfs != "" || localRun.spec.MinTier != plugexec.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
+		t.Fatalf("local run spec = %+v", localRun.spec)
+	}
+	if ociRun.spec.Scheme != plugexec.SchemeOCI || ociRun.spec.Rootfs != "/r" || ociRun.spec.MinTier != plugexec.TierStrong {
+		t.Fatalf("oci run spec = %+v", ociRun.spec)
+	}
+	if !strings.Contains(out.String(), "tools/gen: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
+		t.Fatalf("report = %q", out.String())
+	}
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and none is wired here") {
+		t.Fatalf("no native runner: %v", err)
 	}
 }

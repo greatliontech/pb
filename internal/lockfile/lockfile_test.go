@@ -580,20 +580,35 @@ func TestPlainScalarBoundaries(t *testing.T) {
 			t.Errorf("%q rejected: %v", s, err)
 		}
 	}
-	reject := []string{"", ":x", "@x", "[x", "_x", "`x", "{x", "~", "~x", "-x", "/x", "x:", "a b", "a\x7fb", "x\ny", "café", "null", "Null", "NULL"}
+	reject := []string{"", ":x", "@x", "[x", "_x", "`x", "{x", "~", "~x", "-x", "/x", "./x", ".x", "x:", "a b", "a\x7fb", "x\ny", "café", "null", "Null", "NULL"}
 	for _, s := range reject {
 		if err := checkPlainScalar("san", s); err == nil {
 			t.Errorf("%q accepted", s)
 		}
 	}
+	// A ref alone admits the path starts a local value is written
+	// with, and never "." alone.
+	for _, s := range []string{"/x", "/", "./x", "./"} {
+		if err := checkPlainScalar("ref", s); err != nil {
+			t.Errorf("ref %q rejected: %v", s, err)
+		}
+	}
+	for _, s := range []string{".", ".inf", ".nan", ".x", "-x"} {
+		if err := checkPlainScalar("ref", s); err == nil {
+			t.Errorf("ref %q accepted", s)
+		}
+	}
 	// The diagnostic carries the field name and the full rule for every
 	// kind the callers pass.
-	for _, kind := range []string{"version", "san", "issuer", "ref"} {
+	for _, kind := range []string{"version", "san", "issuer"} {
 		err := checkPlainScalar(kind, "-x")
 		want := kind + ` "-x" is not plain-scalar safe: values start alphanumeric, use printable non-space ASCII, are not a null spelling, and do not end with ":"`
 		if err == nil || err.Error() != want {
 			t.Errorf("%s diagnostic = %v", kind, err)
 		}
+	}
+	if err := checkPlainScalar("ref", "-x"); err == nil || err.Error() != `ref "-x" is not plain-scalar safe: values start alphanumeric, with "/" or with "./", use printable non-space ASCII, are not a null spelling, and do not end with ":"` {
+		t.Errorf("ref diagnostic = %v", err)
 	}
 }
 
@@ -987,5 +1002,65 @@ func TestAddPlugin(t *testing.T) {
 	}
 	if len(f.Plugins) != 2 {
 		t.Fatalf("plugins = %d", len(f.Plugins))
+	}
+}
+
+// A local pin gains a platform on that platform's first use, keeps a
+// matching hash as it is, refuses a differing one naming both, and
+// is never created by the platform write itself.
+func TestSetPluginBinary(t *testing.T) {
+	h1, h2 := "sha256:"+strings.Repeat("a", 64), "sha256:"+strings.Repeat("b", 64)
+	f := &File{}
+	if err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h1); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("no pin: %v", err)
+	}
+	if err := f.AddPlugin(PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h1}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.SetPluginBinary("protoc-gen-x", "darwin/arm64", h2); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h1); err != nil {
+		t.Fatalf("same hash: %v", err)
+	}
+	err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h2)
+	if !errors.Is(err, ErrPinMismatch) || !strings.Contains(err.Error(), h1) || !strings.Contains(err.Error(), h2) {
+		t.Fatalf("differing hash: %v", err)
+	}
+	if err := f.SetPluginBinary("protoc-gen-x", "bad", h1); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("bad platform: %v", err)
+	}
+	p, _ := f.Plugin("protoc-gen-x", SchemeLocal)
+	if len(p.Binary) != 2 || p.Binary["darwin/arm64"] != h2 {
+		t.Fatalf("pin = %+v", p)
+	}
+}
+
+// A ref may start with "/" or "./" — a local plugin's path as
+// written — and still emits as a plain scalar re-parsing to itself;
+// "." alone, the float spellings' lead, does not.
+func TestPluginRefPathStarts(t *testing.T) {
+	h := "sha256:" + strings.Repeat("a", 64)
+	for _, ref := range []string{"/opt/protoc-gen-x", "./tools/gen", "tools/gen"} {
+		f := &File{}
+		if err := f.AddPlugin(PluginPin{Ref: ref, Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h}}); err != nil {
+			t.Fatalf("%q: %v", ref, err)
+		}
+		out, err := Encode(f)
+		if err != nil {
+			t.Fatalf("%q: %v", ref, err)
+		}
+		back, err := Parse(out)
+		if err != nil {
+			t.Fatalf("%q: re-parse: %v\n%s", ref, err, out)
+		}
+		if got, _ := back.Plugin(ref, SchemeLocal); got.Ref != ref {
+			t.Fatalf("%q re-parsed as %q", ref, got.Ref)
+		}
+	}
+	for _, ref := range []string{".", ".inf", ".x", "-x"} {
+		if err := (&File{}).AddPlugin(PluginPin{Ref: ref, Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h}}); !errors.Is(err, ErrInvalid) {
+			t.Errorf("%q accepted: %v", ref, err)
+		}
 	}
 }
