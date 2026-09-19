@@ -35,11 +35,12 @@ func TestKeys(t *testing.T) {
 		"noproxy":     {Env: "PBNOPROXY"},
 		"cache":       {Env: "PBCACHE", Path: true},
 		"trustedroot": {Env: "PBTRUSTEDROOT", Path: true},
+		"plugin-pull": {Env: "PBPLUGINPULL"},
 	}
 	if !reflect.DeepEqual(Keys, want) {
 		t.Fatalf("Keys = %v", Keys)
 	}
-	if KeyRunner != "runner" || KeyProxy != "proxy" || KeyNoproxy != "noproxy" || KeyCache != "cache" || KeyTrustedRoot != "trustedroot" {
+	if KeyRunner != "runner" || KeyProxy != "proxy" || KeyNoproxy != "noproxy" || KeyCache != "cache" || KeyTrustedRoot != "trustedroot" || KeyPluginPull != "plugin-pull" {
 		t.Fatal("the key constants drifted from the spec's keys")
 	}
 }
@@ -79,7 +80,7 @@ func TestLoadFile(t *testing.T) {
 		t.Fatalf("an admissibility refusal is not matchable: %v", err)
 	}
 	for _, c := range []struct{ content, text string }{
-		{"runnr: docker\n", `unknown setting "runnr" (settings: cache, noproxy, proxy, runner, trustedroot)`},
+		{"runnr: docker\n", `unknown setting "runnr" (settings: cache, noproxy, plugin-pull, proxy, runner, trustedroot)`},
 		{"runner: [docker]\n", "runner must be a non-empty string"},
 		{"runner: \"\"\n", "runner must be a non-empty string"},
 		{"runner: docker\nrunner: native\n", `mapping key "runner" already defined`},

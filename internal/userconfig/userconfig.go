@@ -38,6 +38,7 @@ const (
 	KeyNoproxy     Key = "noproxy"
 	KeyCache       Key = "cache"
 	KeyTrustedRoot Key = "trustedroot"
+	KeyPluginPull  Key = "plugin-pull"
 )
 
 // Setting is what the resolver knows of one setting beyond its key:
@@ -56,6 +57,7 @@ var Keys = map[Key]Setting{
 	KeyNoproxy:     {Env: "PBNOPROXY"},
 	KeyCache:       {Env: "PBCACHE", Path: true},
 	KeyTrustedRoot: {Env: "PBTRUSTEDROOT", Path: true},
+	KeyPluginPull:  {Env: "PBPLUGINPULL"},
 }
 
 // Path is the user configuration file's location on this host; the

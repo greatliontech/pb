@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-core-verifies"
-  content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
-  source_hash: "db9aaabd40d18604ae19de6a423708015b278107b77a16a70910c5666bce8a02"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-core-verifies"
-  content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
-  source_hash: "db9aaabd40d18604ae19de6a423708015b278107b77a16a70910c5666bce8a02"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireIdentityRuleFlows"
   role: BINDING_ROLE_TESTS
@@ -513,8 +513,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-core-verifies"
-  content_hash: "f2e053147e45eb2e49223fa23e677ec0919525f82a512d1e076b82787b1db0dc"
-  source_hash: "db9aaabd40d18604ae19de6a423708015b278107b77a16a70910c5666bce8a02"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugrun.DockerRunner.Run"
   role: BINDING_ROLE_IMPLEMENTS
@@ -709,4 +709,94 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestStagingRequiresToken"
   role: BINDING_ROLE_TESTS
   shape_hash: "bee581e02cff486d5d1820bd580ceae55499b00bb7f311d079174913bf777445"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireDaemonPull"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "41e9dc65bfeb96482c0c16da00333e24f3db704613cb866e20d1f88aac5ebd43"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestDockerPullsVerifiedDigest"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b09627275c4d0adb233f4762edcd075d62b25e58babdad99929aca81d4475b76"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestGenPulledImage"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1ab011bc3fc524c877857b0e2d746a7c676be92bf6745b58a1e867ce251daaca"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestPullMode"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "8f30a1e80f4a19827aa478d0c05c3030df6f0e9a4792ebc6bd89b8063b4b2972"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.pullMode"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "da391ea15af4543b7617ed092c10071f222ae47d8b1d0170d68a07c18bce5418"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.DockerRunner.prepare"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b38f346e163759bf67bd6d8227314ca6fd64682d6a48605371196a3a7e8c9e79"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestAcquirerConfig"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "15d21d3b50ef7fe2f06e4aed91f69eb21d57bbaae116e834df3a15c2566a81e3"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestDockerLivePull"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "707f5685f147303a3f8f06ad27f2d0b23a4c6170b07d2ef18ba239f1116757de"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-core-verifies"
+  content_hash: "e8e5bc2b98e74c85d1e5e408f60436ba12d8fe87b52a431b81fc7ddd72e2ce0c"
+  source_hash: "a1b312537126f27d39dbfa6362790c7739422979c7b9be960955c273a7bddf70"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.acquirerConfig"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ffa3d8cb877ea6ad8b233effbe7e9388a3b580af1f41cf4e68b02b5af091830d"
 }

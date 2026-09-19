@@ -71,7 +71,22 @@ type Config struct {
 	Verifier    ImageVerifier
 	Platform    Platform
 	Credentials map[string]authn.AuthConfig
+	// Pull is the byte path an acquisition yields (plugin-execution.md
+	// REQ-plugin-core-verifies): the zero value exports from the store.
+	Pull PullMode
 }
+
+// PullMode is the byte path by which a verified image reaches the
+// runner: pb's store, or a Docker daemon pulling the verified digest.
+type PullMode int
+
+const (
+	// PullStore exports the verified image from pb's store.
+	PullStore PullMode = iota
+	// PullDaemon verifies without materializing and yields the
+	// repository at the verified digest for the daemon to pull.
+	PullDaemon
+)
 
 // Acquirer materializes plugin images: verified through the seam,
 // pinned in the lockfile, exported to a root filesystem.
@@ -83,6 +98,7 @@ type Acquirer struct {
 	policy     *trust.Policy
 	verifier   ImageVerifier
 	platform   Platform
+	pull       PullMode
 
 	mu      sync.Mutex
 	pending map[string]*acquisition // digest-or-tag target -> in-flight state
@@ -110,6 +126,7 @@ func New(cfg Config) (*Acquirer, error) {
 		policy:   cfg.Policy,
 		verifier: cfg.Verifier,
 		platform: platform,
+		pull:     cfg.Pull,
 		pending:  map[string]*acquisition{},
 	}
 	opts := []ocifs.Option{
@@ -152,11 +169,16 @@ func (a *Acquirer) Close() error {
 // Acquired is one materialized plugin image.
 type Acquired struct {
 	// Rootfs is the exported root filesystem — the store's shared
-	// export-cache entry; treat it as read-only.
+	// export-cache entry; treat it as read-only. Empty under
+	// PullDaemon.
 	Rootfs string
+	// Image is the repository at the verified digest, for the daemon
+	// to pull (PullDaemon); empty where a rootfs was exported.
+	Image string
 	// Process is the image config's process: argv as Entrypoint then
 	// Cmd, exactly as OCI runtimes compose them, environment, and
-	// working directory.
+	// working directory. Zero under PullDaemon: the daemon applies
+	// the image's own configuration.
 	Process plugexec.Process
 	// Pin is the lockfile pin the acquisition ran under, freshly
 	// recorded on first use.
@@ -166,13 +188,16 @@ type Acquired struct {
 // Acquire materializes ref (REQ-plugin-digest-pin, REQ-lock-first-use):
 // a pinned reference is materialized at its pinned digest — the tag is
 // never re-resolved — and a first use resolves the tag once through
-// the seam, records the pin, and materializes.
+// the seam, records the pin, and materializes. Under PullDaemon the
+// seam runs the same and the pin is recorded the same, but nothing
+// materializes: the acquisition yields the repository at the verified
+// digest for the daemon to pull (REQ-plugin-core-verifies).
 func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	pin, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
 	target := ref
 	acq := &acquisition{declaredRef: ref}
 	if pinned {
-		target = genfile.ReferenceRepository(ref) + "@" + pin.Digest
+		target = atDigest(ref, pin.Digest)
 		acq.pinnedDigest = pin.Digest
 	}
 	if err := a.enter(target, acq); err != nil {
@@ -180,6 +205,32 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	}
 	defer a.leave(target)
 
+	// The pin records what resolved (REQ-lock-first-use) before the
+	// image's fitness as a plugin is judged: a resolution that
+	// happened is the record, entrypoint or not.
+	record := func() error {
+		if pinned {
+			return nil
+		}
+		if acq.resolved == "" {
+			return fmt.Errorf("plugoci: %s: acquisition ran no verification seam", ref)
+		}
+		pin = lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: acq.resolved, Provenance: acq.provenance}
+		return a.lock.AddPlugin(pin)
+	}
+	if a.pull == PullDaemon {
+		// Resolution runs the seam and materializes nothing (ocifs
+		// api.md REQ-api-resolve); the daemon fetches the content at
+		// the digest the seam admitted.
+		res, err := a.fs.Resolve(ctx, target)
+		if err != nil {
+			return nil, err
+		}
+		if err := record(); err != nil {
+			return nil, err
+		}
+		return &Acquired{Image: atDigest(ref, res.Digest.String()), Pin: pin}, nil
+	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
 	// resolving nothing again (ocifs api.md REQ-api-export).
@@ -191,23 +242,20 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if err != nil {
 		return nil, err
 	}
-	// The pin records what resolved (REQ-lock-first-use) before the
-	// image's fitness as a plugin is judged: a resolution that
-	// happened is the record, entrypoint or not.
-	if !pinned {
-		if acq.resolved == "" {
-			return nil, fmt.Errorf("plugoci: %s: acquisition ran no verification seam", ref)
-		}
-		pin = lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: acq.resolved, Provenance: acq.provenance}
-		if err := a.lock.AddPlugin(pin); err != nil {
-			return nil, err
-		}
+	if err := record(); err != nil {
+		return nil, err
 	}
 	process, err := processOf(img.ConfigFile())
 	if err != nil {
 		return nil, fmt.Errorf("plugoci: %s: %v", ref, err)
 	}
 	return &Acquired{Rootfs: rootfs, Process: process, Pin: pin}, nil
+}
+
+// atDigest is ref's repository at digest: the digest-form reference
+// a pinned acquisition resolves and a daemon pulls.
+func atDigest(ref, digest string) string {
+	return genfile.ReferenceRepository(ref) + "@" + digest
 }
 
 // processOf reads an image configuration into the plugin process: argv

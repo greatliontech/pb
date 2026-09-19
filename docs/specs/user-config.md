@@ -1,21 +1,22 @@
 # pb — user configuration
 
 pb's machine-scoped settings — the runner, the module proxy and its
-exclusions, the module cache, the trusted root — are the machine's,
-never a project's: none is committed, and each is read the same
-way. This document defines where they live and how the
-layers that can state one rank; the settings themselves are defined
-where their subjects are (`plugin-execution.md`, `module-proxy.md`,
-`dep-verbs.md`, `provenance.md`).
+exclusions, the module cache, the trusted root, the plugin byte
+path — are the machine's, never a project's: none is committed, and
+each is read the same way. This document defines where they live
+and how the layers that can state one rank; the settings themselves
+are defined where their subjects are (`plugin-execution.md`,
+`module-proxy.md`, `dep-verbs.md`, `provenance.md`).
 
 **setting** (term): One machine-scoped value pb reads at startup,
 named by a key in the user configuration file and by an environment
 variable, and for some settings by a flag of the verb it governs:
 `runner` / `PBRUNNER` / `--runner`, `proxy` / `PBPROXY`, `noproxy` /
-`PBNOPROXY`, `cache` / `PBCACHE`, `trustedroot` / `PBTRUSTEDROOT`.
-The key and the variable name one setting; their values have one
-grammar, the subject document's. `cache` and `trustedroot` are
-path-valued: their values name a filesystem path.
+`PBNOPROXY`, `cache` / `PBCACHE`, `trustedroot` / `PBTRUSTEDROOT`,
+`plugin-pull` / `PBPLUGINPULL`. The key and the variable name one
+setting; their values have one grammar, the subject document's.
+`cache` and `trustedroot` are path-valued: their values name a
+filesystem path.
 
 **user configuration file** (term): The file `pb/config.yaml` under
 the platform's user configuration directory — on Unix

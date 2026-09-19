@@ -55,6 +55,11 @@ func fakeDocker(args []string) int {
 		tar, _ := io.ReadAll(os.Stdin)
 		os.WriteFile(filepath.Join(dir, "import.tar"), tar, 0o644)
 		fmt.Printf("sha256:%x\n", sha256.Sum256(tar))
+	case "pull":
+		if _, err := os.Stat(filepath.Join(dir, "pull-fails")); err == nil {
+			fmt.Fprintln(os.Stderr, "Error response from daemon: manifest unknown")
+			return 1
+		}
 	case "create":
 		b, _ := json.Marshal(args[1:])
 		os.WriteFile(filepath.Join(dir, "create.json"), b, 0o644)

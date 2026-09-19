@@ -1,14 +1,21 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
+	"github.com/greatliontech/pb/internal/plugoci"
+	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/trust"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -120,5 +127,73 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 	want := proxy.Config{Sources: []proxy.Source{{URL: "https://p.example"}}, NoProxy: []string{"corp.example.com"}}
 	if !reflect.DeepEqual(client.Sources, want) {
 		t.Fatalf("Sources = %+v, want %+v", client.Sources, want)
+	}
+}
+
+type noDaemonRunner struct{}
+
+func (noDaemonRunner) Run(context.Context, plugrun.Spec) (*plugrun.Result, error) {
+	return nil, errors.New("not run")
+}
+func (noDaemonRunner) Platform() (string, string) { return "linux", "fake" }
+
+type daemonRunner struct{ noDaemonRunner }
+
+func (daemonRunner) RunsDaemonImages() {}
+
+// The acquirer is assembled from the settings and the runner: the
+// store beside the module cache, the runner's platform, and the byte
+// path the setting selects for that runner (REQ-plugin-core-verifies).
+func TestAcquirerConfig(t *testing.T) {
+	plant(t, "plugin-pull: docker\n")
+	cacheHome := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", cacheHome)
+	settings, err := userconfig.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &dep.Session{Lock: &lockfile.File{}, Client: &modfetch.Client{Policy: &trust.Policy{}}}
+	cfg, err := acquirerConfig(settings, daemonRunner{}, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := plugoci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), Lock: s.Lock, Policy: s.Client.Policy, Platform: plugoci.Platform{OS: "linux", Arch: "fake"}, Pull: plugoci.PullDaemon}
+	if !reflect.DeepEqual(cfg, want) {
+		t.Fatalf("config = %+v, want %+v", cfg, want)
+	}
+	if _, err := acquirerConfig(settings, noDaemonRunner{}, s); err == nil || !strings.Contains(err.Error(), "the user configuration file ") {
+		t.Fatalf("the byte path under a runner without a daemon: %v", err)
+	}
+}
+
+// The plugin byte path is the store unless the setting says docker,
+// which only a runner that runs daemon images accepts; any other
+// value names no byte path; each refusal names the layer
+// (REQ-plugin-core-verifies, REQ-uc-precedence).
+func TestPullMode(t *testing.T) {
+	file := "the user configuration file /home/u/.config/pb/config.yaml"
+	for _, c := range []struct {
+		value  userconfig.Value
+		runner plugrun.Runner
+		want   plugoci.PullMode
+		text   string
+	}{
+		{userconfig.Value{}, noDaemonRunner{}, plugoci.PullStore, ""},
+		{userconfig.Value{Value: "store", From: file}, noDaemonRunner{}, plugoci.PullStore, ""},
+		{userconfig.Value{Value: "docker", From: file}, daemonRunner{}, plugoci.PullDaemon, ""},
+		{userconfig.Value{Value: "docker", From: file}, noDaemonRunner{}, 0, file + `: plugin-pull "docker": only the docker runner`},
+		{userconfig.Value{Value: "docker", From: "the PBPLUGINPULL environment variable"}, noDaemonRunner{}, 0, `the PBPLUGINPULL environment variable: plugin-pull "docker"`},
+		{userconfig.Value{Value: "rsync", From: file}, daemonRunner{}, 0, file + `: plugin-pull "rsync" names no byte path (byte paths: store, docker)`},
+	} {
+		got, err := pullMode(c.value, c.runner)
+		if c.text == "" {
+			if err != nil || got != c.want {
+				t.Errorf("%+v: %v %v", c.value, got, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), c.text) {
+			t.Errorf("%+v: %v, want %q", c.value, err, c.text)
+		}
 	}
 }

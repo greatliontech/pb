@@ -61,7 +61,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 		return nil, err
 	}
 	if spec.Image != "" {
-		return nil, errors.New("plugrun: a daemon-local image runs on the docker runner only")
+		return nil, errors.New("plugrun: a daemon image runs on the docker runner only")
 	}
 	floor, err := isolationOf(spec.MinTier)
 	if err != nil {

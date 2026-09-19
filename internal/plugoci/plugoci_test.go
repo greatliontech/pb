@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/trust"
 )
@@ -672,5 +673,74 @@ func TestWithPlatformsRefusesNestedList(t *testing.T) {
 	platformed := mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: inner, Descriptor: v1.Descriptor{Platform: &v1.Platform{OS: "linux", Architecture: "amd64"}}})
 	if _, err := withPlatforms(platformed); err != nil {
 		t.Fatalf("nested list with a platform: %v", err)
+	}
+}
+
+// Under the daemon byte path an acquisition runs the seam and records
+// the pin exactly as the store path does, but materializes nothing:
+// it yields the repository at the verified digest for the daemon to
+// pull; a pinned reference resolves at its pin and a moved tag is
+// invisible; a mismatch fails closed (REQ-plugin-core-verifies).
+func TestAcquireDaemonPull(t *testing.T) {
+	fx := newFixture(t)
+	lock := &lockfile.File{}
+	work := t.TempDir()
+	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Pull: PullDaemon})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { a.Close() })
+	ref := fx.host + "/org/plugin:v1"
+	got, err := a.Acquire(ctx, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Image != fx.host+"/org/plugin@"+fx.digest || got.Rootfs != "" || len(got.Process.Argv) != 0 {
+		t.Fatalf("acquired %+v, want the repository at %s and nothing else", got, fx.digest)
+	}
+	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Digest != fx.digest || got.Pin.Digest != pin.Digest {
+		t.Fatalf("pin = %+v (%v), want %s", pin, ok, fx.digest)
+	}
+	// Nothing materialized: no layer content in the store's tiers, no
+	// export, and no reference recorded — a store that may not reach
+	// the network finds no image under the reference.
+	filepath.WalkDir(work, func(p string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, _ := filepath.Rel(work, p)
+		top := strings.SplitN(filepath.ToSlash(rel), "/", 2)[0]
+		if top == "blobs" || top == "exports" || top == "layers" {
+			t.Fatalf("a daemon-path acquisition materialized %s", rel)
+		}
+		return nil
+	})
+	never, err := ocifs.New(ocifs.WithWorkDir(work), ocifs.WithPullPolicy(ocifs.PullNever))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer never.Close()
+	if _, err := never.Pull(ctx, ref); err == nil || !strings.Contains(err.Error(), "pull policy is 'Never'") {
+		t.Fatalf("a daemon-path acquisition recorded the reference as acquired: %v", err)
+	}
+	// The tag moves; the pin holds and the daemon is handed the
+	// pinned digest.
+	pushIndex(t, ref, hostPlatform())
+	again, err := a.Acquire(ctx, ref)
+	if err != nil || again.Image != got.Image {
+		t.Fatalf("pinned acquisition: %+v %v", again, err)
+	}
+	// A pin the registry contradicts fails closed.
+	wrong := &lockfile.File{}
+	if err := wrong.AddPlugin(lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("0", 64)}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := New(Config{WorkDir: t.TempDir(), Lock: wrong, Policy: &trust.Policy{}, Pull: PullDaemon})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { b.Close() })
+	if _, err := b.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), strings.Repeat("0", 64)) {
+		t.Fatalf("a pin the registry does not hold: %v", err)
 	}
 }

@@ -91,7 +91,7 @@ func TestDockerProtocol(t *testing.T) {
 		}
 		return vals
 	}
-	for name, want := range map[string][]string{"--network": {"none"}, "--hostname": {"pb-plugin"}, "--memory": {"67108864"}, "--memory-swap": {"67108864"}, "--pids-limit": {"7"}, "--ulimit": {"cpu=181"}, "--cap-drop": {"ALL"}, "--security-opt": {"no-new-privileges"}, "--workdir": {"/w"}, "--env": {"A=1", "B=two"}, "--entrypoint": {"/plugin"}} {
+	for name, want := range map[string][]string{"--network": {"none"}, "--hostname": {"pb-plugin"}, "--memory": {"67108864"}, "--memory-swap": {"67108864"}, "--pids-limit": {"7"}, "--ulimit": {"cpu=181"}, "--cap-drop": {"ALL"}, "--security-opt": {"no-new-privileges"}, "--workdir": {"/w"}, "--env": {"A=1", "B=two"}, "--entrypoint": {"/plugin"}, "--platform": {"linux/fakearch"}} {
 		if got := flag(name); !reflect.DeepEqual(got, want) {
 			t.Errorf("create %s = %q, want %q", name, got, want)
 		}
@@ -108,7 +108,7 @@ func TestDockerProtocol(t *testing.T) {
 	if !strings.HasPrefix(image, "sha256:") || create[len(create)-1] != "--flag" || create[len(create)-3] != "/plugin" {
 		t.Fatalf("create tail = %q", create[len(create)-4:])
 	}
-	if argv[4][3] != "fakecontainer" || argv[5][3] != "fakecontainer" || argv[7][2] != "fakecontainer" || argv[8][1] != image {
+	if argv[4][3] != "fakecontainer" || argv[5][3] != "fakecontainer" || argv[7][3] != "fakecontainer" || argv[8][1] != image {
 		t.Fatalf("container and image not carried through: %q %q %q", argv[5], argv[7], argv[8])
 	}
 	if stdin, _ := os.ReadFile(filepath.Join(dir, "stdin")); !bytes.Equal(stdin, request(t, "")) {
@@ -434,11 +434,16 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != "plugins/q:dev" || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" {
 		t.Fatalf("create = %q", create)
 	}
+	// pb selects nothing of a daemon-local image, its platform
+	// included (REQ-plugin-override).
+	if slices.Contains(create, "--platform") {
+		t.Fatalf("a daemon-local image was created for a platform: %q", create)
+	}
 	// A name that is no image reference, or a flag in its place, is
 	// refused before the daemon is asked.
 	for _, bad := range []string{"--privileged", "", "not a ref!"} {
 		_, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: bad, Limits: l, MinTier: plugexec.TierStrong})
-		if err == nil || !(strings.Contains(err.Error(), "does not name a daemon-local image") || strings.Contains(err.Error(), "exactly one of")) {
+		if err == nil || !(strings.Contains(err.Error(), "does not name a daemon image") || strings.Contains(err.Error(), "exactly one of")) {
 			t.Errorf("image %q: %v", bad, err)
 		}
 	}
@@ -446,6 +451,7 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 	for _, spec := range []Spec{
 		{Scheme: plugexec.SchemeOCI, Image: "x", Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierStrong},
 		{Scheme: plugexec.SchemeLocal, Image: "x", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierNone},
+		{Scheme: plugexec.SchemeLocal, Pull: true, Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierNone},
 	} {
 		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "exactly one of") && !strings.Contains(err.Error(), "world of its own") {
 			t.Errorf("%+v accepted: %v", spec, err)
@@ -507,5 +513,61 @@ func TestDockerRecordUnreadable(t *testing.T) {
 	verbs, _ := fakeLog(t, dir)
 	if slices.Contains(verbs, "start") || !slices.Contains(verbs, "rm") || !slices.Contains(verbs, "rmi") {
 		t.Fatalf("invocations = %v", verbs)
+	}
+}
+
+// A pulled image: the daemon pulls the verified digest before the
+// create, which runs it as a daemon image (its own configuration,
+// never fetched again), and the image stays in the daemon afterwards;
+// a pull the daemon refuses ends the run before any container, and an
+// image to pull that names no digest is refused before the daemon is
+// asked (REQ-plugin-core-verifies).
+func TestDockerPullsVerifiedDigest(t *testing.T) {
+	dir := fakeDaemon(t)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
+	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
+	res, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Tier != plugexec.TierStrong || content(t, res) != "from the fake daemon" {
+		t.Fatalf("result = %+v", res)
+	}
+	verbs, argv := fakeLog(t, dir)
+	if want := []string{"version", "info", "pull", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
+		t.Fatalf("invocations = %v, want %v", verbs, want)
+	}
+	// The platform pb checked is named on the pull and the create,
+	// so the daemon's own default never picks another child of the
+	// verified index.
+	if !reflect.DeepEqual(argv[2], []string{"pull", "--platform", "linux/fakearch", image}) {
+		t.Fatalf("pull = %q", argv[2])
+	}
+	create := argv[3]
+	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != image || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" || create[len(create)-5] != "--platform" || create[len(create)-4] != "linux/fakearch" {
+		t.Fatalf("create = %q", create)
+	}
+	// The container goes with the anonymous volumes an image
+	// declares; the pulled image stays.
+	if !reflect.DeepEqual(argv[7], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
+		t.Fatalf("rm = %q", argv[7])
+	}
+	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "ghcr.io/o/p:v1", Pull: true, Limits: l, MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
+		t.Fatalf("a tag to pull: %v", err)
+	}
+	dir = fakeDaemon(t)
+	if err := os.WriteFile(filepath.Join(dir, "pull-fails"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
+	if err == nil || !strings.Contains(err.Error(), "the daemon pulling "+image) || !strings.Contains(err.Error(), "manifest unknown") {
+		t.Fatalf("a refused pull: %v", err)
+	}
+	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "create") {
+		t.Fatalf("a container was created after a refused pull: %v", verbs)
 	}
 }

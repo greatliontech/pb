@@ -74,6 +74,7 @@ const OverrideDaemonPrefix = "docker://"
 type acquired struct {
 	rootfs  string
 	image   string
+	pull    bool // image is the registry's at a verified digest, for the daemon to pull
 	process plugexec.Process
 }
 
@@ -103,6 +104,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Ref)
 		}
 	}
+	_, daemonRunner := deps.Runner.(plugrun.DaemonImages)
 	// Overrides are judged before anything is acquired: the policy
 	// admits them or not, and every key names a declared oci entry
 	// (REQ-plugin-override).
@@ -117,7 +119,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if !found {
 			return fmt.Errorf("generate: override %s names no oci plugin entry", key)
 		}
-		if _, daemon := deps.Runner.(plugrun.DaemonImages); strings.HasPrefix(source, OverrideDaemonPrefix) && !daemon {
+		if !daemonRunner && strings.HasPrefix(source, OverrideDaemonPrefix) {
 			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs (select it with --%s docker)", key, plugrun.FlagRunner)
 		}
 	}
@@ -174,8 +176,14 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			default:
 				var a *plugoci.Acquired
 				a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
+				if acqErr == nil && a.Image != "" && !daemonRunner {
+					// The acquisition yielded a digest for the daemon
+					// to pull; the CLI refuses the byte path for this
+					// runner first, so this is the seam's own guard.
+					acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the selected runner runs no daemon images", a.Image)
+				}
 				if acqErr == nil {
-					plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
+					plugins[i] = acquired{rootfs: a.Rootfs, image: a.Image, pull: a.Image != "", process: a.Process}
 				}
 			}
 		}
@@ -220,6 +228,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			Scheme:  entry.Scheme,
 			Rootfs:  plugins[i].rootfs,
 			Image:   plugins[i].image,
+			Pull:    plugins[i].pull,
 			Process: plugins[i].process,
 			Stdin:   reqBytes,
 			Limits:  limits,

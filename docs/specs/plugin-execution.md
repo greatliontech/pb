@@ -110,7 +110,24 @@ verification. Image content reaches the runner by any byte path — pb's
 own store by default, or, as machine-scoped opt-in configuration, a
 Docker daemon pulling by digest — because content addressing makes the
 byte path irrelevant to identity: the digest verified by the core is
-the digest the substrate enforces.
+the digest the substrate enforces. The byte path is the `plugin-pull`
+setting (`PBPLUGINPULL`, or the user configuration file's
+`plugin-pull` key; `user-config.md`): `store` (the default) exports
+the verified image from pb's store into the runner; `docker` has the
+daemon pull the verified digest itself — pb resolves and verifies
+without materializing, pins as ever, and the runner pulls the
+repository at that digest with the daemon's own credentials, runs the
+container under the image's own configuration as it runs a
+daemon-local image, and leaves the pulled image in the daemon, which
+now holds it as its own; the runner's record is judged exactly as for
+any run. On either byte path the runner names the platform pb
+checked (`REQ-plugin-platform-strict`) to the daemon's pull and
+create, so the daemon's own default selects no other child of the
+verified index and refuses no image pb admitted; a daemon-local
+override, which pb selects nothing of, is created as it is. A runner
+that runs no daemon images (`native`) refuses `docker` before
+anything runs, and a value naming neither byte path is refused —
+each naming the layer the value came from.
 
 ## Local binaries (`local` scheme)
 

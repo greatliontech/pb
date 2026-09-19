@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/trust"
@@ -28,16 +29,22 @@ import (
 // unbounded resource.
 //
 // Scheme is the entry's identity scheme: an oci run has its world in
-// Rootfs — the image export — or, for an override naming a
-// daemon-local image, in Image, which only the docker runner
-// consumes (REQ-plugin-override); a local run has neither, its
+// Rootfs — the image export — or in Image, which only the docker
+// runner consumes: a daemon-local image an override names
+// (REQ-plugin-override), or, with Pull set, the repository at the
+// digest pb verified for the daemon to pull
+// (REQ-plugin-core-verifies); a local run has neither, its
 // Process a host binary run in the host's world with the host's
 // environment, under the bounds alone (plugin-execution.md, "Local
 // binaries").
 type Spec struct {
-	Scheme  string
-	Rootfs  string
-	Image   string
+	Scheme string
+	Rootfs string
+	Image  string
+	// Pull marks Image as the registry's repository at a digest pb
+	// verified, for the daemon to pull (REQ-plugin-core-verifies);
+	// unset, Image is a daemon-local image the daemon already holds.
+	Pull    bool
 	Process plugexec.Process
 	Stdin   []byte
 	Limits  trust.Limits
@@ -110,25 +117,29 @@ func beforeStart(ctx context.Context, err error) error {
 	return err
 }
 
-// DaemonImages marks a runner that runs a daemon-local image
-// (Spec.Image): the docker runner alone. Generate refuses a
-// daemon-local override before anything runs unless the selected
-// runner is one.
+// DaemonImages marks a runner that runs a daemon image (Spec.Image,
+// daemon-local or pulled): the docker runner alone. A daemon-local
+// override, and the docker byte path, are refused before anything
+// runs unless the selected runner is one.
 type DaemonImages interface {
 	RunsDaemonImages()
 }
 
 // checkScheme refuses a Spec whose scheme and world disagree: an oci
-// run has exactly one of a rootfs and a daemon-local image, a local
-// run has neither, and no other scheme runs.
+// run has exactly one of a rootfs and a daemon image, an image the
+// daemon is to pull names a digest, a local run has neither world,
+// and no other scheme runs.
 func checkScheme(spec Spec) error {
 	switch spec.Scheme {
 	case plugexec.SchemeOCI:
 		if (spec.Rootfs == "") == (spec.Image == "") {
-			return errors.New("plugrun: an oci run has exactly one of a rootfs and a daemon-local image")
+			return errors.New("plugrun: an oci run has exactly one of a rootfs and a daemon image")
+		}
+		if spec.Pull && !strings.Contains(spec.Image, "@") {
+			return fmt.Errorf("plugrun: the daemon pulls a verified digest, and %q names none", spec.Image)
 		}
 	case plugexec.SchemeLocal:
-		if spec.Rootfs != "" || spec.Image != "" {
+		if spec.Rootfs != "" || spec.Image != "" || spec.Pull {
 			return errors.New("plugrun: a local run carries a world of its own")
 		}
 	default:

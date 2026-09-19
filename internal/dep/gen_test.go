@@ -721,3 +721,25 @@ func TestGenOverrides(t *testing.T) {
 		t.Fatalf("forbidden: %v", err)
 	}
 }
+
+// An acquisition that yields a digest for the daemon to pull reaches
+// the runner as a pulled image with no rootfs and no process of pb's
+// — the daemon applies the image's own — and only a runner that runs
+// daemon images may receive it (REQ-plugin-core-verifies).
+func TestGenPulledImage(t *testing.T) {
+	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
+	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
+	acq := &stubAcquirer{acq: &plugoci.Acquired{Image: image, Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
+	run := &daemonStubRunner{stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}}
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if run.spec.Image != image || !run.spec.Pull || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
+		t.Fatalf("runner received %+v", run.spec)
+	}
+	plain := &stubRunner{res: run.res}
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Image != "" {
+		t.Fatalf("a runner without a daemon ran a pulled image: %v %+v", err, plain.spec)
+	}
+}
