@@ -21,7 +21,10 @@ both in the analysis layer (gofresh, through gomutant):
   program's type analysis in `writeMember` (`hash.Hash.Sum` on a
   standard-library hash).
 
-Until those clear, the two targets' 37 open survivors and any
+A third reason arrived with gofresh v0.102.0: the record is stamped
+"dirty worktree provenance" on a clean tree, the evidence walk's
+own fault rendered as git drift. Until those clear, the two
+targets' 37 open survivors and any
 attestations on them are per-machine only and continuous
 integration cannot see them. A first campaign over this tree also
 spends its whole budget in freshness proofs (a union over 486
@@ -29,5 +32,7 @@ subjects for two targets); the proof slices it persists let a rerun
 reach measurement.
 
 Lands: gomutant serves the two targets' records as repo evidence —
-the `/` classification and the open reachability resolved on its
-side (reported to the maintainer)
+gofresh's `root-directory-input-with-empty-manifest` and
+`iterator-calls-and-std-invokes-open-the-closure`, and gomutant's
+`evidence-fault-rendered-as-dirty-provenance`, resolved (each filed
+awaiting triage)
