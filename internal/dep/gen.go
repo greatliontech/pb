@@ -72,10 +72,11 @@ const OverrideDaemonPrefix = "docker://"
 // acquired is one entry's plugin, whichever scheme produced it: an
 // export, a daemon-local image, or a host binary.
 type acquired struct {
-	rootfs  string
-	image   string
-	pull    bool // image is the registry's at a verified digest, for the daemon to pull
-	process plugexec.Process
+	rootfs   string
+	image    string
+	pull     bool   // image is the registry's at a verified digest, for the daemon to pull
+	platform string // the admitted entry's platform, for a pulled image
+	process  plugexec.Process
 }
 
 // Gen is the generate verb (REQ-gen-verb): parse pb.gen.yaml, compile
@@ -183,7 +184,13 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 					acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the selected runner runs no daemon images", a.Image)
 				}
 				if acqErr == nil {
+					// The admitted entry's platform is the daemon's to
+					// be told for a pulled image; an export already is
+					// that child.
 					plugins[i] = acquired{rootfs: a.Rootfs, image: a.Image, pull: a.Image != "", process: a.Process}
+					if a.Image != "" {
+						plugins[i].platform = a.Platform
+					}
 				}
 			}
 		}
@@ -225,14 +232,15 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			runner, floor = deps.Local.Runner, plugexec.TierNone
 		}
 		res, err := runner.Run(ctx, plugrun.Spec{
-			Scheme:  entry.Scheme,
-			Rootfs:  plugins[i].rootfs,
-			Image:   plugins[i].image,
-			Pull:    plugins[i].pull,
-			Process: plugins[i].process,
-			Stdin:   reqBytes,
-			Limits:  limits,
-			MinTier: floor,
+			Scheme:   entry.Scheme,
+			Rootfs:   plugins[i].rootfs,
+			Image:    plugins[i].image,
+			Pull:     plugins[i].pull,
+			Platform: plugins[i].platform,
+			Process:  plugins[i].process,
+			Stdin:    reqBytes,
+			Limits:   limits,
+			MinTier:  floor,
 		})
 		if errors.Is(err, plugrun.ErrTierUnreachable) {
 			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)

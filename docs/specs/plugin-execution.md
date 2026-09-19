@@ -94,6 +94,13 @@ author's platform declaration (the plugin image term) — and no
 emulation, substitution, or fallback exists. Matching granularity is
 `<os>/<arch>`, deliberately: the platform variant is not consulted, and
 variant-aware selection is a future amendment, not implied behavior.
+Exactly one entry matches, or none does: a manifest list carrying
+several entries for the host — variants of one architecture — is
+refused naming them, since choosing among them would be a fallback,
+as the store's own rule holds — so an image published for the host's
+architecture in several variants is refused on it. The one entry
+admitted, its variant included, is the child of the verified index
+the run uses, on every byte path.
 
 **REQ-plugin-verify-before-run** (behavior): A plugin image MUST pass
 trust-policy evaluation (`provenance.md`) before any process from it is
@@ -120,10 +127,13 @@ repository at that digest with the daemon's own credentials, runs the
 container under the image's own configuration as it runs a
 daemon-local image, and leaves the pulled image in the daemon, which
 now holds it as its own; the runner's record is judged exactly as for
-any run. On either byte path the runner names the platform pb
-checked (`REQ-plugin-platform-strict`) to the daemon's pull and
-create, so the daemon's own default selects no other child of the
-verified index and refuses no image pb admitted; a daemon-local
+any run. The runner names to the daemon's pull and create the very
+entry the seam admitted (`REQ-plugin-platform-strict`), its variant
+included, so the daemon pulls and runs that child of the verified
+index and no other — its own default and its own variant matching
+(under which a bare `linux/arm` is `v7`, and a `v6`-only image would
+be refused) never choosing; on the store path the import stamps the
+daemon's platform, which the create names back. A daemon-local
 override, which pb selects nothing of, is created as it is. A runner
 that runs no daemon images (`native`) refuses `docker` before
 anything runs, and a value naming neither byte path is refused —

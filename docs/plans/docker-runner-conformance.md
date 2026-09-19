@@ -14,7 +14,7 @@ REQ-plugin-core-verifies)
 - [x] 2. The memory kill's second record: a 137 exit the daemon's
       record leaves unattributed is read against the daemon's OOM
       event for the container before its release
-- [ ] 3. The admitted child named to the daemon: the seam records the
+- [x] 3. The admitted child named to the daemon: the seam records the
       platform of the manifest-list entry it admitted, the docker
       runner pulls and creates for exactly that platform, and an
       entry set ambiguous for the host (several variants) is refused

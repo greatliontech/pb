@@ -212,10 +212,12 @@ func TestFixtureAnswersEveryBehavior(t *testing.T) {
 
 // The docker byte path against a real daemon: the daemon pulls the
 // repository at the verified digest from a registry of the test's,
-// for the platform pb checked, creates the container from it under
-// the image's own configuration — its entrypoint and environment,
-// which pb never passed — and the run is judged as any other
-// (REQ-plugin-core-verifies).
+// the very entry the seam admitted named to it with its variant —
+// the daemon's own normalization of the architecture never
+// choosing — creates the container from it under the image's own
+// configuration (its entrypoint and environment, which pb never
+// passed), and the run is judged as any other
+// (REQ-plugin-core-verifies, REQ-plugin-platform-strict).
 func TestDockerLivePull(t *testing.T) {
 	r := requireDaemon(t)
 	// The registry is the test process's loopback, which only a
@@ -238,7 +240,18 @@ func TestDockerLivePull(t *testing.T) {
 		t.Fatal(err)
 	}
 	os_, arch := r.Platform()
-	img, err := mutate.ConfigFile(empty.Image, &v1.ConfigFile{OS: os_, Architecture: arch, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}})
+	// The image declares a variant, and the admitted entry's spelling
+	// is what reaches the daemon. The arm discriminates on amd64 (the
+	// daemon refuses a v3 image created as bare amd64) and on arm (v6
+	// runs on v7 hardware, and bare linux/arm is v7); on arm64 it
+	// cannot: v8 is the daemon's own reading of a bare arm64, so a
+	// create named either way is accepted there.
+	variant := map[string]string{"amd64": "v3", "arm64": "v8", "arm": "v6"}[arch]
+	platform := os_ + "/" + arch
+	if variant != "" {
+		platform += "/" + variant
+	}
+	img, err := mutate.ConfigFile(empty.Image, &v1.ConfigFile{OS: os_, Architecture: arch, Variant: variant, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +279,7 @@ func TestDockerLivePull(t *testing.T) {
 	run := func(param string) (*Result, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		return r.Run(ctx, Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Stdin: request(t, param), Limits: limits(nil), MinTier: plugexec.TierStrong})
+		return r.Run(ctx, Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Platform: platform, Stdin: request(t, param), Limits: limits(nil), MinTier: plugexec.TierStrong})
 	}
 	res, err := run("")
 	if err != nil {
@@ -283,7 +296,7 @@ func TestDockerLivePull(t *testing.T) {
 	}
 	// A digest the registry does not hold is the daemon's refusal.
 	unknown := host + "/live/plugin@sha256:" + strings.Repeat("1", 64)
-	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: unknown, Pull: true, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
+	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: unknown, Pull: true, Platform: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
 		t.Fatalf("an unknown digest: %v", err)
 	}
 }

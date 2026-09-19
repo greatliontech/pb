@@ -25,10 +25,11 @@ import (
 // (REQ-plugin-core-verifies): the image export as a rootfs tar
 // through `docker import`, the daemon fetching nothing, or — under
 // the docker byte path — a pull of the repository at the digest the
-// seam admitted, for the platform pb checked, the daemon holding the
-// image as its own afterwards. The container is created with no
-// network, a read-only root, every capability dropped, no_new_privs,
-// and the policy's bounds. The tier and the accounting are derived
+// seam admitted, naming the manifest-list entry it admitted, the
+// daemon holding the image as its own afterwards. The container is
+// created with no network, a read-only root, every capability
+// dropped, no_new_privs, and the policy's bounds. The tier and the
+// accounting are derived
 // from the daemon's own record of the created container, read back
 // before it starts, never from the flags pb passed
 // (REQ-plugin-reported-tier): a record that does not show the
@@ -158,14 +159,8 @@ type dockerRecord struct {
 // container.
 func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err error) {
 	limits := spec.Limits
-	if err := checkLimits(limits); err != nil {
+	if err := CheckSpec(spec); err != nil {
 		return nil, err
-	}
-	if err := checkScheme(spec); err != nil {
-		return nil, err
-	}
-	if len(spec.Process.Argv) == 0 && spec.Image == "" {
-		return nil, errors.New("plugrun: the plugin process has no argv")
 	}
 	if spec.Scheme == plugexec.SchemeLocal {
 		return nil, errors.New("plugrun: a local plugin is a host binary; the docker runner runs images only")
@@ -286,14 +281,18 @@ type prepared struct {
 // caller: a verdict is no daemon step.
 func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limits) (p prepared, err error) {
 	image := spec.Image
+	// The platform named to the daemon: for a pulled image the very
+	// manifest-list entry the seam admitted, variant included, so
+	// the daemon pulls and runs that child and no other of the
+	// verified index — its own default (DOCKER_DEFAULT_PLATFORM)
+	// and its own variant matching aside; for an import the daemon's
+	// platform, which stamped the image.
 	platform := r.os + "/" + r.arch
 	if spec.Pull {
-		// The daemon fetches the content at the digest pb verified,
-		// for the platform pb checked — named, so the daemon's own
-		// default (DOCKER_DEFAULT_PLATFORM) never picks another
-		// child of the verified index — with its own credentials;
-		// the image is then the daemon's own and stays
-		// (REQ-plugin-core-verifies).
+		platform = spec.Platform
+		// The daemon fetches the content at the digest pb verified
+		// with its own credentials; the image is then the daemon's
+		// own and stays (REQ-plugin-core-verifies).
 		if _, err := r.docker(ctx, nil, "pull", "--platform", platform, image); err != nil {
 			return p, fmt.Errorf("plugrun: the daemon pulling %s: %w", image, err)
 		}

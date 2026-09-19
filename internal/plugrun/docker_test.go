@@ -578,7 +578,9 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	}
 	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
 	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
-	res, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
+	// The admitted entry's platform, variant included, is what the
+	// daemon is told — not the daemon's own os/arch.
+	res, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Platform: "linux/arm/v6", Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -592,26 +594,39 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	// The platform pb checked is named on the pull and the create,
 	// so the daemon's own default never picks another child of the
 	// verified index.
-	if !reflect.DeepEqual(argv[2], []string{"pull", "--platform", "linux/fakearch", image}) {
+	if !reflect.DeepEqual(argv[2], []string{"pull", "--platform", "linux/arm/v6", image}) {
 		t.Fatalf("pull = %q", argv[2])
 	}
 	create := argv[3]
-	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != image || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" || create[len(create)-5] != "--platform" || create[len(create)-4] != "linux/fakearch" {
+	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != image || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" || create[len(create)-5] != "--platform" || create[len(create)-4] != "linux/arm/v6" {
 		t.Fatalf("create = %q", create)
+	}
+	// A pulled image names its platform, and only a pulled one does.
+	for _, c := range []struct {
+		spec Spec
+		text string
+	}{
+		{Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Limits: l, MinTier: plugexec.TierStrong}, "none is named"},
+		{Spec{Scheme: plugexec.SchemeOCI, Image: "plugins/q:dev", Platform: "linux/arm/v6", Limits: l, MinTier: plugexec.TierStrong}, "pulled image alone"},
+		{Spec{Scheme: plugexec.SchemeOCI, Rootfs: "/r", Platform: "linux/arm/v6", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierStrong}, "pulled image alone"},
+	} {
+		if _, err := r.Run(context.Background(), c.spec); err == nil || !strings.Contains(err.Error(), c.text) {
+			t.Errorf("%+v: %v, want %q", c.spec, err, c.text)
+		}
 	}
 	// The container goes with the anonymous volumes an image
 	// declares; the pulled image stays.
 	if !reflect.DeepEqual(argv[7], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
 		t.Fatalf("rm = %q", argv[7])
 	}
-	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "ghcr.io/o/p:v1", Pull: true, Limits: l, MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
+	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "ghcr.io/o/p:v1", Pull: true, Platform: "linux/fakearch", Limits: l, MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
 		t.Fatalf("a tag to pull: %v", err)
 	}
 	dir = fakeDaemon(t)
 	if err := os.WriteFile(filepath.Join(dir, "pull-fails"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: image, Pull: true, Platform: "linux/fakearch", Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "the daemon pulling "+image) || !strings.Contains(err.Error(), "manifest unknown") {
 		t.Fatalf("a refused pull: %v", err)
 	}

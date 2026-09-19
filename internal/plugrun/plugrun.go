@@ -44,11 +44,15 @@ type Spec struct {
 	// Pull marks Image as the registry's repository at a digest pb
 	// verified, for the daemon to pull (REQ-plugin-core-verifies);
 	// unset, Image is a daemon-local image the daemon already holds.
-	Pull    bool
-	Process plugexec.Process
-	Stdin   []byte
-	Limits  trust.Limits
-	MinTier string
+	Pull bool
+	// Platform is the manifest-list entry the seam admitted for a
+	// pulled image — os/arch, with its variant where stated — the one
+	// child the daemon is to pull and run; empty otherwise.
+	Platform string
+	Process  plugexec.Process
+	Stdin    []byte
+	Limits   trust.Limits
+	MinTier  string
 }
 
 // Result is what a run reports: the plugin's stdout and stderr bytes,
@@ -130,6 +134,25 @@ type DaemonImages interface {
 	RunsDaemonImages()
 }
 
+// CheckSpec refuses a Spec no runner runs: unbounded limits, a
+// scheme and a world that disagree, or a process with no argv where
+// no daemon image supplies one. It is the one preamble every runner
+// applies first — each adds only the refusals of its own substrate
+// after it — and a stand-in runner applies it too, so a spec no
+// runner would run is refused where it is built.
+func CheckSpec(spec Spec) error {
+	if err := checkLimits(spec.Limits); err != nil {
+		return err
+	}
+	if err := checkScheme(spec); err != nil {
+		return err
+	}
+	if len(spec.Process.Argv) == 0 && spec.Image == "" {
+		return errors.New("plugrun: the plugin process has no argv")
+	}
+	return nil
+}
+
 // checkScheme refuses a Spec whose scheme and world disagree: an oci
 // run has exactly one of a rootfs and a daemon image, an image the
 // daemon is to pull names a digest, a local run has neither world,
@@ -142,6 +165,12 @@ func checkScheme(spec Spec) error {
 		}
 		if spec.Pull && !strings.Contains(spec.Image, "@") {
 			return fmt.Errorf("plugrun: the daemon pulls a verified digest, and %q names none", spec.Image)
+		}
+		if spec.Pull && spec.Platform == "" {
+			return errors.New("plugrun: the daemon pulls the admitted platform's child, and none is named")
+		}
+		if !spec.Pull && spec.Platform != "" {
+			return errors.New("plugrun: a platform is named for a pulled image alone")
 		}
 	case plugexec.SchemeLocal:
 		if spec.Rootfs != "" || spec.Image != "" || spec.Pull {

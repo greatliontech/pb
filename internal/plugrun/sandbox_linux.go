@@ -51,13 +51,7 @@ func (r *SandboxRunner) Platform() (string, string) { return runtime.GOOS, runti
 // accounting that attributes it (outcome).
 func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err error) {
 	limits := spec.Limits
-	if err := checkLimits(limits); err != nil {
-		return nil, err
-	}
-	if len(spec.Process.Argv) == 0 {
-		return nil, errors.New("plugrun: the plugin process has no argv")
-	}
-	if err := checkScheme(spec); err != nil {
+	if err := CheckSpec(spec); err != nil {
 		return nil, err
 	}
 	if spec.Image != "" {

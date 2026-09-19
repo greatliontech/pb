@@ -2,6 +2,7 @@ package plugoci
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -57,6 +58,33 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 			t.Fatal(err)
 		}
 		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: env}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Each child carries its platform's spelling in a file, so an
+		// export can be told apart by the child it came from.
+		spelled := p.OS + "/" + p.Architecture
+		if p.Variant != "" {
+			spelled += "/" + p.Variant
+		}
+		marker, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
+			var buf bytes.Buffer
+			tw := tar.NewWriter(&buf)
+			if err := tw.WriteHeader(&tar.Header{Name: "platform", Mode: 0o644, Size: int64(len(spelled))}); err != nil {
+				return nil, err
+			}
+			if _, err := tw.Write([]byte(spelled)); err != nil {
+				return nil, err
+			}
+			if err := tw.Close(); err != nil {
+				return nil, err
+			}
+			return io.NopCloser(&buf), nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		img, err = mutate.AppendLayers(img, marker)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,6 +228,54 @@ func TestAcquirePlatformStrict(t *testing.T) {
 	_, err = a.Acquire(ctx, bare)
 	if err == nil || !strings.Contains(err.Error(), "not a manifest list") {
 		t.Fatalf("bare manifest: %v", err)
+	}
+
+	// Several entries for the host — variants of one architecture —
+	// are refused: choosing among them would be a fallback.
+	host := hostPlatform()
+	several := fx.host + "/org/several:v1"
+	pushIndex(t, several, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v1"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v2"})
+	_, err = a.Acquire(ctx, several)
+	if err == nil || !strings.Contains(err.Error(), "2 entries for "+host.OS+"/"+host.Architecture+" in its manifest list (["+host.OS+"/"+host.Architecture+"/v1 "+host.OS+"/"+host.Architecture+"/v2])") {
+		t.Fatalf("several entries: %v", err)
+	}
+}
+
+// The seam records the one entry it admitted, its variant included,
+// and the daemon byte path hands it on as the platform to pull: the
+// child the run uses is pb's choice, never the daemon's
+// (REQ-plugin-platform-strict, REQ-plugin-core-verifies).
+func TestAcquireAdmittedPlatform(t *testing.T) {
+	fx := newFixture(t)
+	host := hostPlatform()
+	ref := fx.host + "/org/variant:v1"
+	// The host's entry sits second: the admitted entry is the one
+	// that matched, not the first listed.
+	pushIndex(t, ref, v1.Platform{OS: "plan9", Architecture: "mips"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v9"})
+	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}, Pull: PullDaemon})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { a.Close() })
+	got, err := a.Acquire(ctx, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := host.OS + "/" + host.Architecture + "/v9"; got.Platform != want {
+		t.Fatalf("admitted platform = %q, want %q", got.Platform, want)
+	}
+	plain := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Platform != host.OS+"/"+host.Architecture {
+		t.Fatalf("an entry without a variant: %+v %v", got, err)
+	}
+	// The store path exports that same child: the one entry that
+	// matched, whatever its variant — its own marker is in the export.
+	got, err = plain.Acquire(ctx, ref)
+	if err != nil || got.Platform != host.OS+"/"+host.Architecture+"/v9" {
+		t.Fatalf("the store path's admitted child: %+v %v", got, err)
+	}
+	if marker, err := os.ReadFile(filepath.Join(got.Rootfs, "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {
+		t.Fatalf("the export is not the admitted child's: %q %v", marker, err)
 	}
 }
 

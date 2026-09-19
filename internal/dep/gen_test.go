@@ -50,8 +50,13 @@ type stubRunner struct {
 	err  error
 }
 
+// Run records the spec and refuses what every real runner refuses
+// first, so a spec gen builds that no runner would run fails here.
 func (s *stubRunner) Run(_ context.Context, spec plugrun.Spec) (*plugrun.Result, error) {
 	s.spec = spec
+	if err := plugrun.CheckSpec(spec); err != nil {
+		return nil, err
+	}
 	return s.res, s.err
 }
 
@@ -729,17 +734,26 @@ func TestGenOverrides(t *testing.T) {
 func TestGenPulledImage(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Image: image, Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
+	acq := &stubAcquirer{acq: &plugoci.Acquired{Image: image, Platform: "linux/arm/v6", Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
 	run := &daemonStubRunner{stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
-	if run.spec.Image != image || !run.spec.Pull || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
+	if run.spec.Image != image || !run.spec.Pull || run.spec.Platform != "linux/arm/v6" || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
 		t.Fatalf("runner received %+v", run.spec)
 	}
 	plain := &stubRunner{res: run.res}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Image != "" {
 		t.Fatalf("a runner without a daemon ran a pulled image: %v %+v", err, plain.spec)
+	}
+	// A store acquisition carries the admitted platform too — the
+	// export is that child — and the runner is told none of it.
+	stored := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Platform: "linux/arm/v6", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: plain}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if plain.spec.Platform != "" || plain.spec.Pull || plain.spec.Rootfs != "/r" {
+		t.Fatalf("the store path's spec: %+v", plain.spec)
 	}
 }

@@ -108,6 +108,7 @@ type Acquirer struct {
 type acquisition struct {
 	declaredRef  string // the reference as declared in generation config
 	pinnedDigest string // "" on first use
+	platform     string // the admitted manifest-list entry's platform, as a daemon spells it
 	resolved     string
 	provenance   lockfile.Provenance
 }
@@ -175,6 +176,12 @@ type Acquired struct {
 	// Image is the repository at the verified digest, for the daemon
 	// to pull (PullDaemon); empty where a rootfs was exported.
 	Image string
+	// Platform is the manifest-list entry the seam admitted for the
+	// host — os/arch, with its variant where the entry states one —
+	// the one child of the verified index the run uses: an export
+	// already is that child; a daemon is told it (Image) and pulls
+	// exactly that.
+	Platform string
 	// Process is the image config's process: argv as Entrypoint then
 	// Cmd, exactly as OCI runtimes compose them, environment, and
 	// working directory. Zero under PullDaemon: the daemon applies
@@ -229,7 +236,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 		if err := record(); err != nil {
 			return nil, err
 		}
-		return &Acquired{Image: atDigest(ref, res.Digest.String()), Pin: pin}, nil
+		return &Acquired{Image: atDigest(ref, res.Digest.String()), Platform: acq.platform, Pin: pin}, nil
 	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
@@ -249,7 +256,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plugoci: %s: %v", ref, err)
 	}
-	return &Acquired{Rootfs: rootfs, Process: process, Pin: pin}, nil
+	return &Acquired{Rootfs: rootfs, Process: process, Platform: acq.platform, Pin: pin}, nil
 }
 
 // atDigest is ref's repository at digest: the digest-form reference
@@ -308,9 +315,11 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	if acq.pinnedDigest != "" && digest != acq.pinnedDigest {
 		return fmt.Errorf("plugoci: %s resolved to %s, pin records %s (%w)", acq.declaredRef, digest, acq.pinnedDigest, lockfile.ErrPinMismatch)
 	}
-	if err := a.checkPlatforms(acq.declaredRef, id.Artifact); err != nil {
+	platform, err := a.checkPlatforms(acq.declaredRef, id.Artifact)
+	if err != nil {
 		return err
 	}
+	acq.platform = platform
 	decision := a.policy.EvaluatePlugin(acq.declaredRef)
 	if a.verifier == nil {
 		if decision.Require {
@@ -343,26 +352,44 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	}
 }
 
-// checkPlatforms requires the artifact to be a manifest list carrying
-// the host platform. <os>/<arch> is the deliberate granularity —
-// variant is not consulted (REQ-plugin-platform-strict).
-func (a *Acquirer) checkPlatforms(ref string, artifact []byte) error {
+// checkPlatforms admits the one manifest-list entry for the host —
+// os and architecture, the variant not consulted — and returns its
+// platform as a daemon spells it, variant included, so the runner can
+// name exactly that child (REQ-plugin-platform-strict). None is a
+// refusal attributing the gap to the image; several (an index
+// carrying more than one variant for the host) is a refusal too:
+// choosing among them would be a fallback, as the store's own rule
+// holds.
+func (a *Acquirer) checkPlatforms(ref string, artifact []byte) (string, error) {
 	var top v1.IndexManifest
 	if err := json.Unmarshal(artifact, &top); err != nil {
-		return fmt.Errorf("plugoci: %s: unreadable top-level artifact: %v", ref, err)
+		return "", fmt.Errorf("plugoci: %s: unreadable top-level artifact: %v", ref, err)
 	}
 	if top.MediaType != types.OCIImageIndex && top.MediaType != types.DockerManifestList {
-		return fmt.Errorf("plugoci: %s is not a manifest list (%s): the manifest list is the image's platform declaration, and pb refuses what it cannot match", ref, top.MediaType)
+		return "", fmt.Errorf("plugoci: %s is not a manifest list (%s): the manifest list is the image's platform declaration, and pb refuses what it cannot match", ref, top.MediaType)
 	}
-	var listed []string
+	var listed, admitted []string
 	for _, m := range top.Manifests {
 		if m.Platform == nil {
 			continue
 		}
-		if m.Platform.OS == a.platform.OS && m.Platform.Architecture == a.platform.Arch {
-			return nil
+		// Spelled as a daemon's --platform parses it: os/arch, then
+		// the variant; an OS version, which that flag does not take,
+		// is left out of the spelling (and of the match).
+		spelled := m.Platform.OS + "/" + m.Platform.Architecture
+		if m.Platform.Variant != "" {
+			spelled += "/" + m.Platform.Variant
 		}
-		listed = append(listed, m.Platform.OS+"/"+m.Platform.Architecture)
+		listed = append(listed, spelled)
+		if m.Platform.OS == a.platform.OS && m.Platform.Architecture == a.platform.Arch {
+			admitted = append(admitted, spelled)
+		}
 	}
-	return fmt.Errorf("plugoci: %s has no %s/%s entry in its manifest list (found %v): the image does not support this platform", ref, a.platform.OS, a.platform.Arch, listed)
+	switch len(admitted) {
+	case 1:
+		return admitted[0], nil
+	case 0:
+		return "", fmt.Errorf("plugoci: %s has no %s/%s entry in its manifest list (found %v): the image does not support this platform", ref, a.platform.OS, a.platform.Arch, listed)
+	}
+	return "", fmt.Errorf("plugoci: %s has %d entries for %s/%s in its manifest list (%v): choosing among them would be a fallback, and pb refuses it", ref, len(admitted), a.platform.OS, a.platform.Arch, admitted)
 }
