@@ -17,3 +17,9 @@ configuration directory, `$XDG_CONFIG_HOME/pb`), which settings it
 carries beside the runner, and how it ranks against the environment
 for each. Until then the environment is the persistent machine-scoped
 layer.
+
+The same decision homes REQ-plugin-core-verifies' opt-in byte path:
+"as machine-scoped opt-in configuration, a Docker daemon pulling by
+digest". The `docker` runner delivers the store path only — the
+verified export imported into the daemon — until that configuration
+has a home.

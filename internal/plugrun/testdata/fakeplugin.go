@@ -54,6 +54,17 @@ func main() {
 		_, err := net.DialTimeout("tcp", "1.1.1.1:443", 2*time.Second)
 		emit(fmt.Sprintf("ifaces=%s dial-err=%v", strings.Join(names, ","), err != nil))
 		return
+	case "env":
+		emit("PB_PLUGIN_TEST_ENV=" + os.Getenv("PB_PLUGIN_TEST_ENV"))
+		return
+	case "host":
+		h, _ := os.Hostname()
+		emit("hostname=" + h)
+		return
+	case "both":
+		fmt.Fprintln(os.Stderr, "a line on stderr")
+		emit("stdout-with-stderr")
+		return
 	case "write":
 		err := os.WriteFile("/probe", []byte("x"), 0o644)
 		emit(fmt.Sprintf("write-err=%v", err != nil))

@@ -1,6 +1,9 @@
 package plugexec
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // The vocabulary is closed: exactly the defined schemes and tiers
 // validate; the reserved `remote` scheme and every other spelling do
@@ -44,5 +47,18 @@ func TestTierBelow(t *testing.T) {
 	}
 	if TierBelow("VM", TierNone) {
 		t.Error("unrecognized tier ranked below TierNone")
+	}
+}
+
+// An environment entry that is not KEY=VALUE is refused: a bare name
+// or a newline would mean different things on different substrates.
+func TestCheckEnv(t *testing.T) {
+	if err := CheckEnv([]string{"A=1", "B=", "C=x=y"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"SECRET", "=1", "A=1\nB=2", "A=\x00"} {
+		if err := CheckEnv([]string{"A=1", bad}); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
+			t.Errorf("%q accepted: %v", bad, err)
+		}
 	}
 }

@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -25,33 +23,21 @@ import (
 )
 
 var (
-	rootfsDir          string
 	sandboxUnavailable string // non-empty when the host reaches no Strong row
 	harnessErr         error  // a probe failure that is not the host's tier: the live tests fail on it
 )
 
-// TestMain builds the fake plugin statically into a bare rootfs once
-// and probes the host through sandbox directly — not through
-// SandboxRunner — so a host below the Strong row skips the live
-// tests, a broken harness fails them, and the pure tests run either
-// way.
-func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "pb-rootfs-*")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	cmd := exec.Command("go", "build", "-o", filepath.Join(dir, "plugin"), "testdata/fakeplugin.go")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		harnessErr = fmt.Errorf("building the fake plugin: %v\n%s", err, out)
+// setupSandbox probes the host through sandbox directly — not
+// through SandboxRunner — so a host below the Strong row skips the
+// live tests, a broken harness fails them, and the pure tests run
+// either way.
+func setupSandbox(m *testing.M) int {
+	if rootfsErr != nil {
+		harnessErr = rootfsErr
 	} else {
-		rootfsDir = dir
 		sandboxUnavailable, harnessErr = probeSandbox()
 	}
-	code := m.Run()
-	os.RemoveAll(dir)
-	os.Exit(code)
+	return m.Run()
 }
 
 // probeSandbox runs the plugin once on the Strong row with the rootfs
@@ -96,22 +82,7 @@ func requireSandbox(t *testing.T) {
 	}
 }
 
-func request(t *testing.T, param string) []byte {
-	t.Helper()
-	b, err := proto.Marshal(&pluginpb.CodeGeneratorRequest{FileToGenerate: []string{"a.proto", "b.proto"}, Parameter: &param})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return b
-}
 
-func limits(mod func(*trust.Limits)) trust.Limits {
-	l := (&trust.Execution{}).EffectiveLimits()
-	if mod != nil {
-		mod(&l)
-	}
-	return l
-}
 
 func run(t *testing.T, param string, l trust.Limits) (*Result, error) {
 	t.Helper()
@@ -133,20 +104,12 @@ func (s Spec) withParam(t *testing.T, param string) Spec {
 	return s
 }
 
-func content(t *testing.T, res *Result) string {
-	t.Helper()
-	resp, err := Respond(res)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return resp.GetFile()[0].GetContent()
-}
 
 // accounting reports which bounds accounting this host affords the
 // runner — the sandbox's choice, not the runner's — and fails where
 // PB_TEST_REQUIRE_CGROUPS demands cgroups the host does not give
 // (docs/issues/plugrun-cgroups-live-coverage.md).
-func accounting(t *testing.T) string {
+func accounting(t *testing.T) Accounting {
 	t.Helper()
 	requireSandbox(t)
 	res, err := run(t, "", limits(nil))
@@ -404,8 +367,8 @@ func TestTierMapping(t *testing.T) {
 			t.Errorf("isolationOf(%q) accepted", bad)
 		}
 	}
-	if BoundsCgroups != sandbox.AccountingCgroups.String() || BoundsRlimits != sandbox.AccountingRlimits.String() {
-		t.Fatal("the seam's accounting names diverge from the sandbox's")
+	if accountingOf(sandbox.AccountingCgroups) != BoundsCgroups || accountingOf(sandbox.AccountingRlimits) != BoundsRlimits {
+		t.Fatal("the sandbox's accountings do not map onto the seam's")
 	}
 }
 

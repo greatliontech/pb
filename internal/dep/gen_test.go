@@ -53,6 +53,8 @@ func (s *stubRunner) Run(_ context.Context, spec plugrun.Spec) (*plugrun.Result,
 	return s.res, s.err
 }
 
+func (s *stubRunner) Platform() (string, string) { return "linux", "amd64" }
+
 func respBytes(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 	resp := &pluginpb.CodeGeneratorResponse{}

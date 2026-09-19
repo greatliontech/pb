@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
+	"runtime"
 	"syscall"
 
 	"github.com/greatliontech/pb/internal/plugexec"
@@ -35,6 +35,9 @@ type SandboxRunner struct {
 	create func(sandbox.Spec) (sandbox.Sandbox, error)
 }
 
+// Platform is the host's: the sandbox runs the host's kernel.
+func (r *SandboxRunner) Platform() (string, string) { return runtime.GOOS, runtime.GOARCH }
+
 // Run executes the plugin process (REQ-plugin-response-authority's
 // transport half: stdout and stderr are collected verbatim; judgment
 // is the caller's). The wall clock is the runner's — sandbox adds no
@@ -53,6 +56,9 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	floor, err := isolationOf(spec.MinTier)
 	if err != nil {
 		return nil, err
+	}
+	if err := plugexec.CheckEnv(spec.Process.Env); err != nil {
+		return nil, fmt.Errorf("plugrun: %v", err)
 	}
 	var stdout, stderr bytes.Buffer
 	create := r.create
@@ -84,13 +90,24 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 		return nil, fmt.Errorf("plugrun: reading the run's accounting: %w", err)
 	}
 	tier, ok := tierOf(sb.Tier())
-	if !ok || st.Accounting == sandbox.AccountingNone {
+	if !ok || (st.Accounting != sandbox.AccountingCgroups && st.Accounting != sandbox.AccountingRlimits) {
 		return nil, fmt.Errorf("plugrun: the sandbox reported tier %v and accounting %v for a bounded run", sb.Tier(), st.Accounting)
 	}
 	if err := outcome(es, st, limits, runCtx.Err(), ctx.Err(), werr); err != nil {
 		return nil, fmt.Errorf("%w (stderr: %s)", err, tailBytes(stderr.Bytes()))
 	}
-	return &Result{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), ExitCode: es.Code, Tier: tier, Bounds: st.Accounting.String()}, nil
+	return &Result{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), ExitCode: es.Code, Tier: tier, Bounds: accountingOf(st.Accounting)}, nil
+}
+
+// accountingOf names a reported accounting in the seam's vocabulary.
+func accountingOf(a sandbox.Accounting) Accounting {
+	switch a {
+	case sandbox.AccountingCgroups:
+		return BoundsCgroups
+	case sandbox.AccountingRlimits:
+		return BoundsRlimits
+	}
+	return Accounting(a.String())
 }
 
 // specOf is the whole of pb's intent for one run: the image export as
@@ -179,44 +196,4 @@ func outcome(es sandbox.ExitStatus, st sandbox.Stats, l trust.Limits, clock, par
 		return fmt.Errorf("plugrun: plugin killed by SIGKILL: the CPU-time bound (%s over %g cores, enforced by rlimits) or an external kill — rlimits cannot attribute which", l.Timeout, l.CPU)
 	}
 	return nil
-}
-
-// cpuSeconds sizes the CPU-time bound as the wall clock over the
-// permitted cores, plus one: it can only fire on a plugin busier
-// than the wall clock allows, and a plugin exactly at the clock is
-// the wall clock's to end.
-func cpuSeconds(l trust.Limits) uint64 {
-	return uint64(math.Ceil(l.Timeout.Seconds()*l.CPU)) + 1
-}
-
-// tierOf names a reported isolation in the seam's vocabulary.
-func tierOf(i sandbox.Isolation) (string, bool) {
-	switch i {
-	case sandbox.None:
-		return plugexec.TierNone, true
-	case sandbox.Minimal:
-		return plugexec.TierMinimal, true
-	case sandbox.OS:
-		return plugexec.TierOS, true
-	case sandbox.Strong:
-		return plugexec.TierStrong, true
-	}
-	return "", false
-}
-
-// isolationOf reads the seam's tier floor into the sandbox's; an
-// unrecognized or absent floor is a caller error — the default is the
-// trust policy's to fold, never the runner's to invent.
-func isolationOf(tier string) (sandbox.Isolation, error) {
-	switch tier {
-	case plugexec.TierNone:
-		return sandbox.None, nil
-	case plugexec.TierMinimal:
-		return sandbox.Minimal, nil
-	case plugexec.TierOS:
-		return sandbox.OS, nil
-	case plugexec.TierStrong:
-		return sandbox.Strong, nil
-	}
-	return 0, fmt.Errorf("plugrun: refusing a run with no sandbox tier floor (%q)", tier)
 }

@@ -16,3 +16,8 @@ accounted by rlimits, so a CI job can demand the coverage.
 Locally the live arms run under a delegated scope:
 
     systemd-run --user --scope -p Delegate=yes env PB_TEST_REQUIRE_CGROUPS=1 go test ./internal/plugrun/
+
+The docker runner's live arms — and the runner-independence
+comparison between the two runners — run only where a daemon
+answers, logged as skipped otherwise; `PB_TEST_REQUIRE_DOCKER=1`
+demands them the same way.

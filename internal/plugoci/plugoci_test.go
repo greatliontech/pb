@@ -38,6 +38,10 @@ func hostPlatform() v1.Platform {
 }
 
 func pushIndex(t *testing.T, ref string, platforms ...v1.Platform) string {
+	return pushIndexEnv(t, ref, []string{"A=1"}, platforms...)
+}
+
+func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platform) string {
 	t.Helper()
 	idx := v1.ImageIndex(empty.Index)
 	for _, p := range platforms {
@@ -45,7 +49,7 @@ func pushIndex(t *testing.T, ref string, platforms ...v1.Platform) string {
 		if err != nil {
 			t.Fatal(err)
 		}
-		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"A=1"}}})
+		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture, Config: v1.Config{Entrypoint: []string{"/plugin"}, Env: env}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -336,5 +340,18 @@ func TestAcquireExportFailureFailsClosed(t *testing.T) {
 	}
 	if _, pinned := lock.Plugin(fx.host+"/org/plugin:v1", lockfile.SchemeOCI); pinned {
 		t.Fatal("a pin was recorded for an acquisition whose export failed")
+	}
+}
+
+// An image whose configuration states an environment entry that is
+// not KEY=VALUE is refused at acquisition, naming the entry: no
+// runner is handed an environment substrates read differently.
+func TestAcquireRefusesBareEnv(t *testing.T) {
+	fx := newFixture(t)
+	pushIndexEnv(t, fx.host+"/org/bare:v1", []string{"A=1", "PB_SECRET"}, hostPlatform())
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	_, err := a.Acquire(ctx, fx.host+"/org/bare:v1")
+	if err == nil || !strings.Contains(err.Error(), `"PB_SECRET" is not KEY=VALUE`) {
+		t.Fatalf("bare env: %v", err)
 	}
 }

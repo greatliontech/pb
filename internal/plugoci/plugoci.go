@@ -188,6 +188,9 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if len(argv) == 0 {
 		return nil, fmt.Errorf("plugoci: %s declares no entrypoint: a plugin image's entrypoint is its plugin process", ref)
 	}
+	if err := plugexec.CheckEnv(cfg.Config.Env); err != nil {
+		return nil, fmt.Errorf("plugoci: %s: %v", ref, err)
+	}
 	return &Acquired{
 		Rootfs:  rootfs,
 		Process: plugexec.Process{Argv: argv, Env: cfg.Config.Env, WorkDir: cfg.Config.WorkingDir},

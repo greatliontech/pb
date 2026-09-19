@@ -1,0 +1,422 @@
+package plugrun
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os/exec"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/trust"
+)
+
+// DockerRunner runs an oci plugin in a container of a Docker daemon
+// (plugin-execution.md, the runner term). The image export reaches
+// the daemon as a rootfs tar through `docker import` — pb's verified
+// content by a trust-neutral byte path, the daemon fetching nothing
+// (REQ-plugin-core-verifies) — and the container is created with no
+// network, a read-only root, every capability dropped, no_new_privs,
+// and the policy's bounds. The tier and the accounting are derived
+// from the daemon's own record of the created container, read back
+// before it starts, never from the flags pb passed
+// (REQ-plugin-reported-tier): a record that does not show the
+// boundary, or that recorded other bounds, refuses the run before it
+// runs. Attribution reads the record after the run: the daemon
+// records a memory kill; it exposes no refused-fork counter, so a
+// fork the process bound refused is not attributable here and the
+// plugin's own failure is surfaced verbatim.
+type DockerRunner struct {
+	// CLI is the docker command, resolved on PATH; "docker" when
+	// empty.
+	CLI string
+
+	os, arch string // the daemon's platform
+	seccomp  string // the seccomp profile the daemon runs containers under, as it names it
+}
+
+// NewDockerRunner returns the runner for the daemon cli reaches, or
+// why none does: the daemon's version, platform and security options
+// are asked for, and a refusal is the reason.
+func NewDockerRunner(cli string) (*DockerRunner, error) {
+	r := &DockerRunner{CLI: cli}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	out, err := r.docker(ctx, nil, "version", "--format", "{{.Server.Os}} {{.Server.Arch}}")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := fmt.Sscan(string(out), &r.os, &r.arch); err != nil || r.os == "" || r.arch == "" {
+		return nil, fmt.Errorf("%s version: the daemon named no platform (%q)", r.cli(), strings.TrimSpace(string(out)))
+	}
+	out, err = r.docker(ctx, nil, "info", "--format", "{{json .SecurityOptions}}")
+	if err != nil {
+		return nil, err
+	}
+	var opts []string
+	if err := json.Unmarshal(out, &opts); err != nil {
+		return nil, fmt.Errorf("%s info: security options unreadable: %v", r.cli(), err)
+	}
+	for _, o := range opts {
+		if rest, ok := strings.CutPrefix(o, "name=seccomp,profile="); ok {
+			r.seccomp = rest
+		}
+	}
+	return r, nil
+}
+
+// Platform is the daemon's: its containers run there, whatever the
+// host is.
+func (r *DockerRunner) Platform() (string, string) { return r.os, r.arch }
+
+func (r *DockerRunner) cli() string {
+	if r.CLI == "" {
+		return "docker"
+	}
+	return r.CLI
+}
+
+// docker runs one docker command with stdin and returns its stdout;
+// a failure carries the command's stderr.
+func (r *DockerRunner) docker(ctx context.Context, stdin io.Reader, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, r.cli(), args...)
+	cmd.Stdin = stdin
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("%s %s: %w: %s", r.cli(), args[0], err, strings.TrimSpace(stderr.String()))
+	}
+	return stdout.Bytes(), nil
+}
+
+// pluginHostname is the hostname every run presents, on every
+// runner: a plugin never observes the host's, or a per-run one.
+const pluginHostname = "pb-plugin"
+
+// dockerRecord is what the daemon records of a container, the
+// fields the derivation reads.
+type dockerRecord struct {
+	Config struct {
+		Hostname string
+		Env      []string
+	}
+	HostConfig struct {
+		NetworkMode    string
+		ReadonlyRootfs bool
+		Privileged     bool
+		Isolation      string
+		Runtime        string
+		CapDrop        []string
+		CapAdd         []string
+		SecurityOpt    []string
+		PidMode        string
+		IpcMode        string
+		UsernsMode     string
+		UTSMode        string
+		CgroupnsMode   string
+		Binds          []string
+		Mounts         []any
+		Tmpfs          map[string]string
+		Sysctls        map[string]string
+		Devices        []any
+		Memory         int64
+		MemorySwap     int64
+		PidsLimit      *int64
+		Ulimits        []struct {
+			Name       string
+			Hard, Soft int64
+		}
+	}
+	AppArmorProfile string
+	State           struct {
+		Status    string
+		ExitCode  int
+		OOMKilled bool
+		Error     string
+	}
+}
+
+// Run executes the plugin process (REQ-plugin-response-authority's
+// transport half). The wall clock is the runner's: its end kills the
+// container.
+func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err error) {
+	limits := spec.Limits
+	if err := checkLimits(limits); err != nil {
+		return nil, err
+	}
+	if len(spec.Process.Argv) == 0 {
+		return nil, errors.New("plugrun: the plugin process has no argv")
+	}
+	if _, err := isolationOf(spec.MinTier); err != nil {
+		return nil, err
+	}
+	if err := plugexec.CheckEnv(spec.Process.Env); err != nil {
+		return nil, fmt.Errorf("plugrun: %v", err)
+	}
+	if limits.Memory > math.MaxInt64 || limits.Pids > math.MaxInt64 {
+		return nil, fmt.Errorf("plugrun: the daemon cannot record bounds above %d", int64(math.MaxInt64))
+	}
+
+	// The export streams into the daemon; a write failure ends the
+	// import with the daemon's own report.
+	pr, pw := io.Pipe()
+	go func() { pw.CloseWithError(writeTar(pw, spec.Rootfs)) }()
+	out, err := r.docker(ctx, pr, "import", "-")
+	pr.Close()
+	if err != nil {
+		return nil, fmt.Errorf("plugrun: importing the image export into the daemon: %w", err)
+	}
+	image := strings.TrimSpace(string(out))
+	if image == "" {
+		return nil, errors.New("plugrun: the daemon reported no image for the import")
+	}
+	defer func() {
+		// The daemon holds nothing of the run afterwards; a leak is a
+		// runner failure even after a clean run.
+		if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rmi", image); rerr != nil && err == nil {
+			result, err = nil, fmt.Errorf("plugrun: releasing the run's image: %w", rerr)
+		}
+	}()
+
+	memory := strconv.FormatUint(limits.Memory, 10)
+	args := []string{"create", "--interactive", "--network", "none", "--read-only",
+		"--hostname", pluginHostname,
+		"--memory", memory, "--memory-swap", memory,
+		"--pids-limit", strconv.FormatUint(limits.Pids, 10),
+		"--ulimit", "cpu=" + strconv.FormatUint(cpuSeconds(limits), 10),
+		"--cap-drop", "ALL", "--security-opt", "no-new-privileges"}
+	if spec.Process.WorkDir != "" {
+		args = append(args, "--workdir", spec.Process.WorkDir)
+	}
+	for _, kv := range spec.Process.Env {
+		args = append(args, "--env", kv)
+	}
+	args = append(args, "--entrypoint", spec.Process.Argv[0], image)
+	args = append(args, spec.Process.Argv[1:]...)
+	out, err = r.docker(ctx, nil, args...)
+	if err != nil {
+		return nil, fmt.Errorf("plugrun: creating the container: %w", err)
+	}
+	container := strings.TrimSpace(string(out))
+	if container == "" {
+		return nil, errors.New("plugrun: the daemon reported no container for the create")
+	}
+	defer func() {
+		if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rm", "--force", container); rerr != nil && err == nil {
+			result, err = nil, fmt.Errorf("plugrun: releasing the run's container: %w", rerr)
+		}
+	}()
+
+	rec, err := r.inspect(ctx, container)
+	if err != nil {
+		return nil, err
+	}
+	// The derivation admits one tier, Strong, which meets every floor
+	// (REQ-plugin-min-tier); a record short of it is a refusal, never
+	// a lower tier, so there is no floor to fall below here.
+	tier, err := deriveTier(rec, r.seccomp)
+	if err != nil {
+		return nil, err
+	}
+	bounds, err := deriveBounds(rec, limits)
+	if err != nil {
+		return nil, err
+	}
+	if err := deriveWorld(rec, spec.Process.Env); err != nil {
+		return nil, err
+	}
+
+	runCtx, cancel := context.WithTimeout(ctx, limits.Timeout)
+	defer cancel()
+	start := exec.CommandContext(runCtx, r.cli(), "start", "--attach", "--interactive", container)
+	start.Stdin = bytes.NewReader(spec.Stdin)
+	var stdout, stderr bytes.Buffer
+	start.Stdout, start.Stderr = &stdout, &stderr
+	// The clock's end kills the container through the daemon — the
+	// whole container, not the attached client — and the attach then
+	// returns.
+	start.Cancel = func() error {
+		_, err := r.docker(context.WithoutCancel(ctx), nil, "kill", container)
+		return err
+	}
+	start.WaitDelay = limits.Timeout
+	startErr := start.Run()
+	var exit *exec.ExitError
+	if startErr != nil && !errors.As(startErr, &exit) && !(runCtx.Err() != nil && errors.Is(startErr, runCtx.Err())) {
+		return nil, fmt.Errorf("plugrun: attaching to the container: %w (stderr: %s)", startErr, tailBytes(stderr.Bytes()))
+	}
+	// The record is read after the run even when the caller's context
+	// ended: the outcome is what says the kill landed.
+	after, err := r.inspect(context.WithoutCancel(ctx), container)
+	if err != nil {
+		return nil, err
+	}
+	if after.State.Error != "" {
+		// The daemon could not start the process at all: the record's
+		// exit status is the daemon's, not the plugin's.
+		return nil, fmt.Errorf("plugrun: starting the plugin process: %s (stderr: %s)", after.State.Error, tailBytes(stderr.Bytes()))
+	}
+	if err := dockerOutcome(after, limits, runCtx.Err(), ctx.Err()); err != nil {
+		return nil, fmt.Errorf("%w (stderr: %s)", err, tailBytes(stderr.Bytes()))
+	}
+	return &Result{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), ExitCode: after.State.ExitCode, Tier: tier, Bounds: bounds}, nil
+}
+
+func (r *DockerRunner) inspect(ctx context.Context, container string) (dockerRecord, error) {
+	out, err := r.docker(ctx, nil, "inspect", "--type", "container", container)
+	if err != nil {
+		return dockerRecord{}, fmt.Errorf("plugrun: reading the daemon's record of the container: %w", err)
+	}
+	var recs []dockerRecord
+	if err := json.Unmarshal(out, &recs); err != nil || len(recs) != 1 {
+		return dockerRecord{}, fmt.Errorf("plugrun: the daemon's record of the container is unreadable: %v", err)
+	}
+	return recs[0], nil
+}
+
+// deriveTier reads the tier off the daemon's record: Strong where the
+// record shows a Linux container with no network, a read-only root,
+// no privilege, every capability dropped and none added, no_new_privs,
+// no host namespace shared, no device, bind, mount, tmpfs or sysctl
+// pb never asked for, the daemon's built-in seccomp profile in force
+// (daemonSeccomp is the profile the daemon names for its containers)
+// and no security option relaxing anything, under a runtime the
+// daemon names as its own or a stronger one. Anything less is not a
+// tier this runner runs under — the daemon did not deliver what pb
+// asked.
+func deriveTier(rec dockerRecord, daemonSeccomp string) (string, error) {
+	hc := rec.HostConfig
+	var lacks []string
+	if hc.NetworkMode != "none" {
+		lacks = append(lacks, fmt.Sprintf("network mode %q", hc.NetworkMode))
+	}
+	if !hc.ReadonlyRootfs {
+		lacks = append(lacks, "a writable root")
+	}
+	if hc.Privileged {
+		lacks = append(lacks, "privileged")
+	}
+	if hc.Isolation != "" && hc.Isolation != "default" {
+		lacks = append(lacks, fmt.Sprintf("isolation %q", hc.Isolation))
+	}
+	if !slices.Contains(hc.CapDrop, "ALL") {
+		lacks = append(lacks, "capabilities kept")
+	}
+	if len(hc.CapAdd) > 0 {
+		lacks = append(lacks, fmt.Sprintf("capabilities added %v", hc.CapAdd))
+	}
+	if !slices.Contains(hc.SecurityOpt, "no-new-privileges") {
+		lacks = append(lacks, "new privileges allowed")
+	}
+	for _, opt := range hc.SecurityOpt {
+		if opt != "no-new-privileges" {
+			lacks = append(lacks, fmt.Sprintf("security option %q", opt))
+		}
+	}
+	// The daemon names the profile it runs containers under: its
+	// built-in default is the filter this tier stands on; "unconfined"
+	// is none, and a custom profile is one pb cannot judge.
+	if daemonSeccomp != "builtin" && daemonSeccomp != "default" {
+		lacks = append(lacks, fmt.Sprintf("daemon seccomp profile %q", daemonSeccomp))
+	}
+	if rec.AppArmorProfile == "unconfined" {
+		lacks = append(lacks, "apparmor unconfined")
+	}
+	for _, ns := range []struct{ name, mode string }{{"pid", hc.PidMode}, {"ipc", hc.IpcMode}, {"user", hc.UsernsMode}, {"uts", hc.UTSMode}} {
+		if ns.mode != "" && ns.mode != "private" {
+			lacks = append(lacks, fmt.Sprintf("%s namespace %q", ns.name, ns.mode))
+		}
+	}
+	if hc.CgroupnsMode == "host" {
+		lacks = append(lacks, "the host's cgroup namespace")
+	}
+	if len(hc.Devices) > 0 || len(hc.Binds) > 0 || len(hc.Mounts) > 0 || len(hc.Tmpfs) > 0 || len(hc.Sysctls) > 0 {
+		lacks = append(lacks, "devices, mounts or sysctls pb never asked for")
+	}
+	switch hc.Runtime {
+	case "", "runc", "crun", "io.containerd.runc.v2", "runsc", "kata", "kata-runtime", "youki":
+	default:
+		lacks = append(lacks, fmt.Sprintf("runtime %q", hc.Runtime))
+	}
+	if len(lacks) > 0 {
+		return "", fmt.Errorf("plugrun: the daemon's record of the container does not show the sandbox boundary (%s); refusing to run", strings.Join(lacks, ", "))
+	}
+	return plugexec.TierStrong, nil
+}
+
+// deriveWorld checks the record's world against the intent whose
+// delivery the tier does not grade: the fixed hostname and exactly
+// the image's environment (REQ-plugin-runner-independence).
+func deriveWorld(rec dockerRecord, env []string) error {
+	if rec.Config.Hostname != pluginHostname {
+		return fmt.Errorf("plugrun: the daemon's record of the container names hostname %q, not %q; refusing to run", rec.Config.Hostname, pluginHostname)
+	}
+	for _, kv := range env {
+		if !slices.Contains(rec.Config.Env, kv) {
+			return fmt.Errorf("plugrun: the daemon's record of the container lacks the image's environment entry %q; refusing to run", kv)
+		}
+	}
+	return nil
+}
+
+// deriveBounds reads the accounting off the daemon's record: the
+// memory and process limits are the container cgroup's, and must be
+// the policy's exactly; the CPU-time limit is an rlimit in the
+// container.
+func deriveBounds(rec dockerRecord, l trust.Limits) (Accounting, error) {
+	hc := rec.HostConfig
+	var wrong []string
+	if hc.Memory != int64(l.Memory) || hc.MemorySwap != int64(l.Memory) {
+		wrong = append(wrong, fmt.Sprintf("memory %d with swap to %d", hc.Memory, hc.MemorySwap))
+	}
+	if hc.PidsLimit == nil || *hc.PidsLimit != int64(l.Pids) {
+		wrong = append(wrong, "process count")
+	}
+	cpu := false
+	for _, u := range hc.Ulimits {
+		if u.Name == "cpu" && u.Hard == int64(cpuSeconds(l)) && u.Soft == u.Hard {
+			cpu = true
+		}
+	}
+	if !cpu {
+		wrong = append(wrong, "CPU time")
+	}
+	if len(wrong) > 0 {
+		return "", fmt.Errorf("plugrun: the daemon's record of the container does not carry the policy's bounds (%s); refusing to run", strings.Join(wrong, ", "))
+	}
+	return BoundsCgroups, nil
+}
+
+// dockerOutcome reads a finished container into its report, in the
+// order the facts bind: the memory kill the daemon recorded; then a
+// container that never ran to an exit — the run context ended before
+// or during the start, the caller's cancellation or the wall clock,
+// or else a daemon fault; then a status of 137, which the record
+// cannot tell apart between the CPU-time bound, an external kill and
+// the plugin's own exit 137; and nothing otherwise.
+func dockerOutcome(rec dockerRecord, l trust.Limits, clock, parent error) error {
+	if rec.State.OOMKilled {
+		return fmt.Errorf("%w: memory (%d bytes) (enforced by %s)", ErrBoundExceeded, l.Memory, BoundsCgroups)
+	}
+	ended := clock != nil && (rec.State.ExitCode == 137 || rec.State.Status != "exited")
+	if ended {
+		if parent != nil {
+			return fmt.Errorf("plugrun: plugin run cancelled: %w", parent)
+		}
+		return fmt.Errorf("%w: wall clock (%s, enforced by the runner)", ErrBoundExceeded, l.Timeout)
+	}
+	if rec.State.Status != "exited" {
+		return fmt.Errorf("plugrun: the container did not run to an exit (status %q)", rec.State.Status)
+	}
+	if rec.State.ExitCode == 137 {
+		return fmt.Errorf("plugrun: plugin ended with status 137: the CPU-time bound (%s over %g cores, enforced by rlimits), an external kill, or the plugin's own exit 137 — the daemon's record cannot tell them apart", l.Timeout, l.CPU)
+	}
+	return nil
+}

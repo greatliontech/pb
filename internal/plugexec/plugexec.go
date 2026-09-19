@@ -7,6 +7,11 @@
 // packages can drift on a spelling.
 package plugexec
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Identity schemes (plugin-execution.md, the identity scheme term).
 // `remote` is reserved by the spec and deliberately absent: a value
 // no consumer can name is a value no consumer can accept.
@@ -66,4 +71,19 @@ type Process struct {
 	Argv    []string
 	Env     []string
 	WorkDir string
+}
+
+// CheckEnv refuses an environment entry that is not KEY=VALUE, as
+// the OCI image configuration requires: a bare name would be read
+// by some substrates from the host's own environment, and a
+// newline would split one entry into two. The plugin's environment
+// is exactly what the image states, on every runner.
+func CheckEnv(env []string) error {
+	for _, kv := range env {
+		key, _, ok := strings.Cut(kv, "=")
+		if !ok || key == "" || strings.ContainsAny(kv, "\n\x00") {
+			return fmt.Errorf("environment entry %q is not KEY=VALUE", kv)
+		}
+	}
+	return nil
 }

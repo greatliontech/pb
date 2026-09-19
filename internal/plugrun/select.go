@@ -75,10 +75,14 @@ func Open(flag *string, env string) (Runner, error) {
 		}
 		return r, nil
 	case RunnerDocker:
-		if sel.native != nil {
-			return nil, fmt.Errorf("plugrun: runner %s (from %s, the native runner being unavailable: %v) is not implemented", sel.name, sel.from, sel.native)
+		r, err := NewDockerRunner("")
+		if err != nil {
+			if sel.native != nil {
+				return nil, fmt.Errorf("plugrun: runner %s (from %s, the native runner being unavailable: %v) is unavailable: %w", sel.name, sel.from, sel.native, err)
+			}
+			return nil, fmt.Errorf("plugrun: runner %s (from %s) is unavailable: %w", sel.name, sel.from, err)
 		}
-		return nil, fmt.Errorf("plugrun: runner %s (from %s) is not implemented", sel.name, sel.from)
+		return r, nil
 	}
 	return nil, fmt.Errorf("plugrun: %q from %s names no runner (runners: %s, %s)", sel.name, sel.from, RunnerNative, RunnerDocker)
 }

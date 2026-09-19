@@ -87,10 +87,12 @@ func generateCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
 			}
+			os_, arch := runner.Platform()
 			acq, err := plugoci.New(plugoci.Config{
-				WorkDir: filepath.Join(base, "pb", "plugins"),
-				Lock:    s.Lock,
-				Policy:  s.Client.Policy,
+				WorkDir:  filepath.Join(base, "pb", "plugins"),
+				Lock:     s.Lock,
+				Policy:   s.Client.Policy,
+				Platform: plugoci.Platform{OS: os_, Arch: arch},
 			})
 			if err != nil {
 				return err

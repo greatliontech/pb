@@ -36,8 +36,11 @@ type Spec struct {
 
 // Result is what a run reports: the plugin's stdout and stderr bytes,
 // its exit status (128 plus the signal number for a signal death),
-// the isolation tier the mechanism achieved, and the resource-bound
-// mechanism that was in effect. Bounds is reporting only —
+// the isolation tier the substrate achieved, and the accounting that
+// enforced the memory and process bounds. The tier is spelled in
+// plugexec's vocabulary — a wire fact of the trust policy and the
+// lockfile — and each runner maps its own substrate's report onto it,
+// never the other way round. Bounds is reporting only —
 // REQ-plugin-resource-bounds mandates bounds, not a mechanism — so a
 // bound failure is attributable to a specific enforcement.
 type Result struct {
@@ -45,13 +48,16 @@ type Result struct {
 	Stderr   []byte
 	ExitCode int
 	Tier     string
-	Bounds   string
+	Bounds   Accounting
 }
 
-// Bound mechanisms a runner reports in Result.Bounds.
+// Accounting names the mechanism that enforced a run's memory and
+// process bounds; CPU time is a POSIX rlimit under either.
+type Accounting string
+
 const (
-	BoundsCgroups = "cgroups"
-	BoundsRlimits = "rlimits"
+	BoundsCgroups Accounting = "cgroups"
+	BoundsRlimits Accounting = "rlimits"
 )
 
 // ErrBoundExceeded is the class of a run terminated by a resource
@@ -65,9 +71,13 @@ var ErrBoundExceeded = errors.New("plugin exceeded a resource bound")
 var ErrTierUnreachable = errors.New("the host cannot reach the required sandbox tier")
 
 // Runner executes one plugin process (REQ-plugin-sandboxed for the
-// native runner; each runner reports its own tier).
+// native runner; each runner reports its own tier) on a substrate
+// whose platform it names, so acquisition selects the image for the
+// platform the plugin will run on (REQ-plugin-platform-strict) — a
+// daemon's containers run the daemon's platform, not the host's.
 type Runner interface {
 	Run(ctx context.Context, spec Spec) (*Result, error)
+	Platform() (os, arch string)
 }
 
 // checkLimits refuses a Spec with an unbounded resource: bounds are

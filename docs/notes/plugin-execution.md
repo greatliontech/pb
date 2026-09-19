@@ -21,6 +21,17 @@ and schemas never leave the machine.
   responsible for platform support. This also removes the micro-VM sandbox
   tier from pb's critical path — if it ever lands in `sandbox` it's a bonus,
   not a dependency.
+- **The docker runner is the same seam over a daemon.** The verified
+  export reaches the daemon as a rootfs tar through `docker import`
+  (the daemon fetches nothing), the container is created with the
+  boundary and the bounds, and the tier and accounting are derived
+  from the daemon's own record of the container, read back before it
+  starts; a record that does not show the boundary refuses the run.
+  The daemon records a memory kill but no refused-fork counter and
+  no signal, so those attributions are the native runner's alone;
+  the daemon's platform, not the host's, drives acquisition. The
+  daemon's own /etc mounts and /dev/shm over the image root are
+  tracked (docs/issues/docker-daemon-mounts.md).
 - **The native runner is `sandbox` behind pb's runner seam.** A protoc
   plugin is the ideal create-only tenant: one process, stdio, no
   exec-into-running, no lifecycle. pb's request is intent only — the

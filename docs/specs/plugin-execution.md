@@ -153,7 +153,13 @@ reported as a plugin failure naming the bound exceeded wherever the
 enforcing mechanism attributes the termination: the wall clock always,
 and otherwise as the mechanism's own accounting affords — under
 cgroups, memory kills and refused forks from the kernel's event
-counters; CPU time, a POSIX rlimit under every accounting, whose
+counters where the runner reads them (the native runner), and the
+memory kill alone where the runner reads a daemon's record of the
+container (the `docker` runner), a refused fork there being the
+plugin's own failure surfaced verbatim and an exit status of 137
+there being the CPU-time bound, an external kill, or the plugin's own
+exit 137, which that record cannot tell apart; CPU time, a POSIX
+rlimit under every accounting, whose
 exhaustion arrives as an unlabeled kill and is reported as either the
 CPU-time bound or an external kill — never claimed as one; and under
 POSIX rlimits a refused allocation or fork is not a termination and

@@ -26,7 +26,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
       over the capability default, an unavailable selected runner fails
       naming it, no silent fallback — the seam `pb generate` picks its
       runner through, with the native runner its only member
-- [ ] 8. Docker runner: verified store content into the daemon by a
+- [x] 8. Docker runner: verified store content into the daemon by a
       trust-neutral byte path, `--network none --read-only` plus the
       bounds, tier and bounds mechanism derived from the daemon's own
       record of the created container, contract tests over a fake
@@ -36,5 +36,6 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
       pins keyed by host platform, policy gating, bounds without a
       sandbox (tier `None`)
 - [ ] 10. Plugin overrides: invocation-scoped substitution from an OCI
-      layout or archive, lockfile untouched in both directions, policy
+      layout or archive (any runner) or a daemon-local image (the
+      docker runner), lockfile untouched in both directions, policy
       gating, reported on standard error
