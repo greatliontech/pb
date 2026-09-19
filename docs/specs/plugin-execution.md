@@ -33,12 +33,20 @@ pin and policy vocabularies under its own scheme value.
 **runner** (term): The execution substrate for `oci`-scheme plugins:
 `native` (pb's own sandbox) or `docker` (a Docker daemon). Runner
 selection is machine-scoped configuration, never part of a generation
-entry and never committed: flag over environment over user configuration
-over the platform default. The platform default is chosen by capability
-exhaustion, not heuristics: `native` where pb's sandbox is available
-(Linux), otherwise `docker` where it is the only viable runner. A
-selected runner that is unavailable fails with an error naming it;
-no run ever falls back to another runner silently.
+entry and never committed (`REQ-plugin-runner-selection`).
+
+**REQ-plugin-runner-selection** (behavior): `generate` MUST select its
+runner by layer and never substitute one: the `--runner` flag where
+given, over the `PBRUNNER` environment variable where set to a non-empty value,
+over user configuration, over the platform default — each layer naming
+a runner by these exact names (`native`, `docker`), an empty
+environment value being an absent layer as for pb's other environment
+settings and a flag given empty naming no runner; the platform default
+chosen by capability exhaustion, not heuristics — `native` where pb's
+sandbox is available (Linux), otherwise `docker` where it is the only
+viable runner; and a layer naming no runner, or a selected runner that
+is unavailable, failing with an error that names the layer and, for a
+runner, the runner — no run ever falls back to another runner.
 
 **sandbox tier** (term): The isolation level a sandbox run actually
 achieved, as reported by the sandbox: `Strong` (kernel-enforced),

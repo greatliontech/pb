@@ -61,18 +61,25 @@ func loadSession() (*dep.Session, error) {
 }
 
 // generateCmd is the generation verb (generation.md REQ-gen-verb): the
-// native runner over pb's plugin store, which sits beside the module
-// cache rather than inside it — the module cache root holds module
-// artifacts only (dep-verbs.md REQ-dep-cache-layout).
+// selected runner — the --runner flag over PBRUNNER over the platform
+// default (plugin-execution.md, REQ-plugin-runner-selection) — over pb's plugin
+// store, which sits beside the module cache rather than inside it —
+// the module cache root holds module artifacts only (dep-verbs.md
+// REQ-dep-cache-layout).
 func generateCmd() *cobra.Command {
-	return &cobra.Command{
+	var runnerFlag string
+	cmd := &cobra.Command{
 		Use: "generate", Short: "generate code from the workspace's protobuf files", Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
-			s, err := loadSession()
+			var flag *string
+			if c.Flags().Changed(plugrun.FlagRunner) {
+				flag = &runnerFlag
+			}
+			runner, err := plugrun.Open(flag, os.Getenv(plugrun.EnvRunner))
 			if err != nil {
 				return err
 			}
-			runner, err := plugrun.NativeRunner()
+			s, err := loadSession()
 			if err != nil {
 				return err
 			}
@@ -92,6 +99,8 @@ func generateCmd() *cobra.Command {
 			return dep.Gen(c.Context(), s, dep.GenDeps{Acquirer: acq, Runner: runner}, os.Stdout)
 		},
 	}
+	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+plugrun.EnvRunner+", over the platform default)")
+	return cmd
 }
 
 func depCmd() *cobra.Command {

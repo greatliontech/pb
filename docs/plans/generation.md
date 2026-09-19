@@ -22,7 +22,7 @@ Spec: docs/specs/generation.md, plugin-execution.md, provenance.md
       tier floor as `MinTier`), tier and bounds accounting consumed as
       reported, container out of the dependency graph; the three
       container-bound issues close
-- [ ] 7. Runner selection: flag over environment over user configuration
+- [x] 7. Runner selection: flag over environment over user configuration
       over the capability default, an unavailable selected runner fails
       naming it, no silent fallback — the seam `pb generate` picks its
       runner through, with the native runner its only member
