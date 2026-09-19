@@ -60,6 +60,10 @@ func fakeDocker(args []string) int {
 		os.WriteFile(filepath.Join(dir, "create.json"), b, 0o644)
 		fmt.Println("fakecontainer")
 	case "inspect":
+		if _, err := os.Stat(filepath.Join(dir, "inspect-fails")); err == nil {
+			fmt.Fprintln(os.Stderr, "Error response from daemon: No such container")
+			return 1
+		}
 		rec := fakeRecord(dir)
 		b, _ := json.Marshal([]any{rec})
 		os.Stdout.Write(b)
@@ -67,6 +71,7 @@ func fakeDocker(args []string) int {
 		stdin, _ := io.ReadAll(os.Stdin)
 		os.WriteFile(filepath.Join(dir, "stdin"), stdin, 0o644)
 		mode, _ := os.ReadFile(filepath.Join(dir, "start"))
+		os.WriteFile(filepath.Join(dir, "started"), nil, 0o644)
 		if string(mode) == "hang" {
 			for i := 0; i < 6000; i++ {
 				if _, err := os.Stat(filepath.Join(dir, "killed")); err == nil {
@@ -91,6 +96,10 @@ func fakeDocker(args []string) int {
 	case "kill":
 		os.WriteFile(filepath.Join(dir, "killed"), nil, 0o644)
 	case "rm", "rmi":
+		if _, err := os.Stat(filepath.Join(dir, "release-fails")); err == nil {
+			fmt.Fprintln(os.Stderr, "Error response from daemon: release refused by the fake")
+			return 1
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "fake docker: unknown command %q\n", args[0])
 		return 2

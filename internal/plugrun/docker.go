@@ -179,87 +179,39 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 		return nil, fmt.Errorf("plugrun: the daemon cannot record bounds above %d", int64(math.MaxInt64))
 	}
 
-	image := spec.Image
-	if image == "" {
-		// The export streams into the daemon; a write failure ends
-		// the import with the daemon's own report. A daemon-local
-		// image (an override) is the daemon's already and stays so.
-		pr, pw := io.Pipe()
-		go func() { pw.CloseWithError(writeTar(pw, spec.Rootfs)) }()
-		imported, err := r.docker(ctx, pr, "import", "-")
-		pr.Close()
-		if err != nil {
-			return nil, fmt.Errorf("plugrun: importing the image export into the daemon: %w", err)
+	p, err := r.prepare(ctx, spec, limits)
+	defer func() {
+		// The daemon holds nothing of the run afterwards; a leak is a
+		// runner failure even after a clean run. A daemon-local image
+		// (an override) is the daemon's and stays.
+		if p.container != "" {
+			if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rm", "--force", p.container); rerr != nil && err == nil {
+				result, err = nil, fmt.Errorf("plugrun: releasing the run's container: %w", rerr)
+			}
 		}
-		image = strings.TrimSpace(string(imported))
-		if image == "" {
-			return nil, errors.New("plugrun: the daemon reported no image for the import")
-		}
-		defer func() {
-			// The daemon holds nothing of the run afterwards; a leak
-			// is a runner failure even after a clean run.
-			if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rmi", image); rerr != nil && err == nil {
+		if p.imported != "" {
+			if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rmi", p.imported); rerr != nil && err == nil {
 				result, err = nil, fmt.Errorf("plugrun: releasing the run's image: %w", rerr)
 			}
-		}()
-	}
-
-	memory := strconv.FormatUint(limits.Memory, 10)
-	args := []string{"create", "--interactive", "--network", "none", "--read-only",
-		"--hostname", pluginHostname,
-		"--memory", memory, "--memory-swap", memory,
-		"--pids-limit", strconv.FormatUint(limits.Pids, 10),
-		"--ulimit", "cpu=" + strconv.FormatUint(cpuSeconds(limits), 10),
-		"--cap-drop", "ALL", "--security-opt", "no-new-privileges"}
-	if spec.Process.WorkDir != "" {
-		args = append(args, "--workdir", spec.Process.WorkDir)
-	}
-	for _, kv := range spec.Process.Env {
-		args = append(args, "--env", kv)
-	}
-	if spec.Image != "" {
-		// A daemon-local image runs under its own configuration: the
-		// daemon applies its entrypoint, command, environment and
-		// working directory — and is the daemon's already: one it does
-		// not hold is never fetched (REQ-plugin-override names a
-		// daemon-local image, and pb verifies nothing a daemon pulls).
-		// A client older than 20.10 knows no --pull and refuses in
-		// its own words.
-		args = append(args, "--pull", "never", image)
-	} else {
-		args = append(args, "--entrypoint", spec.Process.Argv[0], image)
-		args = append(args, spec.Process.Argv[1:]...)
-	}
-	out, err := r.docker(ctx, nil, args...)
-	if err != nil {
-		return nil, fmt.Errorf("plugrun: creating the container: %w", err)
-	}
-	container := strings.TrimSpace(string(out))
-	if container == "" {
-		return nil, errors.New("plugrun: the daemon reported no container for the create")
-	}
-	defer func() {
-		if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rm", "--force", container); rerr != nil && err == nil {
-			result, err = nil, fmt.Errorf("plugrun: releasing the run's container: %w", rerr)
 		}
 	}()
-
-	rec, err := r.inspect(ctx, container)
+	if err != nil {
+		// Whatever daemon step the caller's cancellation ended is
+		// reported as the cancellation.
+		return nil, beforeStart(ctx, err)
+	}
+	// The record's verdicts: no context ends these, so none reads as
+	// a cancellation.
+	container := p.container
+	tier, err := deriveTier(p.record, r.seccomp)
 	if err != nil {
 		return nil, err
 	}
-	// The derivation admits one tier, Strong, which meets every floor
-	// (REQ-plugin-min-tier); a record short of it is a refusal, never
-	// a lower tier, so there is no floor to fall below here.
-	tier, err := deriveTier(rec, r.seccomp)
+	bounds, err := deriveBounds(p.record, limits)
 	if err != nil {
 		return nil, err
 	}
-	bounds, err := deriveBounds(rec, limits)
-	if err != nil {
-		return nil, err
-	}
-	if err := deriveWorld(rec, spec.Process.Env); err != nil {
+	if err := deriveWorld(p.record, spec.Process.Env); err != nil {
 		return nil, err
 	}
 
@@ -297,6 +249,78 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 		return nil, fmt.Errorf("%w (stderr: %s)", err, tailBytes(stderr.Bytes()))
 	}
 	return &Result{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), ExitCode: after.State.ExitCode, Tier: tier, Bounds: bounds}, nil
+}
+
+// prepared is what the daemon steps before the start leave behind:
+// the image this run imported (none for a daemon-local image, which
+// is the daemon's and stays), the container created, and its record.
+type prepared struct {
+	imported, container string
+	record              dockerRecord
+}
+
+// prepare runs the daemon steps before the start — the import, the
+// create, the record — so one failure path reports them and the run
+// releases whatever they left. What the record says is judged by the
+// caller: a verdict is no daemon step.
+func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limits) (p prepared, err error) {
+	image := spec.Image
+	if image == "" {
+		// The export streams into the daemon; a write failure ends
+		// the import with the daemon's own report. A daemon-local
+		// image (an override) is the daemon's already and stays so.
+		pr, pw := io.Pipe()
+		go func() { pw.CloseWithError(writeTar(pw, spec.Rootfs)) }()
+		imported, err := r.docker(ctx, pr, "import", "-")
+		pr.Close()
+		if err != nil {
+			return p, fmt.Errorf("plugrun: importing the image export into the daemon: %w", err)
+		}
+		image = strings.TrimSpace(string(imported))
+		if image == "" {
+			return p, errors.New("plugrun: the daemon reported no image for the import")
+		}
+		p.imported = image
+	}
+
+	memory := strconv.FormatUint(limits.Memory, 10)
+	args := []string{"create", "--interactive", "--network", "none", "--read-only",
+		"--hostname", pluginHostname,
+		"--memory", memory, "--memory-swap", memory,
+		"--pids-limit", strconv.FormatUint(limits.Pids, 10),
+		"--ulimit", "cpu=" + strconv.FormatUint(cpuSeconds(limits), 10),
+		"--cap-drop", "ALL", "--security-opt", "no-new-privileges"}
+	if spec.Process.WorkDir != "" {
+		args = append(args, "--workdir", spec.Process.WorkDir)
+	}
+	for _, kv := range spec.Process.Env {
+		args = append(args, "--env", kv)
+	}
+	if spec.Image != "" {
+		// A daemon-local image runs under its own configuration: the
+		// daemon applies its entrypoint, command, environment and
+		// working directory — and is the daemon's already: one it does
+		// not hold is never fetched (REQ-plugin-override names a
+		// daemon-local image, and pb verifies nothing a daemon pulls).
+		// A client older than 20.10 knows no --pull and refuses in
+		// its own words.
+		args = append(args, "--pull", "never", image)
+	} else {
+		args = append(args, "--entrypoint", spec.Process.Argv[0], image)
+		args = append(args, spec.Process.Argv[1:]...)
+	}
+	out, err := r.docker(ctx, nil, args...)
+	if err != nil {
+		return p, fmt.Errorf("plugrun: creating the container: %w", err)
+	}
+	container := strings.TrimSpace(string(out))
+	if container == "" {
+		return p, errors.New("plugrun: the daemon reported no container for the create")
+	}
+	p.container = container
+
+	p.record, err = r.inspect(ctx, container)
+	return p, err
 }
 
 func (r *DockerRunner) inspect(ctx context.Context, container string) (dockerRecord, error) {

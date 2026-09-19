@@ -82,7 +82,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	runCtx, cancel := context.WithTimeout(ctx, limits.Timeout)
 	defer cancel()
 	if err := sb.Start(runCtx); err != nil {
-		return nil, startError(spec.Scheme, err, stderr.Bytes())
+		return nil, beforeStart(ctx, startError(spec.Scheme, err, stderr.Bytes()))
 	}
 	defer func() {
 		// Destroy releases the run's accounting; a leak is a runner

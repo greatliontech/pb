@@ -100,6 +100,16 @@ func checkLimits(l trust.Limits) error {
 	return nil
 }
 
+// beforeStart reports a failure on the way to the start: the caller's
+// cancellation, where the context ended, is what happened, whatever
+// step it ended; otherwise err as it is.
+func beforeStart(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		return fmt.Errorf("plugrun: plugin run cancelled: %w", ctx.Err())
+	}
+	return err
+}
+
 // DaemonImages marks a runner that runs a daemon-local image
 // (Spec.Image): the docker runner alone. Generate refuses a
 // daemon-local override before anything runs unless the selected

@@ -517,11 +517,12 @@ func TestOutcome(t *testing.T) {
 // the Start context ends or at once: it drives Run's post-wait reading
 // without a kernel.
 type fakeSandbox struct {
-	ctx     context.Context
-	es      sandbox.ExitStatus
-	werr    func(ctx context.Context) error
-	st      sandbox.Stats
-	waitCtx bool // Wait blocks until the Start context ends
+	ctx        context.Context
+	es         sandbox.ExitStatus
+	werr       func(ctx context.Context) error
+	st         sandbox.Stats
+	waitCtx    bool // Wait blocks until the Start context ends
+	destroyErr error
 }
 
 func (f *fakeSandbox) Start(ctx context.Context) error { f.ctx = ctx; return nil }
@@ -536,7 +537,7 @@ func (f *fakeSandbox) Wait() (sandbox.ExitStatus, error) {
 	return f.es, err
 }
 func (f *fakeSandbox) Signal(os.Signal) error        { return nil }
-func (f *fakeSandbox) Destroy() error                { return nil }
+func (f *fakeSandbox) Destroy() error                { return f.destroyErr }
 func (f *fakeSandbox) Stats() (sandbox.Stats, error) { return f.st, nil }
 func (f *fakeSandbox) Tier() sandbox.Isolation       { return sandbox.Strong }
 
@@ -591,5 +592,34 @@ func TestSandboxRefusesDaemonImage(t *testing.T) {
 	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "plugins/q:dev", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugexec.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "docker runner only") {
 		t.Fatalf("sandbox runner: %v", err)
+	}
+}
+
+// A caller's cancellation before the start is reported as the
+// cancellation, never as a start failure.
+func TestRunCancelledBeforeStart(t *testing.T) {
+	requireSandbox(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := (&SandboxRunner{}).Run(ctx, Spec{Scheme: plugexec.SchemeOCI, Rootfs: rootfsDir, Process: plugexec.Process{Argv: []string{"/plugin"}}, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong})
+	if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "plugin run cancelled") {
+		t.Fatalf("cancelled before start: %v", err)
+	}
+}
+
+// A release that fails after a clean run fails the run; one that fails
+// after a run's own error never masks it.
+func TestRunReleaseFailure(t *testing.T) {
+	rl := sandbox.Stats{Accounting: sandbox.AccountingRlimits}
+	spec := Spec{Scheme: plugexec.SchemeOCI, Rootfs: "/export", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierStrong}
+	clean := &fakeSandbox{st: rl, destroyErr: errors.New("cgroup busy")}
+	r := &SandboxRunner{create: func(sandbox.Spec) (sandbox.Sandbox, error) { return clean, nil }}
+	if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "releasing the run's resources: cgroup busy") {
+		t.Fatalf("clean run, release failing: %v", err)
+	}
+	failing := &fakeSandbox{st: rl, werr: func(context.Context) error { return errors.New("wait4: no child") }, destroyErr: errors.New("cgroup busy")}
+	r = &SandboxRunner{create: func(sandbox.Spec) (sandbox.Sandbox, error) { return failing, nil }}
+	if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "waiting for the plugin process: wait4") || strings.Contains(err.Error(), "releasing") {
+		t.Fatalf("failed run, release failing: %v", err)
 	}
 }

@@ -273,7 +273,17 @@ func TestDockerOutcome(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		if c.cancel {
 			limits.Timeout = time.Minute
-			go func() { time.Sleep(100 * time.Millisecond); cancel() }()
+			// Cancel once the container has started, so the kill is
+			// the cancellation's, not a start that never happened.
+			go func() {
+				for {
+					if _, err := os.Stat(filepath.Join(dir, "started")); err == nil {
+						break
+					}
+					time.Sleep(5 * time.Millisecond)
+				}
+				cancel()
+			}()
 		}
 		r, err := NewDockerRunner("")
 		if err != nil {
@@ -439,5 +449,62 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "exactly one of") && !strings.Contains(err.Error(), "world of its own") {
 			t.Errorf("%+v accepted: %v", spec, err)
 		}
+	}
+}
+
+// A caller's cancellation on the way to the start — before the
+// container exists, or before it runs — is reported as the
+// cancellation, never as the step it ended.
+func TestDockerCancelledBeforeStart(t *testing.T) {
+	fakeDaemon(t)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = r.Run(ctx, dockerSpec(t, exportFixture(t), trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: time.Minute}))
+	if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "plugin run cancelled") {
+		t.Fatalf("cancelled before start: %v", err)
+	}
+}
+
+// A release that fails after a clean run fails the run; one that fails
+// after a refusal never masks the refusal.
+func TestDockerReleaseFailure(t *testing.T) {
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: time.Minute}
+	dir := fakeDaemon(t)
+	os.WriteFile(filepath.Join(dir, "release-fails"), nil, 0o644)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), dockerSpec(t, exportFixture(t), l))
+	if err == nil || !strings.Contains(err.Error(), "releasing the run's container: docker rm") {
+		t.Fatalf("clean run, release failing: %v", err)
+	}
+	os.WriteFile(filepath.Join(dir, "record.json"), []byte(`{"NetworkMode":"bridge"}`), 0o644)
+	_, err = r.Run(context.Background(), dockerSpec(t, exportFixture(t), l))
+	if err == nil || !strings.Contains(err.Error(), "does not show the sandbox boundary") || strings.Contains(err.Error(), "releasing") {
+		t.Fatalf("refusal, release failing: %v", err)
+	}
+}
+
+// A record the daemon cannot give is reported as that, and the run
+// releases what it created.
+func TestDockerRecordUnreadable(t *testing.T) {
+	dir := fakeDaemon(t)
+	os.WriteFile(filepath.Join(dir, "inspect-fails"), nil, 0o644)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), dockerSpec(t, exportFixture(t), trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: time.Minute}))
+	if err == nil || !strings.Contains(err.Error(), "reading the daemon's record of the container: docker inspect") {
+		t.Fatalf("unreadable record: %v", err)
+	}
+	verbs, _ := fakeLog(t, dir)
+	if slices.Contains(verbs, "start") || !slices.Contains(verbs, "rm") || !slices.Contains(verbs, "rmi") {
+		t.Fatalf("invocations = %v", verbs)
 	}
 }
