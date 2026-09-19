@@ -104,15 +104,18 @@ and boundedly — proxies legitimately redirect artifacts to blob storage
 cleartext or excessive redirect aborts like any transport failure, and
 no cookie state crosses a fetch in either direction.
 
-**REQ-proxy-config** (behavior): The source list MUST come from `PBPROXY`
-(comma-separated entries, default `direct`), with `PBNOPROXY`
-(comma-separated glob patterns in path-glob syntax: `*` and `?`
+**REQ-proxy-config** (behavior): The source list MUST come from the
+`proxy` setting — `PBPROXY`, or the user configuration file's `proxy`
+key (`user-config.md`) — as comma-separated entries, default `direct`,
+with the `noproxy` setting — `PBNOPROXY`, or the file's `noproxy` key
+— as comma-separated glob patterns (path-glob syntax: `*` and `?`
 wildcards, character classes, backslash escapes) routing matching
-modules to `direct` regardless of `PBPROXY` — a pattern matches a module
-when it globs the module path or any leading segment prefix of it, `*`
-never crossing a segment boundary, so `corp.example.com` covers every
-module on that host. A malformed entry or pattern is a configuration
-error, never a silent non-match. There is no default proxy: with no configuration,
+modules to `direct` regardless of the source list — a pattern matches
+a module when it globs the module path or any leading segment prefix
+of it, `*` never crossing a segment boundary, so `corp.example.com`
+covers every module on that host. A malformed entry or pattern is a
+configuration error naming the layer the value came from, never a
+silent non-match. There is no default proxy: with no configuration,
 every fetch goes to the origin, and no party beyond the origin host is
 trusted for a first fetch.
 

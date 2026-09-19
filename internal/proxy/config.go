@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-// ErrConfig is wrapped by every source-list configuration rejection
-// (REQ-proxy-config): a malformed entry or pattern is a configuration
-// error, never a silent non-match.
-var ErrConfig = errors.New("invalid source-list configuration")
+// ErrConfig is wrapped by every proxy configuration rejection
+// (REQ-proxy-config): a malformed source entry or exclusion pattern
+// is a configuration error, never a silent non-match.
+var ErrConfig = errors.New("invalid proxy configuration")
 
 // Source is one fetch source (the source-list term): a proxy by base
 // URL, the origin directly, or the refusal to fetch.
@@ -22,51 +22,59 @@ type Source struct {
 }
 
 // Config is the parsed source-list configuration (REQ-proxy-config):
-// the ordered sources from PBPROXY and the PBNOPROXY patterns routing
-// matching modules to the origin.
+// the ordered sources from the proxy setting and the noproxy
+// setting's patterns routing matching modules to the origin.
 type Config struct {
 	Sources []Source
 	NoProxy []string
 }
 
-// ParseConfig parses the PBPROXY and PBNOPROXY environment values
-// (REQ-proxy-config). An empty PBPROXY defaults to direct — there is no
-// default proxy, so no party beyond the origin host is trusted for a
-// first fetch. Proxy entries must satisfy the endpoint constructors'
-// base-URL precondition; patterns must be valid globs.
-func ParseConfig(pbproxy, pbnoproxy string) (Config, error) {
-	var cfg Config
-	if pbproxy == "" {
-		cfg.Sources = []Source{{Direct: true}}
-	} else {
-		for entry := range strings.SplitSeq(pbproxy, ",") {
-			switch entry {
-			case "":
-				return Config{}, fmt.Errorf("%w: PBPROXY carries an empty entry", ErrConfig)
-			case "direct":
-				cfg.Sources = append(cfg.Sources, Source{Direct: true})
-			case "off":
-				cfg.Sources = append(cfg.Sources, Source{Off: true})
-			default:
-				if err := checkBaseURL(entry); err != nil {
-					return Config{}, fmt.Errorf("%w: PBPROXY entry %q: %v", ErrConfig, entry, err)
-				}
-				cfg.Sources = append(cfg.Sources, Source{URL: entry})
+// ParseSources parses the proxy setting's value (REQ-proxy-config;
+// the caller attributes a refusal to the layer the value came from):
+// comma-separated entries, each a proxy base URL satisfying the
+// endpoint constructors' precondition, direct, or off. An empty
+// value is direct alone — there is no default proxy, so no party
+// beyond the origin host is trusted for a first fetch.
+func ParseSources(list string) ([]Source, error) {
+	if list == "" {
+		return []Source{{Direct: true}}, nil
+	}
+	var sources []Source
+	for entry := range strings.SplitSeq(list, ",") {
+		switch entry {
+		case "":
+			return nil, fmt.Errorf("%w: the source list carries an empty entry", ErrConfig)
+		case "direct":
+			sources = append(sources, Source{Direct: true})
+		case "off":
+			sources = append(sources, Source{Off: true})
+		default:
+			if err := checkBaseURL(entry); err != nil {
+				return nil, fmt.Errorf("%w: source %q: %v", ErrConfig, entry, err)
 			}
+			sources = append(sources, Source{URL: entry})
 		}
 	}
-	if pbnoproxy != "" {
-		for pat := range strings.SplitSeq(pbnoproxy, ",") {
-			if pat == "" {
-				return Config{}, fmt.Errorf("%w: PBNOPROXY carries an empty pattern", ErrConfig)
-			}
-			if err := checkPattern(pat); err != nil {
-				return Config{}, fmt.Errorf("%w: PBNOPROXY pattern %q: %v", ErrConfig, pat, err)
-			}
-			cfg.NoProxy = append(cfg.NoProxy, pat)
-		}
+	return sources, nil
+}
+
+// ParseNoProxy parses the noproxy setting's value: comma-separated
+// glob patterns, each valid; an empty value is no pattern.
+func ParseNoProxy(list string) ([]string, error) {
+	if list == "" {
+		return nil, nil
 	}
-	return cfg, nil
+	var patterns []string
+	for pat := range strings.SplitSeq(list, ",") {
+		if pat == "" {
+			return nil, fmt.Errorf("%w: the exclusion list carries an empty pattern", ErrConfig)
+		}
+		if err := checkPattern(pat); err != nil {
+			return nil, fmt.Errorf("%w: exclusion pattern %q: %v", ErrConfig, pat, err)
+		}
+		patterns = append(patterns, pat)
+	}
+	return patterns, nil
 }
 
 // checkBaseURL enforces the endpoint constructors' precondition on a
@@ -105,7 +113,7 @@ func checkPattern(pat string) error {
 	return err
 }
 
-// SourcesFor returns the sources consulted for a module: a PBNOPROXY
+// SourcesFor returns the sources consulted for a module: a noproxy
 // match routes to the origin regardless of the source list
 // (REQ-proxy-config), even a list that is off. The unmatched case
 // returns the Config's own slice — callers read, never mutate.

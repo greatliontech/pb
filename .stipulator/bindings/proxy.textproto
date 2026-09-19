@@ -173,18 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proxy.ParseConfig"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "7263fe7d071ef26d037669aeb3a0e14eaa9e0d01789aeeae1e461bae48732faf"
-}
-
-bindings {
-  requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.Config.SourcesFor"
   role: BINDING_ROLE_IMPLEMENTS
@@ -193,8 +183,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestParseConfigDefault"
   role: BINDING_ROLE_TESTS
@@ -203,8 +193,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestParseConfigGolden"
   role: BINDING_ROLE_TESTS
@@ -213,8 +203,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestParseConfigRejections"
   role: BINDING_ROLE_TESTS
@@ -223,8 +213,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestSourcesForRouting"
   role: BINDING_ROLE_TESTS
@@ -233,8 +223,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestSourcesForNoProxyBeatsOff"
   role: BINDING_ROLE_TESTS
@@ -243,8 +233,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "edd7582ed4ac339db3687f3620e2c9d74b4ad5ee34dc54f92d65fe9a2deb0ba3"
-  source_hash: "7ce631960d9d846ac918575d703fe1d643ce6a2c30414efb3a31d2db99616f4d"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.TestCheckPatternSoundnessProperty"
   role: BINDING_ROLE_TESTS

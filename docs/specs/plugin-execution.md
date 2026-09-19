@@ -38,7 +38,8 @@ entry and never committed (`REQ-plugin-runner-selection`).
 **REQ-plugin-runner-selection** (behavior): `generate` MUST select its
 runner by layer and never substitute one: the `--runner` flag where
 given, over the `PBRUNNER` environment variable where set to a non-empty value,
-over user configuration, over the platform default — each layer naming
+over the user configuration file's `runner` key where present
+(`user-config.md`), over the platform default — each layer naming
 a runner by these exact names (`native`, `docker`), an empty
 environment value being an absent layer as for pb's other environment
 settings and a flag given empty naming no runner; the platform default

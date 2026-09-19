@@ -11,7 +11,8 @@ lockfile provenance records (`module-lockfile.md`).
 **trusted root** (term): The pinned sigstore TUF trusted-root material
 (Fulcio roots and intermediates, Rekor public keys) against which all
 certificate chains and transparency proofs are verified — loaded from
-the file named by the `PBTRUSTEDROOT` environment variable. Without
+the file named by the `trustedroot` setting: `PBTRUSTEDROOT`, or the
+user configuration file's `trustedroot` key (`user-config.md`). Without
 one, no evidence can verify: absent under `allow-unsigned`, a failure
 under `require-provenance`; operations needing no evidence
 verification run without a root.

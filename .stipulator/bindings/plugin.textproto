@@ -373,18 +373,18 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "8d0e30436653bc0c8e4aa508b7baa73172ffa3debc25bff22b47864f6d6785fe"
-  source_hash: "ed28304384ec0c7fdacc29e966bb7c6beceb0b139db91b106588fe5031cdbe70"
+  content_hash: "05d0f715dfdb84a24dfd6e44e04c191d130d7a64befb82eb52c0d2ae2c80eb6f"
+  source_hash: "0f6217ab6a90e023a90255f923da05104c977616161d2ac63a7c5651ce5c9562"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugrun.Open"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "e5eb06e14177a3a99d1c7d7c275d6c8c47e104e9ebcc63d0581b6d22dd395c42"
+  shape_hash: "915a61ff1e45f6deb913f44863ef4a75335a926df0bd864fdfa54cf8effe1718"
 }
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "8d0e30436653bc0c8e4aa508b7baa73172ffa3debc25bff22b47864f6d6785fe"
-  source_hash: "ed28304384ec0c7fdacc29e966bb7c6beceb0b139db91b106588fe5031cdbe70"
+  content_hash: "05d0f715dfdb84a24dfd6e44e04c191d130d7a64befb82eb52c0d2ae2c80eb6f"
+  source_hash: "0f6217ab6a90e023a90255f923da05104c977616161d2ac63a7c5651ce5c9562"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugrun.TestOpenSelects"
   role: BINDING_ROLE_TESTS
@@ -393,8 +393,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "8d0e30436653bc0c8e4aa508b7baa73172ffa3debc25bff22b47864f6d6785fe"
-  source_hash: "ed28304384ec0c7fdacc29e966bb7c6beceb0b139db91b106588fe5031cdbe70"
+  content_hash: "05d0f715dfdb84a24dfd6e44e04c191d130d7a64befb82eb52c0d2ae2c80eb6f"
+  source_hash: "0f6217ab6a90e023a90255f923da05104c977616161d2ac63a7c5651ce5c9562"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunnerSpellings"
   role: BINDING_ROLE_TESTS

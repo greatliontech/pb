@@ -94,16 +94,16 @@ func (fx *Fixture) RoundTrip(r *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-// Sources parses a PBPROXY value with the literal tokens "proxy" and
+// Sources parses a proxy setting value with the literal tokens "proxy" and
 // "alt" substituted by the fixture's proxy hosts.
 func (fx *Fixture) Sources(pbproxy string) proxy.Config {
 	pbproxy = strings.ReplaceAll(pbproxy, "alt", "http://"+AltHost)
 	pbproxy = strings.ReplaceAll(pbproxy, "proxy", "http://"+ProxyHost)
-	cfg, err := proxy.ParseConfig(pbproxy, "")
+	sources, err := proxy.ParseSources(pbproxy)
 	if err != nil {
 		fx.T.Fatal(err)
 	}
-	return cfg
+	return proxy.Config{Sources: sources}
 }
 
 // HTTPClient is an http client over the fixture's in-process transport.

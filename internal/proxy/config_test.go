@@ -13,7 +13,7 @@ import (
 // No configuration means direct: no party beyond the origin host is
 // trusted for a first fetch.
 func TestParseConfigDefault(t *testing.T) {
-	cfg, err := ParseConfig("", "")
+	cfg, err := parseConfig("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +23,7 @@ func TestParseConfigDefault(t *testing.T) {
 }
 
 func TestParseConfigGolden(t *testing.T) {
-	cfg, err := ParseConfig("https://proxy.example.com/pb,direct,off", "corp.example.com,*.internal/*")
+	cfg, err := parseConfig("https://proxy.example.com/pb,direct,off", "corp.example.com,*.internal/*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,10 +43,23 @@ func TestParseConfigGolden(t *testing.T) {
 // An http (not just https) proxy entry is a valid base URL: the spec
 // pins proxies "by base URL" without a scheme constraint.
 func TestParseConfigHTTPProxy(t *testing.T) {
-	cfg, err := ParseConfig("http://proxy.internal:3000/pb", "")
+	cfg, err := parseConfig("http://proxy.internal:3000/pb", "")
 	if err != nil || len(cfg.Sources) != 1 || cfg.Sources[0].URL != "http://proxy.internal:3000/pb" {
 		t.Fatalf("cfg = %+v err = %v", cfg, err)
 	}
+}
+
+// parseConfig composes the two setting parsers as the CLI does.
+func parseConfig(proxy, noproxy string) (Config, error) {
+	sources, err := ParseSources(proxy)
+	if err != nil {
+		return Config{}, err
+	}
+	patterns, err := ParseNoProxy(noproxy)
+	if err != nil {
+		return Config{}, err
+	}
+	return Config{Sources: sources, NoProxy: patterns}, nil
 }
 
 func TestParseConfigRejections(t *testing.T) {
@@ -58,7 +71,7 @@ func TestParseConfigRejections(t *testing.T) {
 		"relative proxy URL":        {"proxy.example.com", "", "scheme"},
 		"bad scheme":                {"ftp://proxy.example.com", "", "scheme"},
 		"hostless URL":              {"https://", "", "host"},
-		"control char in URL":       {"https://p.example.com/\x00pb", "", "PBPROXY entry"},
+		"control char in URL":       {"https://p.example.com/\x00pb", "", "source \"https://p.example.com/\\x00pb\""},
 		"query in URL":              {"https://p.example.com/pb?x=1", "", "query"},
 		"bare query marker":         {"https://p.example.com/pb?", "", "query"},
 		"fragment in URL":           {"https://p.example.com/pb#f", "", "query"},
@@ -80,7 +93,7 @@ func TestParseConfigRejections(t *testing.T) {
 		"invalid utf8 in class": {"", "corp.[\xe4]xample.com", "syntax error"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := ParseConfig(tc.pbproxy, tc.pbnoproxy)
+			_, err := parseConfig(tc.pbproxy, tc.pbnoproxy)
 			if !errors.Is(err, ErrConfig) {
 				t.Fatalf("err = %v, want ErrConfig", err)
 			}
@@ -156,7 +169,7 @@ func TestCheckPatternConstructedValidityProperty(t *testing.T) {
 }
 
 func TestSourcesForRouting(t *testing.T) {
-	cfg, err := ParseConfig("https://p.example.com/pb,off", "corp.example.com,*.secret.io/protos")
+	cfg, err := parseConfig("https://p.example.com/pb,off", "corp.example.com,*.secret.io/protos")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +198,7 @@ func TestSourcesForRouting(t *testing.T) {
 // A pattern matches the module path itself, not only proper prefixes —
 // pinned directly, independent of the routing table.
 func TestSourcesForExactMatch(t *testing.T) {
-	cfg, err := ParseConfig("off", "corp.example.com")
+	cfg, err := parseConfig("off", "corp.example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,9 +208,9 @@ func TestSourcesForExactMatch(t *testing.T) {
 	}
 }
 
-// A PBNOPROXY match routes direct even when the source list is off.
+// A noproxy match routes direct even when the source list is off.
 func TestSourcesForNoProxyBeatsOff(t *testing.T) {
-	cfg, err := ParseConfig("off", "corp.example.com")
+	cfg, err := parseConfig("off", "corp.example.com")
 	if err != nil {
 		t.Fatal(err)
 	}

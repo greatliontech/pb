@@ -39,7 +39,7 @@ func aborts(msg string) func() (Unverified, error) {
 
 func mustSources(t *testing.T, pbproxy string) []Source {
 	t.Helper()
-	cfg, err := ParseConfig(pbproxy, "")
+	cfg, err := parseConfig(pbproxy, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestFallthroughExhausted(t *testing.T) {
 }
 
 // Fallthrough refuses an empty source list loudly — unreachable via
-// ParseConfig, which never emits one, but never a silent nil result.
+// ParseSources, which never emits one, but never a silent nil result.
 func TestFallthroughEmptySources(t *testing.T) {
 	if _, err := Fallthrough(nil, (&scriptedAttempt{}).try); err == nil ||
 		!strings.Contains(err.Error(), "empty source list") {

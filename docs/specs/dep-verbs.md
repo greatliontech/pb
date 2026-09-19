@@ -20,10 +20,11 @@ else the nearest module root), and fails with no governing root or when
 `REQ-work-membership` rejects the directory's module.
 
 **module cache** (term): The persistent directory of fetched, verified
-module artifacts: `$PBCACHE` when set, otherwise `pb/mod` under the
-platform user cache directory. The cache is shared across resolution
-roots — its entries are version-addressed and content-verified, so no
-root-local fact may live in it.
+module artifacts: the `cache` setting — `$PBCACHE`, or the user
+configuration file's `cache` key (`user-config.md`) — when set,
+otherwise `pb/mod` under the platform user cache directory. The cache
+is shared across resolution roots — its entries are version-addressed
+and content-verified, so no root-local fact may live in it.
 
 **direct requirement** (term): A declared dependency of a workspace
 module — an entry in the `deps` map of a module the resolution root

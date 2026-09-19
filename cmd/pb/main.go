@@ -24,6 +24,7 @@ import (
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/userconfig"
 	"github.com/spf13/cobra"
 )
 
@@ -47,14 +48,15 @@ func rootCmd() *cobra.Command {
 }
 
 // loadSession assembles the resolution session at the working
-// directory: the working tree, the fetch-verify client, and the root's
-// module files, lockfile, and trust policy.
-func loadSession() (*dep.Session, error) {
+// directory under the machine's settings: the working tree, the
+// fetch-verify client, and the root's module files, lockfile, and
+// trust policy.
+func loadSession(settings *userconfig.Settings) (*dep.Session, error) {
 	ws, dir, err := workingTree()
 	if err != nil {
 		return nil, err
 	}
-	client, err := assembleClient()
+	client, err := assembleClient(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +64,12 @@ func loadSession() (*dep.Session, error) {
 }
 
 // generateCmd is the generation verb (generation.md REQ-gen-verb): the
-// selected runner — the --runner flag over PBRUNNER over the platform
-// default (plugin-execution.md, REQ-plugin-runner-selection) — over pb's plugin
-// store, which sits beside the module cache rather than inside it —
-// the module cache root holds module artifacts only (dep-verbs.md
-// REQ-dep-cache-layout).
+// selected runner — the --runner flag over the runner setting, the
+// environment over the user configuration file, over the platform
+// default (plugin-execution.md, REQ-plugin-runner-selection) — over
+// pb's plugin store, which sits beside the module cache rather than
+// inside it — the module cache root holds module artifacts only
+// (dep-verbs.md REQ-dep-cache-layout).
 func generateCmd() *cobra.Command {
 	var runnerFlag string
 	var overrides []string
@@ -77,7 +80,11 @@ func generateCmd() *cobra.Command {
 			if c.Flags().Changed(plugrun.FlagRunner) {
 				flag = &runnerFlag
 			}
-			runner, err := plugrun.Open(flag, os.Getenv(plugrun.EnvRunner))
+			settings, err := userconfig.Load()
+			if err != nil {
+				return err
+			}
+			runner, err := plugrun.Open(flag, settings.Get(userconfig.KeyRunner))
 			if err != nil {
 				return err
 			}
@@ -92,7 +99,7 @@ func generateCmd() *cobra.Command {
 				}
 				overrideMap[ref] = source
 			}
-			s, err := loadSession()
+			s, err := loadSession(settings)
 			if err != nil {
 				return err
 			}
@@ -125,7 +132,7 @@ func generateCmd() *cobra.Command {
 			return dep.Gen(c.Context(), s, deps, os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+plugrun.EnvRunner+", over the platform default)")
+	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+userconfig.Keys[userconfig.KeyRunner].Env+", over the user configuration file's runner key, over the platform default)")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "REF=SOURCE: run the oci plugin REF from SOURCE for this invocation — an OCI layout directory, an OCI layout archive or docker-save tarball, or docker://IMAGE (docker runner); repeatable")
 	return cmd
 }
@@ -146,7 +153,13 @@ func depCmd() *cobra.Command {
 		},
 	})
 
-	session := loadSession
+	session := func() (*dep.Session, error) {
+		settings, err := userconfig.Load()
+		if err != nil {
+			return nil, err
+		}
+		return loadSession(settings)
+	}
 	run := func(f func(context.Context, *dep.Session) error) func(*cobra.Command, []string) error {
 		return func(c *cobra.Command, _ []string) error {
 			s, err := session()
@@ -208,39 +221,47 @@ func workingTree() (billy.Filesystem, string, error) {
 	return osfs.New("/"), strings.TrimPrefix(filepath.ToSlash(cwd), "/"), nil
 }
 
-// assembleClient wires the fetch-verify pipeline from the environment:
-// PBPROXY/PBNOPROXY (module-proxy.md REQ-proxy-config), PBCACHE
-// (dep-verbs.md, the module cache term), and PBTRUSTEDROOT
+// assembleClient wires the fetch-verify pipeline from the settings —
+// each the environment over the user configuration file, a refusal
+// naming the layer the value came from (user-config.md): the proxy and
+// its exclusions (module-proxy.md REQ-proxy-config), the module cache
+// (dep-verbs.md, the module cache term), and the trusted root
 // (provenance.md, the trusted root term). The lockfile and trust
 // policy are the resolution root's and are wired by dep.Load.
-func assembleClient() (*modfetch.Client, error) {
-	sources, err := proxy.ParseConfig(os.Getenv("PBPROXY"), os.Getenv("PBNOPROXY"))
+func assembleClient(settings *userconfig.Settings) (*modfetch.Client, error) {
+	proxyValue := settings.Get(userconfig.KeyProxy)
+	sources, err := proxy.ParseSources(proxyValue.Value)
 	if err != nil {
-		return nil, err
+		return nil, proxyValue.Wrap(err)
 	}
-	cacheDir := os.Getenv("PBCACHE")
-	if cacheDir == "" {
+	noproxyValue := settings.Get(userconfig.KeyNoproxy)
+	patterns, err := proxy.ParseNoProxy(noproxyValue.Value)
+	if err != nil {
+		return nil, noproxyValue.Wrap(err)
+	}
+	cache := settings.Get(userconfig.KeyCache)
+	if !cache.Stated() {
 		base, err := os.UserCacheDir()
 		if err != nil {
-			return nil, fmt.Errorf("resolving the user cache directory (set PBCACHE to override): %w", err)
+			return nil, fmt.Errorf("resolving the user cache directory (set the cache setting to override): %w", err)
 		}
-		cacheDir = filepath.Join(base, "pb", "mod")
+		cache = userconfig.Defaulted(filepath.Join(base, "pb", "mod"))
 	}
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		return nil, err
+	if err := os.MkdirAll(cache.Value, 0o755); err != nil {
+		return nil, cache.Wrap(fmt.Errorf("module cache: %w", err))
 	}
 	var root *gitprov.TrustedRoot
-	if p := os.Getenv("PBTRUSTEDROOT"); p != "" {
-		root, err = gitprov.LoadTrustedRoot(p)
+	if p := settings.Get(userconfig.KeyTrustedRoot); p.Stated() {
+		root, err = gitprov.LoadTrustedRoot(p.Value)
 		if err != nil {
-			return nil, err
+			return nil, p.Wrap(err)
 		}
 	}
 	httpClient := &http.Client{}
 	return &modfetch.Client{
 		HTTP:        httpClient,
-		Sources:     sources,
-		Cache:       &modfetch.Cache{FS: osfs.New(cacheDir)},
+		Sources:     proxy.Config{Sources: sources, NoProxy: patterns},
+		Cache:       &modfetch.Cache{FS: osfs.New(cache.Value)},
 		Lock:        &lockfile.File{}, // replaced by dep.Load with the root's lockfile
 		TrustedRoot: root,
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {

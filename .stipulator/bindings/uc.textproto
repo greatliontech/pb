@@ -1,0 +1,162 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-uc-format"
+  content_hash: "a192628e85121e7a446fe127b45112317c158e5f2cae76ec5c73d9f85928c238"
+  source_hash: "71b6e380152827b652b8cfb51e98723e196cd52c0c7acfee3a59fda2e7037a12"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.LoadFile"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "075c9db1b1fc618915db159d4081e8c39ed166197375b99f40bbb3b672a4b941"
+}
+
+bindings {
+  requirement_id: "REQ-uc-format"
+  content_hash: "a192628e85121e7a446fe127b45112317c158e5f2cae76ec5c73d9f85928c238"
+  source_hash: "71b6e380152827b652b8cfb51e98723e196cd52c0c7acfee3a59fda2e7037a12"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.TestLoadFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "13ec669c1dd4a7a4a3b2b809de24a9abffb01251d136773563c66e5cc10bd3d0"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.Settings.Get"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "75c79f140858a36c31dfb59a8a6db8b3244f5f9613c730339f3485107f396d3c"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.TestGetPrecedence"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "9fc09b190d907b839e335de6431969309dc290abd0d34fffeed3449c497a079d"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.Open"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "915a61ff1e45f6deb913f44863ef4a75335a926df0bd864fdfa54cf8effe1718"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestOpenSelects"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c697fa49af465c91449d20fe49c347c02e79b9882898e1172501e382414cd0e3"
+}
+
+bindings {
+  requirement_id: "REQ-uc-paths"
+  content_hash: "7116c339e93f4a5819e875dcb1bb53ff204f3458c9bba80619f7c5d50172eb09"
+  source_hash: "36b2827958cccf80748db6dc21fef3eda459b3e647334c6954dbaf350ef8995b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.Settings.Get"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "75c79f140858a36c31dfb59a8a6db8b3244f5f9613c730339f3485107f396d3c"
+}
+
+bindings {
+  requirement_id: "REQ-uc-paths"
+  content_hash: "7116c339e93f4a5819e875dcb1bb53ff204f3458c9bba80619f7c5d50172eb09"
+  source_hash: "36b2827958cccf80748db6dc21fef3eda459b3e647334c6954dbaf350ef8995b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.TestGetPaths"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "faace839ea2688d2338c266915a0faa930236e8a966677e06a98b7dce03b7b65"
+}
+
+bindings {
+  requirement_id: "REQ-uc-paths"
+  content_hash: "7116c339e93f4a5819e875dcb1bb53ff204f3458c9bba80619f7c5d50172eb09"
+  source_hash: "36b2827958cccf80748db6dc21fef3eda459b3e647334c6954dbaf350ef8995b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestClientSettingsNameTheirLayer"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ac5ab569a89a8f8503c4088b0a312a8d71e97afe6f39d5b546832a499ad392d5"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.Value.Wrap"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "71e999daf3aeddd0dbcd883f1a1932ac5e826add12b2054e998ec2a965679749"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestClientSettingsNameTheirLayer"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ac5ab569a89a8f8503c4088b0a312a8d71e97afe6f39d5b546832a499ad392d5"
+}
+
+bindings {
+  requirement_id: "REQ-uc-precedence"
+  content_hash: "e48b978dde150615623d9b1970c008136c695bf06b0c5182ceb611ee26a9951b"
+  source_hash: "a239ca80b158c9a0b5df627ed03422bcfcf12237cf4937f1eb8f7866ef45c977"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestGenerateSelectsFromTheFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2038c88f8c0751fc0f8be019bf6c7e4f8a5ae3d8f50c573c94f85c6a769595a2"
+}
+
+bindings {
+  requirement_id: "REQ-uc-format"
+  content_hash: "a192628e85121e7a446fe127b45112317c158e5f2cae76ec5c73d9f85928c238"
+  source_hash: "71b6e380152827b652b8cfb51e98723e196cd52c0c7acfee3a59fda2e7037a12"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/userconfig.TestKeys"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c4fde8de5b7fc5a2bea1da3a182bf9d21aa641cbc35bb2f9b44238939d064e87"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-runner-selection"
+  content_hash: "05d0f715dfdb84a24dfd6e44e04c191d130d7a64befb82eb52c0d2ae2c80eb6f"
+  source_hash: "0f6217ab6a90e023a90255f923da05104c977616161d2ac63a7c5651ce5c9562"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestGenerateSelectsFromTheFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2038c88f8c0751fc0f8be019bf6c7e4f8a5ae3d8f50c573c94f85c6a769595a2"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-config"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseSources"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "08f85dfe198ae8d41e3ceedc2f71e5d4d056b0008a95b0115714d5d2303d0edf"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-config"
+  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
+  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proxy.ParseNoProxy"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "d902637e728789f2ffa2a8e2bf4573875e3c969b950621b09a917e47eff1dc5b"
+}

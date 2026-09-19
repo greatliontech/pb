@@ -16,6 +16,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/userconfig"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -316,11 +317,11 @@ func TestDockerUnavailable(t *testing.T) {
 		t.Fatalf("NewDockerRunner: %v", err)
 	}
 	docker := RunnerDocker
-	if _, err := Open(&docker, ""); err == nil || !strings.Contains(err.Error(), "runner docker (from the --runner flag) is unavailable: docker version") {
+	if _, err := Open(&docker, userconfig.Value{}); err == nil || !strings.Contains(err.Error(), "runner docker (from the --runner flag) is unavailable: docker version") {
 		t.Fatalf("Open: %v", err)
 	}
 	os.Remove(filepath.Join(dir, "unavailable"))
-	r, err := Open(&docker, "")
+	r, err := Open(&docker, userconfig.Value{})
 	if err != nil {
 		t.Fatal(err)
 	}
