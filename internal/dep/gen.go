@@ -31,6 +31,7 @@ import (
 // production implementation, injected for the verb's own tests.
 type Acquirer interface {
 	Acquire(ctx context.Context, ref string) (*plugoci.Acquired, error)
+	AcquireOverride(ctx context.Context, ref, source string) (*plugoci.Acquired, error)
 }
 
 // LocalAcquirer resolves and pins a local-scheme plugin;
@@ -55,11 +56,24 @@ type GenDeps struct {
 	Acquirer Acquirer
 	Runner   plugrun.Runner
 	Local    *LocalDeps
+	// Overrides are the invocation's plugin overrides, declared oci
+	// reference to source (REQ-plugin-override): a path to an OCI
+	// layout or archive, or "docker://IMAGE" for a daemon-local image.
+	Overrides map[string]string
+	// Diagnostics receives what the invocation reports on standard
+	// error: each overridden entry; nil discards.
+	Diagnostics io.Writer
 }
 
-// acquired is one entry's plugin, whichever scheme produced it.
+// OverrideDaemonPrefix spells a daemon-local image as an override
+// source (plugin-execution.md, REQ-plugin-override).
+const OverrideDaemonPrefix = "docker://"
+
+// acquired is one entry's plugin, whichever scheme produced it: an
+// export, a daemon-local image, or a host binary.
 type acquired struct {
 	rootfs  string
+	image   string
 	process plugexec.Process
 }
 
@@ -88,6 +102,28 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if p.Scheme == plugexec.SchemeLocal && deps.Local == nil {
 			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Ref)
 		}
+	}
+	// Overrides are judged before anything is acquired: the policy
+	// admits them or not, and every key names a declared oci entry
+	// (REQ-plugin-override).
+	if len(deps.Overrides) > 0 && !exec.OverridesAllowed() {
+		return errors.New("generate: the trust policy forbids plugin overrides")
+	}
+	for key, source := range deps.Overrides {
+		found := false
+		for _, p := range gf.Plugins {
+			found = found || (p.Scheme == plugexec.SchemeOCI && p.Ref == key)
+		}
+		if !found {
+			return fmt.Errorf("generate: override %s names no oci plugin entry", key)
+		}
+		if _, daemon := deps.Runner.(plugrun.DaemonImages); strings.HasPrefix(source, OverrideDaemonPrefix) && !daemon {
+			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs (select it with --%s docker)", key, plugrun.FlagRunner)
+		}
+	}
+	diag := deps.Diagnostics
+	if diag == nil {
+		diag = io.Discard
 	}
 
 	list, _, err := s.Driver.BuildList(ctx)
@@ -120,10 +156,27 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				plugins[i] = acquired{process: a.Process}
 			}
 		default:
-			var a *plugoci.Acquired
-			a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
-			if acqErr == nil {
-				plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
+			source, overridden := deps.Overrides[entry.Ref]
+			switch {
+			case overridden && strings.HasPrefix(source, OverrideDaemonPrefix):
+				// A daemon-local image: the daemon's already, run by
+				// the docker runner as it is; the process is the
+				// image's own configuration, which the daemon applies.
+				plugins[i] = acquired{image: strings.TrimPrefix(source, OverrideDaemonPrefix)}
+				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, plugins[i].image)
+			case overridden:
+				var a *plugoci.Acquired
+				a, acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
+				if acqErr == nil {
+					plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
+					fmt.Fprintf(diag, "overriding %s with %s\n", entry.Ref, source)
+				}
+			default:
+				var a *plugoci.Acquired
+				a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
+				if acqErr == nil {
+					plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
+				}
 			}
 		}
 		if acqErr != nil {
@@ -166,6 +219,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		res, err := runner.Run(ctx, plugrun.Spec{
 			Scheme:  entry.Scheme,
 			Rootfs:  plugins[i].rootfs,
+			Image:   plugins[i].image,
 			Process: plugins[i].process,
 			Stdin:   reqBytes,
 			Limits:  limits,

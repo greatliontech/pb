@@ -69,6 +69,7 @@ func loadSession() (*dep.Session, error) {
 // REQ-dep-cache-layout).
 func generateCmd() *cobra.Command {
 	var runnerFlag string
+	var overrides []string
 	cmd := &cobra.Command{
 		Use: "generate", Short: "generate code from the workspace's protobuf files", Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
@@ -79,6 +80,17 @@ func generateCmd() *cobra.Command {
 			runner, err := plugrun.Open(flag, os.Getenv(plugrun.EnvRunner))
 			if err != nil {
 				return err
+			}
+			overrideMap := map[string]string{}
+			for _, o := range overrides {
+				ref, source, ok := strings.Cut(o, "=")
+				if !ok || ref == "" || source == "" {
+					return fmt.Errorf("--override %q: spelled REF=SOURCE", o)
+				}
+				if prev, dup := overrideMap[ref]; dup {
+					return fmt.Errorf("--override %s given twice (%s and %s)", ref, prev, source)
+				}
+				overrideMap[ref] = source
 			}
 			s, err := loadSession()
 			if err != nil {
@@ -99,7 +111,7 @@ func generateCmd() *cobra.Command {
 				return err
 			}
 			defer acq.Close()
-			deps := dep.GenDeps{Acquirer: acq, Runner: runner}
+			deps := dep.GenDeps{Acquirer: acq, Runner: runner, Diagnostics: os.Stderr, Overrides: overrideMap}
 			// Local plugins run on the native runner wherever it exists.
 			// The session's root is a path within the working tree,
 			// which is rooted at the host's filesystem root.
@@ -114,6 +126,7 @@ func generateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+plugrun.EnvRunner+", over the platform default)")
+	cmd.Flags().StringArrayVar(&overrides, "override", nil, "REF=SOURCE: run the oci plugin REF from SOURCE for this invocation — an OCI layout directory, an OCI layout archive or docker-save tarball, or docker://IMAGE (docker runner); repeatable")
 	return cmd
 }
 

@@ -27,15 +27,17 @@ import (
 // (REQ-plugin-min-tier); an absent floor is refused like an
 // unbounded resource.
 //
-// Scheme is the entry's identity scheme: an oci run has Rootfs — the
-// image export — as its world; a local run has none, its Process a
-// host binary run in the host's world with the host's environment,
-// under the bounds alone, and reports sandbox tier None whatever the
-// substrate applied (plugin-execution.md, "Local binaries": the
-// downgrade is the scheme's, stated by the policy that admitted it).
+// Scheme is the entry's identity scheme: an oci run has its world in
+// Rootfs — the image export — or, for an override naming a
+// daemon-local image, in Image, which only the docker runner
+// consumes (REQ-plugin-override); a local run has neither, its
+// Process a host binary run in the host's world with the host's
+// environment, under the bounds alone (plugin-execution.md, "Local
+// binaries").
 type Spec struct {
 	Scheme  string
 	Rootfs  string
+	Image   string
 	Process plugexec.Process
 	Stdin   []byte
 	Limits  trust.Limits
@@ -98,17 +100,26 @@ func checkLimits(l trust.Limits) error {
 	return nil
 }
 
+// DaemonImages marks a runner that runs a daemon-local image
+// (Spec.Image): the docker runner alone. Generate refuses a
+// daemon-local override before anything runs unless the selected
+// runner is one.
+type DaemonImages interface {
+	RunsDaemonImages()
+}
+
 // checkScheme refuses a Spec whose scheme and world disagree: an oci
-// run has a rootfs, a local run has none, and no other scheme runs.
+// run has exactly one of a rootfs and a daemon-local image, a local
+// run has neither, and no other scheme runs.
 func checkScheme(spec Spec) error {
 	switch spec.Scheme {
 	case plugexec.SchemeOCI:
-		if spec.Rootfs == "" {
-			return errors.New("plugrun: an oci run has no rootfs")
+		if (spec.Rootfs == "") == (spec.Image == "") {
+			return errors.New("plugrun: an oci run has exactly one of a rootfs and a daemon-local image")
 		}
 	case plugexec.SchemeLocal:
-		if spec.Rootfs != "" {
-			return errors.New("plugrun: a local run carries a rootfs")
+		if spec.Rootfs != "" || spec.Image != "" {
+			return errors.New("plugrun: a local run carries a world of its own")
 		}
 	default:
 		return fmt.Errorf("plugrun: refusing a run with no identity scheme (%q)", spec.Scheme)

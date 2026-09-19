@@ -640,3 +640,73 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "cbe96d3c1b4c5a7baab987ddba59ac21ed6ffd8f63e571cabaa62eb03a69f1db"
 }
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.AcquireOverride"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8b692cf64d8040262982ba21614b702f90ebf222489ca89ec128da2b38c7b59b"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Gen"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "200a1e94823381d3d017caa3f9a8f7a05965d59532e4ad90d368e3d8d95bf608"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireOverride"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "fb4fca2a219fb130daa7f262ae24cd0ac302f5593dda6ed026c72f8daa43b66d"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestGenOverrides"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f2e79e61da6086f2591056a852e5919ce2a57f079891ec5acf359f1a75ff30f9"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugrun.TestDockerDaemonLocalImage"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "9d7080540f325187347bcb9fc6ee5fae89d9b17bfe068cfc8ec2ff3a6d017ff8"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireOverridePlatformless"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7df060aa232a59e7b074b873870edb232232e9083592922bc67158ebff577ef1"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-override"
+  content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
+  source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestStagingRequiresToken"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bee581e02cff486d5d1820bd580ceae55499b00bb7f311d079174913bf777445"
+}

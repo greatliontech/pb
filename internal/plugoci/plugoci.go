@@ -76,11 +76,13 @@ type Config struct {
 // Acquirer materializes plugin images: verified through the seam,
 // pinned in the lockfile, exported to a root filesystem.
 type Acquirer struct {
-	fs       *ocifs.OCIFS
-	lock     *lockfile.File
-	policy   *trust.Policy
-	verifier ImageVerifier
-	platform Platform
+	fs         *ocifs.OCIFS
+	staging    *staging // nil where the loopback bind failed; stagingErr says why
+	stagingErr error
+	lock       *lockfile.File
+	policy     *trust.Policy
+	verifier   ImageVerifier
+	platform   Platform
 
 	mu      sync.Mutex
 	pending map[string]*acquisition // digest-or-tag target -> in-flight state
@@ -115,19 +117,37 @@ func New(cfg Config) (*Acquirer, error) {
 		ocifs.WithDefaultPlatform(v1.Platform{OS: platform.OS, Architecture: platform.Arch}),
 		ocifs.WithVerifier(a.verify),
 	}
+	// The override staging binds a loopback port whose credential the
+	// store's keychain must hold from construction; a host refusing
+	// the bind refuses overrides alone, never acquisition.
+	if st, err := newStaging(); err != nil {
+		a.stagingErr = err
+	} else {
+		a.staging = st
+		opts = append(opts, ocifs.WithAuthSource(st.repo, st.auth()))
+	}
 	for prefix, auth := range cfg.Credentials {
 		opts = append(opts, ocifs.WithAuthSource(prefix, auth))
 	}
 	fs, err := ocifs.New(opts...)
 	if err != nil {
+		if a.staging != nil {
+			a.staging.close()
+		}
 		return nil, err
 	}
 	a.fs = fs
 	return a, nil
 }
 
-// Close releases the store.
-func (a *Acquirer) Close() error { return a.fs.Close() }
+// Close releases the store and the override staging.
+func (a *Acquirer) Close() error {
+	var stagingErr error
+	if a.staging != nil {
+		stagingErr = a.staging.close()
+	}
+	return errors.Join(stagingErr, a.fs.Close())
+}
 
 // Acquired is one materialized plugin image.
 type Acquired struct {
@@ -183,19 +203,26 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 			return nil, err
 		}
 	}
-	cfg := img.ConfigFile()
-	argv := append(append([]string{}, cfg.Config.Entrypoint...), cfg.Config.Cmd...)
-	if len(argv) == 0 {
-		return nil, fmt.Errorf("plugoci: %s declares no entrypoint: a plugin image's entrypoint is its plugin process", ref)
-	}
-	if err := plugexec.CheckEnv(cfg.Config.Env); err != nil {
+	process, err := processOf(img.ConfigFile())
+	if err != nil {
 		return nil, fmt.Errorf("plugoci: %s: %v", ref, err)
 	}
-	return &Acquired{
-		Rootfs:  rootfs,
-		Process: plugexec.Process{Argv: argv, Env: cfg.Config.Env, WorkDir: cfg.Config.WorkingDir},
-		Pin:     pin,
-	}, nil
+	return &Acquired{Rootfs: rootfs, Process: process, Pin: pin}, nil
+}
+
+// processOf reads an image configuration into the plugin process: argv
+// as Entrypoint then Cmd, exactly as OCI runtimes compose them, the
+// environment as stated (KEY=VALUE throughout), and the working
+// directory. An image with no entrypoint is no plugin.
+func processOf(cfg *v1.ConfigFile) (plugexec.Process, error) {
+	argv := append(append([]string{}, cfg.Config.Entrypoint...), cfg.Config.Cmd...)
+	if len(argv) == 0 {
+		return plugexec.Process{}, errors.New("the image declares no entrypoint: a plugin image's entrypoint is its plugin process")
+	}
+	if err := plugexec.CheckEnv(cfg.Config.Env); err != nil {
+		return plugexec.Process{}, err
+	}
+	return plugexec.Process{Argv: argv, Env: cfg.Config.Env, WorkDir: cfg.Config.WorkingDir}, nil
 }
 
 func (a *Acquirer) enter(target string, acq *acquisition) error {

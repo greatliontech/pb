@@ -204,4 +204,17 @@ override, and the entry's pin is not checked against it. Each overridden
 entry is reported on standard error for that run. Override sources are
 content a runner already consumes: an OCI layout or archive (loaded into
 pb's store, any runner) or a daemon-local image (`docker` runner). An
-override is refused when the trust policy forbids overrides.
+override is refused when the trust policy forbids overrides. On the
+invocation an override is spelled `--override REF=SOURCE`, repeatable,
+where REF is the declared `oci` reference of an entry — a key naming
+no such entry is an error — and SOURCE is a directory holding an OCI
+layout, a file holding an OCI layout archive or a docker-save tarball,
+or `docker://IMAGE` naming a daemon-local image; a layout or archive
+passes the platform check and trust-policy evaluation like any
+acquisition (`REQ-plugin-verify-before-run`), while a daemon-local
+image is the daemon's content, never acquired by pb and never
+evaluated by it — the permission that admits overrides admits that;
+the `docker` runner's record check holds the boundary and the bounds,
+not the content's provenance — and runs only under the `docker`
+runner, which fetches nothing for it: an image the daemon does not
+hold is an error.

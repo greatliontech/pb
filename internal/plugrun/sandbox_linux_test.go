@@ -304,7 +304,7 @@ func TestRunRefusesIncomplete(t *testing.T) {
 		{Scheme: plugexec.SchemeLocal, Rootfs: "/nonexistent", Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierNone},
 		{Scheme: plugexec.SchemeOCI, Process: plugexec.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugexec.TierStrong},
 	} {
-		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "scheme") && !strings.Contains(err.Error(), "rootfs") {
+		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "scheme") && !strings.Contains(err.Error(), "rootfs") && !strings.Contains(err.Error(), "world of its own") {
 			t.Errorf("scheme/world mismatch %+v accepted: %v", spec, err)
 		}
 	}
@@ -583,5 +583,13 @@ func TestRunReadsContextEnds(t *testing.T) {
 		if err == nil || !errors.Is(err, c.is) || !strings.Contains(err.Error(), c.text) {
 			t.Errorf("%s: %v, want %v naming %q", c.name, err, c.is, c.text)
 		}
+	}
+}
+
+// The sandbox runner never runs a daemon-local image.
+func TestSandboxRefusesDaemonImage(t *testing.T) {
+	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "plugins/q:dev", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugexec.TierStrong})
+	if err == nil || !strings.Contains(err.Error(), "docker runner only") {
+		t.Fatalf("sandbox runner: %v", err)
 	}
 }

@@ -398,3 +398,46 @@ func TestDockerRefusesLocal(t *testing.T) {
 		t.Fatalf("the daemon was reached: %v", verbs)
 	}
 }
+
+// A daemon-local image runs as it is: no import, no release of the
+// image, no entrypoint of pb's; the record checks still hold.
+func TestDockerDaemonLocalImage(t *testing.T) {
+	dir := fakeDaemon(t)
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
+	res, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: "plugins/q:dev", Stdin: request(t, ""), Limits: l, MinTier: plugexec.TierStrong})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Tier != plugexec.TierStrong || content(t, res) != "from the fake daemon" {
+		t.Fatalf("result = %+v", res)
+	}
+	verbs, argv := fakeLog(t, dir)
+	if want := []string{"version", "info", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
+		t.Fatalf("invocations = %v, want %v", verbs, want)
+	}
+	create := argv[2]
+	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != "plugins/q:dev" || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" {
+		t.Fatalf("create = %q", create)
+	}
+	// A name that is no image reference, or a flag in its place, is
+	// refused before the daemon is asked.
+	for _, bad := range []string{"--privileged", "", "not a ref!"} {
+		_, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: bad, Limits: l, MinTier: plugexec.TierStrong})
+		if err == nil || !(strings.Contains(err.Error(), "does not name a daemon-local image") || strings.Contains(err.Error(), "exactly one of")) {
+			t.Errorf("image %q: %v", bad, err)
+		}
+	}
+	// Both worlds, or neither, refuse.
+	for _, spec := range []Spec{
+		{Scheme: plugexec.SchemeOCI, Image: "x", Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierStrong},
+		{Scheme: plugexec.SchemeLocal, Image: "x", Process: plugexec.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugexec.TierNone},
+	} {
+		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "exactly one of") && !strings.Contains(err.Error(), "world of its own") {
+			t.Errorf("%+v accepted: %v", spec, err)
+		}
+	}
+}

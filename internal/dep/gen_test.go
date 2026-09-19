@@ -29,6 +29,7 @@ import (
 )
 
 type stubAcquirer struct {
+	overrides []string
 	got       []string
 	acq       *plugoci.Acquired
 	err       error
@@ -55,6 +56,11 @@ func (s *stubRunner) Run(_ context.Context, spec plugrun.Spec) (*plugrun.Result,
 }
 
 func (s *stubRunner) Platform() (string, string) { return "linux", "amd64" }
+
+// daemonStubRunner is a stub that runs daemon-local images.
+type daemonStubRunner struct{ stubRunner }
+
+func (*daemonStubRunner) RunsDaemonImages() {}
 
 func respBytes(t *testing.T, files map[string]string) []byte {
 	t.Helper()
@@ -605,6 +611,11 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 	}
 }
 
+func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string) (*plugoci.Acquired, error) {
+	s.overrides = append(s.overrides, ref+"="+source)
+	return s.acq, s.err
+}
+
 type stubLocal struct {
 	value string
 	acq   *pluglocal.Acquired
@@ -647,5 +658,66 @@ func TestGenLocalEntry(t *testing.T) {
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and none is wired here") {
 		t.Fatalf("no native runner: %v", err)
+	}
+}
+
+// An override substitutes only the content that executes: a layout or
+// archive goes through the override acquisition, a daemon-local image
+// rides the seam to the runner as it is; each is reported on standard
+// error; the policy can forbid them; a key naming no oci entry is an
+// error; the lockfile is untouched in both directions.
+func TestGenOverrides(t *testing.T) {
+	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - ref: ghcr.io/o/q:v1\n    out: gen2\n")
+	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	var diag strings.Builder
+	deps := GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}, Diagnostics: &diag}
+	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(acq.overrides) != 1 || acq.overrides[0] != "ghcr.io/o/p:v1=/tmp/layout" {
+		t.Fatalf("override acquisitions = %v", acq.overrides)
+	}
+	if diag.String() != "overriding ghcr.io/o/p:v1 with /tmp/layout\n" {
+		t.Fatalf("diagnostics = %q", diag.String())
+	}
+	// A daemon-local image reaches the runner as the world — a runner
+	// that runs daemon images; any other refuses it before anything
+	// runs, naming the way to select the docker runner.
+	diag.Reset()
+	runs := &daemonStubRunner{stubRunner{res: run.res}}
+	deps = GenDeps{Acquirer: acq, Runner: runs, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
+	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	plain := &stubRunner{res: run.res}
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "only the docker runner runs (select it with --runner docker)") || plain.spec.Scheme != "" {
+		t.Fatalf("daemon image under another runner: %v (ran: %+v)", err, plain.spec)
+	}
+	if runs.spec.Image != "plugins/q:dev" || runs.spec.Rootfs != "" || len(runs.spec.Process.Argv) != 0 {
+		t.Fatalf("daemon-local spec = %+v", runs.spec)
+	}
+	if !strings.Contains(diag.String(), "overriding ghcr.io/o/q:v1 with the daemon-local image plugins/q:dev") {
+		t.Fatalf("diagnostics = %q", diag.String())
+	}
+	// A key naming no oci entry — a local entry included — and a
+	// policy forbidding overrides.
+	deps = GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/none:v1": "/tmp/x"}}
+	if err := Gen(ctx, s, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "names no oci plugin entry") {
+		t.Fatalf("unknown key: %v", err)
+	}
+	_, sl := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n")
+	sl.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugexec.SchemeOCI, plugexec.SchemeLocal}}}
+	local := &stubLocal{acq: &pluglocal.Acquired{Process: plugexec.Process{Argv: []string{"/abs/tools/gen"}}}}
+	deps = GenDeps{Acquirer: acq, Runner: run, Local: &LocalDeps{Acquirer: local, Runner: run}, Overrides: map[string]string{"tools/gen": "/tmp/x"}}
+	if err := Gen(ctx, sl, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "names no oci plugin entry") {
+		t.Fatalf("local key: %v", err)
+	}
+	off := false
+	s.Client.Policy = &trust.Policy{Execution: trust.Execution{PluginOverrides: &off}}
+	deps = GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}}
+	if err := Gen(ctx, s, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "forbids plugin overrides") {
+		t.Fatalf("forbidden: %v", err)
 	}
 }

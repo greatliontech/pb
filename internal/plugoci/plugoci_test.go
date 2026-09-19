@@ -1,11 +1,17 @@
 package plugoci
 
 import (
+	"archive/tar"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"io"
+	"io/fs"
 	"log"
+	"net"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -353,5 +359,318 @@ func TestAcquireRefusesBareEnv(t *testing.T) {
 	_, err := a.Acquire(ctx, fx.host+"/org/bare:v1")
 	if err == nil || !strings.Contains(err.Error(), `"PB_SECRET" is not KEY=VALUE`) {
 		t.Fatalf("bare env: %v", err)
+	}
+}
+
+// An override from an OCI layout, a layout archive, or a docker-save
+// tarball is materialized through the verifying seam with the
+// lockfile untouched: no pin is written, and an entry's pin — even
+// one naming another digest — is not consulted; the platform check
+// and the policy still hold.
+func TestAcquireOverride(t *testing.T) {
+	fx := newFixture(t)
+	lock := &lockfile.File{}
+	if err := lock.AddPlugin(lockfile.PluginPin{Ref: fx.host + "/org/plugin:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("0", 64)}); err != nil {
+		t.Fatal(err)
+	}
+	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
+	ref := fx.host + "/org/plugin:v1"
+	idx := indexFor(t, hostPlatform())
+	layoutDir := t.TempDir()
+	if _, err := layout.Write(layoutDir, idx); err != nil {
+		t.Fatal(err)
+	}
+	archive := filepath.Join(t.TempDir(), "layout.tar")
+	tarDir(t, layoutDir, archive)
+	img, err := idx.IndexManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := idx.Image(img.Manifests[0].Digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saved := filepath.Join(t.TempDir(), "saved.tar")
+	if err := tarball.WriteToFile(saved, name.MustParseReference("plugin:dev"), first); err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range []string{layoutDir, archive, saved} {
+		got, err := a.AcquireOverride(ctx, ref, source)
+		if err != nil {
+			t.Fatalf("%s: %v", source, err)
+		}
+		if got.Process.Argv[0] != "/plugin" || got.Rootfs == "" || got.Pin.Ref != "" || got.Pin.Digest != "" {
+			t.Fatalf("%s: %+v", source, got)
+		}
+	}
+	if pin, _ := lock.Plugin(ref, lockfile.SchemeOCI); pin.Digest != "sha256:"+strings.Repeat("0", 64) || len(lock.Plugins) != 1 {
+		t.Fatalf("the lockfile was touched: %+v", lock.Plugins)
+	}
+	// The platform check holds: a layout for another platform only.
+	foreign := t.TempDir()
+	if _, err := layout.Write(foreign, indexFor(t, v1.Platform{OS: "plan9", Architecture: "mips"})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, foreign); err == nil || !strings.Contains(err.Error(), "has no "+HostPlatform().OS+"/"+HostPlatform().Arch+" entry in its manifest list") {
+		t.Fatalf("foreign platform: %v", err)
+	}
+	// The policy holds: require-provenance without a verifier fails closed.
+	strict := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{Default: trust.RequireProvenance}, nil)
+	if _, err := strict.AcquireOverride(ctx, ref, layoutDir); !errors.Is(err, ErrNoImageVerifier) {
+		t.Fatalf("require-provenance: %v", err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("a missing source acquired")
+	}
+}
+
+// indexFor builds a manifest list with one plugin image per platform.
+func indexFor(t *testing.T, platforms ...v1.Platform) v1.ImageIndex {
+	t.Helper()
+	idx := v1.ImageIndex(empty.Index)
+	for _, p := range platforms {
+		img, err := random.Image(64, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := img.ConfigFile()
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg = cfg.DeepCopy()
+		cfg.OS, cfg.Architecture = p.OS, p.Architecture
+		cfg.Config = v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"A=1"}}
+		img, err = mutate.ConfigFile(img, cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pl := p
+		idx = mutate.AppendManifests(idx, mutate.IndexAddendum{Add: img, Descriptor: v1.Descriptor{Platform: &pl}})
+	}
+	return idx
+}
+
+// tarDir writes dir as a tar archive of files and directories.
+func tarDir(t *testing.T, dir, out string) {
+	t.Helper()
+	f, err := os.Create(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	tw := tar.NewWriter(f)
+	defer tw.Close()
+	if err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || p == dir {
+			return err
+		}
+		rel, _ := filepath.Rel(dir, p)
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		h, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		h.Name = filepath.ToSlash(rel)
+		if err := tw.WriteHeader(h); err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		_, err = tw.Write(b)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// An archive entry escaping the layout is refused before anything is
+// written past it.
+func TestUntarRefusesEscape(t *testing.T) {
+	archive := filepath.Join(t.TempDir(), "evil.tar")
+	f, err := os.Create(archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tw := tar.NewWriter(f)
+	for _, name := range []string{"oci-layout", "../evil"} {
+		if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeReg, Mode: 0o644, Size: 1}); err != nil {
+			t.Fatal(err)
+		}
+		tw.Write([]byte("x"))
+	}
+	tw.Close()
+	f.Close()
+	dir := t.TempDir()
+	if err := untar(ctx, archive, dir); err == nil || !strings.Contains(err.Error(), "escapes the layout") {
+		t.Fatalf("escape: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(dir), "evil")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("the escaping entry was written")
+	}
+}
+
+// A layout whose descriptors carry no platform — a docker-save archive
+// since Docker 25, a single-image layout — lists each image under the
+// platform its configuration names and passes the platform check; an
+// image naming none is refused.
+func TestAcquireOverridePlatformless(t *testing.T) {
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	ref := fx.host + "/org/plugin:v1"
+	bare := v1.ImageIndex(empty.Index)
+	for _, p := range []v1.Platform{hostPlatform(), {OS: "plan9", Architecture: "mips"}} {
+		img, err := random.Image(64, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg, _ := img.ConfigFile()
+		cfg = cfg.DeepCopy()
+		cfg.OS, cfg.Architecture = p.OS, p.Architecture
+		cfg.Config = v1.Config{Entrypoint: []string{"/plugin"}}
+		img, _ = mutate.ConfigFile(img, cfg)
+		bare = mutate.AppendManifests(bare, mutate.IndexAddendum{Add: img})
+	}
+	dir := t.TempDir()
+	if _, err := layout.Write(dir, bare); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, dir); err != nil {
+		t.Fatalf("platform-less layout: %v", err)
+	}
+	archive := filepath.Join(t.TempDir(), "saved.tar")
+	tarDir(t, dir, archive)
+	if _, err := a.AcquireOverride(ctx, ref, archive); err != nil {
+		t.Fatalf("platform-less archive: %v", err)
+	}
+	// No platform anywhere: refused naming the image.
+	img, _ := random.Image(64, 1)
+	cfg, _ := img.ConfigFile()
+	cfg = cfg.DeepCopy()
+	cfg.OS, cfg.Architecture = "", ""
+	cfg.Config = v1.Config{Entrypoint: []string{"/plugin"}}
+	img, _ = mutate.ConfigFile(img, cfg)
+	none := t.TempDir()
+	if _, err := layout.Write(none, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: img})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, none); err == nil || !strings.Contains(err.Error(), "names no platform") {
+		t.Fatalf("no platform: %v", err)
+	}
+	saved := filepath.Join(t.TempDir(), "legacy.tar")
+	if err := tarball.WriteToFile(saved, name.MustParseReference("plugin:dev"), img); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, saved); err == nil || !strings.Contains(err.Error(), "names no platform") {
+		t.Fatalf("legacy tarball without a platform: %v", err)
+	}
+}
+
+// An override is a plugin image like any: no entrypoint and a bare
+// environment entry are refused; an archive holding anything but
+// files and directories is refused.
+func TestAcquireOverrideRefusals(t *testing.T) {
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	ref := fx.host + "/org/plugin:v1"
+	build := func(cfgc v1.Config) string {
+		img, _ := random.Image(64, 1)
+		cfg, _ := img.ConfigFile()
+		cfg = cfg.DeepCopy()
+		cfg.OS, cfg.Architecture = hostPlatform().OS, hostPlatform().Architecture
+		cfg.Config = cfgc
+		img, _ = mutate.ConfigFile(img, cfg)
+		dir := t.TempDir()
+		if _, err := layout.Write(dir, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: img})); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{})); err == nil || !strings.Contains(err.Error(), "declares no entrypoint") {
+		t.Fatalf("no entrypoint: %v", err)
+	}
+	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"SECRET"}})); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
+		t.Fatalf("bare env: %v", err)
+	}
+	archive := filepath.Join(t.TempDir(), "links.tar")
+	f, err := os.Create(archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tw := tar.NewWriter(f)
+	tw.WriteHeader(&tar.Header{Name: "oci-layout", Typeflag: tar.TypeSymlink, Linkname: "/etc/passwd"})
+	tw.Close()
+	f.Close()
+	if err := untar(ctx, archive, t.TempDir()); err == nil || !strings.Contains(err.Error(), "neither a file nor a directory") {
+		t.Fatalf("symlink entry: %v", err)
+	}
+}
+
+// The staging registry answers the store alone: a request without
+// the acquirer's token is refused, the ping excepted.
+func TestStagingRequiresToken(t *testing.T) {
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	for _, c := range []struct {
+		path   string
+		token  string
+		status int
+	}{
+		{"/v2/", "", http.StatusOK},
+		{"/v2/override/tags/list", "", http.StatusUnauthorized},
+		{"/v2/override/tags/list", "wrong", http.StatusUnauthorized},
+		{"/v2/override/tags/list", a.staging.token, http.StatusNotFound},
+	} {
+		req, _ := http.NewRequest("GET", "http://"+a.staging.host+c.path, nil)
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != c.status {
+			t.Errorf("%s with token %q: %d, want %d", c.path, c.token, resp.StatusCode, c.status)
+		}
+	}
+}
+
+// A host refusing the loopback bind refuses overrides alone: ordinary
+// acquisition runs, and an override names the staging failure.
+func TestStagingBindFailureIsOverridesOnly(t *testing.T) {
+	prev := listenStaging
+	listenStaging = func() (net.Listener, error) { return nil, errors.New("loopback bind denied by policy") }
+	t.Cleanup(func() { listenStaging = prev })
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	if _, err := a.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil {
+		t.Fatalf("acquisition without staging: %v", err)
+	}
+	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", t.TempDir()); err == nil || !strings.Contains(err.Error(), "override staging: loopback bind denied by policy") {
+		t.Fatalf("override without staging: %v", err)
+	}
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A manifest list nesting a list without a platform is refused.
+func TestWithPlatformsRefusesNestedList(t *testing.T) {
+	inner := indexFor(t, hostPlatform())
+	outer := mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: inner})
+	if _, err := withPlatforms(outer); err == nil || !strings.Contains(err.Error(), "nests a list without a platform") {
+		t.Fatalf("nested list: %v", err)
+	}
+	platformed := mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: inner, Descriptor: v1.Descriptor{Platform: &v1.Platform{OS: "linux", Architecture: "amd64"}}})
+	if _, err := withPlatforms(platformed); err != nil {
+		t.Fatalf("nested list with a platform: %v", err)
 	}
 }
