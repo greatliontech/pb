@@ -134,9 +134,9 @@ func TestGenTierFloor(t *testing.T) {
 	if run.spec.MinTier != plugexec.TierStrong {
 		t.Fatalf("runner received floor %q", run.spec.MinTier)
 	}
-	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the minimal row; strong required", plugrun.ErrTierUnreachable)}
+	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the os row; strong required", plugrun.ErrTierUnreachable)}
 	err = Gen(ctx, s, GenDeps{Acquirer: acq, Runner: refusing}, &strings.Builder{})
-	if !errors.Is(err, plugrun.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the minimal row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
+	if !errors.Is(err, plugrun.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the os row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
 	// An explicitly lowered floor accepts the same run.

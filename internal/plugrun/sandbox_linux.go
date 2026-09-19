@@ -150,20 +150,27 @@ func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbo
 	}
 	out.Root = spec.Rootfs
 	out.Network = false
-	out.Hostname = "pb-plugin"
+	out.Hostname = pluginHostname
 	return out
 }
 
 // startError reads a Start refusal: a host below the tier floor is
 // ErrTierUnreachable carrying the sandbox's own statement of the row
-// it reaches (REQ-plugin-min-tier); an intent the host's row cannot
-// deliver at all — a Root to restrict the world to, a denied network
-// — is named as such, since no floor lowers past what
-// REQ-plugin-sandboxed requires of every run; anything else is the
-// run failing to start, with the plugin's stderr so far.
+// it reaches (REQ-plugin-min-tier) — unless the row reached is the
+// Minimal one and the run is an oci plugin's, which no floor admits:
+// that row can neither deny the network nor restrict the world to
+// the export, so the refusal says lowering cannot help and is not a
+// tier refusal a lowering could answer; an intent the host's row
+// cannot deliver at all — a Root to restrict the world to, a denied
+// network — is named the same way; anything else is the run failing
+// to start, with the plugin's stderr so far.
 func startError(scheme string, err error, stderr []byte) error {
-	if errors.Is(err, sandbox.ErrWeakerThanRequired) {
-		return fmt.Errorf("%w: %v", ErrTierUnreachable, err)
+	var te *sandbox.TierError
+	if errors.As(err, &te) {
+		if scheme == plugexec.SchemeOCI && te.Reached <= sandbox.Minimal {
+			return fmt.Errorf("plugrun: the sandbox row this host reaches (%s) cannot deliver an oci plugin's isolation at any floor (a read-only image root and no network are required at every tier, so lowering the tier floor cannot help): %w", te.Reached, err)
+		}
+		return fmt.Errorf("%w: %w", ErrTierUnreachable, err)
 	}
 	if errors.Is(err, sandbox.ErrUndeliverable) {
 		if scheme == plugexec.SchemeLocal {

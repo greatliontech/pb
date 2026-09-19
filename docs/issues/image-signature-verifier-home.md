@@ -1,6 +1,9 @@
 # Image-signature verification: no offline verifier exists yet
 
-Lands: user decision
+Lands: gitprov's image-signatures plan (offline envelope
+verification against the pinned root, gitprov owning that
+verification already) and pb's image-signatures plan chunk 1 (the
+signature fetched by referrers and judged through it)
 
 REQ-prov-plugin-signature needs offline verification of a sigstore
 signature over a plugin image's manifest-list digest, against pb's
@@ -15,8 +18,8 @@ provenance none (REQ-prov-unsigned-recorded), and a plugins rule or
 default of require-provenance fails closed naming the missing
 verifier. Nothing silently passes.
 
-Candidate homes, in the order the ecosystem's precedents suggest:
-gitprov (owns "offline sigstore verification against a pinned root";
-cosign/v3's offline tlog machinery is already in its graph), or the
-standalone validate module sketched when ociplug's verify package is
-extracted. Cross-repo scheduling is the user's call.
+The verifier's home is gitprov, which owns offline sigstore
+verification against a pinned root and already carries cosign's
+offline transparency-log machinery in its graph: its image-signatures
+plan adds the envelope verifier beside the git-object one, and pb's
+image-signatures plan wires it into the acquirer's seam.

@@ -162,11 +162,35 @@ re-resolved binary with identical content is a non-event.
 
 ## Execution
 
-**REQ-plugin-sandboxed** (behavior): An `oci` plugin MUST run as a single
-process execed into a freshly created isolated environment: its root
-filesystem is the image's, read-only; it has no network access; its only
-communication channels are standard input, standard output, and standard
-error.
+**REQ-plugin-sandboxed** (behavior): An `oci` plugin MUST run as a
+single process execed into a freshly created isolated environment: its
+root filesystem is the image's, read-only; it has no network access; its
+only communication channels are standard input, standard output, and
+standard error. The `docker` runner's known deviations, which pb cannot
+switch off through the daemon's API, are these classes and no others:
+the runtime filesystems an OCI runtime mounts over the image's root —
+`/proc`, `/sys` and `/dev`, with everything the runtime places beneath
+them (its masks, `/dev/pts`, `/dev/mqueue`, a writable `/dev/shm`,
+`/dev` itself writable) — the daemon's three name files `/etc/hosts`,
+`/etc/hostname` and `/etc/resolv.conf` bound over the image's, and the
+variables the daemon injects into a container created, as pb creates
+every one, without a terminal: `PATH` where the image states none,
+`HOSTNAME`, `HOME`; and a daemon image — a daemon-local override, or the
+docker byte path (`REQ-plugin-core-verifies`) — runs under the image's
+whole configuration as the daemon applies it, since running an image
+other than as it declares is not what a daemon image means: a declared
+`VOLUME` is a writable anonymous volume over the read-only root,
+released with the container; `USER` sets the process's uid; a
+`HEALTHCHECK` runs. The native runner presents none of these: its world
+is the image's alone. INV-docker-deviations: every mount over the
+image's root is a filesystem the runtime created under one of the three
+roots — mounted whole, or re-bound from one of those very filesystems as
+the runtime's masks are, never a host directory bound there — or a name
+file, every variable beyond the image's is an injected one, `/dev` and
+the runtime's masks are writable while `/proc` itself and the root are
+not, and the native runner's world is the image's alone, as the running
+plugin sees them; enforced by `TestDockerDeviations` against a live
+daemon and the native runner.
 
 **REQ-plugin-resource-bounds** (behavior): Every plugin process — every
 scheme, every tier — MUST run under bounded memory, CPU, process count,
@@ -176,7 +200,9 @@ reported as a plugin failure naming the bound exceeded wherever the
 enforcing mechanism attributes the termination: the wall clock always,
 and otherwise as the mechanism's own accounting affords — under
 cgroups, memory kills and refused forks from the kernel's event
-counters where the runner reads them (the native runner), and the
+counters where the runner reads them (the native runner) — a
+refused fork attributed only when the plugin then failed, since a
+refused fork the plugin survived terminated nothing — and the
 memory kill alone where the runner reads a daemon's record of the
 container (the `docker` runner), a refused fork there being the
 plugin's own failure surfaced verbatim and an exit status of 137
@@ -195,6 +221,11 @@ so every failure is read against a named enforcement.
 tier `Strong` unless the trust policy explicitly lowers the requirement;
 an environment that cannot deliver the required tier fails with an error
 stating the achievable tier and how to lower the requirement explicitly.
+The lowering path ends at `OS`: a host reaching only the `Minimal`
+row runs no `oci` plugin at any floor, that row being unable to deny
+the network or to restrict the world to the export
+(`REQ-plugin-sandboxed`), and the error says so rather than offering
+a lowering that cannot help.
 
 **REQ-plugin-reported-tier** (invariant): The tier enforced against the
 requirement MUST be the tier the sandbox reports for the actual run —
@@ -204,7 +235,14 @@ never an assumed or configured value.
 a pure function of the pinned plugin content and the
 `CodeGeneratorRequest`: the same digest and request yield the same
 response under every runner. No runner-specific fact (mount paths,
-container names, substrate environment) may be observable in a response.
+container names, substrate environment) may be observable in a
+response through the plugin protocol — the request in, the response
+out. The `docker` runner's named deviations (`REQ-plugin-sandboxed`)
+are observable to a plugin that goes and reads them — its uid, the
+daemon's `/etc` files, a declared volume — and such a plugin's output
+is its own doing, not the runner's: the invariant binds what pb
+hands a plugin and takes from it, and pb passes no runner-specific
+fact by either.
 
 **REQ-plugin-response-authority** (behavior): Generated output MUST come
 exclusively from the plugin's `CodeGeneratorResponse`; a plugin exiting

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/plugrun/testdata/behavior"
 	"github.com/greatliontech/pb/internal/trust"
 	"github.com/greatliontech/sandbox"
 	"google.golang.org/protobuf/proto"
@@ -160,7 +161,7 @@ func TestNativeRunnerIsSandbox(t *testing.T) {
 // (REQ-plugin-sandboxed).
 func TestRunReadonlyRoot(t *testing.T) {
 	requireSandbox(t)
-	res, err := run(t, "write", limits(nil))
+	res, err := run(t, behavior.Write, limits(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +175,7 @@ func TestRunReadonlyRoot(t *testing.T) {
 // (REQ-plugin-sandboxed).
 func TestRunNoNetwork(t *testing.T) {
 	requireSandbox(t)
-	res, err := run(t, "net", limits(nil))
+	res, err := run(t, behavior.Net, limits(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +188,7 @@ func TestRunNoNetwork(t *testing.T) {
 // attached (REQ-plugin-response-authority's transport half).
 func TestRunExitCode(t *testing.T) {
 	requireSandbox(t)
-	res, err := run(t, "exit7", limits(nil))
+	res, err := run(t, behavior.Exit7, limits(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +205,7 @@ func TestRunExitCode(t *testing.T) {
 func TestRunWallClock(t *testing.T) {
 	requireSandbox(t)
 	start := time.Now()
-	_, err := run(t, "sleep", limits(func(l *trust.Limits) { l.Timeout = 2 * time.Second }))
+	_, err := run(t, behavior.Sleep, limits(func(l *trust.Limits) { l.Timeout = 2 * time.Second }))
 	if !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "wall clock (2s") {
 		t.Fatalf("err = %v", err)
 	}
@@ -226,7 +227,7 @@ func TestRunCancelled(t *testing.T) {
 		Scheme:  plugexec.SchemeOCI,
 		Rootfs:  rootfsDir,
 		Process: plugexec.Process{Argv: []string{"/plugin"}},
-		Stdin:   request(t, "sleep"),
+		Stdin:   request(t, behavior.Sleep),
 		Limits:  limits(nil),
 		MinTier: plugexec.TierStrong,
 	})
@@ -243,7 +244,7 @@ func TestRunCancelled(t *testing.T) {
 // refused rather than never starting.
 func TestRunMemoryBound(t *testing.T) {
 	acc := accounting(t)
-	res, err := run(t, "hog", limits(func(l *trust.Limits) { l.Memory = 1 << 30; l.Timeout = time.Minute }))
+	res, err := run(t, behavior.Hog, limits(func(l *trust.Limits) { l.Memory = 1 << 30; l.Timeout = time.Minute }))
 	switch acc {
 	case BoundsCgroups:
 		if !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "memory (1073741824 bytes) (enforced by cgroups") {
@@ -271,7 +272,7 @@ func TestRunCPUBound(t *testing.T) {
 	// CPU 1 over 10s allows 11 CPU-seconds; spinning every core burns
 	// them well inside the wall clock.
 	start := time.Now()
-	_, err := run(t, "spin", limits(func(l *trust.Limits) { l.CPU = 1; l.Timeout = 10 * time.Second }))
+	_, err := run(t, behavior.Spin, limits(func(l *trust.Limits) { l.CPU = 1; l.Timeout = 10 * time.Second }))
 	if err == nil || errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "killed by SIGKILL: the CPU-time bound (10s over 1 cores, enforced by rlimits) or an external kill") {
 		t.Fatalf("hard-limit death: %v", err)
 	}
@@ -311,12 +312,25 @@ func TestRunRefusesIncomplete(t *testing.T) {
 }
 
 // A host below the floor is reported as ErrTierUnreachable carrying
-// the sandbox's statement; any other Start failure is a start failure
-// with the stderr so far.
+// the sandbox's statement, the row readable through the wrap — except
+// a host reaching only the Minimal row, which no floor admits for an
+// oci plugin: that refusal says lowering cannot help and is no tier
+// refusal (REQ-plugin-min-tier); any other Start failure is a start
+// failure with the stderr so far.
 func TestStartError(t *testing.T) {
-	err := startError(plugexec.SchemeOCI, fmt.Errorf("%w: this host reaches the minimal row (namespaces: EPERM); strong required", sandbox.ErrWeakerThanRequired), nil)
-	if !errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the minimal row") {
+	os := &sandbox.TierError{Reached: sandbox.OS, Required: sandbox.Strong, Lacking: []string{"namespaces: EPERM"}}
+	err := startError(plugexec.SchemeOCI, os, nil)
+	var te *sandbox.TierError
+	if !errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the os row") || !errors.As(err, &te) || te.Reached != sandbox.OS {
 		t.Fatalf("tier refusal: %v", err)
+	}
+	minimal := &sandbox.TierError{Reached: sandbox.Minimal, Required: sandbox.Strong, Lacking: []string{"namespaces: EPERM"}}
+	err = startError(plugexec.SchemeOCI, minimal, nil)
+	if errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "lowering the tier floor cannot help") || !strings.Contains(err.Error(), "reaches the minimal row") || !errors.As(err, &te) || te.Reached != sandbox.Minimal {
+		t.Fatalf("the minimal row for an oci run: %v", err)
+	}
+	if err := startError(plugexec.SchemeLocal, minimal, nil); !errors.Is(err, ErrTierUnreachable) {
+		t.Fatalf("the minimal row for a local run is a tier refusal: %v", err)
 	}
 	err = startError(plugexec.SchemeOCI, fmt.Errorf("%w: the minimal row cannot restrict the world to a Root", sandbox.ErrUndeliverable), nil)
 	if errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "lowering the tier floor cannot help") || !strings.Contains(err.Error(), "cannot restrict the world") {

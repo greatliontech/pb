@@ -1,9 +1,6 @@
 # The daemon's platform selection is variant-aware where pb's check is not
 
-Lands: variant-aware platform selection amending
-REQ-plugin-platform-strict (the amendment that clause names as
-future), or a live arm on a 32-bit ARM daemon exercising the docker
-runner
+Lands: docker-runner-conformance plan chunk 3
 
 REQ-plugin-platform-strict matches an image's platform entries on
 OS and architecture, deliberately blind to the variant, and the

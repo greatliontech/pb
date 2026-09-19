@@ -14,7 +14,7 @@ require (
 	github.com/greatliontech/gitprov v0.0.0-20260809155225-17c40cefc1dc
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/ocifs v0.7.0
-	github.com/greatliontech/sandbox v0.1.0
+	github.com/greatliontech/sandbox v0.2.0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/sigstore/gitsign v0.16.0
 	github.com/sigstore/protobuf-specs v0.5.1

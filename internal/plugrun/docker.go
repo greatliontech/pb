@@ -103,10 +103,6 @@ func (r *DockerRunner) docker(ctx context.Context, stdin io.Reader, args ...stri
 	return stdout.Bytes(), nil
 }
 
-// pluginHostname is the hostname every run presents, on every
-// runner: a plugin never observes the host's, or a per-run one.
-const pluginHostname = "pb-plugin"
-
 // dockerRecord is what the daemon records of a container, the
 // fields the derivation reads.
 type dockerRecord struct {

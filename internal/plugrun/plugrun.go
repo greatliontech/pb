@@ -117,6 +117,11 @@ func beforeStart(ctx context.Context, err error) error {
 	return err
 }
 
+// pluginHostname is the hostname every run presents, on every
+// runner: a plugin never observes the host's, or a per-run one
+// (REQ-plugin-runner-independence).
+const pluginHostname = "pb-plugin"
+
 // DaemonImages marks a runner that runs a daemon image (Spec.Image,
 // daemon-local or pulled): the docker runner alone. A daemon-local
 // override, and the docker byte path, are refused before anything

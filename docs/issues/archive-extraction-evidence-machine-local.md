@@ -29,6 +29,5 @@ whose churn is excluded from union-equality. Until then the two targets'
 records and any attestations on them are per-machine only and CI cannot
 see them.
 
-Lands: when gomutant can exclude a declared in-module scratch namespace
-from oracle observation, or user decision on redesigning the extraction
-tests' scratch strategy.
+Lands: mutation-evidence plan chunk 1 (gomutant declares scratch
+namespaces since its scratch-namespaces change)

@@ -1,7 +1,7 @@
 # The local scheme runs nowhere without a native runner
 
-Lands: sandbox's darwin backend delivers a row (a Start on darwin
-succeeds and reports a tier)
+Lands: sandbox's rows plan chunk 2 (the darwin row) delivers a
+row: a Start on darwin succeeds and reports a tier
 
 A `local` plugin runs on the native runner — a host binary runs on
 the host, under the resource bounds every scheme carries

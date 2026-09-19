@@ -1,7 +1,6 @@
 # Plugin-acquisition mutation evidence is machine-local
 
-Lands: ocifs exposes a transport-injection option, or gomutant grows a
-socket allowance for loopback test servers
+Lands: mutation-evidence plan chunk 3
 
 plugoci's tests exercise acquisition end to end through an in-memory
 registry served over a loopback httptest socket, because ocifs

@@ -1,7 +1,6 @@
 # Runner mutation evidence is machine-local
 
-Lands: gomutant grows an allowance for oracles that construct kernel
-sandboxes (namespaces, mounts, cgroups)
+Lands: mutation-evidence plan chunk 2
 
 plugrun's runner suite executes a real sandbox per test — fresh
 namespaces, a pivoted read-only root, cgroup or rlimit bounds — so its

@@ -1,9 +1,8 @@
 # Delta mutation campaigns stall in gomutant's freshness proofs
 
-Lands: gomutant bounds the freshness-proof preparation (memory and
-time) or serves it incrementally, so a delta campaign over this
-tree's record set reaches measurement; or user decision on running
-close-out campaigns on a larger host
+Lands: gomutant's freshness-proofs-stall-on-large-record-sets
+resolved (its diagnosis is scheduled after the pb plans, gomutant
+being this work's own)
 
 Four attempts at the generation work's delta campaign — the staged
 tree over nine packages, then the clean tree over three — never

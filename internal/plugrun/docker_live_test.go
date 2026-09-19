@@ -3,12 +3,15 @@ package plugrun
 import (
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +24,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/plugrun/testdata/behavior"
 	"github.com/greatliontech/pb/internal/trust"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
+	"pgregory.net/rapid"
 )
 
 // requireDaemon skips the live docker tests where no daemon answers,
@@ -65,34 +72,34 @@ func TestDockerLive(t *testing.T) {
 	if res.Tier != plugexec.TierStrong || res.Bounds != BoundsCgroups || content(t, res) != "files=2" {
 		t.Fatalf("result = %+v (%s)", res, content(t, res))
 	}
-	if res, err := liveRun(t, r, "write", limits(nil)); err != nil || content(t, res) != "write-err=true" {
+	if res, err := liveRun(t, r, behavior.Write, limits(nil)); err != nil || content(t, res) != "write-err=true" {
 		t.Fatalf("read-only root: %v %q", err, res.Stdout)
 	}
-	if res, err := liveRun(t, r, "net", limits(nil)); err != nil || content(t, res) != "ifaces=lo dial-err=true" {
+	if res, err := liveRun(t, r, behavior.Net, limits(nil)); err != nil || content(t, res) != "ifaces=lo dial-err=true" {
 		t.Fatalf("network: %v %q", err, res.Stdout)
 	}
-	if res, err := liveRun(t, r, "exit7", limits(nil)); err != nil || res.ExitCode != 7 || !strings.Contains(string(res.Stderr), "deliberate failure") {
+	if res, err := liveRun(t, r, behavior.Exit7, limits(nil)); err != nil || res.ExitCode != 7 || !strings.Contains(string(res.Stderr), "deliberate failure") {
 		t.Fatalf("exit code: %v %+v", err, res)
 	}
 	// stdout and stderr stay apart without a terminal: the response
 	// parses while stderr carries the line.
-	if res, err := liveRun(t, r, "both", limits(nil)); err != nil || content(t, res) != "stdout-with-stderr" || !strings.Contains(string(res.Stderr), "a line on stderr") {
+	if res, err := liveRun(t, r, behavior.Both, limits(nil)); err != nil || content(t, res) != "stdout-with-stderr" || !strings.Contains(string(res.Stderr), "a line on stderr") {
 		t.Fatalf("streams: %v %+v", err, res)
 	}
-	if res, err := liveRun(t, r, "host", limits(nil)); err != nil || content(t, res) != "hostname=pb-plugin" {
+	if res, err := liveRun(t, r, behavior.Host, limits(nil)); err != nil || content(t, res) != "hostname=pb-plugin" {
 		t.Fatalf("hostname: %v %q", err, res.Stdout)
 	}
-	if res, err := liveRun(t, r, "env", limits(nil)); err != nil || content(t, res) != "PB_PLUGIN_TEST_ENV=from-the-image" {
+	if res, err := liveRun(t, r, behavior.Env, limits(nil)); err != nil || content(t, res) != "PB_PLUGIN_TEST_ENV=from-the-image" {
 		t.Fatalf("environment: %v %q", err, res.Stdout)
 	}
 	start := time.Now()
-	if _, err := liveRun(t, r, "sleep", limits(func(l *trust.Limits) { l.Timeout = 2 * time.Second })); !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "wall clock (2s") {
+	if _, err := liveRun(t, r, behavior.Sleep, limits(func(l *trust.Limits) { l.Timeout = 2 * time.Second })); !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "wall clock (2s") {
 		t.Fatalf("wall clock: %v", err)
 	}
 	if time.Since(start) > 30*time.Second {
 		t.Fatal("the kill did not end the run promptly")
 	}
-	if _, err := liveRun(t, r, "hog", limits(func(l *trust.Limits) { l.Memory = 64 << 20; l.Timeout = time.Minute })); !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "memory (67108864 bytes) (enforced by cgroups)") {
+	if _, err := liveRun(t, r, behavior.Hog, limits(func(l *trust.Limits) { l.Memory = 64 << 20; l.Timeout = time.Minute })); !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "memory (67108864 bytes) (enforced by cgroups)") {
 		t.Fatalf("memory bound: %v", err)
 	}
 }
@@ -110,7 +117,7 @@ func TestRunnerIndependence(t *testing.T) {
 		t.Fatal(err)
 	}
 	requireSandbox(t)
-	for _, param := range []string{"", "net", "write", "host", "both", "env", "exit7"} {
+	for _, param := range behavior.Compared {
 		a, err := liveRun(t, native, param, limits(nil))
 		if err != nil {
 			t.Fatal(err)
@@ -119,8 +126,46 @@ func TestRunnerIndependence(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if string(a.Stdout) != string(b.Stdout) || a.ExitCode != b.ExitCode || string(a.Stderr) != string(b.Stderr) {
-			t.Fatalf("param %q: native %q %q (%d) vs docker %q %q (%d)", param, a.Stdout, a.Stderr, a.ExitCode, b.Stdout, b.Stderr, b.ExitCode)
+		if diff := responsesDiffer(a, b); diff != "" {
+			t.Fatalf("param %q: %s", param, diff)
+		}
+	}
+}
+
+// responsesDiffer describes how two runs' responses differ, or says
+// nothing when they are the same bytes, exit status and stderr.
+func responsesDiffer(a, b *Result) string {
+	if string(a.Stdout) != string(b.Stdout) || a.ExitCode != b.ExitCode || string(a.Stderr) != string(b.Stderr) {
+		return fmt.Sprintf("native %q %q (%d) vs docker %q %q (%d)", a.Stdout, a.Stderr, a.ExitCode, b.Stdout, b.Stderr, b.ExitCode)
+	}
+	return ""
+}
+
+// The fixture answers every compared behavior and every probe by
+// that behavior, so the lists the tests draw from name nothing the
+// fixture would answer with its default.
+func TestFixtureAnswersEveryBehavior(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the native runner is Linux-only")
+	}
+	native, err := NativeRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireSandbox(t)
+	for _, param := range slices.Concat(behavior.Compared, behavior.Probes) {
+		res, err := liveRun(t, native, param, limits(nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if param == behavior.Exit7 {
+			if res.ExitCode != 7 {
+				t.Errorf("behavior %q exited %d", param, res.ExitCode)
+			}
+			continue
+		}
+		if got := content(t, res); (param == behavior.Default) != strings.HasPrefix(got, "files=") {
+			t.Errorf("behavior %q answered %q", param, got)
 		}
 	}
 }
@@ -190,10 +235,10 @@ func TestDockerLivePull(t *testing.T) {
 	if res.Tier != plugexec.TierStrong || res.Bounds != BoundsCgroups || content(t, res) != "files=2" {
 		t.Fatalf("result = %+v (%s)", res, content(t, res))
 	}
-	if res, err := run("env"); err != nil || content(t, res) != "PB_PLUGIN_TEST_ENV=from-the-image" {
+	if res, err := run(behavior.Env); err != nil || content(t, res) != "PB_PLUGIN_TEST_ENV=from-the-image" {
 		t.Fatalf("the image's own environment: %v %q", err, res.Stdout)
 	}
-	if res, err := run("write"); err != nil || content(t, res) != "write-err=true" {
+	if res, err := run(behavior.Write); err != nil || content(t, res) != "write-err=true" {
 		t.Fatalf("read-only root: %v %q", err, res.Stdout)
 	}
 	// A digest the registry does not hold is the daemon's refusal.
@@ -201,4 +246,57 @@ func TestDockerLivePull(t *testing.T) {
 	if _, err := r.Run(context.Background(), Spec{Scheme: plugexec.SchemeOCI, Image: unknown, Pull: true, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugexec.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
 		t.Fatalf("an unknown digest: %v", err)
 	}
+}
+
+// Runner independence as a property: for any request — a parameter
+// the fixture answers by a behavior or any other string, over any
+// file list — the native runner and the docker runner return the same
+// response bytes, exit status and stderr
+// (REQ-plugin-runner-independence). The draw count and the shrink
+// time are bounded here, over the operator's -rapid flags, because
+// each case runs a container.
+func TestPropertyRunnerIndependence(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the native runner is Linux-only")
+	}
+	docker := requireDaemon(t)
+	native, err := NativeRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireSandbox(t)
+	for name, value := range map[string]string{"rapid.checks": "12", "rapid.shrinktime": "20s"} {
+		prev := flag.Lookup(name).Value.String()
+		if err := flag.Set(name, value); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := flag.Set(name, prev); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	rapid.Check(t, func(rt *rapid.T) {
+		param := rapid.OneOf(
+			rapid.SampledFrom(behavior.Compared),
+			rapid.StringMatching(`[a-z0-9=,]{0,12}`),
+		).Draw(rt, "param")
+		files := rapid.SliceOfN(rapid.StringMatching(`[a-z]{1,8}\.proto`), 0, 8).Draw(rt, "files")
+		req, err := proto.Marshal(&pluginpb.CodeGeneratorRequest{FileToGenerate: files, Parameter: &param})
+		if err != nil {
+			rt.Fatal(err)
+		}
+		run := func(r Runner) *Result {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
+			res, err := r.Run(ctx, Spec{Scheme: plugexec.SchemeOCI, Rootfs: rootfsDir, Process: plugexec.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: req, Limits: limits(nil), MinTier: plugexec.TierStrong})
+			if err != nil {
+				rt.Fatalf("%T: %v", r, err)
+			}
+			return res
+		}
+		if diff := responsesDiffer(run(native), run(docker)); diff != "" {
+			rt.Fatalf("param %q files %v: %s", param, files, diff)
+		}
+	})
 }

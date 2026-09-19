@@ -1,9 +1,6 @@
 # The daemon's record of a memory kill is sometimes absent
 
-Lands: when the misreport is reproduced with the daemon's event log
-for the container captured alongside its record (a `docker events
---filter event=oom` read before the container's release), which is
-the diagnosis's anchor and the candidate second record
+Lands: docker-runner-conformance plan chunk 2
 
 The docker runner attributes a memory-bound death to the daemon's
 record: `State.OOMKilled` in `docker inspect` after the run

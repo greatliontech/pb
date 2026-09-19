@@ -1,7 +1,6 @@
 # The cgroups bound accounting runs live only under delegation
 
-Lands: the runner suite runs in continuous integration inside a
-delegated cgroup subtree with `PB_TEST_REQUIRE_CGROUPS=1`
+Lands: docker-runner-conformance plan chunk 4
 
 The runner suite exercises the bounds accounting the host affords:
 the sandbox places the run in a cgroup only where a delegated subtree

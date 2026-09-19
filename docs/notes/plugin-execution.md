@@ -31,7 +31,8 @@ and schemas never leave the machine.
   no signal, so those attributions are the native runner's alone;
   the daemon's platform, not the host's, drives acquisition. The
   daemon's own /etc mounts and /dev/shm over the image root are
-  tracked (docs/issues/docker-daemon-mounts.md).
+  the runner's named deviations (REQ-plugin-sandboxed), as is the image
+  configuration a daemon image runs under.
 - **The native runner is `sandbox` behind pb's runner seam.** A protoc
   plugin is the ideal create-only tenant: one process, stdio, no
   exec-into-running, no lifecycle. pb's request is intent only — the
