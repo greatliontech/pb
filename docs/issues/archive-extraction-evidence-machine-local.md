@@ -1,33 +1,33 @@
 # Archive extraction mutation evidence stays machine-local
 
-`internal/archive.ExtractZip` and `internal/archive.writeMember` cannot
-produce committable mutation-test evidence. Their oracle tests create and
-remove per-test directories under `internal/archive/testdata/scratch/`
-(`localTempDir` in `zip_test.go`), so the observed runtime-input union of
-the package directory differs across mutant executions. gomutant classes
-every surviving mutant of these two targets `unstable-oracle`
-("observation bracket moved: internal/archive") and keeps the records in
-the machine-local overlay; at last measurement that is 37 survivors
-(17 + 20) that cannot be attributed to weak assertions or equivalence.
+`internal/archive.ExtractZip` and `internal/archive.writeMember`
+cannot yet produce committable mutation-test evidence. Their oracle
+tests create and remove per-test directories under
+`internal/archive/testdata/scratch/` (`localTempDir` in
+`zip_test.go`), which gomutant now takes as a declared scratch
+namespace: a campaign over the two targets with
+`--scratch-namespace internal/archive/testdata/scratch:x` reaches
+measurement (100 mutants generated, 47 killed, 37 open) and the
+scratch churn no longer moves the observation bracket. The records
+stay machine-local for two reasons the declaration does not touch,
+both in the analysis layer (gofresh, through gomutant):
 
-Both escape routes are closed today:
+- the target's runtime inputs are classed "external directory input:
+  /" while the record's own input list is empty and a syscall trace
+  of the same tests touches no path named `/`;
+- the observation's subject reachability is not closed: a computed
+  function call in `validatePath` (the `strings.SplitSeq` iterator a
+  range statement calls) and an interface invoke outside the
+  program's type analysis in `writeMember` (`hash.Hash.Sum` on a
+  standard-library hash).
 
-- Scratch outside the module (`t.TempDir()`) was deliberately abandoned —
-  `localTempDir`'s doc comment records the reason — because gomutant then
-  observes an external directory surface and the evidence is unverifiable
-  instead.
-- Declaring the scratch root with `--bracket-path
-  internal/archive/testdata/scratch` fails differently: the per-test
-  subdirectories are transient (removed by test cleanup), so the bracket
-  hash sees an "unhashable runtime directory".
+Until those clear, the two targets' 37 open survivors and any
+attestations on them are per-machine only and continuous
+integration cannot see them. A first campaign over this tree also
+spends its whole budget in freshness proofs (a union over 486
+subjects for two targets); the proof slices it persists let a rerun
+reach measurement.
 
-The resolution is gomutant's declared scratch-namespace surface (its
-`oracle-scratch-namespaces` issue; recover with
-`git log --all -- docs/issues/oracle-scratch-namespaces.md` in the
-gomutant repository), which will let oracles name in-module scratch roots
-whose churn is excluded from union-equality. Until then the two targets'
-records and any attestations on them are per-machine only and CI cannot
-see them.
-
-Lands: mutation-evidence plan chunk 1 (gomutant declares scratch
-namespaces since its scratch-namespaces change)
+Lands: gomutant serves the two targets' records as repo evidence —
+the `/` classification and the open reachability resolved on its
+side (reported to the maintainer)

@@ -3,8 +3,10 @@
 Spec: docs/specs/plugin-execution.md (REQ-plugin-override's staging
 of an override), ocifs docs/specs/api.md (construction options)
 
-- [ ] 1. The archive extraction suite's scratch declared as a
-      gomutant scratch namespace; its campaign records promoted
+- [x] 1. The archive extraction suite's scratch declared as a
+      gomutant scratch namespace and its campaign run to measurement;
+      the records' promotion waits on the analysis layer (the issue
+      records the residue)
 - [ ] 2. The runner suite's kernel surfaces declared to gomutant's
       observation bracket where paths name them; what the bracket
       cannot name filed against gomutant with the measured residue
