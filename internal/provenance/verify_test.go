@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/greatliontech/gitprov"
+	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/lockfile"
@@ -73,6 +74,8 @@ func tagPayload(commit plumbing.Hash, name string) []byte {
 func TestVerify(t *testing.T) {
 	ctx := context.Background()
 	s := provtest.New(t)
+	// Verification completes without a round trip (REQ-prov-offline).
+	sigstoretest.RefuseNetwork(t)
 	fx := newFixture(t)
 	id := s.Identity()
 
