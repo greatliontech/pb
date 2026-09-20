@@ -160,7 +160,7 @@ func TestAcquirerConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := plugoci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: plugoci.Platform{OS: "linux", Arch: "fake"}, Pull: plugoci.PullDaemon}
+	want := plugoci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: plugoci.Platform{OS: "linux", Arch: "fake"}, Pull: plugoci.PullDaemon}
 	if !reflect.DeepEqual(cfg, want) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}

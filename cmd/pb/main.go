@@ -138,12 +138,12 @@ const (
 	pullDaemon = "docker"
 )
 
-// acquirerConfig assembles the plugin acquirer: pb's plugin store,
-// which sits beside the module cache rather than inside it (the
-// module cache root holds module artifacts only, dep-verbs.md
-// REQ-dep-cache-layout), the session's lockfile and trust policy,
-// the runner's platform, and the byte path the settings select for
-// that runner.
+// acquirerConfig assembles the plugin acquirer: pb's plugin store and
+// the evidence kept with it, which sit beside the module cache rather
+// than inside it (the module cache root holds module artifacts only,
+// dep-verbs.md REQ-dep-cache-layout), the session's lockfile and trust
+// policy, the runner's platform, and the byte path the settings
+// select for that runner.
 func acquirerConfig(settings *userconfig.Settings, runner plugrun.Runner, s *dep.Session) (plugoci.Config, error) {
 	pull, err := pullMode(settings.Get(userconfig.KeyPluginPull), runner)
 	if err != nil {
@@ -156,6 +156,7 @@ func acquirerConfig(settings *userconfig.Settings, runner plugrun.Runner, s *dep
 	os_, arch := runner.Platform()
 	return plugoci.Config{
 		WorkDir:     filepath.Join(base, "pb", "plugins"),
+		EvidenceDir: filepath.Join(base, "pb", "plugin-evidence"),
 		Lock:        s.Lock,
 		Policy:      s.Client.Policy,
 		TrustedRoot: s.Client.TrustedRoot,

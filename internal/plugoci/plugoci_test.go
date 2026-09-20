@@ -21,6 +21,7 @@ import (
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/imagesig"
+	"github.com/greatliontech/pb/internal/imagesig/evidence"
 	"github.com/greatliontech/pb/internal/imagesig/imagesigtest"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -130,8 +131,23 @@ func newFixture(t *testing.T) *fixture {
 
 func newAcquirer(t *testing.T, fx *fixture, lock *lockfile.File, policy *trust.Policy, root *gitprov.TrustedRoot) *Acquirer {
 	t.Helper()
+	return newAcquirerKeeping(t, fx, lock, policy, root, "")
+}
+
+// newAcquirerKeeping is newAcquirer with evidence kept under dir.
+func newAcquirerKeeping(t *testing.T, fx *fixture, lock *lockfile.File, policy *trust.Policy, root *gitprov.TrustedRoot, dir string) *Acquirer {
+	t.Helper()
+	return newAcquirerAt(t, fx, lock, policy, root, t.TempDir(), dir)
+}
+
+// newAcquirerAt is newAcquirerKeeping over the store at workDir, so a
+// later acquirer can find the store warm; the caller closes the
+// earlier one first.
+func newAcquirerAt(t *testing.T, fx *fixture, lock *lockfile.File, policy *trust.Policy, root *gitprov.TrustedRoot, workDir, dir string) *Acquirer {
+	t.Helper()
 	a, err := New(Config{
-		WorkDir:     t.TempDir(),
+		WorkDir:     workDir,
+		EvidenceDir: dir,
 		Lock:        lock,
 		Policy:      policy,
 		TrustedRoot: root,
@@ -506,6 +522,154 @@ func TestAcquireLegacySignatureTag(t *testing.T) {
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
 	if got, err := a.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
 		t.Fatalf("the legacy tag's envelope: %+v %v", got, err)
+	}
+}
+
+// unreachable makes the fixture's registry refuse every round trip —
+// with a status the client does not retry, so the refusal is prompt.
+func (fx *signedFixture) unreachable(t *testing.T) {
+	t.Helper()
+	fixtures.serve(fx.host, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "the registry is unreachable", http.StatusForbidden)
+	}))
+}
+
+// Evidence fetched for an image is kept with its content and judged
+// from there: an acquisition whose kept evidence the policy accepts
+// makes no round trip; kept evidence the policy no longer accepts is
+// refetched, what the fetch takes replacing it; a fetch that takes
+// nothing keeps nothing (REQ-prov-plugin-evidence-kept).
+func TestAcquireKeepsEvidence(t *testing.T) {
+	fx := newSignedFixture(t, true)
+	ref := fx.host + "/org/plugin:v1"
+	kept := t.TempDir()
+	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
+
+	// Unsigned: nothing found, nothing kept, asked again each time.
+	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); !errors.Is(err, imagesig.ErrNoEvidence) {
+		t.Fatalf("unsigned: %v", err)
+	}
+	if entries, _ := os.ReadDir(kept); len(entries) != 0 {
+		t.Fatalf("an unsigned image left kept evidence: %v", entries)
+	}
+
+	fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
+	lock := &lockfile.File{}
+	workDir := t.TempDir()
+	first := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
+	if got, err := first.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+		t.Fatalf("first use: %+v %v", got, err)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(kept, "sha256")); len(entries) != 1 {
+		t.Fatalf("the fetched evidence was not kept: %v", entries)
+	}
+	first.Close()
+
+	// The registry gone, the store warm: the kept evidence carries the
+	// acquisition.
+	fx.unreachable(t)
+	offline := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
+	if got, err := offline.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+		t.Fatalf("offline with kept evidence: %+v %v", got, err)
+	}
+	offline.Close()
+	// Without kept evidence the same acquisition needs the registry.
+	unkept := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, "")
+	if _, err := unkept.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), "unreachable") {
+		t.Fatalf("offline without kept evidence: %v", err)
+	}
+	unkept.Close()
+	// A policy the kept evidence does not satisfy refetches, and the
+	// registry gone fails the acquisition.
+	other := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, "https://github.com/other/**")}}
+	tightened := newAcquirerAt(t, fx.fixture, &lockfile.File{}, other, fx.sig.TrustedRoot(), workDir, kept)
+	if _, err := tightened.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), "unreachable") {
+		t.Fatalf("a tightened policy offline: %v", err)
+	}
+	tightened.Close()
+	// A pinned record the kept evidence no longer bears refetches too:
+	// with the registry gone, the run fails rather than passing.
+	if _, err := newAcquirerAt(t, fx.fixture, lock, other, fx.sig.TrustedRoot(), workDir, kept).Acquire(ctx, ref); err == nil {
+		t.Fatal("a pinned record judged from kept evidence the policy refuses passed")
+	}
+}
+
+// What a fetch takes replaces what was kept, and a fetch that rejects
+// keeps nothing, so kept evidence is never a rejected fetch's residue
+// (REQ-prov-plugin-evidence-kept).
+func TestAcquireKeptEvidenceReplaced(t *testing.T) {
+	fx := newSignedFixture(t, true)
+	ref := fx.host + "/org/plugin:v1"
+	kept := t.TempDir()
+	const otherSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v2"
+	accepting := func(san string) *trust.Policy {
+		return &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, san)}}
+	}
+	firstReferrer := fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
+	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(signerSAN), fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); err != nil {
+		t.Fatal(err)
+	}
+	store := evidence.Store{Dir: kept}
+	h, err := v1.NewHash(fx.digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, _ := store.Load(h)
+
+	// A second signer's bundle appears, its referrer sorting after the
+	// first's; a policy accepting only it refuses the kept evidence,
+	// fetches, passes the first over, accepts the second, and keeps
+	// both in that order.
+	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.After, firstReferrer)
+	workDir := t.TempDir()
+	pinnedToSecond := &lockfile.File{}
+	second := newAcquirerAt(t, fx.fixture, pinnedToSecond, accepting(otherSAN), fx.sig.TrustedRoot(), workDir, kept)
+	if got, err := second.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+		t.Fatalf("the second signer: %+v %v", got, err)
+	}
+	second.Close()
+	after, _ := store.Load(h)
+	// What the fetch took is kept, up to the accepted carrier: the
+	// passed-over first signer's, then the accepted second signer's.
+	if len(before) != 1 || len(after) != 2 {
+		t.Fatalf("kept evidence not replaced by what the fetch took: before %v, after %v", before, after)
+	}
+	if _, err := gitprov.VerifyImage(ctx, fx.digest, after[0].Value, gitprov.Identity{Subject: signerSAN, Issuer: signerIssuer}, fx.sig.TrustedRoot()); err != nil {
+		t.Fatalf("the passed-over carrier is not the first signer's: %v", err)
+	}
+	if _, err := gitprov.VerifyImage(ctx, fx.digest, after[1].Value, gitprov.Identity{Subject: otherSAN, Issuer: signerIssuer}, fx.sig.TrustedRoot()); err != nil {
+		t.Fatalf("the last kept carrier is not the accepted signer's: %v", err)
+	}
+	// An unwritable store changes no outcome.
+	sealed := filepath.Join(t.TempDir(), "sealed")
+	if err := os.Mkdir(sealed, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	if os.Geteuid() != 0 {
+		if got, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(otherSAN), fx.sig.TrustedRoot(), sealed).Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+			t.Fatalf("an unwritable evidence store changed the outcome: %+v %v", got, err)
+		}
+	}
+	// The kept judgement holds the pin's record too: under a policy
+	// accepting both signers, the kept first signer's carrier is
+	// passed over for the one reproducing the pin, with no round trip.
+	fx.unreachable(t)
+	broad := accepting("https://github.com/acme/plugin/**")
+	offline := newAcquirerAt(t, fx.fixture, pinnedToSecond, broad, fx.sig.TrustedRoot(), workDir, kept)
+	if got, err := offline.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+		t.Fatalf("the pinned record over kept evidence offline: %+v %v", got, err)
+	}
+	offline.Close()
+	// A rejected fetch keeps nothing new: the kept evidence stays.
+	corrupt := newSignedFixture(t, true)
+	corruptRef := corrupt.host + "/org/plugin:v1"
+	corrupt.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true})
+	corruptKept := t.TempDir()
+	if _, err := newAcquirerKeeping(t, corrupt.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}, corrupt.sig.TrustedRoot(), corruptKept).Acquire(ctx, corruptRef); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
+		t.Fatalf("rejected: %v", err)
+	}
+	if entries, _ := os.ReadDir(corruptKept); len(entries) != 0 {
+		t.Fatalf("a rejected fetch kept evidence: %v", entries)
 	}
 }
 

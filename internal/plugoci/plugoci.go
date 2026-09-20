@@ -28,6 +28,7 @@ import (
 	"github.com/greatliontech/pb/internal/genfile"
 	"github.com/greatliontech/pb/internal/imagesig"
 	"github.com/greatliontech/pb/internal/imagesig/discover"
+	"github.com/greatliontech/pb/internal/imagesig/evidence"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/trust"
@@ -55,12 +56,15 @@ func HostPlatform() Platform {
 	return Platform{OS: runtime.GOOS, Arch: runtime.GOARCH}
 }
 
-// Config assembles an Acquirer. WorkDir roots the image store;
-// TrustedRoot is the root plugin signatures verify against, nil
-// leaving every image unsigned (require-provenance then fails
-// closed); a zero Platform means the host's.
+// Config assembles an Acquirer. WorkDir roots the image store and
+// EvidenceDir the evidence kept with it (provenance.md
+// REQ-prov-plugin-evidence-store), empty keeping none; TrustedRoot
+// is the root plugin signatures verify against, nil leaving every
+// image unsigned (require-provenance then fails closed); a zero
+// Platform means the host's.
 type Config struct {
 	WorkDir     string
+	EvidenceDir string
 	Lock        *lockfile.File
 	Policy      *trust.Policy
 	TrustedRoot *gitprov.TrustedRoot
@@ -95,6 +99,7 @@ type Acquirer struct {
 	lock      *lockfile.File
 	policy    *trust.Policy
 	root      *gitprov.TrustedRoot
+	kept      *evidence.Store // nil keeps none
 	platform  Platform
 	pull      PullMode
 
@@ -122,6 +127,7 @@ func New(cfg Config) (*Acquirer, error) {
 		platform = HostPlatform()
 	}
 	a := &Acquirer{
+		kept:     evidenceStore(cfg.EvidenceDir),
 		lock:     cfg.Lock,
 		policy:   cfg.Policy,
 		root:     cfg.TrustedRoot,
@@ -363,15 +369,26 @@ func tolerable(err error) bool {
 		errors.Is(err, ErrNoIdentityRule) || errors.Is(err, ErrNoTrustedRoot)
 }
 
-// evidence finds and judges the signature evidence for digest at the
-// repository the image was fetched from — the resolved reference's,
-// so an override's evidence is sought where the override was staged
-// — against the identity rule governing the declared reference,
-// each carrier fetched as it is judged (REQ-prov-plugin-carriers,
-// REQ-prov-plugin-classification); accept is the caller's further
-// acceptance of a verified record, nil for every one. With no
-// identity rule or no trusted root nothing is fetched: no evidence
-// could be accepted (REQ-prov-plugin-identity).
+// evidenceStore is the store at dir, none for no dir.
+func evidenceStore(dir string) *evidence.Store {
+	if dir == "" {
+		return nil
+	}
+	return &evidence.Store{Dir: dir}
+}
+
+// evidence judges the signature evidence for digest: the evidence
+// kept for it first, and, when that holds none the policy accepts,
+// the evidence fetched from the repository the image was fetched
+// from — the resolved reference's, so an override's evidence is
+// sought where the override was staged — each carrier fetched as it
+// is judged and what was taken kept in place of the old
+// (REQ-prov-plugin-evidence-kept, REQ-prov-plugin-carriers,
+// REQ-prov-plugin-classification). The judgement is against the
+// identity rule governing the declared reference; accept is the
+// caller's further acceptance of a verified record, nil for every
+// one. With no identity rule or no trusted root nothing is judged:
+// no evidence could be accepted (REQ-prov-plugin-identity).
 func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decision trust.Decision, accept func(lockfile.Provenance) bool) (lockfile.Provenance, error) {
 	if decision.Identity == nil {
 		return lockfile.Provenance{}, ErrNoIdentityRule
@@ -391,8 +408,22 @@ func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decis
 	if err != nil {
 		return lockfile.Provenance{}, fmt.Errorf("plugoci: %w", err)
 	}
-	carriers := discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain()))
-	return imagesig.Judge(ctx, digest, carriers, id, a.root, accept)
+	if a.kept != nil {
+		if kept, ok := a.kept.Load(h); ok {
+			if rec, err := imagesig.Judge(ctx, digest, imagesig.Sequence(kept), id, a.root, accept); err == nil {
+				return rec, nil
+			}
+		}
+	}
+	var fetched imagesig.Recorder
+	rec, err := imagesig.Judge(ctx, digest, fetched.Of(discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain()))), id, a.root, accept)
+	if a.kept != nil && (err == nil || tolerable(err)) {
+		// The keep is for later acquisitions; one that fails changes
+		// no outcome (REQ-prov-plugin-evidence-kept), as the cache
+		// carries no authority.
+		_ = a.kept.Save(h, fetched.Taken)
+	}
+	return rec, err
 }
 
 // checkPlatforms admits the one manifest-list entry for the host —

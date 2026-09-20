@@ -153,3 +153,31 @@ a signer, as REQ-prov-origin-consistency requires of a designation, so
 evidence MUST be accepted only through an explicit identity rule. With no
 identity rule governing the reference, or no trusted root configured,
 no evidence is judged and the image is unsigned as above.
+
+**REQ-prov-plugin-evidence-kept** (behavior): Evidence fetched for an
+image MUST be kept with pb's plugin content, keyed by the digest, as
+the carriers taken in discovery order; a later acquisition judges the
+kept evidence first and fetches only when it holds none the judgement
+accepts — under the identity rule and, for a pinned image, the
+recorded provenance — what the fetch takes then replacing it, so an
+acquisition whose kept evidence is accepted makes no round trip, and
+a signature since removed from the registry goes unnoticed while the
+kept one is accepted. Kept evidence carries no authority: it is
+judged exactly as fetched evidence is, kept evidence that cannot be
+read is absent, never an error, and a keep that cannot be written
+changes no outcome. A fetch that takes no carrier keeps nothing, so
+an unsigned image is asked for again on every acquisition, and a
+fetch that rejects keeps nothing.
+
+**REQ-prov-plugin-evidence-store** (wire): Kept evidence MUST live at
+`<user cache>/pb/plugin-evidence/<algorithm>/<hex>.json` for the
+digest `<algorithm>:<hex>`: a JSON object whose `carriers` list holds,
+in discovery order, objects of `where`, the carrier's origin as
+discovery names it, and one of `bundle`, the sigstore bundle's bytes
+as fetched, base64, or `envelope`, the simple-signing envelope's parts —
+`payload` base64, `signature`, `certificate`, `chain`, `rekorBundle`,
+`rfc3161Timestamp` as annotated, absent ones omitted. An entry is at
+most 64 MiB, a larger one being absent. Entries are written
+atomically and whole; apart from the transient temporary files atomic
+writes leave on interruption — never read as entries — no other
+content lives under the store.

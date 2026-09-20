@@ -6,8 +6,9 @@ REQ-prov-plugin-classification), docs/specs/plugin-execution.md
 (REQ-lock-no-silent-downgrade), docs/specs/dep-verbs.md
 (REQ-dep-update)
 
-- [ ] 1. A governed plugin's signature evidence kept beside its
-      content in the plugin store and judged from there on later
+- [x] 1. A governed plugin's signature evidence kept beside its
+      content, in a store next to the plugin store, and judged from
+      there on later
       acquisitions, fetched again only when the store holds none the
       policy accepts, so a build with a warm store and an unchanged
       pin runs offline

@@ -430,3 +430,93 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "a99fe77747e2a39515a6697f5bcbcc17632b1153b629006f7342cce33f62fca3"
 }
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-kept"
+  content_hash: "593d243bc45771f5d24493c0c670d1a28e2bab8c9ffabb94d9e7ab27f73ab569"
+  source_hash: "09287b1f085435aee579467a6c7e50eedd6f533c9d5a113934ceb365a0db114e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "42845e8e63880b475f2817f118673aefdbc7390d48c2389e5e6cec964c354abd"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-kept"
+  content_hash: "593d243bc45771f5d24493c0c670d1a28e2bab8c9ffabb94d9e7ab27f73ab569"
+  source_hash: "09287b1f085435aee579467a6c7e50eedd6f533c9d5a113934ceb365a0db114e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireKeepsEvidence"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "68d7e057f02db7acc321d95a7011c7bc74524f65c54edac2ec43364de09ceffb"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-kept"
+  content_hash: "593d243bc45771f5d24493c0c670d1a28e2bab8c9ffabb94d9e7ab27f73ab569"
+  source_hash: "09287b1f085435aee579467a6c7e50eedd6f533c9d5a113934ceb365a0db114e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireKeptEvidenceReplaced"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bab6842f095a2a28b6d2c7399f69b1ea35cf0ae8f87802df0e3d81d26a38f535"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-kept"
+  content_hash: "593d243bc45771f5d24493c0c670d1a28e2bab8c9ffabb94d9e7ab27f73ab569"
+  source_hash: "09287b1f085435aee579467a6c7e50eedd6f533c9d5a113934ceb365a0db114e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig/evidence.TestStoreUnreadableIsAbsent"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c7d9dc51f7c48495b42c5e9f395902182688500ee782d796595476072dd78f0d"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-store"
+  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
+  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig/evidence.Store.Save"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a1c8ecc9f01f44feb0d0aa7363dbcd4b8a84669acc0f4060d5d29d1d84c258e8"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-store"
+  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
+  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig/evidence.Store.Load"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "09e66b68547f3742ba440eaf8c5bcf4c181c4606624b01660cca19ad36dbef0c"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-store"
+  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
+  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig/evidence.TestStoreRoundTrips"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "551f3c49dbc479ef3caea6be2a2c1f788ebb2a874b6d4bf347d67093549d9a5b"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-kept"
+  content_hash: "593d243bc45771f5d24493c0c670d1a28e2bab8c9ffabb94d9e7ab27f73ab569"
+  source_hash: "09287b1f085435aee579467a6c7e50eedd6f533c9d5a113934ceb365a0db114e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig.TestRecorderKeepsWhatWasTaken"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b0186f58e1c3367b39a8bc465a9e2486df124badc27aad8072f1e424fb274dcb"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-evidence-store"
+  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
+  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/imagesig/evidence.TestStoreUnreadableIsAbsent"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c7d9dc51f7c48495b42c5e9f395902182688500ee782d796595476072dd78f0d"
+}

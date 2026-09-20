@@ -115,6 +115,27 @@ func TestJudgePrefersTheAcceptedRecord(t *testing.T) {
 	}
 }
 
+// A recorder keeps what the judgement took, in order, up to the
+// stop, and never an erring step.
+func TestRecorderKeepsWhatWasTaken(t *testing.T) {
+	steps := []step{{c: imagesig.Carrier{Where: "a"}}, {err: errors.New("b unfetched")}, {c: imagesig.Carrier{Where: "c"}}, {c: imagesig.Carrier{Where: "d"}}}
+	taken := 0
+	var r imagesig.Recorder
+	n := 0
+	for c, err := range r.Of(sequence(&taken, steps...)) {
+		n++
+		if n == 3 && (err != nil || c.Where != "c") {
+			t.Fatalf("step 3 = %+v %v", c, err)
+		}
+		if n == 3 {
+			break
+		}
+	}
+	if len(r.Taken) != 2 || r.Taken[0].Where != "a" || r.Taken[1].Where != "c" {
+		t.Fatalf("taken = %+v, want a and c", r.Taken)
+	}
+}
+
 // The judge reaches no network: its imports carry no capability to
 // (REQ-prov-offline), the structural half of the witness above.
 func TestJudgeImportsCarryNoNetworkCapability(t *testing.T) {

@@ -40,6 +40,39 @@ type Carrier struct {
 // rejects the evidence.
 type Carriers = iter.Seq2[Carrier, error]
 
+// Sequence is carriers already in hand, in order, as a judgement
+// takes them.
+func Sequence(cs []Carrier) Carriers {
+	return func(yield func(Carrier, error) bool) {
+		for _, c := range cs {
+			if !yield(c, nil) {
+				return
+			}
+		}
+	}
+}
+
+// Recorder records the carriers a judgement takes from a discovery,
+// so what was fetched can be kept: Taken is every carrier yielded
+// without error, in order, up to the step the judgement stopped at.
+type Recorder struct {
+	Taken []Carrier
+}
+
+// Of is carriers as the judgement takes them, recorded.
+func (r *Recorder) Of(carriers Carriers) Carriers {
+	return func(yield func(Carrier, error) bool) {
+		for c, err := range carriers {
+			if err == nil {
+				r.Taken = append(r.Taken, c)
+			}
+			if !yield(c, err) {
+				return
+			}
+		}
+	}
+}
+
 // Judge verifies carriers in order until one is accepted, returning
 // its record (REQ-prov-plugin-classification): a carrier without the
 // material a signed time comes from is unverifiable and passed over;
