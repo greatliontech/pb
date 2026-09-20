@@ -48,7 +48,17 @@ its own: the entry's `digest` is what was signed. A `git-signed-tag`
 record belongs to a module entry and an `image-signature` record to a
 plugin entry; a record of the other type under an entry, and a record
 naming a type's field under another type, are invalid. No other
-evidence types are defined by this document.
+evidence types are defined by this document but the pinned-key record
+of REQ-lock-pinned-key-record.
+
+**REQ-lock-pinned-key-record** (wire): A `git-pinned-key` record — a
+module entry's evidence accepted under a trust-policy rule naming
+pinned keys (`provenance.md`, REQ-prov-pinned-key-eval) — MUST carry
+`objectFormat` and `object` as a `git-signed-tag` record does, then
+`key`, with `kind` (`openpgp` or `ssh`) and `fingerprint` naming the
+pinned key that verified the signature, in place of `identity`. It
+belongs to a module entry alone. Lands: the check-rules plan closed
+out, the pinned-key plan following it.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the plugin identity as written in generation configuration, without

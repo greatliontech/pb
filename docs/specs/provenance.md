@@ -101,6 +101,54 @@ matching fails the operation.
 `allow-unsigned` with no accepted evidence MUST be recorded with
 provenance `none` in the lockfile — tolerated, never invisible.
 
+## Pinned keys
+
+A trust tier between unsigned and identity-with-transparency: a rule
+names the public keys it accepts for a prefix, and a git-signed tag
+under that prefix verifies against those keys and no other. What the
+tier proves is that a holder of a pinned key signed the tag. What it
+cannot prove is when: no transparency log and no timestamp authority
+binds a time to the signature, so a key stolen today signs a tag of
+any date and nothing observes it, and a key's revocation or expiry
+reaches pb only when the policy unpins it. A policy author choosing
+this tier chooses knowing both.
+
+**pinned key** (term): A public key a trust-policy rule accepts as a
+signer for its prefix: an OpenPGP key or an SSH key, identified by its
+fingerprint and carried in full in the policy, so verification looks
+nothing up.
+
+**REQ-prov-pinned-keys-schema** (wire): The trust policy file MAY
+contain `keyring`, a list of pinned keys `{kind, fingerprint, key}`,
+and a `modules` rule `keys`, a list of fingerprints beside or in
+place of `identity`, under these rules: `kind` is `openpgp` or `ssh`;
+`fingerprint` is the key's fingerprint as its kind spells it; `key`
+is the public key in full — an armored OpenPGP public key block, or
+an OpenSSH public key line — and a key whose fingerprint is not the
+entry's `fingerprint` is a schema violation; a rule's fingerprint
+naming no keyring entry is a schema violation; and `plugins` rules
+carry no `keys`, image signatures being sigstore's alone. Lands: the
+check-rules plan closed out, the pinned-key plan following it.
+
+**REQ-prov-pinned-key-eval** (behavior): Under a rule naming `keys`, a
+subject's git-signed-tag evidence MUST verify offline against exactly
+the rule's pinned keys of the signature's kind — `gitprov` verifying
+the tag's OpenPGP or SSH signature, binding chain and all as for a
+sigstore signature — with no transparency proof required or consulted;
+a signature by any other key, an unverifiable one, or none fails the
+operation, whatever `default` or `require` says: naming keys is
+requiring them. A rule naming both `keys` and `identity` accepts
+either evidence. Lands: the check-rules plan closed out, the
+pinned-key plan following it.
+
+**REQ-prov-pinned-key-recorded** (behavior): A subject accepted under
+a pinned key MUST be recorded in the lockfile with the key's kind and
+fingerprint as the record's identity (`module-lockfile.md`,
+REQ-lock-pinned-key-record); a later resolution under a policy that no
+longer pins that key fails as REQ-prov-pinned-key-eval says, the
+record naming the key that no longer governs. Lands: the check-rules
+plan closed out, the pinned-key plan following it.
+
 ## Plugin images
 
 **REQ-prov-plugin-signature** (behavior): Plugin image evidence MUST be a
