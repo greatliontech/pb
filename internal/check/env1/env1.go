@@ -26,6 +26,8 @@ package env1
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"sort"
 
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
@@ -273,27 +275,7 @@ var (
 )
 
 // descriptorType is the descriptor proto type an entity target binds.
-func descriptorType(t check.Target) *cel.Type {
-	switch t {
-	case check.TargetFile:
-		return fileType
-	case check.TargetMessage:
-		return cel.ObjectType("google.protobuf.DescriptorProto")
-	case check.TargetField, check.TargetExtension:
-		return cel.ObjectType("google.protobuf.FieldDescriptorProto")
-	case check.TargetOneof:
-		return cel.ObjectType("google.protobuf.OneofDescriptorProto")
-	case check.TargetEnum:
-		return cel.ObjectType("google.protobuf.EnumDescriptorProto")
-	case check.TargetEnumValue:
-		return cel.ObjectType("google.protobuf.EnumValueDescriptorProto")
-	case check.TargetService:
-		return cel.ObjectType("google.protobuf.ServiceDescriptorProto")
-	case check.TargetMethod:
-		return cel.ObjectType("google.protobuf.MethodDescriptorProto")
-	}
-	return nil
-}
+func descriptorType(t check.Target) *cel.Type { return targets[t].typ }
 
 // bindings declares the variables a rule of the kind and target sees
 // (REQ-env1-bindings).
@@ -440,4 +422,175 @@ func (e *Env) entityArg(v ref.Val) (*entry, ref.Val) {
 		return nil, types.WrapErr(err)
 	}
 	return en, nil
+}
+
+// Binding is one member of a lint target's population: the variables
+// a rule of that target sees, and the declaration bound — nil for a
+// package or the set — with the path a finding names: the entity's
+// file, a package's first checked file in path order, none for the
+// set.
+type Binding struct {
+	Vars map[string]any
+	Desc protoreflect.Descriptor
+	Path string
+}
+
+// Population lists a lint target's bindings over the checked files,
+// given by path, taken once each in path order (REQ-env1-population):
+// every entity of the target's kind in those files and no other —
+// messages nested ones included and map entries excluded, fields of
+// bound messages with oneof members, oneofs without the synthetic
+// ones of proto3 optional fields, enums and their values, services
+// and their methods, extensions wherever declared; each package a
+// file declares once with its checked files, a file declaring none
+// binding none; the set once over them all. A path the set does not
+// hold is an error.
+func (s *Set) Population(t check.Target, checked []string) ([]Binding, error) {
+	tg, ok := targets[t]
+	if !ok {
+		return nil, fmt.Errorf("%q is no target", t)
+	}
+	paths := append([]string(nil), checked...)
+	sort.Strings(paths)
+	paths = slices.Compact(paths)
+	files := make([]*fileEntry, 0, len(paths))
+	for _, p := range paths {
+		f := s.byPath[p]
+		if f == nil {
+			return nil, fmt.Errorf("%s is not a file of the compiled schema", p)
+		}
+		files = append(files, f)
+	}
+	if tg.populate != nil {
+		return tg.populate(files), nil
+	}
+	return populateEntities(t, files, tg.each), nil
+}
+
+// populateSet binds the set once over the files.
+func populateSet(files []*fileEntry) []Binding {
+	return []Binding{{Vars: map[string]any{BindFiles: fileProtos(files)}}}
+}
+
+// populatePackages binds each declared package once, its files in
+// path order, at its first file.
+func populatePackages(files []*fileEntry) []Binding {
+	var out []Binding
+	var order []string
+	byPkg := map[string][]*fileEntry{}
+	for _, f := range files {
+		pkg := string(f.fd.Package())
+		if pkg == "" {
+			continue
+		}
+		if _, seen := byPkg[pkg]; !seen {
+			order = append(order, pkg)
+		}
+		byPkg[pkg] = append(byPkg[pkg], f)
+	}
+	for _, pkg := range order {
+		out = append(out, Binding{Vars: map[string]any{BindPackage: pkg, BindFiles: fileProtos(byPkg[pkg])}, Path: byPkg[pkg][0].fd.Path()})
+	}
+	return out
+}
+
+// populateEntities binds every entity of the target's kind in each
+// file, beside the file.
+func populateEntities(t check.Target, files []*fileEntry, each func(*fileEntry, func(protoreflect.Descriptor))) []Binding {
+	var out []Binding
+	name := EntityBinding(t)
+	for _, f := range files {
+		each(f, func(d protoreflect.Descriptor) {
+			out = append(out, Binding{Vars: map[string]any{name: f.set.entryOf(d).msg, BindFile: f.proto}, Desc: d, Path: f.fd.Path()})
+		})
+	}
+	return out
+}
+
+// eachMessage visits every bound message of the file, nested ones
+// included and map entries excluded.
+func eachMessage(f *fileEntry, visit func(protoreflect.MessageDescriptor)) {
+	for _, m := range f.under(kindMessage) {
+		visit(f.set.byMsg[m].desc.(protoreflect.MessageDescriptor))
+	}
+}
+
+func eachEnum(f *fileEntry, visit func(protoreflect.EnumDescriptor)) {
+	for _, e := range f.under(kindEnum) {
+		visit(f.set.byMsg[e].desc.(protoreflect.EnumDescriptor))
+	}
+}
+
+func eachService(f *fileEntry, visit func(protoreflect.ServiceDescriptor)) {
+	for _, s := range f.under(kindService) {
+		visit(f.set.byMsg[s].desc.(protoreflect.ServiceDescriptor))
+	}
+}
+
+// targets is the one table over the targets: the descriptor proto
+// type a lint rule's entity binds and the walk yielding each entity
+// of the kind in a file — or, for the two targets binding no entity,
+// how their population is drawn.
+var targets = map[check.Target]struct {
+	typ      *cel.Type
+	each     func(*fileEntry, func(protoreflect.Descriptor))
+	populate func([]*fileEntry) []Binding
+}{
+	check.TargetSet:     {populate: populateSet},
+	check.TargetPackage: {populate: populatePackages},
+	check.TargetFile: {typ: fileType, each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		bind(f.fd)
+	}},
+	check.TargetMessage: {typ: cel.ObjectType("google.protobuf.DescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachMessage(f, func(md protoreflect.MessageDescriptor) { bind(md) })
+	}},
+	check.TargetField: {typ: cel.ObjectType("google.protobuf.FieldDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachMessage(f, func(md protoreflect.MessageDescriptor) {
+			for i, fs := 0, md.Fields(); i < fs.Len(); i++ {
+				bind(fs.Get(i))
+			}
+		})
+	}},
+	check.TargetOneof: {typ: cel.ObjectType("google.protobuf.OneofDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachMessage(f, func(md protoreflect.MessageDescriptor) {
+			for i, os := 0, md.Oneofs(); i < os.Len(); i++ {
+				if !os.Get(i).IsSynthetic() {
+					bind(os.Get(i))
+				}
+			}
+		})
+	}},
+	check.TargetEnum: {typ: cel.ObjectType("google.protobuf.EnumDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachEnum(f, func(ed protoreflect.EnumDescriptor) { bind(ed) })
+	}},
+	check.TargetEnumValue: {typ: cel.ObjectType("google.protobuf.EnumValueDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachEnum(f, func(ed protoreflect.EnumDescriptor) {
+			for i, vs := 0, ed.Values(); i < vs.Len(); i++ {
+				bind(vs.Get(i))
+			}
+		})
+	}},
+	check.TargetService: {typ: cel.ObjectType("google.protobuf.ServiceDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachService(f, func(sd protoreflect.ServiceDescriptor) { bind(sd) })
+	}},
+	check.TargetMethod: {typ: cel.ObjectType("google.protobuf.MethodDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		eachService(f, func(sd protoreflect.ServiceDescriptor) {
+			for i, ms := 0, sd.Methods(); i < ms.Len(); i++ {
+				bind(ms.Get(i))
+			}
+		})
+	}},
+	check.TargetExtension: {typ: cel.ObjectType("google.protobuf.FieldDescriptorProto"), each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
+		for _, x := range f.under(kindExtension) {
+			bind(f.set.byMsg[x].desc)
+		}
+	}},
+}
+
+func fileProtos(files []*fileEntry) []*descriptorpb.FileDescriptorProto {
+	out := make([]*descriptorpb.FileDescriptorProto, len(files))
+	for i, f := range files {
+		out[i] = f.proto
+	}
+	return out
 }

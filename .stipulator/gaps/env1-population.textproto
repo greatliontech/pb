@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-env1-population"
-reason: "the bindings and the library are built; the population per target is the lint evaluation"
-content_hash: "a1050a5154e6f8cd3717ec626b1b3d9040f5644228c48488b279e89a74fedbe3"
-source_hash: "1b76b967a1e54daa7520cfc9a7de1fdda9fafeacbea6f1679f78b87d39f83eb6"
-lands { manual { condition: "lint evaluation is built" } }

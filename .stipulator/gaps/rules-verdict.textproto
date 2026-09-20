@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-rules-verdict"
-reason: "the check domain is specced and not yet built"
-content_hash: "3902e1382c15de6e598f0c9d9e849cfa5cf09f8b211a354faecace04b77103c1"
-source_hash: "462fa85c0613ff4c5d74909cabad9e642dc97882a6fea01b434d97c654bda6a5"
-lands { manual { condition: "lint evaluation is built" } }

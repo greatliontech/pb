@@ -11,7 +11,7 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
       environment version refused where unprovided
 - [x] 3. Environment 1: cel-go over descriptor protos, the bindings
       and the library, bounded evaluation, the segmentation rule
-- [ ] 4. Lint evaluation: entities bound per target, verdicts located
+- [x] 4. Lint evaluation: entities bound per target, verdicts located
       through source info, no defaults, suppression comments
 - [ ] 5. The lint file: rulesets, selection, severities, path
       ignores; rulesets read from the build and a bad rule file named

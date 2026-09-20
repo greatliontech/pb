@@ -1,0 +1,42 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
+  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lint.text.suppresses"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "528d17a93a8fc481acedca2de85a0bcb83f05f26287274e1a50b3add57bcb74a"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
+  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lint.TestFindings"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bdf46945b3ff71b7f16322f8a000cea24a7f5dc8338b7597bbc5e806c448da1a"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
+  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lint.TestLineComment"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "bf5b600b32a35805fae4f481de9b67f19bbf80109354558ef964202a487be42c"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
+  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lint.newText"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7248798fa15111377133fec914f85ffa67b518f930d222bc5e14822624efc55a"
+}

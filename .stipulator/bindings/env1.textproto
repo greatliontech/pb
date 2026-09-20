@@ -140,3 +140,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "8181c4f31aaacd8dbc2e8b2fb9328fceb2cb94a1c27ae647f4f4a13b81d39d23"
 }
+
+bindings {
+  requirement_id: "REQ-env1-population"
+  content_hash: "1a011e185db79a871092cb9f02e03f3559a53a68244d4c97ec80c3a25edbb545"
+  source_hash: "364ae00caaee1bbc1b3f97bca86b89fc8a6455b0c318280a22648cd52a123ff7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.Set.Population"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7c06eb2641211fbaa00c4421077ec3303765960d615023a836d6be96253993cd"
+}
+
+bindings {
+  requirement_id: "REQ-env1-population"
+  content_hash: "1a011e185db79a871092cb9f02e03f3559a53a68244d4c97ec80c3a25edbb545"
+  source_hash: "364ae00caaee1bbc1b3f97bca86b89fc8a6455b0c318280a22648cd52a123ff7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestPopulation"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1b403577c4ec3b1a63cce84f4ebf1e2c2df155c207d8cfebac638224782b608f"
+}

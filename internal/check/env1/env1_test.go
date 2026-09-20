@@ -1,14 +1,12 @@
 package env1
 
 import (
-	"context"
 	"errors"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile"
-	"github.com/bufbuild/protocompile/wellknownimports"
+	"github.com/greatliontech/pb/internal/testing/prototest"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"pgregory.net/rapid"
@@ -91,6 +89,9 @@ extend Thing {
 package d;
 message D {}
 `,
+	"n/n.proto": `syntax = "proto3";
+message N {}
+`,
 	"e/e.proto": `edition = "2023";
 package e;
 option features.field_presence = IMPLICIT;
@@ -127,20 +128,7 @@ message Ed {
 
 func compileSet(t *testing.T, srcs map[string]string) *Set {
 	t.Helper()
-	c := protocompile.Compiler{
-		Resolver:       wellknownimports.WithStandardImports(&protocompile.SourceResolver{Accessor: protocompile.SourceAccessorFromMap(srcs)}),
-		SourceInfoMode: protocompile.SourceInfoStandard,
-	}
-	names := make([]string, 0, len(srcs))
-	for n := range srcs {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	files, err := c.Compile(context.Background(), names...)
-	if err != nil {
-		t.Fatalf("fixture: %v", err)
-	}
-	return NewSet(files)
+	return NewSet(prototest.Compile(t, srcs))
 }
 
 func lintEnv(t *testing.T) (*Env, *Set) {
@@ -653,4 +641,111 @@ func beneath(md protoreflect.MessageDescriptor) int {
 		n += beneath(ms.Get(i))
 	}
 	return n
+}
+
+// A lint target's population over the checked files is every entity
+// of its kind and no other, in declaration order, packages once, the
+// set once; the bindings carry the entity, its file, and the path a
+// finding names (REQ-env1-population, REQ-env1-bindings).
+func TestPopulation(t *testing.T) {
+	env, set := lintEnv(t)
+	names := func(target check.Target, checked ...string) []string {
+		bs, err := set.Population(target, checked)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, b := range bs {
+			switch {
+			case b.Desc == nil && b.Path == "":
+				out = append(out, "set")
+			case b.Desc == nil:
+				out = append(out, b.Vars[BindPackage].(string)+"@"+b.Path)
+			default:
+				if _, ok := b.Desc.(protoreflect.FileDescriptor); ok {
+					out = append(out, b.Path)
+				} else {
+					out = append(out, string(b.Desc.FullName()))
+				}
+			}
+		}
+		return out
+	}
+	want := map[check.Target][]string{
+		check.TargetFile:      {"a/a.proto", "a/y.proto"},
+		check.TargetMessage:   {"a.Outer", "a.Outer.Inner", "a.Y"},
+		check.TargetField:     {"a.Outer.name", "a.Outer.counts", "a.Outer.x", "a.Outer.thing", "a.Outer.opt", "a.Outer.inner", "a.Outer.y", "a.Outer.tags", "a.Outer.Inner.kind"},
+		check.TargetOneof:     {"a.Outer.choice"},
+		check.TargetEnum:      {"a.Color", "a.Outer.Inner.Kind"},
+		check.TargetEnumValue: {"a.COLOR_UNSPECIFIED", "a.Outer.Inner.KIND_UNSPECIFIED", "a.Outer.Inner.KIND_A"},
+		check.TargetService:   {"a.Svc"},
+		check.TargetMethod:    {"a.Svc.Do"},
+		check.TargetExtension: {},
+		check.TargetPackage:   {"a@a/a.proto"},
+		check.TargetSet:       {"set"},
+	}
+	for target, w := range want {
+		got := names(target, "a/a.proto", "a/y.proto")
+		if strings.Join(got, " ") != strings.Join(w, " ") {
+			t.Errorf("%s: %q, want %q", target, got, w)
+		}
+	}
+	// Two packages, extensions in a dependency's file, the set's files.
+	if got := names(check.TargetPackage, "b/b.proto", "a/y.proto", "a/a.proto"); strings.Join(got, " ") != "a@a/a.proto b@b/b.proto" {
+		t.Errorf("packages: %q", got)
+	}
+	if got := names(check.TargetFile, "a/y.proto", "a/a.proto"); strings.Join(got, " ") != "a/a.proto a/y.proto" {
+		t.Errorf("files given out of order: %q", got)
+	}
+	if got := names(check.TargetExtension, "b/b.proto", "c/c.proto"); strings.Join(got, " ") != "b.ext c.field_opt c.file_opt" {
+		t.Errorf("extensions: %q", got)
+	}
+	if got := names(check.TargetFile); got != nil {
+		t.Errorf("no files: %q", got)
+	}
+	// A file declaring no package binds none; given twice, a file is
+	// taken once; the caller's slice is left as given.
+	if got := names(check.TargetPackage, "n/n.proto", "a/y.proto"); strings.Join(got, " ") != "a@a/y.proto" {
+		t.Errorf("default package: %q", got)
+	}
+	if got := names(check.TargetMessage, "n/n.proto"); strings.Join(got, " ") != "N" {
+		t.Errorf("default package's messages: %q", got)
+	}
+	if got := names(check.TargetFile, "a/y.proto", "a/y.proto", "a/a.proto"); strings.Join(got, " ") != "a/a.proto a/y.proto" {
+		t.Errorf("duplicates: %q", got)
+	}
+	given := []string{"a/y.proto", "a/a.proto"}
+	names(check.TargetFile, given...)
+	if given[0] != "a/y.proto" {
+		t.Error("the caller's slice was sorted")
+	}
+	if _, err := set.Population("nonesuch", nil); err == nil {
+		t.Error("a non-target populated with no files")
+	}
+	bs, err := set.Population(check.TargetSet, []string{"a/a.proto"})
+	if err != nil || len(bs) != 1 || len(bs[0].Vars[BindFiles].([]*descriptorpb.FileDescriptorProto)) != 1 {
+		t.Fatalf("set: %+v %v", bs, err)
+	}
+	if _, err := set.Population(check.TargetField, []string{"nonesuch.proto"}); err == nil {
+		t.Error("a path outside the schema populated")
+	}
+	if _, err := set.Population("nonesuch", []string{"a/a.proto"}); err == nil {
+		t.Error("a non-target populated")
+	}
+	// Every binding evaluates under its target's compiled rule.
+	for _, target := range check.Targets() {
+		bs, err := set.Population(target, []string{"a/a.proto", "a/y.proto", "b/b.proto", "c/c.proto"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		prg, err := env.Compile(rules.Rule{ID: "T", Kind: check.KindLint, Target: target, CEL: "true"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, b := range bs {
+			if ok, err := prg.Eval(b.Vars); err != nil || !ok {
+				t.Errorf("%s: %v %v", target, ok, err)
+			}
+		}
+	}
 }

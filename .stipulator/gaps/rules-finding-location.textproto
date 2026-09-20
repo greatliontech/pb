@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-rules-finding-location"
-reason: "the check domain is specced and not yet built"
-content_hash: "7fb8bcc042ba5f15142e80f71f8ed0e48f3a561102004136c200f1c98ca93476"
-source_hash: "6675d4803837c18b9775a0a3379c01cf53a10c8067165e7e5e2745fd37357e2d"
-lands { manual { condition: "lint evaluation is built" } }

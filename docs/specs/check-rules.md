@@ -81,8 +81,11 @@ engine via `SourceCodeInfo`, never from the rule.
 
 **REQ-rules-finding-location** (behavior): A finding's location MUST be
 the bound entity's declaration in the checked schema — its file, and
-the declaration's first line and column, 1-based, the column counted
-in Unicode code points; for a pair whose new side is absent, the old
+the declaration's first line and column — a file's its first lexical
+element's, a leading comment passed over — 1-based, the column
+counted in Unicode code points — each byte starting a UTF-8
+sequence, as the compiler counts; for a pair whose new side is
+absent, the old
 side's declaration in the base, marked as the base's; for a `package`
 rule, the first of the package's checked files in path order, without
 a position; for a `set` rule, no location.
@@ -117,7 +120,8 @@ bind, in a checked file, every entity of its kind and no other — for a
 breaking rule the population is the pairs REQ-break-pairing aligns,
 each side's entities drawn from that side's schema by the same rule:
 `file` each checked file;
-`package` each package a checked file declares, once; `message` each
+`package` each package a checked file declares, once — a file
+declaring none binds no package; `message` each
 message declared in a checked file, nested ones included and the
 map-entry messages the compiler synthesizes excluded; `field` each
 field of a bound message, oneof members included; `oneof` each oneof
@@ -262,9 +266,14 @@ the check run naming it, since ids drive every selection, override
 and suppression.
 
 **REQ-lint-suppression** (behavior): A finding MUST be suppressed by a
-comment `// pb:ignore <rule-id>` (optionally followed by a reason) on
-the flagged line or the line immediately preceding it — the rule id is
-mandatory, and no comment form suppresses more than the named rule;
+line comment whose text opens with the word `pb:ignore` followed by
+the rule id as its next word, anything after being the reason, on
+the flagged line, or alone on the line immediately preceding it — a
+trailing comment on the preceding declaration's line suppresses that
+declaration's findings, never the next one's; a `//` inside a string
+literal or a block comment opens no line comment, and a block comment
+suppresses nothing; the rule id is mandatory, and no comment form
+suppresses more than the named rule;
 a finding without a position has no line to carry the comment, and
 is suppressed by configuration alone.
 
