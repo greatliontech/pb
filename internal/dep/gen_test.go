@@ -61,7 +61,7 @@ func (s *stubRunner) Run(_ context.Context, spec runner.Spec) (*runner.Result, e
 	return s.res, s.err
 }
 
-func (s *stubRunner) Platform() (string, string) { return "linux", "amd64" }
+func (s *stubRunner) Platform() plugin.Platform { return plugin.Platform{OS: "linux", Arch: "amd64"} }
 
 // daemonStubRunner is a stub that runs daemon-local images.
 type daemonStubRunner struct{ stubRunner }

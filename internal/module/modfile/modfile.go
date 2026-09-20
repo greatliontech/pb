@@ -149,7 +149,7 @@ func validate(f *File) error {
 
 // checkVersion enforces REQ-modfile-versions: a full v-prefixed semver
 // version, optionally with a prerelease (which covers pseudo-versions), and
-// no build metadata. Version grammar has one home, internal/version.
+// no build metadata. Version grammar has one home, internal/module/version.
 func checkVersion(v string) error {
 	if _, err := version.Parse(v); err != nil {
 		return fmt.Errorf("version %q is not a canonical vX.Y.Z[-prerelease] version", v)

@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -44,16 +43,9 @@ var (
 	ErrNoTrustedRoot  = errors.New("oci: no trusted root is configured to verify plugin signatures against")
 )
 
-// Platform is the host platform an acquisition enforces
-// (REQ-plugin-platform-strict).
-type Platform struct {
-	OS   string
-	Arch string
-}
-
-// HostPlatform is the running host's platform.
-func HostPlatform() Platform {
-	return Platform{OS: runtime.GOOS, Arch: runtime.GOARCH}
+// v1Platform is the image library's spelling of a platform.
+func v1Platform(p plugin.Platform) v1.Platform {
+	return v1.Platform{OS: p.OS, Architecture: p.Arch}
 }
 
 // Config assembles an Acquirer. WorkDir roots the image store and
@@ -68,7 +60,7 @@ type Config struct {
 	Lock        *lockfile.File
 	Policy      *trust.Policy
 	TrustedRoot *gitprov.TrustedRoot
-	Platform    Platform
+	Platform    plugin.Platform
 	Credentials map[string]authn.AuthConfig
 	// Transport carries every round trip to a registry outside this
 	// process; nil is the registry client's own. A suite serving its
@@ -100,7 +92,7 @@ type Acquirer struct {
 	policy    *trust.Policy
 	root      *gitprov.TrustedRoot
 	kept      *evidence.Store // nil keeps none
-	platform  Platform
+	platform  plugin.Platform
 	pull      PullMode
 
 	mu      sync.Mutex
@@ -124,8 +116,8 @@ func New(cfg Config) (*Acquirer, error) {
 		return nil, errors.New("oci: acquirer needs a lockfile and a trust policy")
 	}
 	platform := cfg.Platform
-	if platform == (Platform{}) {
-		platform = HostPlatform()
+	if platform == (plugin.Platform{}) {
+		platform = plugin.HostPlatform()
 	}
 	a := &Acquirer{
 		kept:     evidenceStore(cfg.EvidenceDir),
@@ -138,7 +130,7 @@ func New(cfg Config) (*Acquirer, error) {
 	}
 	opts := []ocifs.Option{
 		ocifs.WithWorkDir(cfg.WorkDir),
-		ocifs.WithDefaultPlatform(v1.Platform{OS: platform.OS, Architecture: platform.Arch}),
+		ocifs.WithDefaultPlatform(v1Platform(platform)),
 		ocifs.WithVerifier(a.verify),
 	}
 	// The override staging is a registry in this process, served by
@@ -513,7 +505,7 @@ func (a *Acquirer) checkPlatforms(ref string, artifact []byte) (string, error) {
 	case 1:
 		return admitted[0], nil
 	case 0:
-		return "", fmt.Errorf("oci: %s has no %s/%s entry in its manifest list (found %v): the image does not support this platform", ref, a.platform.OS, a.platform.Arch, listed)
+		return "", fmt.Errorf("oci: %s has no %s entry in its manifest list (found %v): the image does not support this platform", ref, a.platform, listed)
 	}
-	return "", fmt.Errorf("oci: %s has %d entries for %s/%s in its manifest list (%v): choosing among them would be a fallback, and pb refuses it", ref, len(admitted), a.platform.OS, a.platform.Arch, admitted)
+	return "", fmt.Errorf("oci: %s has %d entries for %s in its manifest list (%v): choosing among them would be a fallback, and pb refuses it", ref, len(admitted), a.platform, admitted)
 }

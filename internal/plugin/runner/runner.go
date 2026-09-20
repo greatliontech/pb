@@ -98,7 +98,7 @@ var ErrTierUnreachable = errors.New("the host cannot reach the required sandbox 
 // daemon's containers run the daemon's platform, not the host's.
 type Runner interface {
 	Run(ctx context.Context, spec Spec) (*Result, error)
-	Platform() (os, arch string)
+	Platform() plugin.Platform
 }
 
 // checkLimits refuses a Spec with an unbounded resource: bounds are

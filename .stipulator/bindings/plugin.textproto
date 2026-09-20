@@ -558,7 +558,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.DockerRunner.Platform"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "cfda7dc47b51c558f80b10bed5f0800487a33a966af311611c2c4c35a9440faf"
+  shape_hash: "a084928ce9c36ee943c116e9792828e2a8c18c6cc4de2f8eaa49b3564dcd328e"
 }
 
 bindings {

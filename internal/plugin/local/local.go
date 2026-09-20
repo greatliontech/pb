@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
@@ -38,14 +37,11 @@ type Acquirer struct {
 	Root   string // the resolution root as an absolute host path; anything else is refused
 	Lock   *lockfile.File
 	Policy *trust.Policy
-	// platform keys the pin; empty means the running host's.
-	platform string
+	// platform keys the pin; the zero value means the running host's.
+	platform plugin.Platform
 	// lookPath finds a bare name on PATH; nil means exec.LookPath.
 	lookPath func(string) (string, error)
 }
-
-// Platform is the pin key for the running host.
-func Platform() string { return runtime.GOOS + "/" + runtime.GOARCH }
 
 // Resolve finds the binary a local value names
 // (REQ-plugin-local-resolution): a value with no path separator is
@@ -104,18 +100,18 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*Acquired, error)
 		return acq, nil
 	}
 	platform := a.platform
-	if platform == "" {
-		platform = Platform()
+	if platform == (plugin.Platform{}) {
+		platform = plugin.HostPlatform()
 	}
 	pin, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
 	switch {
 	case !ok:
-		pin = lockfile.PluginPin{Ref: value, Scheme: lockfile.SchemeLocal, Binary: map[string]string{platform: hash}}
+		pin = lockfile.PluginPin{Ref: value, Scheme: lockfile.SchemeLocal, Binary: map[string]string{platform.String(): hash}}
 		if err := a.Lock.AddPlugin(pin); err != nil {
 			return nil, err
 		}
 	default:
-		if err := a.Lock.SetPluginBinary(value, platform, hash); err != nil {
+		if err := a.Lock.SetPluginBinary(value, platform.String(), hash); err != nil {
 			return nil, err
 		}
 		pin, _ = a.Lock.Plugin(value, lockfile.SchemeLocal)

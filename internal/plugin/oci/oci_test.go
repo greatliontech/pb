@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
+	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/pb/internal/provenance/image/evidence"
 	"github.com/greatliontech/pb/internal/testing/imagetest"
@@ -54,10 +55,7 @@ var fixtures = newInProcessTransport(nil)
 
 var fixtureSerial atomic.Int64
 
-func hostPlatform() v1.Platform {
-	p := HostPlatform()
-	return v1.Platform{OS: p.OS, Architecture: p.Arch}
-}
+func hostPlatform() v1.Platform { return v1Platform(plugin.HostPlatform()) }
 
 func pushIndex(t *testing.T, ref string, platforms ...v1.Platform) string {
 	return pushIndexEnv(t, ref, []string{"A=1"}, platforms...)
@@ -908,7 +906,7 @@ func TestAcquireOverride(t *testing.T) {
 	if _, err := layout.Write(foreign, indexFor(t, v1.Platform{OS: "plan9", Architecture: "mips"})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, foreign); err == nil || !strings.Contains(err.Error(), "has no "+HostPlatform().OS+"/"+HostPlatform().Arch+" entry in its manifest list") {
+	if _, err := a.AcquireOverride(ctx, ref, foreign); err == nil || !strings.Contains(err.Error(), "has no "+plugin.HostPlatform().OS+"/"+plugin.HostPlatform().Arch+" entry in its manifest list") {
 		t.Fatalf("foreign platform: %v", err)
 	}
 	// The policy holds: require-provenance with no identity rule fails

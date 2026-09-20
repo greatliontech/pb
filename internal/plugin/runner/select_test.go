@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -33,7 +34,7 @@ func TestRunnerSpellings(t *testing.T) {
 type fakeRunner struct{}
 
 func (fakeRunner) Run(context.Context, Spec) (*Result, error) { return nil, errors.New("fake") }
-func (fakeRunner) Platform() (string, string)                 { return "linux", "fake" }
+func (fakeRunner) Platform() plugin.Platform                  { return plugin.Platform{OS: "linux", Arch: "fake"} }
 
 // The flag, where given, wins over the runner setting, where stated
 // (by the environment or the user configuration file, each named as
@@ -107,7 +108,7 @@ func TestOpenDefaultIsWired(t *testing.T) {
 	if err != nil || r == nil {
 		t.Fatalf("default: %v %v", r, err)
 	}
-	if os_, arch := r.Platform(); os_ != runtime.GOOS || arch != runtime.GOARCH {
-		t.Fatalf("the default runner's platform = %s/%s, not the host's", os_, arch)
+	if p := r.Platform(); p.OS != runtime.GOOS || p.Arch != runtime.GOARCH {
+		t.Fatalf("the default runner's platform = %s, not the host's", p)
 	}
 }

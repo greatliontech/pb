@@ -114,8 +114,8 @@ func TestDockerProtocol(t *testing.T) {
 	if stdin, _ := os.ReadFile(filepath.Join(dir, "stdin")); !bytes.Equal(stdin, request(t, "")) {
 		t.Fatal("the request did not reach the container's stdin")
 	}
-	if os_, arch := r.Platform(); os_ != "linux" || arch != "fakearch" {
-		t.Fatalf("platform = %s/%s: the daemon's, not the host's", os_, arch)
+	if p := r.Platform(); p.OS != "linux" || p.Arch != "fakearch" {
+		t.Fatalf("platform = %s: the daemon's, not the host's", p)
 	}
 	tarBytes, err := os.ReadFile(filepath.Join(dir, "import.tar"))
 	if err != nil {

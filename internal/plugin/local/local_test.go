@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
@@ -32,7 +33,7 @@ func fixture(t *testing.T) (root string, a *Acquirer) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin)
-	return root, &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{}, platform: "linux/amd64"}
+	return root, &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{}, platform: plugin.Platform{OS: "linux", Arch: "amd64"}}
 }
 
 // A bare name resolves on PATH exactly as written; a path resolves
@@ -102,7 +103,7 @@ func TestAcquirePins(t *testing.T) {
 		t.Fatalf("changed binary: %v", err)
 	}
 	// Another platform's first use adds its key.
-	other := &Acquirer{Root: root, Lock: a.Lock, Policy: a.Policy, platform: "darwin/arm64"}
+	other := &Acquirer{Root: root, Lock: a.Lock, Policy: a.Policy, platform: plugin.Platform{OS: "darwin", Arch: "arm64"}}
 	if _, err := other.Acquire(ctx, "tools/bin/gen"); err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ func TestAcquirePins(t *testing.T) {
 	}
 	// Pinning disabled: nothing recorded, nothing checked.
 	off := false
-	unpinned := &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{Execution: trust.Execution{LocalPin: &off}}, platform: "linux/amd64"}
+	unpinned := &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{Execution: trust.Execution{LocalPin: &off}}, platform: plugin.Platform{OS: "linux", Arch: "amd64"}}
 	if _, err := unpinned.Acquire(ctx, "tools/bin/gen"); err != nil {
 		t.Fatal(err)
 	}
@@ -125,8 +126,8 @@ func TestAcquirePins(t *testing.T) {
 // production acquirer keys by it; a root that is not an absolute host
 // path is refused before any lookup; the legal path spellings pin.
 func TestPlatformAndRoot(t *testing.T) {
-	if Platform() != runtime.GOOS+"/"+runtime.GOARCH {
-		t.Fatalf("Platform() = %q", Platform())
+	if plugin.HostPlatform().String() != runtime.GOOS+"/"+runtime.GOARCH {
+		t.Fatalf("host platform = %q", plugin.HostPlatform())
 	}
 	root, _ := fixture(t)
 	a := &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{}}
@@ -135,8 +136,8 @@ func TestPlatformAndRoot(t *testing.T) {
 			t.Fatalf("%q: %v", value, err)
 		}
 		pin, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
-		if !ok || pin.Binary[Platform()] == "" {
-			t.Fatalf("%q pinned as %+v under %q", value, pin, Platform())
+		if !ok || pin.Binary[plugin.HostPlatform().String()] == "" {
+			t.Fatalf("%q pinned as %+v under %q", value, pin, plugin.HostPlatform().String())
 		}
 	}
 	relative := &Acquirer{Root: "tmp/ws", Lock: &lockfile.File{}, Policy: &trust.Policy{}}

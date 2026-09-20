@@ -35,14 +35,13 @@ func acquirerConfig(settings *userconfig.Settings, run runner.Runner, s *dep.Ses
 	if err != nil {
 		return oci.Config{}, fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
 	}
-	os_, arch := run.Platform()
 	return oci.Config{
 		WorkDir:     filepath.Join(base, "pb", "plugins"),
 		EvidenceDir: filepath.Join(base, "pb", "plugin-evidence"),
 		Lock:        s.Lock,
 		Policy:      s.Client.Policy,
 		TrustedRoot: s.Client.TrustedRoot,
-		Platform:    oci.Platform{OS: os_, Arch: arch},
+		Platform:    run.Platform(),
 		Pull:        pull,
 	}, nil
 }

@@ -25,7 +25,7 @@ test beside it, chunk 1).
       plugrun, genfile, genrequest under internal/plugin as local, oci,
       runner (run and runner being locals in the importers; the
       locals named runner become run), genfile, genrequest
-- [ ] 7. The driver and the verbs: resolve and dep against the final
+- [x] 7. The driver and the verbs: resolve and dep against the final
       layering, the command's assembly with them; the CI paths, the
       issue cites, the README of internal/testing; the host platform
       one type on the plugin root (host-platform-spelled-three-ways)

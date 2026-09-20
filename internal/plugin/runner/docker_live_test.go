@@ -242,7 +242,8 @@ func TestDockerLivePull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	os_, arch := r.Platform()
+	p := r.Platform()
+	os_, arch := p.OS, p.Arch
 	// The image declares a variant, and the admitted entry's spelling
 	// is what reaches the daemon. The arm discriminates on amd64 (the
 	// daemon refuses a v3 image created as bare amd64) and on arm (v6

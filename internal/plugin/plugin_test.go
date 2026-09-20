@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -60,5 +61,16 @@ func TestCheckEnv(t *testing.T) {
 		if err := CheckEnv([]string{"A=1", bad}); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
 			t.Errorf("%q accepted: %v", bad, err)
 		}
+	}
+}
+
+// A platform spells itself "<os>/<arch>", the lockfile's key, and the
+// host's is Go's own.
+func TestPlatformSpelling(t *testing.T) {
+	if got := (Platform{OS: "linux", Arch: "amd64"}).String(); got != "linux/amd64" {
+		t.Fatalf("spelling = %q", got)
+	}
+	if h := HostPlatform(); h.OS != runtime.GOOS || h.Arch != runtime.GOARCH || h.String() != runtime.GOOS+"/"+runtime.GOARCH {
+		t.Fatalf("host = %+v", h)
 	}
 }

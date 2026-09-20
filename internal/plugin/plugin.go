@@ -1,7 +1,8 @@
 // Package plugin is the plugin domain's root: the one home of the
-// plugin-execution vocabulary shared across pb's subsystems, the
-// identity schemes a generation entry lives in and the sandbox tiers a
-// run reports (plugin-execution.md). The values are wire facts — they
+// plugin-execution vocabulary shared across pb's subsystems — the
+// identity schemes a generation entry lives in, the sandbox tiers a
+// run reports, the platform a plugin runs on, the process a plugin
+// is (plugin-execution.md). The values are wire facts — they
 // appear in pb.gen.yaml keys, pb.lock plugin entries, and
 // pb.trust.yaml's execution block — so every consumer names them from
 // here and no two packages can drift on a spelling. The domain's
@@ -12,8 +13,26 @@ package plugin
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
+
+// Platform is the platform a plugin runs on: an operating system and
+// an architecture in Go's spelling. Its string form, "<os>/<arch>",
+// is the lockfile's key for a local binary's pin (module-lockfile.md)
+// and the spelling every report of a platform shares.
+type Platform struct {
+	OS   string
+	Arch string
+}
+
+// String is the platform's "<os>/<arch>" spelling.
+func (p Platform) String() string { return p.OS + "/" + p.Arch }
+
+// HostPlatform is the running host's platform.
+func HostPlatform() Platform {
+	return Platform{OS: runtime.GOOS, Arch: runtime.GOARCH}
+}
 
 // Identity schemes (plugin-execution.md, the identity scheme term).
 // `remote` is reserved by the spec and deliberately absent: a value

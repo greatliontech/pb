@@ -50,8 +50,8 @@ type DockerRunner struct {
 	// empty.
 	CLI string
 
-	os, arch string // the daemon's platform
-	seccomp  string // the seccomp profile the daemon runs containers under, as it names it
+	platform plugin.Platform // the daemon's
+	seccomp  string          // the seccomp profile the daemon runs containers under, as it names it
 }
 
 // NewDockerRunner returns the runner for the daemon cli reaches, or
@@ -65,9 +65,11 @@ func NewDockerRunner(cli string) (*DockerRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := fmt.Sscan(string(out), &r.os, &r.arch); err != nil || r.os == "" || r.arch == "" {
+	var os_, arch string
+	if _, err := fmt.Sscan(string(out), &os_, &arch); err != nil || os_ == "" || arch == "" {
 		return nil, fmt.Errorf("%s version: the daemon named no platform (%q)", r.cli(), strings.TrimSpace(string(out)))
 	}
+	r.platform = plugin.Platform{OS: os_, Arch: arch}
 	out, err = r.docker(ctx, nil, "info", "--format", "{{json .SecurityOptions}}")
 	if err != nil {
 		return nil, err
@@ -86,7 +88,7 @@ func NewDockerRunner(cli string) (*DockerRunner, error) {
 
 // Platform is the daemon's: its containers run there, whatever the
 // host is.
-func (r *DockerRunner) Platform() (string, string) { return r.os, r.arch }
+func (r *DockerRunner) Platform() plugin.Platform { return r.platform }
 
 // RunsDaemonImages: a daemon-local image is this runner's to run.
 func (r *DockerRunner) RunsDaemonImages() {}
@@ -287,7 +289,7 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 	// verified index — its own default (DOCKER_DEFAULT_PLATFORM)
 	// and its own variant matching aside; for an import the daemon's
 	// platform, which stamped the image.
-	platform := r.os + "/" + r.arch
+	platform := r.platform.String()
 	if spec.Pull {
 		platform = spec.Platform
 		// The daemon fetches the content at the digest pb verified

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"runtime"
 	"syscall"
 
 	"github.com/greatliontech/pb/internal/plugin"
@@ -40,7 +39,7 @@ type SandboxRunner struct {
 }
 
 // Platform is the host's: the sandbox runs the host's kernel.
-func (r *SandboxRunner) Platform() (string, string) { return runtime.GOOS, runtime.GOARCH }
+func (r *SandboxRunner) Platform() plugin.Platform { return plugin.HostPlatform() }
 
 // Run executes the plugin process (REQ-plugin-response-authority's
 // transport half: stdout and stderr are collected verbatim; judgment

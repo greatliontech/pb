@@ -11,6 +11,7 @@ import (
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/plugin/oci"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/provenance/trust"
@@ -23,7 +24,7 @@ type noDaemonRunner struct{}
 func (noDaemonRunner) Run(context.Context, runner.Spec) (*runner.Result, error) {
 	return nil, errors.New("not run")
 }
-func (noDaemonRunner) Platform() (string, string) { return "linux", "fake" }
+func (noDaemonRunner) Platform() plugin.Platform { return plugin.Platform{OS: "linux", Arch: "fake"} }
 
 type daemonRunner struct{ noDaemonRunner }
 
@@ -47,7 +48,7 @@ func TestAcquirerConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: oci.Platform{OS: "linux", Arch: "fake"}, Pull: oci.PullDaemon}
+	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Pull: oci.PullDaemon}
 	if !reflect.DeepEqual(cfg, want) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}
