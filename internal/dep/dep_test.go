@@ -11,13 +11,13 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/protoimport"
 	"github.com/greatliontech/pb/internal/provenance/trust"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
+	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
+	"github.com/greatliontech/pb/internal/testing/fetchtest/assemble"
 )
 
 var ctx = context.Background()
@@ -25,7 +25,7 @@ var ctx = context.Background()
 // depFixture is a writable workspace tree over the shared client
 // fixture.
 type depFixture struct {
-	*modfetchtest.Fixture
+	*fetchtest.Fixture
 	ws billy.Filesystem
 }
 
@@ -39,7 +39,7 @@ func newDep(t *testing.T, files map[string]string) *depFixture {
 // path's behavior.
 func newDepOn(t *testing.T, fs billy.Filesystem, files map[string]string) *depFixture {
 	t.Helper()
-	fx := &depFixture{Fixture: modfetchtest.New(t), ws: fs}
+	fx := &depFixture{Fixture: fetchtest.New(t), ws: fs}
 	for p, body := range files {
 		if err := util.WriteFile(fx.ws, p, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
@@ -48,7 +48,7 @@ func newDepOn(t *testing.T, fs billy.Filesystem, files map[string]string) *depFi
 	return fx
 }
 
-func (fx *depFixture) client(pbproxy string) *modfetch.Client {
+func (fx *depFixture) client(pbproxy string) *fetch.Client {
 	return assemble.Client(fx.Fixture, pbproxy)
 }
 
@@ -79,7 +79,7 @@ func (fx *depFixture) read(t *testing.T, name string) string {
 
 func (fx *depFixture) serve(t *testing.T, path, ver string, files map[string]string) {
 	t.Helper()
-	zip, _ := modfetchtest.ModuleZip(t, files)
+	zip, _ := fetchtest.ModuleZip(t, files)
 	fx.Endpoint(path, ver, "zip", string(zip))
 }
 
@@ -301,7 +301,7 @@ func TestUpdateVerb(t *testing.T) {
 	serve := func(fx *depFixture) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
 	}
 
 	t.Run("named update moves to the highest release", func(t *testing.T) {
@@ -359,7 +359,7 @@ func TestUpdateVerb(t *testing.T) {
 		// A plugin moved is durable before the module arm runs: a
 		// module whose listing fails afterwards fails the run, the
 		// plugin pin saved and reported.
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
 		s = fx.session(t, ".")
 		up = &stubUpdater{lock: s.Lock, after: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("44", 32)}}
 		out.Reset()
@@ -369,7 +369,7 @@ func TestUpdateVerb(t *testing.T) {
 		if !strings.Contains(fx.read(t, "pb.lock"), strings.Repeat("44", 32)) || !strings.Contains(out.String(), "plugin ghcr.io/o/p:v1: ") {
 			t.Fatalf("the moved plugin was not durable before the module arm: %q", out.String())
 		}
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
 		// A plugin named with no updater wired fails; a name that is
 		// not a declared oci plugin — undeclared, or a local entry —
 		// is a module; the same name twice is one update.
@@ -419,7 +419,7 @@ func TestUpdateVerb(t *testing.T) {
 	t.Run("named update with no discoverable release fails", func(t *testing.T) {
 		fx := newDep(t, files)
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
 		s := fx.session(t, ".")
 		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil ||
 			!strings.Contains(err.Error(), "no discoverable release") {
@@ -430,7 +430,7 @@ func TestUpdateVerb(t *testing.T) {
 	t.Run("named update against a regressed origin fails", func(t *testing.T) {
 		fx := newDep(t, files)
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v0.9.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v0.9.0\n")
 		s := fx.session(t, ".")
 		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil ||
 			!strings.Contains(err.Error(), "origin regressed") {
@@ -448,7 +448,7 @@ func TestUpdateVerb(t *testing.T) {
 		})
 		serve(fx)
 		fx.serve(t, "example.com/m3", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m3", "")})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m3/@v/list"] = []byte("")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m3/@v/list"] = []byte("")
 		s := fx.session(t, ".")
 		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatalf("Update: %v", err)
@@ -484,8 +484,8 @@ func TestVerifyVerb(t *testing.T) {
 	}
 
 	// A tampered cache entry is a reported mismatch and a failure.
-	wrong, _ := modfetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/m1", "  example.com/x: v1.0.0\n")})
-	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), modfetch.KindZip, wrong); err != nil {
+	wrong, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/m1", "  example.com/x: v1.0.0\n")})
+	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
@@ -600,16 +600,16 @@ func TestSessionAndVerbFaults(t *testing.T) {
 
 	t.Run("lockfile read fault fails Load", func(t *testing.T) {
 		fx := newDep(t, base)
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailOpenSuffix: "pb.lock", PutFailAfter: -1}
-		if _, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")}); !errors.Is(err, modfetchtest.ErrInjected) {
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailOpenSuffix: "pb.lock", PutFailAfter: -1}
+		if _, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")}); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
 
 	t.Run("trust read fault fails Load", func(t *testing.T) {
 		fx := newDep(t, base)
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailOpenSuffix: "pb.trust.yaml", PutFailAfter: -1}
-		if _, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")}); !errors.Is(err, modfetchtest.ErrInjected) {
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailOpenSuffix: "pb.trust.yaml", PutFailAfter: -1}
+		if _, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")}); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -618,20 +618,20 @@ func TestSessionAndVerbFaults(t *testing.T) {
 		fx := newDep(t, base)
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.Endpoint("example.com/m1", "v1.0.0", "info", `{"version":"v1.0.0"}`)
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.lock", PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.lock", PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Download(ctx, s, &bytes.Buffer{}); !errors.Is(err, modfetchtest.ErrInjected) {
+		if err := Download(ctx, s, &bytes.Buffer{}); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
 
 	t.Run("init stat fault surfaces", func(t *testing.T) {
 		fx := newDep(t, nil)
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, PutFailAfter: -1, FailTempFile: true}
-		if err := Init(efs, "m", "example.com/m"); !errors.Is(err, modfetchtest.ErrInjected) {
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, PutFailAfter: -1, FailTempFile: true}
+		if err := Init(efs, "m", "example.com/m"); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -694,7 +694,7 @@ func TestSaveLockChangeDiscipline(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", ""),
 		})
-		efs := &modfetchtest.ErrFS{Filesystem: fx2.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx2.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx2.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
@@ -713,7 +713,7 @@ func TestSaveLockChangeDiscipline(t *testing.T) {
 		if err := Graph(ctx, s3, &bytes.Buffer{}); err != nil {
 			t.Fatal(err)
 		}
-		s3.WS = &modfetchtest.ErrFS{Filesystem: fx3.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
+		s3.WS = &fetchtest.ErrFS{Filesystem: fx3.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
 		if err := s3.SaveLock(); err != nil {
 			t.Fatalf("no-change save touched the tree: %v", err)
 		}
@@ -814,8 +814,8 @@ func TestTidyArms(t *testing.T) {
 		})
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
-		s.Client.Cache = &modfetch.Cache{FS: &modfetchtest.ErrFS{Filesystem: memfs.New(), FailOpenSuffix: ".zip", PutFailAfter: -1}}
-		if err := Tidy(ctx, s); !errors.Is(err, modfetchtest.ErrInjected) {
+		s.Client.Cache = &fetch.Cache{FS: &fetchtest.ErrFS{Filesystem: memfs.New(), FailOpenSuffix: ".zip", PutFailAfter: -1}}
+		if err := Tidy(ctx, s); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -960,8 +960,8 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"a/pb.yaml": ws("example.com/a", "  example.com/aaa: v1.0.0\n  example.com/m1: v1.0.0\n"),
 		})
 		// aaa sorts first and has no releases; m1 must still update.
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/aaa/@v/list"] = []byte("")
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/aaa/@v/list"] = []byte("")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
 		fx.serve(t, "example.com/aaa", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/aaa", "")})
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
@@ -980,8 +980,8 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", "  example.com/aaa: v1.0.0\n  example.com/m1: v1.0.0\n"),
 		})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/aaa/@v/list"] = []byte("v0.9.0\n")
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.2.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/aaa/@v/list"] = []byte("v0.9.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.2.0\n")
 		fx.serve(t, "example.com/aaa", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/aaa", "")})
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
@@ -999,7 +999,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 		})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\n")
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
 		var out bytes.Buffer
@@ -1016,9 +1016,9 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 		})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\n")
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.yaml", PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.yaml", PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
@@ -1033,14 +1033,14 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 		})
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.2.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.2.0\n")
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.yaml", PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.yaml", PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); !errors.Is(err, modfetchtest.ErrInjected) {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -1051,7 +1051,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 			"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 		})
 		// The listing advertises v2.0.0 but no artifacts exist for it.
-		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v2.0.0\n")
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v2.0.0\n")
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
 		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil {
@@ -1072,9 +1072,9 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		if err := Download(ctx, s, &bytes.Buffer{}); err != nil {
 			t.Fatal(err)
 		}
-		wrong, _ := modfetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/x", "")})
+		wrong, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/x", "")})
 		for _, m := range []string{"example.com/m2", "example.com/m1"} {
-			if err := s.Client.Cache.Put(m, mustVer(t, "v1.0.0"), modfetch.KindZip, wrong); err != nil {
+			if err := s.Client.Cache.Put(m, mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -1111,8 +1111,8 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		if err := Download(ctx, s, &bytes.Buffer{}); err != nil {
 			t.Fatal(err)
 		}
-		s.Client.Cache = &modfetch.Cache{FS: &modfetchtest.ErrFS{Filesystem: memfs.New(), FailOpen: true, PutFailAfter: -1}}
-		if err := Verify(ctx, s, &bytes.Buffer{}); !errors.Is(err, modfetchtest.ErrInjected) {
+		s.Client.Cache = &fetch.Cache{FS: &fetchtest.ErrFS{Filesystem: memfs.New(), FailOpen: true, PutFailAfter: -1}}
+		if err := Verify(ctx, s, &bytes.Buffer{}); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -1144,20 +1144,20 @@ func TestVerbEdgeArms(t *testing.T) {
 			"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 		})
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.lock", PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailRenameSfx: "pb.lock", PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Why(ctx, s, &bytes.Buffer{}, "example.com/m1"); !errors.Is(err, modfetchtest.ErrInjected) {
+		if err := Why(ctx, s, &bytes.Buffer{}, "example.com/m1"); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
 
 	t.Run("init stat fault surfaces distinctly", func(t *testing.T) {
 		fx := newDep(t, nil)
-		efs := &modfetchtest.ErrFS{Filesystem: fx.ws, FailStatSuffix: "pb.yaml", PutFailAfter: -1}
-		if err := Init(efs, "m", "example.com/m"); !errors.Is(err, modfetchtest.ErrInjected) {
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, FailStatSuffix: "pb.yaml", PutFailAfter: -1}
+		if err := Init(efs, "m", "example.com/m"); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/mvs"
 	"github.com/greatliontech/pb/internal/module/workspace"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
+	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
+	"github.com/greatliontech/pb/internal/testing/fetchtest/assemble"
 	"pgregory.net/rapid"
 )
 
@@ -23,13 +23,13 @@ var ctx = context.Background()
 // fixture: the workspace declares the root union, the fixture serves
 // the external modules.
 type driverFixture struct {
-	*modfetchtest.Fixture
+	*fetchtest.Fixture
 	fsys fstest.MapFS
 }
 
 func newDriver(t *testing.T, files map[string]string) (*Driver, *driverFixture) {
 	t.Helper()
-	fx := &driverFixture{Fixture: modfetchtest.New(t), fsys: fstest.MapFS{}}
+	fx := &driverFixture{Fixture: fetchtest.New(t), fsys: fstest.MapFS{}}
 	for p, body := range files {
 		fx.fsys[p] = &fstest.MapFile{Data: []byte(body)}
 	}
@@ -40,14 +40,14 @@ func newDriver(t *testing.T, files map[string]string) (*Driver, *driverFixture) 
 	return &Driver{Root: root, Client: fx.client("proxy")}, fx
 }
 
-func (fx *driverFixture) client(pbproxy string) *modfetch.Client {
+func (fx *driverFixture) client(pbproxy string) *fetch.Client {
 	return assemble.Client(fx.Fixture, pbproxy)
 }
 
 // serveModule registers an external module's archive on the proxy host.
 func (fx *driverFixture) serveModule(t *testing.T, path, ver string, files map[string]string) {
 	t.Helper()
-	zip, _ := modfetchtest.ModuleZip(t, files)
+	zip, _ := fetchtest.ModuleZip(t, files)
 	fx.Endpoint(path, ver, "zip", string(zip))
 }
 
@@ -198,7 +198,7 @@ func TestSelectionIndependentOfListProperty(t *testing.T) {
 	rapid.Check(t, func(rt *rapid.T) {
 		d2, fx2 := twoMemberWorkspace(t)
 		for _, m := range []string{"example.com/m1", "example.com/m2"} {
-			key := modfetchtest.ProxyHost + "/" + m + "/@v/list"
+			key := fetchtest.ProxyHost + "/" + m + "/@v/list"
 			switch rapid.IntRange(0, 2).Draw(rt, m) {
 			case 0: // absent — the default
 			case 1:
@@ -238,7 +238,7 @@ func TestSelectionSourceIndependent(t *testing.T) {
 		"m1/pb.yaml": ws("example.com/m1", "  example.com/m2: v1.2.0\n"),
 		"m2/pb.yaml": ws("example.com/m2", ""),
 	}
-	commit := fx.CommitFor(repoFiles, modfetchtest.GitWhen)
+	commit := fx.CommitFor(repoFiles, fetchtest.GitWhen)
 	fx.Repo.Ref("refs/tags/m1/v1.0.0", commit)
 	fx.Repo.Ref("refs/tags/m2/v1.0.0", commit)
 	fx.Repo.Ref("refs/tags/m2/v1.2.0", commit)
@@ -267,10 +267,10 @@ func TestTamperedGraphNodeFailsResolution(t *testing.T) {
 	}
 	// The proxy rewrites m2@v1.2.0 after pinning; a fresh cache forces
 	// the refetch.
-	zip, _ := modfetchtest.ModuleZip(t, map[string]string{
+	zip, _ := fetchtest.ModuleZip(t, map[string]string{
 		"pb.yaml": ws("example.com/m2", "  example.com/mx: v1.0.0\n"),
 	})
-	fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m2/@v/v1.2.0.zip"] = zip
+	fx.Endpoints[fetchtest.ProxyHost+"/example.com/m2/@v/v1.2.0.zip"] = zip
 	c2 := fx.client("proxy")
 	c2.Lock = d.Client.Lock
 	d.Client = c2
@@ -385,7 +385,7 @@ func TestDriverPropagatesRootErrors(t *testing.T) {
 		Dir:  ".",
 		File: &modfile.File{Module: "example.com/a", Deps: map[string]string{"example.com/m": "not-a-version"}},
 	}}}
-	fx := modfetchtest.New(t)
+	fx := fetchtest.New(t)
 	d := &Driver{Root: bad, Client: (&driverFixture{Fixture: fx}).client("proxy")}
 	if _, _, err := d.BuildList(ctx); err == nil {
 		t.Fatal("BuildList resolved over an invalid declared version")

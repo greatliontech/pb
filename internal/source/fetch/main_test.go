@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"testing"

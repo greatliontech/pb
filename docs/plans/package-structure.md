@@ -15,7 +15,7 @@ test beside it, chunk 1).
 - [x] 3. provenance: the tag verifier as the root package, imagesig as
       image with discovery and the evidence store its subpackages, the
       judge's no-network allowlist kept narrow, trust beside them
-- [ ] 4. source: proxy, origin, direct, modfetch under internal/source
+- [x] 4. source: proxy, origin, direct, modfetch under internal/source
       as proxy, origin, direct, fetch, the HTTPS posture as the root
       package
 - [ ] 5. proto: modfiles, protocomp, protoimport under internal/proto

@@ -11,7 +11,7 @@ here ships, which the layering test at `internal/` enforces:
 - `rapidtest` — the property-oracle discipline: rapid's seed pinned and
   its failure files off, so a property test is deterministic and doubles
   as a mutation-testing oracle; exploration is CI's varying-seed legs.
-- `modfetchtest` — the fetch client's fixtures: an origin repository
+- `fetchtest` — the fetch client's fixtures: an origin repository
   over the git transport and a socket-free proxy serving an endpoint
   map, with `assemble` closing them over a client one package removed,
   since the client's own suite imports the fixture.

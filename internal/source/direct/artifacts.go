@@ -17,7 +17,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/source/origin"
 )
 
 // This file constructs the direct source's module artifacts from a

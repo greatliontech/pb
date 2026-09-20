@@ -12,12 +12,12 @@ import (
 
 	"github.com/greatliontech/pb/internal/module"
 
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/source/fetch"
 )
 
 // PluginUpdater re-resolves a pinned oci plugin reference and rewrites
@@ -189,7 +189,7 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("pin %s@%s: %w", pin.Path, pin.Version, err)
 		}
-		b, ok, err := s.Client.Cache.Get(pin.Path, v, modfetch.KindZip)
+		b, ok, err := s.Client.Cache.Get(pin.Path, v, fetch.KindZip)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 				mismatches = append(mismatches, fmt.Sprintf("%s@%s: pinned module file missing from cached archive", pin.Path, pin.Version))
 				continue
 			}
-			if got := modfetch.ModfileHash(mb); got != pin.Modfile {
+			if got := fetch.ModfileHash(mb); got != pin.Modfile {
 				mismatches = append(mismatches, fmt.Sprintf("%s@%s: modfile %s, pin records %s", pin.Path, pin.Version, got, pin.Modfile))
 				continue
 			}

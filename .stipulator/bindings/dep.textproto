@@ -6,9 +6,9 @@ bindings {
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
   source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.entryPath"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.entryPath"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ee4f12740955b85f3a9f85eabeb6f892e49cba5718a01ae0992d844289a7ca2b"
+  shape_hash: "049b083ffd23928551195d5406413d856a4b90b4f4872f0fa7ce589dbfdf5f95"
 }
 
 bindings {
@@ -16,9 +16,9 @@ bindings {
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
   source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.Cache"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Cache"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "efce7cee60f891d068a16ad2a5aac46ed0a0652656ff840d3e1a8c9bb1aa4518"
+  shape_hash: "561a5502459d30b686d6f004f6a6df198b46c1c9ef61d3d708a4446c3b66e3c1"
 }
 
 bindings {
@@ -26,9 +26,9 @@ bindings {
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
   source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheLayoutGolden"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestCacheLayoutGolden"
   role: BINDING_ROLE_TESTS
-  shape_hash: "ae9c6e3f54062b62e5649886fddcd9606bde69438c334229018978091069a864"
+  shape_hash: "82db767d0fca69ddd71bb07be34f1f97c923b758fb7e897fb28fcf2df57284d6"
 }
 
 bindings {
@@ -36,9 +36,9 @@ bindings {
   content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
   source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCachePutGet"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestCachePutGet"
   role: BINDING_ROLE_TESTS
-  shape_hash: "7d89ec61a4d4dd15f1b3641eb03d7d8577da038571d53c186ca31e10adc4a0d2"
+  shape_hash: "49fa8c875c0e8a815017187ac1812c74e1304a1d2220d8b0f31d8ff5063773ee"
 }
 
 bindings {
@@ -46,9 +46,9 @@ bindings {
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
   source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "f63d4871d5fc98282775015eeae0e60d57acecbc6441f54e738e26deb196aae4"
+  shape_hash: "489b66a1fd4eafb364778427a0b349743265a295d4fcaabdb8e07152c42c5104"
 }
 
 bindings {
@@ -56,9 +56,9 @@ bindings {
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
   source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.Client.firstUse"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.firstUse"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "8c50bbecf421464cf36daaadb750b5f083df14d1b15e1530026b976898c55059"
+  shape_hash: "3d9a5fe246cd96600b42f863e8ed223a0f6a7c72cf60aaa656d40a1c66307671"
 }
 
 bindings {
@@ -66,9 +66,9 @@ bindings {
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
   source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.TestCacheTransparencyProperty"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestCacheTransparencyProperty"
   role: BINDING_ROLE_TESTS
-  shape_hash: "9648ba7f1a37a1e48f5ad3cbec3db4489a8c0323bdd571ec3d0aca0a3835b5ba"
+  shape_hash: "ee34abb52004a0045f073647f7a30aa7ebea3fa8b7a745359a7977005006884d"
 }
 
 bindings {
@@ -76,9 +76,9 @@ bindings {
   content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
   source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIgnoresCache"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestFirstUseIgnoresCache"
   role: BINDING_ROLE_TESTS
-  shape_hash: "82a8b0e9b72b2e00234a968265d646b33f3ea26a170636c9f2c22c7289e20f39"
+  shape_hash: "9d2d73ee989066e6292716802623b095373088b3c8df786f2ac7dc084f74d60c"
 }
 
 bindings {

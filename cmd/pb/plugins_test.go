@@ -10,11 +10,11 @@ import (
 
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/dep"
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/provenance/trust"
+	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -42,7 +42,7 @@ func TestAcquirerConfig(t *testing.T) {
 	}
 	// The trusted root plugin signatures verify against is the one
 	// module evidence verifies against (REQ-prov-plugin-signature).
-	s := &dep.Session{Lock: &lockfile.File{}, Client: &modfetch.Client{Policy: &trust.Policy{}, TrustedRoot: sigstoretest.New(t).TrustedRoot()}}
+	s := &dep.Session{Lock: &lockfile.File{}, Client: &fetch.Client{Policy: &trust.Policy{}, TrustedRoot: sigstoretest.New(t).TrustedRoot()}}
 	cfg, err := acquirerConfig(settings, daemonRunner{}, s)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +99,7 @@ func TestLazyUpdaterOpensOnFirstPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &dep.Session{Lock: &lockfile.File{}, Client: &modfetch.Client{Policy: &trust.Policy{}}}
+	s := &dep.Session{Lock: &lockfile.File{}, Client: &fetch.Client{Policy: &trust.Policy{}}}
 	up := &lazyUpdater{settings: settings, session: s}
 	up.Close()
 	if up.acq != nil {

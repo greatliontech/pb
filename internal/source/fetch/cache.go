@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // Artifact kinds — the cache-entry and endpoint suffixes of one module
@@ -46,12 +46,12 @@ func (c *Cache) Get(modPath string, v version.Version, kind string) ([]byte, boo
 		return nil, false, nil
 	}
 	if err != nil {
-		return nil, false, fmt.Errorf("modfetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
+		return nil, false, fmt.Errorf("fetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
 	defer f.Close()
 	b, err := io.ReadAll(f)
 	if err != nil {
-		return nil, false, fmt.Errorf("modfetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
+		return nil, false, fmt.Errorf("fetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
 	return b, true, nil
 }
@@ -65,10 +65,10 @@ func (c *Cache) Get(modPath string, v version.Version, kind string) ([]byte, boo
 func (c *Cache) Put(modPath string, v version.Version, kind string, data []byte) error {
 	p := entryPath(modPath, v, kind)
 	if err := c.FS.MkdirAll(path.Dir(p), 0o755); err != nil {
-		return fmt.Errorf("modfetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
+		return fmt.Errorf("fetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
 	if err := atomicfile.Write(c.FS, p, ".put-", data); err != nil {
-		return fmt.Errorf("modfetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
+		return fmt.Errorf("fetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
 	return nil
 }

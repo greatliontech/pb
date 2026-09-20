@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"bytes"
@@ -60,7 +60,7 @@ func (c *Client) verifyEvidence(ctx context.Context, subtree string, v version.V
 			// a non-acceptance, not tampering.
 			skipped++
 		default:
-			return lockfile.Provenance{}, false, skipped, fmt.Errorf("modfetch: evidence rejected: %w", err)
+			return lockfile.Provenance{}, false, skipped, fmt.Errorf("fetch: evidence rejected: %w", err)
 		}
 	}
 	return lockfile.Provenance{}, false, skipped, nil

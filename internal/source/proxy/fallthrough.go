@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/httpspolicy"
+	"github.com/greatliontech/pb/internal/source"
 )
 
 // ErrNotHere is wrapped when a source answers "not here" — for a proxy,
@@ -101,7 +101,7 @@ func Get(ctx context.Context, client *http.Client, url string, limit int64) (Unv
 	// Proxies legitimately redirect artifact fetches to blob storage,
 	// under the shared fetch posture: cookie-free, redirects HTTPS-only
 	// and bounded.
-	resp, err := httpspolicy.Client(client).Do(req)
+	resp, err := source.HTTPClient(client).Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", url, err)
 	}

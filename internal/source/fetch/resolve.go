@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
 	"github.com/greatliontech/pb/internal/provenance/trust"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // ModfileHash renders the module-file hash of exact module-file bytes
@@ -129,7 +129,7 @@ func (c *Client) pinnedZip(ctx context.Context, modPath string, v version.Versio
 		// Unreachable through this package's own pins — first use always
 		// fetches the archive — but the lockfile wire format admits
 		// digestless pins, and serving unverifiable bytes is not an option.
-		return nil, fmt.Errorf("modfetch: pin for %s@%s has no digest to verify the archive against", modPath, v)
+		return nil, fmt.Errorf("fetch: pin for %s@%s has no digest to verify the archive against", modPath, v)
 	}
 	if b, ok, err := c.Cache.Get(modPath, v, KindZip); err != nil {
 		return nil, err
@@ -228,7 +228,7 @@ func (c *Client) evaluateProvenance(ctx context.Context, modPath string, v versi
 	}
 	fail := func(reason string) (lockfile.Provenance, []byte, error) {
 		if dec.Require {
-			return lockfile.Provenance{}, nil, fmt.Errorf("modfetch: %s@%s requires provenance: %s", modPath, v, reason)
+			return lockfile.Provenance{}, nil, fmt.Errorf("fetch: %s@%s requires provenance: %s", modPath, v, reason)
 		}
 		return lockfile.Provenance{}, nil, nil
 	}

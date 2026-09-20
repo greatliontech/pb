@@ -1,4 +1,4 @@
-package httpspolicy
+package source
 
 import (
 	"fmt"
@@ -45,12 +45,12 @@ func (rt *chainRT) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-func TestClientFollowsHTTPSRedirects(t *testing.T) {
+func TestHTTPClientFollowsHTTPSRedirects(t *testing.T) {
 	rt := &chainRT{
 		redirects: map[string]string{"a.example.com/x": "https://b.example.com/y"},
 		bodies:    map[string]string{"b.example.com/y": "artifact"},
 	}
-	c := Client(&http.Client{Transport: rt})
+	c := HTTPClient(&http.Client{Transport: rt})
 	resp, err := c.Get("https://a.example.com/x")
 	if err != nil {
 		t.Fatal(err)
@@ -62,9 +62,9 @@ func TestClientFollowsHTTPSRedirects(t *testing.T) {
 	}
 }
 
-func TestClientRefusesCleartextRedirects(t *testing.T) {
+func TestHTTPClientRefusesCleartextRedirects(t *testing.T) {
 	rt := &chainRT{redirects: map[string]string{"a.example.com/x": "http://evil.example.com/y"}}
-	c := Client(&http.Client{Transport: rt})
+	c := HTTPClient(&http.Client{Transport: rt})
 	_, err := c.Get("https://a.example.com/x") //nolint:bodyclose // error path
 	if err == nil || !strings.Contains(err.Error(), "non-HTTPS") {
 		t.Fatalf("cleartext redirect = %v, want non-HTTPS refusal", err)
@@ -77,12 +77,12 @@ func TestClientRefusesCleartextRedirects(t *testing.T) {
 }
 
 // The chain is capped at ten hops: exactly ten requests are issued.
-func TestClientRedirectCap(t *testing.T) {
+func TestHTTPClientRedirectCap(t *testing.T) {
 	rt := &chainRT{redirects: map[string]string{}}
 	for i := range 15 {
 		rt.redirects[fmt.Sprintf("h%d.example.com/x", i)] = fmt.Sprintf("https://h%d.example.com/x", i+1)
 	}
-	c := Client(&http.Client{Transport: rt})
+	c := HTTPClient(&http.Client{Transport: rt})
 	_, err := c.Get("https://h0.example.com/x") //nolint:bodyclose // error path
 	if err == nil || !strings.Contains(err.Error(), "10 redirects") {
 		t.Fatalf("long chain = %v, want the 10-redirect refusal", err)
@@ -93,7 +93,7 @@ func TestClientRedirectCap(t *testing.T) {
 }
 
 // The copy is cookie-free and the base client is never mutated.
-func TestClientStripsJarAndPreservesBase(t *testing.T) {
+func TestHTTPClientStripsJarAndPreservesBase(t *testing.T) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +101,7 @@ func TestClientStripsJarAndPreservesBase(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: "a.example.com", Path: "/x"}
 	jar.SetCookies(u, []*http.Cookie{{Name: "session", Value: "secret"}})
 	base := &http.Client{Jar: jar}
-	c := Client(base)
+	c := HTTPClient(base)
 	if c.Jar != nil {
 		t.Fatal("policy client carries a cookie jar")
 	}

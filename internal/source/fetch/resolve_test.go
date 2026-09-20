@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"bytes"
@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v6/memfs"
-	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 	"github.com/greatliontech/pb/internal/testing/gittest"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"pgregory.net/rapid"
 )
 
@@ -516,7 +516,7 @@ func TestTwoOriginSnapshotsIndependent(t *testing.T) {
 	repoB := gittest.NewAt(t, sharedFS, "b")
 	build := func(r *gittest.Repo, module string) {
 		files := map[string]string{"pb.yaml": "module: " + module + "\n"}
-		fx := &fixture{&modfetchtest.Fixture{T: t, Repo: r}}
+		fx := &fixture{&fetchtest.Fixture{T: t, Repo: r}}
 		commit := fx.CommitFor(files, gitWhen)
 		r.Ref("refs/tags/v1.0.0", commit)
 		r.Ref("refs/heads/main", commit)
@@ -543,7 +543,7 @@ func TestTwoOriginSnapshotsIndependent(t *testing.T) {
 	}
 	// Both origins move after their fetches; both snapshots must hold.
 	for _, r := range []*gittest.Repo{repoA, repoB} {
-		commit := (&fixture{&modfetchtest.Fixture{T: t, Repo: r}}).CommitFor(map[string]string{"x.proto": "syntax = \"proto3\";\n"}, gitWhen.Add(time.Hour))
+		commit := (&fixture{&fetchtest.Fixture{T: t, Repo: r}}).CommitFor(map[string]string{"x.proto": "syntax = \"proto3\";\n"}, gitWhen.Add(time.Hour))
 		r.Ref("refs/tags/v2.0.0", commit)
 	}
 	if _, err := c.Versions(ctx, "example.com/a"); err != nil {

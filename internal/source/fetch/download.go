@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // Download materializes a pair's full artifact set in the module cache,
@@ -115,7 +115,7 @@ func (c *Client) downloadInfo(ctx context.Context, modPath string, v version.Ver
 		return err
 	}
 	if err := checkInfo(b, v); err != nil {
-		return fmt.Errorf("modfetch: info object for %s@%s: %w", modPath, v, err)
+		return fmt.Errorf("fetch: info object for %s@%s: %w", modPath, v, err)
 	}
 	return c.Cache.Put(modPath, v, KindInfo, b)
 }
@@ -148,7 +148,7 @@ func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Ver
 	}
 	provBytes, err := c.fetch(ctx, modPath, v, KindProv)
 	if errors.Is(err, proxy.ErrNotHere) {
-		return fmt.Errorf("modfetch: %s@%s: pin records verified provenance but no source serves evidence: %w", modPath, v, lockfile.ErrProvenanceDowngrade)
+		return fmt.Errorf("fetch: %s@%s: pin records verified provenance but no source serves evidence: %w", modPath, v, lockfile.ErrProvenanceDowngrade)
 	}
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Ver
 		return err
 	}
 	if c.TrustedRoot == nil {
-		return fmt.Errorf("modfetch: %s@%s: pin records verified provenance but no trusted root is configured to re-verify it", modPath, v)
+		return fmt.Errorf("fetch: %s@%s: pin records verified provenance but no trusted root is configured to re-verify it", modPath, v)
 	}
 	o, err := c.origin(ctx, modPath)
 	if err != nil {
@@ -183,7 +183,7 @@ func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Ver
 		return fmt.Errorf("%s@%s: %w", modPath, v, err)
 	}
 	if !accepted {
-		return fmt.Errorf("modfetch: %s@%s: no served evidence reproduces the pinned provenance record: %w", modPath, v, lockfile.ErrProvenanceDowngrade)
+		return fmt.Errorf("fetch: %s@%s: no served evidence reproduces the pinned provenance record: %w", modPath, v, lockfile.ErrProvenanceDowngrade)
 	}
 	return nil
 }

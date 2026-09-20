@@ -4,7 +4,7 @@
 // commit graph. Artifact construction — the proxy-equivalence half of
 // REQ-proxy-direct-equivalence — builds on this layer.
 //
-// Transport is go-git, as in internal/origin and for the same reasons:
+// Transport is go-git, as in internal/source/origin and for the same reasons:
 // pb stays self-contained with no runtime dependency on an installed
 // git, the operations are protocol-level, and the library line is
 // pinned in go.mod. The clone is bare, in memory, all branches and tags
@@ -24,7 +24,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/client"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/go-git/go-git/v6/storage/memory"
-	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/source/origin"
 )
 
 // Fetcher fetches origin repositories. The zero value is ready to use.

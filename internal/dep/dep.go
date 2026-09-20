@@ -20,7 +20,6 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/greatliontech/pb/internal/atomicfile"
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
@@ -28,6 +27,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/resolve"
+	"github.com/greatliontech/pb/internal/source/fetch"
 )
 
 // Config carries the assembled seams a Session is loaded over. WS is
@@ -38,7 +38,7 @@ import (
 type Config struct {
 	WS     billy.Filesystem
 	Dir    string
-	Client *modfetch.Client
+	Client *fetch.Client
 }
 
 // Session is one loaded resolution root: the workspace, its pin store
@@ -47,7 +47,7 @@ type Session struct {
 	WS     billy.Filesystem
 	Root   *workspace.Root
 	Lock   *lockfile.File
-	Client *modfetch.Client
+	Client *fetch.Client
 	Driver *resolve.Driver
 
 	lockOrig []byte // the lockfile bytes as loaded; "" when absent

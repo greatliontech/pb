@@ -12,7 +12,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/mvs"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 )
 
 var ctx = context.Background()
@@ -57,7 +57,7 @@ func TestLoadOrderAndMembership(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zip, _ := modfetchtest.ModuleZip(t, map[string]string{
+	zip, _ := fetchtest.ModuleZip(t, map[string]string{
 		"pb.yaml":   ws("example.com/m1", ""),
 		"m1.proto":  "syntax = \"proto3\";\n",
 		"LICENSE":   "x",

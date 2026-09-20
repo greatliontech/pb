@@ -4,7 +4,7 @@
 // render. The driver composes decisions owned elsewhere — workspace
 // membership and locality (internal/module/workspace), selection
 // (internal/module/mvs), artifact acquisition and verification
-// (internal/modfetch) — and adds exactly the wiring the specs place
+// (internal/source/fetch) — and adds exactly the wiring the specs place
 // between them: local paths never reach the fetch layer, selection
 // seeds from exactly the declared union, and graph rendering attributes
 // root edges to the workspace module that declared them.
@@ -17,17 +17,17 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/mvs"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
+	"github.com/greatliontech/pb/internal/source/fetch"
 )
 
 // Driver resolves one workspace's dependency graph. Not safe for
 // concurrent use, matching the pipeline beneath it.
 type Driver struct {
 	Root   *workspace.Root
-	Client *modfetch.Client
+	Client *fetch.Client
 }
 
 // load is the selection loader (REQ-resolve-mvs): the verified module

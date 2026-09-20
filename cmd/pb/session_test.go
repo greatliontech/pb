@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -17,7 +17,7 @@ import (
 // against the file's directory (REQ-uc-precedence, REQ-uc-paths).
 func TestClientSettingsNameTheirLayer(t *testing.T) {
 	p := plant(t, "proxy: \"https://a.example,,direct\"\n")
-	var client *modfetch.Client
+	var client *fetch.Client
 	assemble := func() error {
 		settings, err := userconfig.Load()
 		if err != nil {

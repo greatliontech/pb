@@ -1,4 +1,4 @@
-// Package modfetch implements the client side of module artifact
+// Package fetch implements the client side of module artifact
 // acquisition: fetching through the configured source list
 // (module-proxy.md §Client behavior), verifying every byte against
 // digests, pins, and provenance before use
@@ -14,7 +14,7 @@
 // fetched bytes and records the complete pin: digest, module-file hash,
 // and evaluated provenance in one step (REQ-lock-first-use), so a pin
 // never exists in a partially evaluated state.
-package modfetch
+package fetch
 
 import (
 	"bytes"
@@ -24,13 +24,13 @@ import (
 	"net/http"
 
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/provenance/trust"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // fetchLimit bounds every artifact response (REQ-proxy-client-
@@ -48,8 +48,9 @@ const fetchLimit = archive.MaxTotalSize
 // matching the single-threaded resolution driver.
 type Client struct {
 	// HTTP performs proxy and vanity fetches; nil uses
-	// http.DefaultClient. Every request goes through httpspolicy via
-	// proxy.Get.
+	// http.DefaultClient. Every request goes through source.HTTPClient,
+	// the proxy fetches through proxy.Get and the vanity lookups
+	// through origin's discovery.
 	HTTP *http.Client
 	// Sources is the parsed source-list configuration (REQ-proxy-config).
 	Sources proxy.Config
@@ -89,7 +90,7 @@ func (c *Client) origin(ctx context.Context, modPath string) (origin.Origin, err
 		return o, nil
 	}
 	if c.ResolveOrigin == nil {
-		return origin.Origin{}, fmt.Errorf("modfetch: no origin resolver configured (needed for %s)", modPath)
+		return origin.Origin{}, fmt.Errorf("fetch: no origin resolver configured (needed for %s)", modPath)
 	}
 	o, err := c.ResolveOrigin(ctx, modPath)
 	if err != nil {
@@ -142,7 +143,7 @@ func (c *Client) fetch(ctx context.Context, modPath string, v version.Version, k
 		case KindProv:
 			url = proxy.ProvURL(s.URL, modPath, v)
 		default:
-			return nil, fmt.Errorf("modfetch: unknown artifact kind %q", kind)
+			return nil, fmt.Errorf("fetch: unknown artifact kind %q", kind)
 		}
 		return proxy.Get(ctx, c.HTTP, url, fetchLimit)
 	})
@@ -150,7 +151,7 @@ func (c *Client) fetch(ctx context.Context, modPath string, v version.Version, k
 
 // directArtifact constructs one artifact from the origin repository —
 // the direct source's half of REQ-proxy-direct-equivalence, over the
-// internal/direct construction layer.
+// internal/source/direct construction layer.
 func (c *Client) directArtifact(ctx context.Context, modPath string, v version.Version, kind string) (proxy.Unverified, error) {
 	o, err := c.origin(ctx, modPath)
 	if err != nil {
@@ -204,5 +205,5 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		}
 		return b, nil
 	}
-	return nil, fmt.Errorf("modfetch: unknown artifact kind %q", kind)
+	return nil, fmt.Errorf("fetch: unknown artifact kind %q", kind)
 }

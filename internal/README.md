@@ -14,7 +14,7 @@ while the tree does another.
 | plugin vocabulary | plugin-execution.md | `plugexec` |
 | module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `provenance/image`, `provenance/image/discover`, `provenance/image/evidence`, `provenance/trust` |
-| source | module-proxy.md | `proxy`, `origin`, `direct`, `modfetch`, `httpspolicy` |
+| source | module-proxy.md, module-resolution.md (the path resolution half) | `source`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
 | proto | generation.md, the compile half | `modfiles`, `protocomp`, `protoimport` |
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `pluglocal`, `plugoci`, `plugrun`, `genfile`, `genrequest` |

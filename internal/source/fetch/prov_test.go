@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/provenance/trust"
+	"github.com/greatliontech/pb/internal/source/origin"
 	"github.com/greatliontech/pb/internal/testing/provtest"
 )
 

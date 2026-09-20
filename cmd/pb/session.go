@@ -12,11 +12,11 @@ import (
 	"github.com/go-git/go-billy/v6/osfs"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/dep"
-	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -70,7 +70,7 @@ func workingTree() (billy.Filesystem, string, error) {
 // (dep-verbs.md, the module cache term), and the trusted root
 // (provenance.md, the trusted root term). The lockfile and trust
 // policy are the resolution root's and are wired by dep.Load.
-func assembleClient(settings *userconfig.Settings) (*modfetch.Client, error) {
+func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 	proxyValue := settings.Get(userconfig.KeyProxy)
 	sources, err := proxy.ParseSources(proxyValue.Value)
 	if err != nil {
@@ -100,10 +100,10 @@ func assembleClient(settings *userconfig.Settings) (*modfetch.Client, error) {
 		}
 	}
 	httpClient := &http.Client{}
-	return &modfetch.Client{
+	return &fetch.Client{
 		HTTP:        httpClient,
 		Sources:     proxy.Config{Sources: sources, NoProxy: patterns},
-		Cache:       &modfetch.Cache{FS: osfs.New(cache.Value)},
+		Cache:       &fetch.Cache{FS: osfs.New(cache.Value)},
 		Lock:        &lockfile.File{}, // replaced by dep.Load with the root's lockfile
 		TrustedRoot: root,
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {

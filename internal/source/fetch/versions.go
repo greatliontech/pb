@@ -1,14 +1,14 @@
-package modfetch
+package fetch
 
 import (
 	"context"
 	"errors"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // Versions lists a module's discovered tagged releases, ascending — the

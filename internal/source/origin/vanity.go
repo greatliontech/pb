@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/httpspolicy"
+	"github.com/greatliontech/pb/internal/source"
 	"golang.org/x/net/html"
 )
 
@@ -44,7 +44,7 @@ func discoverVanity(ctx context.Context, client *http.Client, path string) (redi
 	// Discovery pins the shared fetch posture — cookie-free, redirects
 	// HTTPS-only and bounded — on a copy; the caller's client is
 	// untouched.
-	resp, err := httpspolicy.Client(client).Do(req)
+	resp, err := source.HTTPClient(client).Do(req)
 	if err != nil {
 		// Absence and cancellation both surface as transport errors;
 		// only a live context means the prefix genuinely didn't answer.

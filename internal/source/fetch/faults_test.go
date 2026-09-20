@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"context"
@@ -9,22 +9,22 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/provenance"
 	"github.com/greatliontech/pb/internal/provenance/trust"
-	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 	"github.com/greatliontech/pb/internal/testing/provtest"
 )
 
-// The fault-injection filesystem lives in internal/testing/modfetchtest; local
+// The fault-injection filesystem lives in internal/testing/fetchtest; local
 // aliases keep this suite reading naturally.
-type errFS = modfetchtest.ErrFS
+type errFS = fetchtest.ErrFS
 
-var errInjected = modfetchtest.ErrInjected
+var errInjected = fetchtest.ErrInjected
 
 // Every cache storage fault surfaces as the operation's error — no
 // arm of the pipeline swallows a failed read or write.

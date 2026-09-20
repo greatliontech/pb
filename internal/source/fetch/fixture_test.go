@@ -1,4 +1,4 @@
-package modfetch
+package fetch
 
 import (
 	"context"
@@ -11,34 +11,34 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/testing/modfetchtest"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 )
 
-// The shared client fixture lives in internal/testing/modfetchtest; the local
+// The shared client fixture lives in internal/testing/fetchtest; the local
 // wrapper assembles this package's Client over it, keeping the tests
 // reading naturally.
 type fixture struct {
-	*modfetchtest.Fixture
+	*fetchtest.Fixture
 }
 
 const (
-	proxyHost = modfetchtest.ProxyHost
-	altHost   = modfetchtest.AltHost
+	proxyHost = fetchtest.ProxyHost
+	altHost   = fetchtest.AltHost
 )
 
-var gitWhen = modfetchtest.GitWhen
+var gitWhen = fetchtest.GitWhen
 
-func newFixture(t *testing.T) *fixture { return &fixture{modfetchtest.New(t)} }
+func newFixture(t *testing.T) *fixture { return &fixture{fetchtest.New(t)} }
 
 func moduleZip(t *testing.T, files map[string]string) ([]byte, string) {
-	return modfetchtest.ModuleZip(t, files)
+	return fetchtest.ModuleZip(t, files)
 }
 
 // Client assembles the client under test over the fixture's transport,
 // with a fresh in-memory cache and empty pin store. This is the one
-// copy of modfetchtest/assemble.Client the import cycle forces: this
-// suite is package modfetch, and assemble imports modfetch.
+// copy of fetchtest/assemble.Client the import cycle forces: this
+// suite is package fetch, and assemble imports fetch.
 func (fx *fixture) Client(pbproxy string) *Client {
 	return &Client{
 		HTTP:          fx.HTTPClient(),
@@ -52,7 +52,7 @@ func (fx *fixture) Client(pbproxy string) *Client {
 
 // originOverride points every module path at the given repository URL
 // (identity derivation input) while keeping subtree resolution.
-func originOverride(fx *modfetchtest.Fixture, repoURL string) {
+func originOverride(fx *fetchtest.Fixture, repoURL string) {
 	fx.ResolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
 		return origin.Origin{Repo: repoURL, Subtree: fx.Subtrees[modPath]}, nil
 	}

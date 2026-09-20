@@ -1,10 +1,9 @@
-// Package modfetchtest builds modfetch clients over in-process
-// fixtures for tests: an origin repository served through the gittest
-// file transport for the direct source, and a socket-free proxy
-// transport serving a mutable endpoint map — real listeners read
-// volatile OS state and put network I/O in mutation-test oracles, so
-// nothing here opens one.
-package modfetchtest
+// Package fetchtest builds fetch clients over in-process fixtures for
+// tests: an origin repository served through the gittest file transport
+// for the direct source, and a socket-free proxy transport serving a
+// mutable endpoint map — real listeners read volatile OS state and put
+// network I/O in mutation-test oracles, so nothing here opens one.
+package fetchtest
 
 import (
 	"bytes"
@@ -23,10 +22,10 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
-	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/module/archive"
-	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/testing/gittest"
 )
 

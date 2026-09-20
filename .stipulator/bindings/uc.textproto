@@ -146,9 +146,9 @@ bindings {
   content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
   source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proxy.ParseSources"
+  symbol: "github.com/greatliontech/pb/internal/source/proxy.ParseSources"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "08f85dfe198ae8d41e3ceedc2f71e5d4d056b0008a95b0115714d5d2303d0edf"
+  shape_hash: "308699f4b8a46ed1d1fb30380fd1c7b77a0094cbe2ac8c08b2b31be5d4f1ce48"
 }
 
 bindings {
@@ -156,7 +156,7 @@ bindings {
   content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
   source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proxy.ParseNoProxy"
+  symbol: "github.com/greatliontech/pb/internal/source/proxy.ParseNoProxy"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "d902637e728789f2ffa2a8e2bf4573875e3c969b950621b09a917e47eff1dc5b"
+  shape_hash: "6118c11ea79c75b6972495757359788313024a36a876132540314fb39adaf5a1"
 }
