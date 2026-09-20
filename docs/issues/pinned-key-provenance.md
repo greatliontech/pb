@@ -1,6 +1,6 @@
 # Pinned-key provenance: the tier between unsigned and identity
 
-Lands: the check-rules plan closed out
+Lands: the pinned-key plan opened, this doc its seed
 
 The provenance spec's pinned-key tier is stated (provenance.md
 "Pinned keys", module-lockfile.md REQ-lock-pinned-key-record) and

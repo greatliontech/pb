@@ -128,7 +128,7 @@ an OpenSSH public key line — and a key whose fingerprint is not the
 entry's `fingerprint` is a schema violation; a rule's fingerprint
 naming no keyring entry is a schema violation; and `plugins` rules
 carry no `keys`, image signatures being sigstore's alone. Lands: the
-check-rules plan closed out, the pinned-key plan following it.
+pinned-key plan.
 
 **REQ-prov-pinned-key-eval** (behavior): Under a rule naming `keys`, a
 subject's git-signed-tag evidence MUST verify offline against exactly
@@ -138,8 +138,7 @@ sigstore signature — with no transparency proof required or consulted;
 a signature by any other key, an unverifiable one, or none fails the
 operation, whatever `default` or `require` says: naming keys is
 requiring them. A rule naming both `keys` and `identity` accepts
-either evidence. Lands: the check-rules plan closed out, the
-pinned-key plan following it.
+either evidence. Lands: the pinned-key plan.
 
 **REQ-prov-pinned-key-recorded** (behavior): A subject accepted under
 a pinned key MUST be recorded in the lockfile with the key's kind and

@@ -57,8 +57,7 @@ pinned keys (`provenance.md`, REQ-prov-pinned-key-eval) — MUST carry
 `objectFormat` and `object` as a `git-signed-tag` record does, then
 `key`, with `kind` (`openpgp` or `ssh`) and `fingerprint` naming the
 pinned key that verified the signature, in place of `identity`. It
-belongs to a module entry alone. Lands: the check-rules plan closed
-out, the pinned-key plan following it.
+belongs to a module entry alone. Lands: the pinned-key plan.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the plugin identity as written in generation configuration, without
