@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/version"
 	"pgregory.net/rapid"
 )
 

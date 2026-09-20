@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/greatliontech/pb/internal/dep"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
 	"github.com/greatliontech/pb/internal/userconfig"

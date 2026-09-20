@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v6/plumbing"
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // A Repo is one snapshot: views derived before storage grows do not

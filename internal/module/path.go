@@ -1,8 +1,12 @@
-// Package modpath validates module paths (REQ-resolve-path-syntax): a
-// hostname followed by one or more segments, with a character discipline
-// that keeps paths safe in every downstream encoding — proxy bang-escaping
-// (ASCII case), vanity-redirect URLs, and plain-scalar YAML emission.
-package modpath
+// Package module is the module domain's root: the module path rule
+// (REQ-resolve-path-syntax) every package of the domain and every
+// consumer spells a path through. A path is a hostname followed by one
+// or more segments, with a character discipline that keeps it safe in
+// every downstream encoding — proxy bang-escaping (ASCII case),
+// vanity-redirect URLs, and plain-scalar YAML emission. The domain's
+// other rules — the archive, versions, the module file, selection, the
+// workspace, the lockfile — are its subpackages.
+package module
 
 import (
 	"errors"
@@ -10,24 +14,30 @@ import (
 	"strings"
 )
 
-// ErrInvalid is wrapped by every module-path rejection.
-var ErrInvalid = errors.New("invalid module path")
+// ModuleFileName is the module file's name at the module root — the
+// module-archive contract's "module file" term. The schema is
+// modfile's; a pb.yaml declared anywhere strictly below the root
+// invalidates an archive's file set (REQ-archive-nested-module).
+const ModuleFileName = "pb.yaml"
 
-// Validate checks path against the module-path syntax: a hostname
+// ErrInvalidPath is wrapped by every module-path rejection.
+var ErrInvalidPath = errors.New("invalid module path")
+
+// ValidatePath checks path against the module-path syntax: a hostname
 // (lowercase ASCII letters, digits, hyphens, dots, at least one interior
 // dot) followed by one or more segments of ASCII letters, digits, and
 // . - _ ~, no segment beginning or ending with a dot.
-func Validate(path string) error {
+func ValidatePath(path string) error {
 	host, rest, ok := strings.Cut(path, "/")
 	if !ok || rest == "" {
-		return fmt.Errorf("%w: %q needs a hostname followed by at least one segment", ErrInvalid, path)
+		return fmt.Errorf("%w: %q needs a hostname followed by at least one segment", ErrInvalidPath, path)
 	}
 	if err := validateHost(host); err != nil {
-		return fmt.Errorf("%w: %q: %v", ErrInvalid, path, err)
+		return fmt.Errorf("%w: %q: %v", ErrInvalidPath, path, err)
 	}
 	for seg := range strings.SplitSeq(rest, "/") {
 		if err := validateSegment(seg); err != nil {
-			return fmt.Errorf("%w: %q: %v", ErrInvalid, path, err)
+			return fmt.Errorf("%w: %q: %v", ErrInvalidPath, path, err)
 		}
 	}
 	return nil

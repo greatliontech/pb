@@ -9,7 +9,7 @@ import (
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/imagesig"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 )
 
@@ -141,7 +141,7 @@ func TestRecorderKeepsWhatWasTaken(t *testing.T) {
 func TestJudgeImportsCarryNoNetworkCapability(t *testing.T) {
 	structural.ImportAllowlist(t, "github.com/greatliontech/pb/internal/imagesig", map[string]structural.ImportRule{
 		"github.com/greatliontech/pb/internal/imagesig": {
-			Internal:                []string{"github.com/greatliontech/pb/internal/lockfile"},
+			Internal:                []string{"github.com/greatliontech/pb/internal/module/lockfile"},
 			ThirdParty:              []string{"github.com/greatliontech/gitprov"},
 			RestrictStandardLibrary: true,
 			StandardLibrary:         []string{"context", "errors", "fmt", "iter"},

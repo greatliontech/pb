@@ -8,14 +8,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
-	"github.com/greatliontech/pb/internal/modfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/trust"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // ModfileHash renders the module-file hash of exact module-file bytes
@@ -52,7 +54,7 @@ func (c *Client) pinnedModule(ctx context.Context, modPath string, v version.Ver
 		if err != nil {
 			return nil, err
 		}
-		if _, has, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), archive.ModuleFileName); err != nil {
+		if _, has, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), module.ModuleFileName); err != nil {
 			return nil, err
 		} else if has {
 			return nil, fmt.Errorf("%w: %s@%s archive declares a module file but the pin records none", lockfile.ErrPinMismatch, modPath, v)
@@ -165,13 +167,13 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	if err != nil {
 		return nil, err
 	}
-	mb, hasMod, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), archive.ModuleFileName)
+	mb, hasMod, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), module.ModuleFileName)
 	if err != nil {
 		return nil, err
 	}
 	var files map[string][]byte
 	if hasMod {
-		files = map[string][]byte{archive.ModuleFileName: mb}
+		files = map[string][]byte{module.ModuleFileName: mb}
 	}
 	mf, err := modfile.FromFileSet(modPath, files)
 	if err != nil {

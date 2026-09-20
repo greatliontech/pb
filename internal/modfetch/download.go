@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
 	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // Download materializes a pair's full artifact set in the module cache,
@@ -55,7 +57,7 @@ func (c *Client) Download(ctx context.Context, modPath string, v version.Version
 // the archive answer for the same file set, so any disagreement is a
 // pin mismatch, not a variant.
 func archiveModfile(modPath string, v version.Version, pin lockfile.ModulePin, zip []byte) ([]byte, error) {
-	b, has, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), archive.ModuleFileName)
+	b, has, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), module.ModuleFileName)
 	if err != nil {
 		return nil, err
 	}

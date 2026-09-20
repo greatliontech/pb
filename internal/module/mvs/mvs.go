@@ -20,7 +20,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // ErrMajorCrossing is wrapped when selection raises a module's major

@@ -24,13 +24,13 @@ import (
 	"net/http"
 
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/trust"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // fetchLimit bounds every artifact response (REQ-proxy-client-

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // ErrMalformed is wrapped by every rejection of a response body: a

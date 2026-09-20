@@ -20,14 +20,14 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/greatliontech/pb/internal/atomicfile"
-	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/modfile"
-	"github.com/greatliontech/pb/internal/modpath"
-	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/module"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/resolve"
 	"github.com/greatliontech/pb/internal/trust"
-	"github.com/greatliontech/pb/internal/workspace"
 )
 
 // Config carries the assembled seams a Session is loaded over. WS is
@@ -142,10 +142,10 @@ func writeFile(ws billy.Filesystem, name string, data []byte) error {
 // (REQ-dep-init), failing when one already exists there or the path is
 // invalid. It writes nothing else.
 func Init(ws billy.Filesystem, dir, modulePath string) error {
-	if err := modpath.Validate(modulePath); err != nil {
+	if err := module.ValidatePath(modulePath); err != nil {
 		return err
 	}
-	target := path.Join(dir, modfile.ModuleFileName)
+	target := path.Join(dir, module.ModuleFileName)
 	if _, err := ws.Stat(target); err == nil {
 		return fmt.Errorf("dep init: %s already exists", target)
 	} else if !errors.Is(err, fs.ErrNotExist) {

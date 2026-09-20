@@ -616,9 +616,9 @@ bindings {
   content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
   source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lockfile.File.SetPluginBinary"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.File.SetPluginBinary"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "a77a5efd98502b0da1820b8a589ba3532a93e6f81aad4d8fc21264b2d54f29b1"
+  shape_hash: "cb5148c0049ab49ab7e5a3520b00ee1eb29c0493e49d9b9775afdc9e29f1396a"
 }
 
 bindings {
@@ -626,9 +626,9 @@ bindings {
   content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
   source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lockfile.TestSetPluginBinary"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestSetPluginBinary"
   role: BINDING_ROLE_TESTS
-  shape_hash: "ba2a6fef32fd0bcc77d2174fb96192fcd49fb17ad4ec34d924f5ac5de0fd940b"
+  shape_hash: "ab60828ec6ec5d090907d025a155f451dff715690ce910afa1a4161cdbffab21"
 }
 
 bindings {

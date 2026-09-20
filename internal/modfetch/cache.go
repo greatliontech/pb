@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/greatliontech/pb/internal/atomicfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // Artifact kinds — the cache-entry and endpoint suffixes of one module

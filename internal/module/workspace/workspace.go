@@ -23,12 +23,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/goccy/go-yaml/ast"
 	"github.com/greatliontech/pb/internal/contractfile"
-	"github.com/greatliontech/pb/internal/modfile"
-	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/rootpath"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // FileName is the workspace file's name at the workspace root.
@@ -133,7 +135,7 @@ func Find(fsys fs.FS, dir string) (rootDir string, isWorkspace bool, err error) 
 			return d, true, nil
 		}
 		if !haveModule {
-			if ok, err := exists(fsys, d, modfile.ModuleFileName); err != nil {
+			if ok, err := exists(fsys, d, module.ModuleFileName); err != nil {
 				return "", false, err
 			} else if ok {
 				moduleDir, haveModule = d, true
@@ -180,7 +182,7 @@ func Load(fsys fs.FS, rootDir string) (*Root, error) {
 	seenPath := map[string]string{}
 	for _, dir := range use {
 		mdir := path.Join(rootDir, dir)
-		data, err := fs.ReadFile(fsys, path.Join(mdir, modfile.ModuleFileName))
+		data, err := fs.ReadFile(fsys, path.Join(mdir, module.ModuleFileName))
 		if err != nil {
 			return nil, fmt.Errorf("workspace: use directory %q is not a declared module root: %v", dir, err)
 		}
@@ -317,7 +319,7 @@ func LoadFor(fsys fs.FS, dir string) (*Root, error) {
 // module file — the module dir itself belongs to, if any.
 func nearestModule(fsys fs.FS, dir, rootDir string) (string, bool, error) {
 	for d := path.Clean(dir); ; d = path.Dir(d) {
-		ok, err := exists(fsys, d, modfile.ModuleFileName)
+		ok, err := exists(fsys, d, module.ModuleFileName)
 		if err != nil {
 			return "", false, err
 		}

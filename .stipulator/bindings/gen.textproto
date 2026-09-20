@@ -88,7 +88,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfiles.Load"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fcd82b37310f8ec6f2e7c0567593312f2c7847f0f53c7d58c253338bfb8d40d9"
+  shape_hash: "aa8b91a58fa5418e4a3119152124c638aad2fcc91f4c0e65bb84fce6769aa8c2"
 }
 
 bindings {

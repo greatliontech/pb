@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/module/archive"
 )
 
 // Evidence is one git-signed-tag evidence object from a provenance

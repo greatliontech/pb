@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"pgregory.net/rapid"
 )
 
@@ -184,7 +186,7 @@ func TestZipNestedModuleRejected(t *testing.T) {
 	zw := zip.NewWriter(&crafted)
 	for _, m := range []struct{ name, content string }{
 		{"a.proto", "syntax = \"proto3\";"},
-		{"sub/" + ModuleFileName, "module: example.com/n\n"},
+		{"sub/" + module.ModuleFileName, "module: example.com/n\n"},
 	} {
 		w, err := zw.CreateHeader(&zip.FileHeader{Name: m.name, Method: zip.Deflate})
 		if err != nil {

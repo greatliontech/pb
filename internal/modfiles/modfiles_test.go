@@ -9,10 +9,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest"
-	"github.com/greatliontech/pb/internal/version"
-	"github.com/greatliontech/pb/internal/workspace"
 )
 
 var ctx = context.Background()

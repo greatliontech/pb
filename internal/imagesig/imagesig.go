@@ -14,7 +14,7 @@ import (
 	"iter"
 
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 )
 
 // Evidence-classification sentinels for a judgement that accepted

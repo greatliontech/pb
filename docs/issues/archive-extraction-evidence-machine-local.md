@@ -1,12 +1,12 @@
 # Archive extraction mutation evidence stays machine-local
 
-`internal/archive.ExtractZip` and `internal/archive.writeMember`
+`internal/module/archive.ExtractZip` and `internal/module/archive.writeMember`
 cannot yet produce committable mutation-test evidence. Their oracle
 tests create and remove per-test directories under
-`internal/archive/testdata/scratch/` (`localTempDir` in
+`internal/module/archive/testdata/scratch/` (`localTempDir` in
 `zip_test.go`), which gomutant now takes as a declared scratch
 namespace: a campaign over the two targets with
-`--scratch-namespace internal/archive/testdata/scratch:x` reaches
+`--scratch-namespace internal/module/archive/testdata/scratch:x` reaches
 measurement (100 mutants generated, 47 killed, 37 open) and the
 scratch churn no longer moves the observation bracket. The records
 stay machine-local for two reasons the declaration does not touch,

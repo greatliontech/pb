@@ -15,11 +15,11 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/testing/gittest"
 	"github.com/greatliontech/pb/internal/testing/provtest"
-	"github.com/greatliontech/pb/internal/version"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 	"pgregory.net/rapid"
 )
@@ -421,9 +421,9 @@ func TestProvenanceImportsCarryNoNetworkCapability(t *testing.T) {
 	structural.ImportAllowlist(t, "github.com/greatliontech/pb/internal/provenance", map[string]structural.ImportRule{
 		"github.com/greatliontech/pb/internal/provenance": {
 			Internal: []string{
-				"github.com/greatliontech/pb/internal/archive",
-				"github.com/greatliontech/pb/internal/lockfile",
-				"github.com/greatliontech/pb/internal/version",
+				"github.com/greatliontech/pb/internal/module/archive",
+				"github.com/greatliontech/pb/internal/module/lockfile",
+				"github.com/greatliontech/pb/internal/module/version",
 			},
 			ThirdParty: []string{
 				"github.com/greatliontech/gitprov",

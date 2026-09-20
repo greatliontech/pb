@@ -6,12 +6,14 @@ import (
 	"path"
 	"slices"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/go-git/go-billy/v6/helper/iofs"
-	"github.com/greatliontech/pb/internal/lockfile"
-	"github.com/greatliontech/pb/internal/modfile"
 	"github.com/greatliontech/pb/internal/modfiles"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/protoimport"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // tidyRounds bounds the tidy fixpoint. Rewriting declarations to the
@@ -149,7 +151,7 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		if err := writeFile(s.WS, path.Join(s.Root.Dir, m.Dir, modfile.ModuleFileName), b); err != nil {
+		if err := writeFile(s.WS, path.Join(s.Root.Dir, m.Dir, module.ModuleFileName), b); err != nil {
 			return false, err
 		}
 		m.File.Deps = want

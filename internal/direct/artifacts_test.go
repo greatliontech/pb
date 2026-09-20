@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
-	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/testing/gittest"

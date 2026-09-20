@@ -11,13 +11,13 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
-	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/protoimport"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/trust"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 var ctx = context.Background()

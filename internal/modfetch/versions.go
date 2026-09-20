@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/direct"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // Versions lists a module's discovered tagged releases, ascending — the

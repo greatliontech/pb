@@ -10,7 +10,7 @@ import (
 	"github.com/goccy/go-yaml/parser"
 	"pgregory.net/rapid"
 
-	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/module"
 )
 
 func TestParseGolden(t *testing.T) {
@@ -222,7 +222,7 @@ func FuzzParse(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if modpath.Validate(parsed.Module) != nil {
+		if module.ValidatePath(parsed.Module) != nil {
 			t.Fatalf("accepted invalid module path %q", parsed.Module)
 		}
 		out, err := Encode(parsed)
@@ -310,7 +310,7 @@ func TestFromFileSet(t *testing.T) {
 	}{
 		"declared": {
 			required: "example.com/protos",
-			files:    map[string][]byte{ModuleFileName: declared, "a/b.proto": nil},
+			files:    map[string][]byte{module.ModuleFileName: declared, "a/b.proto": nil},
 			want:     &File{Module: "example.com/protos", Deps: map[string]string{"example.com/dep": "v1.2.0"}},
 		},
 		"synthesized": {
@@ -325,17 +325,17 @@ func TestFromFileSet(t *testing.T) {
 		},
 		"nested module file does not decide": {
 			required: "example.com/protos",
-			files:    map[string][]byte{"sub/" + ModuleFileName: declared},
+			files:    map[string][]byte{"sub/" + module.ModuleFileName: declared},
 			want:     &File{Module: "example.com/protos"},
 		},
 		"identity mismatch": {
 			required: "example.com/other",
-			files:    map[string][]byte{ModuleFileName: declared},
+			files:    map[string][]byte{module.ModuleFileName: declared},
 			wantErr:  ErrIdentityMismatch,
 		},
 		"invalid module file": {
 			required: "example.com/protos",
-			files:    map[string][]byte{ModuleFileName: []byte("module: [broken\n")},
+			files:    map[string][]byte{module.ModuleFileName: []byte("module: [broken\n")},
 			wantErr:  ErrInvalid,
 		},
 	}

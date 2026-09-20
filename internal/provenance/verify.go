@@ -8,9 +8,9 @@ import (
 	"fmt"
 
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // ErrNoTransparency marks evidence whose signature carries no embedded

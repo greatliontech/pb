@@ -12,7 +12,7 @@ while the tree does another.
 |---|---|---|
 | shared rules | the contract-file prologue, atomic writes, the root-contained path rule, each a rule several specs share | `contractfile`, `atomicfile`, `rootpath` |
 | plugin vocabulary | plugin-execution.md | `plugexec` |
-| module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `archive`, `modpath`, `version`, `modfile`, `mvs`, `workspace`, `lockfile` |
+| module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `imagesig`, `imagesig/discover`, `imagesig/evidence`, `trust` |
 | source | module-proxy.md | `proxy`, `origin`, `direct`, `modfetch`, `httpspolicy` |
 | proto | generation.md, the compile half | `modfiles`, `protocomp`, `protoimport` |

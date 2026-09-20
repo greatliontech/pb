@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v6/memfs"
-	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/testing/gittest"

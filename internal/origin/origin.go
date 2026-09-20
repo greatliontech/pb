@@ -25,8 +25,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/modpath"
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // ErrNoOrigin is wrapped when no discovery mechanism yields a repository
@@ -63,7 +63,8 @@ func SplitVCS(path string) (Origin, bool) {
 // reference listings at its root would otherwise silently capture every
 // module on that host; a repository genuinely rooted there declares
 // itself via a `.git` segment or a vanity redirect. Callers pass
-// modpath-validated paths, so at least one segment follows the host.
+// validated paths (module.ValidatePath), so at least one segment
+// follows the host.
 func prefixes(path string) []string {
 	segs := strings.Split(path, "/")
 	out := make([]string, 0, len(segs)-1)
@@ -169,7 +170,7 @@ type Prober interface {
 // order. The prober is consulted only when neither the `.git` rule nor a
 // vanity redirect decides (REQ-resolve-vanity's precedence clause).
 func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
-	if err := modpath.Validate(path); err != nil {
+	if err := module.ValidatePath(path); err != nil {
 		return Origin{}, err
 	}
 	if o, ok := SplitVCS(path); ok {

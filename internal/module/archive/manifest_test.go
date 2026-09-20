@@ -10,6 +10,8 @@ import (
 	"testing"
 	"unicode"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"pgregory.net/rapid"
 )
 
@@ -140,12 +142,12 @@ func TestManifestByteOrder(t *testing.T) {
 // validation (REQ-archive-nested-module); the root's own module file
 // is the declared-module case, not nesting.
 func TestNestedModuleFileRejected(t *testing.T) {
-	root := FileInfo{Path: ModuleFileName, Size: 1}
+	root := FileInfo{Path: module.ModuleFileName, Size: 1}
 	proto := FileInfo{Path: "a.proto", Size: 1}
 	if _, err := Manifest([]FileInfo{root, proto}); err != nil {
 		t.Fatalf("root module file rejected: %v", err)
 	}
-	for _, nested := range []string{"sub/" + ModuleFileName, "a/b/" + ModuleFileName} {
+	for _, nested := range []string{"sub/" + module.ModuleFileName, "a/b/" + module.ModuleFileName} {
 		if _, err := Manifest([]FileInfo{root, {Path: nested, Size: 1}}); !errors.Is(err, ErrNestedModule) {
 			t.Fatalf("%s: err = %v, want ErrNestedModule", nested, err)
 		}
@@ -173,7 +175,7 @@ func TestNestedModuleProperty(t *testing.T) {
 			})
 		}
 		// The root's own module file is the declared-module case.
-		files = append(files, FileInfo{Path: ModuleFileName, Size: 1})
+		files = append(files, FileInfo{Path: module.ModuleFileName, Size: 1})
 		if _, err := Manifest(files); err != nil {
 			t.Fatalf("valid set rejected: %v", err)
 		}
@@ -182,7 +184,7 @@ func TestNestedModuleProperty(t *testing.T) {
 		for i := range segs {
 			segs[i] = fmt.Sprintf("d%d", rapid.IntRange(0, 4).Draw(t, fmt.Sprintf("seg%d", i)))
 		}
-		nested := strings.Join(segs, "/") + "/" + ModuleFileName
+		nested := strings.Join(segs, "/") + "/" + module.ModuleFileName
 		if _, err := Manifest(append(files, FileInfo{Path: nested, Size: 1})); !errors.Is(err, ErrNestedModule) {
 			t.Fatalf("nested %s: err = %v, want ErrNestedModule", nested, err)
 		}

@@ -28,7 +28,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.InfoURL"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "00bd43c053c5f269ac9b44e9f045f693eebe4ca7296cd1fa9b50d05610d12847"
+  shape_hash: "904fcb6ff799359be6015496f888076d538471c8228dc8a56a401e9b4d57a930"
 }
 
 bindings {
@@ -38,7 +38,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.ModURL"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "bad2151fc7e57680a41ff1717ed462acd6e398b702d649334c0fd286487b2e7a"
+  shape_hash: "e98ca35702be4c07a6958e386ae4101c920ca55b6c1109999029c9534ab791c7"
 }
 
 bindings {
@@ -48,7 +48,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.ZipURL"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "55ed19fb0e20cedbd6c3634f8f696c228f7520981616464a5f5cfb2c55cb7052"
+  shape_hash: "c0442cb2520fc3dcdef0488406d745f2d6c453a7d9bd57da42a68096b3909743"
 }
 
 bindings {
@@ -58,7 +58,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.ProvURL"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "0daaef5291f21d284c130b4f02696c4f93bf8c0037e84dc3e1760e2ea100e906"
+  shape_hash: "d9d747a533efb0c82e37385bd9caa856acaeeff7d61dfc7a67f5df20a1d4e57b"
 }
 
 bindings {
@@ -68,7 +68,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proxy.ParseList"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "a5b7080963abea75004401f9e01283e350856d1b859af81aa02a0356b81b937a"
+  shape_hash: "52d424838dc2ae16cf5b94843a244fedb79bae42722ce054b0c7d58b75ae29b9"
 }
 
 bindings {
@@ -368,7 +368,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/direct.InfoJSON"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "7ca20d26ae30a900c465a16fac0cfae01328140bf9e61553375a4d8a4d080b96"
+  shape_hash: "a52d16dc581c6eb1ef754ba26b9e44997d72a3c2177548eed448e9f1b7dfab64"
 }
 
 bindings {
@@ -388,7 +388,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/direct.Repo.VerificationPack"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "8488c536203ef2e2b22f59b9e4ac79498ca3980faa1fff5c6299a382d295dbb6"
+  shape_hash: "bd3ca7b848936560a02a7ed0e3e32e2121f8e24bbc0f0c80a3b162248ae0bff4"
 }
 
 bindings {
@@ -458,7 +458,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.Module"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "5f33282a7c7659ef9a74795f4e5a47b9b08e563bc205e01267fe661098b4dd59"
+  shape_hash: "0b7dbecd1b76b66077e29e22f4c2c56320ab9e3852a5f5a04234e3c8e46e6591"
 }
 
 bindings {
@@ -498,7 +498,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "4c2775352096450a6b6e0392c4cda927840199a6eeb71d4dbfde77047dfeff98"
+  shape_hash: "f63d4871d5fc98282775015eeae0e60d57acecbc6441f54e738e26deb196aae4"
 }
 
 bindings {
@@ -508,7 +508,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/resolve.Driver.BuildList"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "3fdd2edd2ecb71e2e546a6c62a0f40f215b1d9a49e50cd0569aa0818b066a607"
+  shape_hash: "d1354d92c93ec43a65ee16b6b7b1f1c0fd3f3f11d1d8fd26e1bba5ca635fe1be"
 }
 
 bindings {

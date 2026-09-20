@@ -24,7 +24,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 
 	"github.com/greatliontech/pb/internal/contractfile"
-	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/plugexec"
 )
 
@@ -198,7 +198,7 @@ func checkProvenance(p Provenance, admitted string) error {
 }
 
 func checkModulePin(m ModulePin) error {
-	if err := modpath.Validate(m.Path); err != nil {
+	if err := module.ValidatePath(m.Path); err != nil {
 		return err
 	}
 	if m.Version == "" {

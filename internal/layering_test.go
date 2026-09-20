@@ -180,13 +180,13 @@ func TestLayeringRefuses(t *testing.T) {
 		shape func([]domain, map[string][]string) ([]domain, map[string][]string)
 		want  string
 	}{
-		"an edge against the order":                   {edit(func(m map[string][]string) { m["internal/modfile"] = []string{"internal/dep"} }), "against the order"},
+		"an edge against the order":                   {edit(func(m map[string][]string) { m["internal/module/modfile"] = []string{"internal/dep"} }), "against the order"},
 		"an edge up the list between level domains":   {edit(func(m map[string][]string) { m["internal/proxy"] = []string{"internal/genfile"} }), "against the order"},
 		"an edge down the list between level domains": {edit(func(m map[string][]string) { m["internal/genfile"] = []string{"internal/proxy"} }), "against the order"},
 		"a package outside every domain":              {edit(func(m map[string][]string) { m["internal/stray"] = nil }), "belongs to no domain"},
 		"an import outside every domain":              {edit(func(m map[string][]string) { m["internal/dep"] = []string{"internal/stray"} }), "belongs to no domain"},
 		"test support shipped":                        {edit(func(m map[string][]string) { m["internal/dep"] = []string{"internal/testing/gittest"} }), "ships"},
-		"a table entry that does not exist":           {edit(func(m map[string][]string) { delete(m, "internal/mvs") }), "does not exist"},
+		"a table entry that does not exist":           {edit(func(m map[string][]string) { delete(m, "internal/module/mvs") }), "does not exist"},
 		"a package placed twice": {func(d []domain, m map[string][]string) ([]domain, map[string][]string) {
 			d = append([]domain(nil), d...)
 			d[0] = domain{d[0].name, append(append([]string(nil), d[0].packages...), "internal/dep")}
@@ -223,9 +223,9 @@ func TestLayeringRefuses(t *testing.T) {
 	// a level domain reaching below the level ones, a fixture importing
 	// what it fixtures.
 	m := conforming()
-	m["internal/dep"] = []string{"internal/modfile"}
-	m["internal/modfile"] = []string{"internal/archive"}
-	m["internal/modfiles"] = []string{"internal/archive"}
+	m["internal/dep"] = []string{"internal/module/modfile"}
+	m["internal/module/modfile"] = []string{"internal/module/archive"}
+	m["internal/modfiles"] = []string{"internal/module/archive"}
 	m["internal/testing/gittest"] = []string{"internal/dep"}
 	if got := violations(table, m); len(got) != 0 {
 		t.Errorf("the permitted shapes: %q", got)

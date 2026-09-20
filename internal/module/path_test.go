@@ -1,4 +1,4 @@
-package modpath
+package module
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"pgregory.net/rapid"
 )
 
-func TestValidate(t *testing.T) {
+func TestValidatePath(t *testing.T) {
 	good := []string{
 		"a.b/x",
 		"example.com/m",
@@ -20,7 +20,7 @@ func TestValidate(t *testing.T) {
 		"x.io/v1",
 	}
 	for _, p := range good {
-		if err := Validate(p); err != nil {
+		if err := ValidatePath(p); err != nil {
 			t.Errorf("%q rejected: %v", p, err)
 		}
 	}
@@ -54,9 +54,9 @@ func TestValidate(t *testing.T) {
 		{"host dangling dot", "a./x", "empty label"},
 	}
 	for _, tc := range bad {
-		err := Validate(tc.path)
-		if !errors.Is(err, ErrInvalid) {
-			t.Errorf("%s (%q): err = %v, want ErrInvalid", tc.name, tc.path, err)
+		err := ValidatePath(tc.path)
+		if !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("%s (%q): err = %v, want ErrInvalidPath", tc.name, tc.path, err)
 			continue
 		}
 		if !strings.Contains(err.Error(), tc.msg) {
@@ -67,7 +67,7 @@ func TestValidate(t *testing.T) {
 
 // Property: every path assembled from the valid alphabets passes, and
 // corrupting any single position with a forbidden character fails.
-func TestValidateProperty(t *testing.T) {
+func TestValidatePathProperty(t *testing.T) {
 	hostEdge := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 	hostAlpha := []rune("abcdefghijklmnopqrstuvwxyz0123456789-")
 	segAlpha := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_~")
@@ -88,27 +88,27 @@ func TestValidateProperty(t *testing.T) {
 			parts = append(parts, string(rapid.SliceOfN(rapid.SampledFrom(segAlpha), 1, 8).Draw(t, "seg")))
 		}
 		path := strings.Join(parts, "/")
-		if err := Validate(path); err != nil {
+		if err := ValidatePath(path); err != nil {
 			t.Fatalf("constructed path %q rejected: %v", path, err)
 		}
 		// Corrupt one byte with a forbidden character.
 		forbidden := rapid.SampledFrom([]rune{':', '?', '#', ' ', '"', '\'', '\\', '\n'}).Draw(t, "forbidden")
 		pos := rapid.IntRange(0, len(path)-1).Draw(t, "pos")
 		corrupted := path[:pos] + string(forbidden) + path[pos+1:]
-		if err := Validate(corrupted); err == nil {
+		if err := ValidatePath(corrupted); err == nil {
 			t.Fatalf("corrupted path %q accepted", corrupted)
 		}
 	})
 }
 
-func FuzzValidate(f *testing.F) {
+func FuzzValidatePath(f *testing.F) {
 	f.Add("example.com/m")
 	f.Add("")
 	f.Add("https://x.y/z")
 	f.Fuzz(func(t *testing.T, p string) {
 		// Never panics; acceptance implies the structural facts the rest of
 		// the system relies on.
-		if err := Validate(p); err == nil {
+		if err := ValidatePath(p); err == nil {
 			if strings.ContainsAny(p, ":?# \"'\\\n\t") {
 				t.Fatalf("accepted path %q with unsafe character", p)
 			}

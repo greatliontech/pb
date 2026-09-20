@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 // ErrPseudoMismatch is wrapped when a pseudo-version does not bind the

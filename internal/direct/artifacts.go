@@ -10,12 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
-	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/origin"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // This file constructs the direct source's module artifacts from a
@@ -217,7 +219,7 @@ func (r *Repo) ModuleFileBytes(commitHash, subtree string) ([]byte, bool, error)
 		return nil, false, err
 	}
 	for _, e := range entries {
-		if e.path != archive.ModuleFileName {
+		if e.path != module.ModuleFileName {
 			continue
 		}
 		data, err := blobBytes(e.blob)

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 )
 
 // Versions parses the proxy's advisory listing and falls through on

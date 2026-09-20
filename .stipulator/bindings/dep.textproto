@@ -8,7 +8,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.entryPath"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "57baff1d3d83562f5b5ccf150eb8adcf5ccc4342b5c36cc18edb8c1e2afea295"
+  shape_hash: "ee4f12740955b85f3a9f85eabeb6f892e49cba5718a01ae0992d844289a7ca2b"
 }
 
 bindings {
@@ -48,7 +48,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "4c2775352096450a6b6e0392c4cda927840199a6eeb71d4dbfde77047dfeff98"
+  shape_hash: "f63d4871d5fc98282775015eeae0e60d57acecbc6441f54e738e26deb196aae4"
 }
 
 bindings {
@@ -58,7 +58,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.firstUse"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "e02bb667a8b58d37a4e509d8cb054445216de065c8beb7d35658ce76d8326f19"
+  shape_hash: "8c50bbecf421464cf36daaadb750b5f083df14d1b15e1530026b976898c55059"
 }
 
 bindings {
@@ -248,7 +248,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "5bdb3e66afa2ffcf0e7bb4740eac88414a7772e320746e82c2ef066b02a43b59"
+  shape_hash: "09390338f43eb90fabab7128993fdcb92be3e0680fe76ea8a51e03d44d6e6dbd"
 }
 
 bindings {
@@ -256,9 +256,9 @@ bindings {
   content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
   source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lockfile.File.UpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.File.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "081b3498d4afb2b6955d86960f21989d94f9e62098faebbaa9313f91ed18e31b"
+  shape_hash: "eb87d165527e09fa73d74e357137483f7e39277ea9d84748ebb0a0251c8a31cc"
 }
 
 bindings {
@@ -276,7 +276,7 @@ bindings {
   content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
   source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lockfile.TestUpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
-  shape_hash: "c6ca2b861b037403a0035bf44af408eda861feaefbd499cb9afc3d6ca3e926c2"
+  shape_hash: "c1d092f1c1dff57d9670f58b8c896eeb42591adeab1b7517f79e1d0849f3f1c0"
 }

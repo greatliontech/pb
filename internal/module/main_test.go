@@ -1,4 +1,4 @@
-package modpath
+package module
 
 import (
 	"testing"

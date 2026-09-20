@@ -9,7 +9,7 @@ test beside it, chunk 1).
       import edge among pb's packages points down that order, over
       today's packages, subsuming the test-support layering test; the
       stale yamlshape mutation records pruned
-- [ ] 2. module: archive, modpath, version, modfile, mvs, workspace,
+- [x] 2. module: archive, modpath, version, modfile, mvs, workspace,
       lockfile under internal/module, the path rule as the root
       package; bindings and records retargeted
 - [ ] 3. provenance: the tag verifier as the root package, imagesig as

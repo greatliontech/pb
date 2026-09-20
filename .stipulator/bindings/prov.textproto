@@ -158,7 +158,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/modfetch.Client.evaluateProvenance"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fff2c49226c57605a379f3c43d4d5de8bb40d7e7ecf0e7d383f46a8eb5439f5b"
+  shape_hash: "f2246d5011b6b4eeb938ad0b590b2023b3c578567f36e265fefbcd4dd2de6817"
 }
 
 bindings {
@@ -238,7 +238,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "de1ac8e60340cf45e177be449e1a970a9922015c0301a10b7996abb56bce0ab9"
+  shape_hash: "82d23bed1bd2893b8d0b34330941d9efe92067e04668268d5926cd136c3a02c3"
 }
 
 bindings {
@@ -258,7 +258,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/imagesig.Judge"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "901200c766ebfcb0e75154eed82f5b0f6393c086c6fb3dc09e6c18827bbd9879"
+  shape_hash: "e6cec39e8db48a80d96240b3b0774928248d784f332229c6cf1bd913855490de"
 }
 
 bindings {
@@ -278,7 +278,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "de1ac8e60340cf45e177be449e1a970a9922015c0301a10b7996abb56bce0ab9"
+  shape_hash: "82d23bed1bd2893b8d0b34330941d9efe92067e04668268d5926cd136c3a02c3"
 }
 
 bindings {
@@ -398,7 +398,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/imagesig.Judge"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "901200c766ebfcb0e75154eed82f5b0f6393c086c6fb3dc09e6c18827bbd9879"
+  shape_hash: "e6cec39e8db48a80d96240b3b0774928248d784f332229c6cf1bd913855490de"
 }
 
 bindings {
@@ -438,7 +438,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "de1ac8e60340cf45e177be449e1a970a9922015c0301a10b7996abb56bce0ab9"
+  shape_hash: "82d23bed1bd2893b8d0b34330941d9efe92067e04668268d5926cd136c3a02c3"
 }
 
 bindings {

@@ -2,8 +2,8 @@
 // version selection over the workspace's requirement union through the
 // fetch-verify pipeline, and the requirement-graph views the dep verbs
 // render. The driver composes decisions owned elsewhere — workspace
-// membership and locality (internal/workspace), selection
-// (internal/mvs), artifact acquisition and verification
+// membership and locality (internal/module/workspace), selection
+// (internal/module/mvs), artifact acquisition and verification
 // (internal/modfetch) — and adds exactly the wiring the specs place
 // between them: local paths never reach the fetch layer, selection
 // seeds from exactly the declared union, and graph rendering attributes
@@ -18,9 +18,9 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/mvs"
-	"github.com/greatliontech/pb/internal/version"
-	"github.com/greatliontech/pb/internal/workspace"
+	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/module/workspace"
 )
 
 // Driver resolves one workspace's dependency graph. Not safe for

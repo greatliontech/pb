@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // verifyEvidence walks an envelope's evidence objects against the

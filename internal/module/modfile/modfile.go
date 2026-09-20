@@ -16,11 +16,10 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 
 	"github.com/greatliontech/pb/internal/contractfile"
-	"github.com/greatliontech/pb/internal/modpath"
+	"github.com/greatliontech/pb/internal/module"
 )
 
 // ErrInvalid is wrapped by every module-file rejection other than an
@@ -31,11 +30,6 @@ var ErrInvalid = errors.New("invalid module file")
 // from the path the module is required and fetched under
 // (REQ-modfile-identity).
 var ErrIdentityMismatch = errors.New("module identity mismatch")
-
-// ModuleFileName is the module file's name at the module root. The
-// name is the module-archive contract's term and lives with the
-// archive layer; this alias keeps the module-file domain's spelling.
-const ModuleFileName = archive.ModuleFileName
 
 // File is a parsed module file: the module path and the declared
 // dependencies (module path -> minimum required version).
@@ -52,10 +46,10 @@ type File struct {
 // the root module file decides; a module file deeper in the tree belongs
 // to a nested module, whose exclusion is the archive contract's concern.
 func FromFileSet(required string, files map[string][]byte) (*File, error) {
-	if err := modpath.Validate(required); err != nil {
+	if err := module.ValidatePath(required); err != nil {
 		return nil, err
 	}
-	data, ok := files[ModuleFileName]
+	data, ok := files[module.ModuleFileName]
 	if !ok {
 		return &File{Module: required}, nil
 	}
@@ -136,14 +130,14 @@ func validate(f *File) error {
 	if f.Module == "" {
 		return fmt.Errorf("%w: missing module key", ErrInvalid)
 	}
-	if err := modpath.Validate(f.Module); err != nil {
+	if err := module.ValidatePath(f.Module); err != nil {
 		return fmt.Errorf("%w: module: %v", ErrInvalid, err)
 	}
 	if f.Deps != nil && len(f.Deps) == 0 {
 		return fmt.Errorf("%w: deps must be a non-empty mapping", ErrInvalid)
 	}
 	for p, v := range f.Deps {
-		if err := modpath.Validate(p); err != nil {
+		if err := module.ValidatePath(p); err != nil {
 			return fmt.Errorf("%w: dep: %v", ErrInvalid, err)
 		}
 		if err := checkVersion(v); err != nil {

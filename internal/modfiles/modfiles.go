@@ -16,11 +16,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/modfile"
-	"github.com/greatliontech/pb/internal/mvs"
-	"github.com/greatliontech/pb/internal/version"
-	"github.com/greatliontech/pb/internal/workspace"
+	"github.com/greatliontech/pb/internal/module"
+
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/module/workspace"
 )
 
 // Module is one module's protobuf file set: include-root-relative
@@ -82,7 +83,7 @@ func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, error) {
 		}
 		if d.IsDir() {
 			if p != base {
-				if _, err := fs.Stat(fsys, path.Join(p, modfile.ModuleFileName)); err == nil {
+				if _, err := fs.Stat(fsys, path.Join(p, module.ModuleFileName)); err == nil {
 					return fs.SkipDir
 				}
 			}

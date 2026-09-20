@@ -10,12 +10,14 @@ import (
 	"path"
 	"slices"
 
-	"github.com/greatliontech/pb/internal/archive"
-	"github.com/greatliontech/pb/internal/lockfile"
+	"github.com/greatliontech/pb/internal/module"
+
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/modfile"
+	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/version"
 )
 
 // PluginUpdater re-resolves a pinned oci plugin reference and rewrites
@@ -154,7 +156,7 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		if err != nil {
 			return err
 		}
-		if err := writeFile(s.WS, path.Join(s.Root.Dir, m.Dir, modfile.ModuleFileName), b); err != nil {
+		if err := writeFile(s.WS, path.Join(s.Root.Dir, m.Dir, module.ModuleFileName), b); err != nil {
 			return err
 		}
 	}
@@ -204,7 +206,7 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 			continue
 		}
 		if pin.Modfile != "" {
-			mb, has, err := archive.ZipFile(bytes.NewReader(b), int64(len(b)), archive.ModuleFileName)
+			mb, has, err := archive.ZipFile(bytes.NewReader(b), int64(len(b)), module.ModuleFileName)
 			if err != nil || !has {
 				mismatches = append(mismatches, fmt.Sprintf("%s@%s: pinned module file missing from cached archive", pin.Path, pin.Version))
 				continue

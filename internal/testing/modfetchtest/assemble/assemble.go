@@ -9,8 +9,8 @@ package assemble
 
 import (
 	"github.com/go-git/go-billy/v6/memfs"
-	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
+	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 )
 

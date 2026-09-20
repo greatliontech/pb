@@ -10,7 +10,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/greatliontech/pb/internal/modfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 	"pgregory.net/rapid"
 )

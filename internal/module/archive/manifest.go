@@ -16,6 +16,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/greatliontech/pb/internal/module"
 )
 
 // ManifestHeader is the first line of every canonical manifest; it is part of
@@ -29,12 +31,6 @@ const DigestPrefix = "pb1:"
 // MaxTotalSize is the file-set content size limit in bytes; a file set whose
 // total content size exceeds it is rejected (REQ-archive-size-limit).
 const MaxTotalSize int64 = 500 << 20
-
-// ModuleFileName is the module file's name at the module root — the
-// module-archive contract's "module file" term; the schema is
-// internal/modfile's domain and pb.yaml declared anywhere strictly
-// below the root invalidates the file set (REQ-archive-nested-module).
-const ModuleFileName = "pb.yaml"
 
 // File-set validation failure classes. Every validation error wraps exactly
 // one of these.
@@ -128,7 +124,7 @@ func ValidateFileSet(files []FileInfo) error {
 		// through here, so the nested-module invariant has one home
 		// (REQ-archive-nested-module). The root's own module file is
 		// the declared-module case, not nesting.
-		if strings.HasSuffix(f.Path, "/"+ModuleFileName) {
+		if strings.HasSuffix(f.Path, "/"+module.ModuleFileName) {
 			return fmt.Errorf("%w: %q (repositories host modules as disjoint subtrees, never nested)", ErrNestedModule, f.Path)
 		}
 		fold := caseFold(f.Path)

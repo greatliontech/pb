@@ -9,7 +9,7 @@ import (
 
 	"pgregory.net/rapid"
 
-	"github.com/greatliontech/pb/internal/version"
+	"github.com/greatliontech/pb/internal/module/version"
 )
 
 func TestEscapeGolden(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greatliontech/pb/internal/archive"
+	"github.com/greatliontech/pb/internal/module/archive"
 	"pgregory.net/rapid"
 )
 
