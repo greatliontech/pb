@@ -18,7 +18,7 @@ while the tree does another.
 | proto | generation.md (the compile half), module-resolution.md (the import satisfaction half) | `proto/modfiles`, `proto/compile`, `proto/importcheck` |
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
-| check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/lint`, `check/lintfile` |
+| check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
 | driver | module-resolution.md | `resolve` |
 | verbs | dep-verbs.md | `dep`, `cmd/pb` |
 

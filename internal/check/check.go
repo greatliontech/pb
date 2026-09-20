@@ -94,3 +94,28 @@ func ProvidesEnvironment(v int) bool {
 	}
 	return false
 }
+
+// Finding is one rule's false verdict (REQ-rules-verdict), located per
+// REQ-rules-finding-location: Line and Column 1-based, the column in
+// code points; Line zero for a finding without a position (a package
+// rule's, at the package's first checked file); Path empty for a
+// finding without a location (a set rule's); Base for a finding in
+// the comparison base, a pair whose new side is absent.
+type Finding struct {
+	RuleID   string
+	Severity Severity
+	Message  string
+	Path     string
+	Line     int
+	Column   int
+	Base     bool
+}
+
+// Report is a check run's outcome: the findings in evaluation order —
+// rules in the order given, entities in population order — and the
+// number of rules enabled, the ones given (REQ-rules-no-defaults:
+// zero rules, zero findings).
+type Report struct {
+	Findings []Finding
+	Rules    int
+}

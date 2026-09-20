@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-break-base-materialized"
-reason: "the check domain is specced and not yet built"
-content_hash: "2363e3ca2ed18515d0aae3e3cdb5cde2f17a12612dd2c22e39f1d30c7d429aea"
-source_hash: "23c5d0669bd18d44a0be2f22c335c42cf52f14af1e5b99c0c7254187f6934043"
-lands { manual { condition: "breaking alignment and the base are built" } }
+reason: "the base is materialized; compiling it in place of the module under check with the build resolving its imports is the breaking verb"
+content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+lands { manual { condition: "the breaking verb assembles the base into the build" } }

@@ -1,13 +1,15 @@
-// Package lint evaluates lint rules over a checked schema
-// (check-rules.md): each rule compiled under environment 1, bound to
-// every entity of its target in the checked files, and a false
-// verdict turned into one finding at the entity's declaration —
-// unless a suppression comment on the flagged line or the line
-// before names the rule. Positions are the compiler's source
-// locations recounted in code points against the source text, which
-// the suppression check reads too, so a checked file's source is
-// what the evaluation needs beside the schema.
-package lint
+// Package eval evaluates rules over a checked schema (check-rules.md):
+// each rule compiled under environment 1 and bound to its population
+// — a lint rule to every entity of its target in the checked files, a
+// breaking rule to every aligned pair — and a false verdict turned
+// into one finding at the entity's declaration, unless a suppression
+// comment on the flagged line or the line before names the rule.
+// Positions are the compiler's source locations recounted in code
+// points against the source text, which the suppression check reads
+// too, so a checked file's source is what the evaluation needs beside
+// the schema; a finding in the comparison base is located in the
+// base's text and suppressed by configuration alone.
+package eval
 
 import (
 	"errors"
@@ -23,59 +25,75 @@ import (
 // ErrSource is wrapped when a checked file's source cannot be read.
 var ErrSource = errors.New("source unavailable")
 
-// Finding is one rule's false verdict (REQ-rules-verdict), located
-// per REQ-rules-finding-location: Line and Column 1-based, the column
-// in code points; Line zero for a finding without a position (a
-// package rule's, at the package's first checked file); Path empty
-// for a finding without a location (a set rule's).
-type Finding struct {
-	RuleID   string
-	Severity check.Severity
-	Message  string
-	Path     string
-	Line     int
-	Column   int
-}
-
-// Report is a run's outcome: the findings in evaluation order — rules
-// in the order given, entities in population order — and the number
-// of rules enabled, the ones given (REQ-rules-no-defaults: zero rules,
-// zero findings).
-type Report struct {
-	Findings []Finding
-	Rules    int
-}
-
 // Source reads a checked file's source by its path.
 type Source func(path string) ([]byte, error)
 
-// Run evaluates the rules over the checked files, by path, of the set
-// under the environment. A rule that fails to
-// compile or to evaluate fails the run naming it; a source that
-// cannot be read fails the run naming the file.
-func Run(env *env1.Env, set *env1.Set, checked []string, source Source, rs []rules.Rule) (*Report, error) {
-	r := &Report{Rules: len(rs), Findings: []Finding{}}
-	sources := map[string]*text{}
-	textOf := func(path string) (*text, error) {
-		if t := sources[path]; t != nil {
+// Lint evaluates lint rules over the checked files, by path, of the
+// environment's set. A rule that fails to compile or to evaluate
+// fails the run naming it; a source that cannot be read fails the
+// run naming the file.
+func Lint(env *env1.Env, checked []string, source Source, rs []rules.Rule) (*check.Report, error) {
+	set, _ := env.Sides()
+	return run(env, source, nil, rs, func(t check.Target) ([]env1.Binding, error) { return set.Population(t, checked) })
+}
+
+// Breaking evaluates breaking rules over the pairs the two sides'
+// checked files align (REQ-break-pairing), the sides the
+// environment's: a finding sits at the new side's declaration, or at
+// the old side's in the base where the new side is absent — located
+// in the base's text, marked, and suppressed by configuration alone.
+func Breaking(env *env1.Env, oldChecked, newChecked []string, source, baseSource Source, rs []rules.Rule) (*check.Report, error) {
+	new, old := env.Sides()
+	if old == nil {
+		// A lint environment has no old side; a lint rule among the
+		// given would compile under it and pair against nothing.
+		return nil, errors.New("breaking evaluation needs an environment over two sides")
+	}
+	return run(env, source, baseSource, rs, func(t check.Target) ([]env1.Binding, error) { return env1.Pairs(t, old, new, oldChecked, newChecked) })
+}
+
+// textKey names a source: its path on one side.
+type textKey struct {
+	base bool
+	path string
+}
+
+// run is the evaluation every kind shares: each rule compiled and
+// bound to its population — drawn once per target — a false verdict
+// a finding located and, off the base, judged for suppression.
+func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population func(check.Target) ([]env1.Binding, error)) (*check.Report, error) {
+	r := &check.Report{Rules: len(rs), Findings: []check.Finding{}}
+	texts := map[textKey]*text{}
+	textOf := func(path string, base bool) (*text, error) {
+		k := textKey{base, path}
+		if t := texts[k]; t != nil {
 			return t, nil
 		}
-		data, err := source(path)
+		read := source
+		if base {
+			read = baseSource
+		}
+		data, err := read(path)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s: %v", ErrSource, path, err)
 		}
 		t := newText(data)
-		sources[path] = t
+		texts[k] = t
 		return t, nil
 	}
+	populations := map[check.Target][]env1.Binding{}
 	for _, rule := range rs {
 		prg, err := env.Compile(rule)
 		if err != nil {
 			return nil, err
 		}
-		bindings, err := set.Population(rule.Target, checked)
-		if err != nil {
-			return nil, err
+		bindings, drawn := populations[rule.Target]
+		if !drawn {
+			bindings, err = population(rule.Target)
+			if err != nil {
+				return nil, err
+			}
+			populations[rule.Target] = bindings
 		}
 		for _, b := range bindings {
 			ok, err := prg.Eval(b.Vars)
@@ -85,16 +103,17 @@ func Run(env *env1.Env, set *env1.Set, checked []string, source Source, rs []rul
 			if ok {
 				continue
 			}
-			f := Finding{RuleID: rule.ID, Severity: rule.Severity, Message: rule.Message, Path: b.Path}
-			if b.Desc != nil {
-				t, err := textOf(b.Path)
+			base := b.Base
+			f := check.Finding{RuleID: rule.ID, Severity: rule.Severity, Message: rule.Message, Path: b.Path, Base: base}
+			if desc := b.Located(); desc != nil {
+				t, err := textOf(b.Path, base)
 				if err != nil {
 					return nil, err
 				}
-				loc := b.Desc.ParentFile().SourceLocations().ByDescriptor(b.Desc)
+				loc := desc.ParentFile().SourceLocations().ByDescriptor(desc)
 				f.Line = loc.StartLine + 1
 				f.Column = t.column(loc.StartLine, loc.StartColumn)
-				if t.suppresses(f.Line, rule.ID) {
+				if !base && t.suppresses(f.Line, rule.ID) {
 					continue
 				}
 			}

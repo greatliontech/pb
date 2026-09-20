@@ -218,7 +218,9 @@ workspace and can see through its imports.
 entity pairs aligned by the engine: files pair by import path;
 packages, messages, enums, services, methods and extensions by
 fully-qualified name; fields and enum values by number within their
-paired parent; oneofs by name within their paired message; an entity
+paired parent — where either side holds several values of one enum
+at one number, aliases, the values at that number by name among
+them; oneofs by name within their paired message; an entity
 present on one side only forms a pair with an absent side, and a
 `set` rule evaluates once over the two sides. Rules see the pair;
 rules never walk the diff.
@@ -230,16 +232,21 @@ made from the one `breaking.base` form.
 **REQ-break-base** (behavior): The comparison base MUST come from the
 lint file's `breaking.base`, one form of the three: a git reference,
 a tagged version, or the version the lockfile pins for the module
-under check.
+under check — the highest, where the pin store holds the module at
+more than one.
 
 **REQ-break-base-materialized** (behavior): The base MUST be
 materialized as a module and compiled by the same compiler as the
-checked schema before pairing: a git reference from the git repository
-the workspace root lies in, at that reference, at the module's
-directory relative to that repository's root as it lies now; a tagged
-version and the pinned version as the module's own path at that
-version, acquired, verified and pinned as any dependency
-(`module-resolution.md`, `module-lockfile.md`). A base that cannot be
+checked schema before pairing — its files in place of the module
+under check's, the build's other modules resolving its imports: a
+git reference from the git repository the workspace root lies in, at
+that reference, at the module's directory relative to that
+repository's root as it lies now, a nested module's directory — one
+holding a module file at that reference — excluded as the working
+tree's walk excludes one; a tagged version and the pinned
+version as the module's own path at that version, acquired, verified
+and pinned as any dependency (`module-resolution.md`,
+`module-lockfile.md`). A base that cannot be
 materialized — a workspace root in no git repository, a reference or
 directory the repository lacks, a version the module's origin does not
 serve, a module the lockfile does not pin — fails `pb breaking` naming
@@ -277,9 +284,9 @@ trailing comment on the preceding declaration's line suppresses that
 declaration's findings, never the next one's; a `//` inside a string
 literal or a block comment opens no line comment, and a block comment
 suppresses nothing; the rule id is mandatory, and no comment form
-suppresses more than the named rule;
-a finding without a position has no line to carry the comment, and
-is suppressed by configuration alone.
+suppresses more than the named rule; a finding without a position has
+no line to carry the comment, and a finding in the comparison base no
+working-tree line, and each is suppressed by configuration alone.
 
 **REQ-lint-rulesets-declared** (behavior): Each module path the lint
 file's `rulesets` names MUST be a module of the build — a dependency

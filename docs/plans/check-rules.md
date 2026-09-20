@@ -16,7 +16,7 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
 - [x] 5. The lint file: rulesets, selection, severities, path
       ignores; rulesets read from the build and a bad rule file named
       with its ruleset, tidy keeping them
-- [ ] 6. Breaking: the pairing, oneofs and extensions included; the
+- [x] 6. Breaking: the pairing, oneofs and extensions included; the
       base's three forms materialized and compiled
 - [ ] 7. The verbs: `pb lint` and `pb breaking` with the command's
       assembly

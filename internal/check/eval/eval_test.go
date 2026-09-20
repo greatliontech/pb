@@ -1,4 +1,4 @@
-package lint
+package eval
 
 import (
 	"errors"
@@ -62,18 +62,22 @@ func fixtureEnv(t testing.TB) (*env1.Env, *env1.Set) {
 	return env, set
 }
 
-func fixtureRun(t testing.TB, rs []rules.Rule, checked ...string) (*Report, error) {
+func fixtureRun(t testing.TB, rs []rules.Rule, checked ...string) (*check.Report, error) {
 	t.Helper()
-	env, set := fixtureEnv(t)
-	return Run(env, set, checked, prototest.Source(fixture), rs)
+	env, _ := fixtureEnv(t)
+	return Lint(env, checked, prototest.Source(fixture), rs)
 }
 
 var fieldNames = rules.Rule{ID: "FIELD_NAMES", Kind: check.KindLint, Target: check.TargetField, Severity: check.SeverityError, CEL: "case(field.name, 'snake') == field.name", Message: "field names are snake_case"}
 
-func lines(r *Report) []string {
+func lines(r *check.Report) []string {
 	var out []string
 	for _, f := range r.Findings {
-		out = append(out, fmt.Sprintf("%s:%d:%d %s %s: %s", f.Path, f.Line, f.Column, f.Severity, f.RuleID, f.Message))
+		base := ""
+		if f.Base {
+			base = " [base]"
+		}
+		out = append(out, fmt.Sprintf("%s:%d:%d %s %s: %s%s", f.Path, f.Line, f.Column, f.Severity, f.RuleID, f.Message, base))
 	}
 	return out
 }
@@ -186,11 +190,11 @@ func TestRunRefusals(t *testing.T) {
 	set := rules.Rule{ID: "S", Kind: check.KindLint, Target: check.TargetSet, Severity: check.SeverityError, CEL: "false", Message: "m"}
 	fileRule := rules.Rule{ID: "F", Kind: check.KindLint, Target: check.TargetFile, Severity: check.SeverityError, CEL: "false", Message: "m"}
 	noSource := func(string) ([]byte, error) { return nil, errors.New("gone") }
-	env, setv := fixtureEnv(t)
-	if r, err := Run(env, setv, []string{"p/two.proto"}, noSource, []rules.Rule{set}); err != nil || len(r.Findings) != 1 {
+	env, _ := fixtureEnv(t)
+	if r, err := Lint(env, []string{"p/two.proto"}, noSource, []rules.Rule{set}); err != nil || len(r.Findings) != 1 {
 		t.Fatalf("positionless without source: %+v %v", r, err)
 	}
-	if _, err := Run(env, setv, []string{"p/two.proto"}, noSource, []rules.Rule{fileRule}); err == nil || !errors.Is(err, ErrSource) {
+	if _, err := Lint(env, []string{"p/two.proto"}, noSource, []rules.Rule{fileRule}); err == nil || !errors.Is(err, ErrSource) {
 		t.Fatalf("positioned without source: %v", err)
 	}
 }
@@ -277,5 +281,62 @@ func TestLineComment(t *testing.T) {
 		if ignores(comment, "X") != want {
 			t.Errorf("%q: %v", comment, !want)
 		}
+	}
+}
+
+// Breaking rules evaluate over the aligned pairs: a finding sits at
+// the new side's declaration and a suppression comment there drops
+// it; where the new side is absent the finding sits in the base's
+// text, marked, and no comment there suppresses it; a set rule's has
+// no location (REQ-break-pairing, REQ-rules-finding-location,
+// REQ-lint-suppression).
+func TestBreaking(t *testing.T) {
+	newSrc := map[string]string{
+		"p/one.proto": "syntax = \"proto3\";\npackage p;\nmessage M {\n  string kept = 1;\n  int32 renamed = 2; // pb:ignore FIELD_TYPE\n  int32 changed = 3;\n}\n",
+	}
+	oldSrc := map[string]string{
+		"p/one.proto": "syntax = \"proto3\";\npackage p;\nmessage M {\n  string kept = 1;\n  string before = 2;\n  string changed = 3;\n  // pb:ignore FIELD_GONE\n  string gone = 4;\n}\nmessage Removed {}\n",
+	}
+	newSet, oldSet := env1.NewSet(prototest.Compile(t, newSrc)), env1.NewSet(prototest.Compile(t, oldSrc))
+	env, err := env1.New(newSet, oldSet)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs := []rules.Rule{
+		{ID: "FIELD_TYPE", Kind: check.KindBreaking, Target: check.TargetField, Severity: check.SeverityError, CEL: "old == null || new == null || old.type == new.type", Message: "type changed"},
+		{ID: "FIELD_GONE", Kind: check.KindBreaking, Target: check.TargetField, Severity: check.SeverityError, CEL: "new != null", Message: "field removed"},
+		{ID: "MESSAGE_GONE", Kind: check.KindBreaking, Target: check.TargetMessage, Severity: check.SeverityWarning, CEL: "new != null", Message: "message removed"},
+		{ID: "SET", Kind: check.KindBreaking, Target: check.TargetSet, Severity: check.SeverityError, CEL: "oldFiles.size() == newFiles.size() + 1", Message: "set"},
+	}
+	r, err := Breaking(env, []string{"p/one.proto"}, []string{"p/one.proto"}, prototest.Source(newSrc), prototest.Source(oldSrc), rs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"p/one.proto:6:3 error FIELD_TYPE: type changed",
+		"p/one.proto:8:3 error FIELD_GONE: field removed [base]",
+		"p/one.proto:10:1 warning MESSAGE_GONE: message removed [base]",
+		":0:0 error SET: set",
+	}
+	if got := lines(r); strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("findings:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	// A lint environment has no old side: refused before any rule
+	// compiles, a lint rule included.
+	lintEnv, err := env1.New(newSet, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lintRule := rules.Rule{ID: "L", Kind: check.KindLint, Target: check.TargetField, Severity: check.SeverityError, CEL: "true", Message: "m"}
+	if _, err := Breaking(lintEnv, nil, []string{"p/one.proto"}, prototest.Source(newSrc), prototest.Source(oldSrc), []rules.Rule{lintRule}); err == nil || !strings.Contains(err.Error(), "two sides") {
+		t.Fatalf("a lint environment evaluated under breaking: %v", err)
+	}
+	// The base's text is read for a base-located finding alone.
+	noBase := func(string) ([]byte, error) { return nil, errors.New("no base text") }
+	if _, err := Breaking(env, []string{"p/one.proto"}, []string{"p/one.proto"}, prototest.Source(newSrc), noBase, rs[1:2]); err == nil || !errors.Is(err, ErrSource) {
+		t.Fatalf("base text unreadable: %v", err)
+	}
+	if r, err := Breaking(env, []string{"p/one.proto"}, []string{"p/one.proto"}, prototest.Source(newSrc), noBase, rs[:1]); err != nil || len(r.Findings) != 1 {
+		t.Fatalf("new-side finding without base text: %+v %v", r, err)
 	}
 }

@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strconv"
 
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
@@ -243,6 +244,10 @@ func New(newSide, oldSide *Set) (*Env, error) {
 	return e, nil
 }
 
+// Sides is the environment's new side and, for a breaking
+// environment, its old side (nil for a lint environment).
+func (e *Env) Sides() (newSide, oldSide *Set) { return e.new, e.old }
+
 // Binding names (REQ-env1-bindings): a package rule's name is `pkg`,
 // `package` being a reserved word of CEL.
 const (
@@ -424,16 +429,33 @@ func (e *Env) entityArg(v ref.Val) (*entry, ref.Val) {
 	return en, nil
 }
 
-// Binding is one member of a lint target's population: the variables
-// a rule of that target sees, and the declaration bound — nil for a
-// package or the set — with the path a finding names: the entity's
-// file, a package's first checked file in path order, none for the
-// set.
+// Binding is one member of a rule's population: the variables a rule
+// of that target sees, the declarations bound — the new side's, the
+// checked schema's for a lint rule, and for a breaking pair the old
+// side's too, nil where absent, both nil for a package or the set —
+// and the path a finding names: the entity's file, a package's first
+// checked file in path order, none for the set.
 type Binding struct {
 	Vars map[string]any
-	Desc protoreflect.Descriptor
+	New  protoreflect.Descriptor
+	Old  protoreflect.Descriptor
 	Path string
+	// Base marks a pair whose new side is absent: its finding lies in
+	// the comparison base. A package pair binds no descriptor, so the
+	// mark is stated rather than derived.
+	Base bool
 }
+
+// Located is the declaration a finding is located at: the new side's,
+// or the old side's in the base where the new side is absent; nil for
+// a package or the set.
+func (b Binding) Located() protoreflect.Descriptor {
+	if b.New != nil {
+		return b.New
+	}
+	return b.Old
+}
+
 
 // Population lists a lint target's bindings over the checked files,
 // given by path, taken once each in path order (REQ-env1-population):
@@ -501,10 +523,41 @@ func populateEntities(t check.Target, files []*fileEntry, each func(*fileEntry, 
 	name := EntityBinding(t)
 	for _, f := range files {
 		each(f, func(d protoreflect.Descriptor) {
-			out = append(out, Binding{Vars: map[string]any{name: f.set.entryOf(d).msg, BindFile: f.proto}, Desc: d, Path: f.fd.Path()})
+			out = append(out, Binding{Vars: map[string]any{name: f.set.entryOf(d).msg, BindFile: f.proto}, New: d, Path: f.fd.Path()})
 		})
 	}
 	return out
+}
+
+// sideValue is a side's binding value, nil for an absent side.
+func sideValue(b *Binding, name string) any {
+	if b == nil {
+		return nil
+	}
+	return b.Vars[name]
+}
+
+// pairPackage binds a package pair: the names and the file lists.
+func pairPackage(old, new *Binding) map[string]any {
+	return map[string]any{
+		BindOldPkg: sideValue(old, BindPackage), BindNewPkg: sideValue(new, BindPackage),
+		BindOldFiles: sideValue(old, BindFiles), BindNewFiles: sideValue(new, BindFiles),
+	}
+}
+
+// pairEntity binds an entity pair: the two forms of the entity and,
+// for every target but file, of its file.
+func pairEntity(t check.Target) func(old, new *Binding) map[string]any {
+	return func(old, new *Binding) map[string]any {
+		if t == check.TargetFile {
+			return map[string]any{BindOld: sideValue(old, BindFile), BindNew: sideValue(new, BindFile)}
+		}
+		name := EntityBinding(t)
+		return map[string]any{
+			BindOld: sideValue(old, name), BindNew: sideValue(new, name),
+			BindOldFile: sideValue(old, BindFile), BindNewFile: sideValue(new, BindFile),
+		}
+	}
 }
 
 // eachMessage visits every bound message of the file, nested ones
@@ -528,16 +581,18 @@ func eachService(f *fileEntry, visit func(protoreflect.ServiceDescriptor)) {
 }
 
 // targets is the one table over the targets: the descriptor proto
-// type a lint rule's entity binds and the walk yielding each entity
-// of the kind in a file — or, for the two targets binding no entity,
-// how their population is drawn.
+// type a lint rule's entity binds, the walk yielding each entity of
+// the kind in a file — or, for the two targets binding no entity, how
+// their population is drawn — and the breaking pair's bindings from
+// each side's own (nil for an entity target: the entity pair's).
 var targets = map[check.Target]struct {
 	typ      *cel.Type
 	each     func(*fileEntry, func(protoreflect.Descriptor))
 	populate func([]*fileEntry) []Binding
+	pair     func(old, new *Binding) map[string]any
 }{
 	check.TargetSet:     {populate: populateSet},
-	check.TargetPackage: {populate: populatePackages},
+	check.TargetPackage: {populate: populatePackages, pair: pairPackage},
 	check.TargetFile: {typ: fileType, each: func(f *fileEntry, bind func(protoreflect.Descriptor)) {
 		bind(f.fd)
 	}},
@@ -587,10 +642,137 @@ var targets = map[check.Target]struct {
 	}},
 }
 
+func init() {
+	for t, row := range targets {
+		if row.pair == nil {
+			row.pair = pairEntity(t)
+			targets[t] = row
+		}
+	}
+}
+
 func fileProtos(files []*fileEntry) []*descriptorpb.FileDescriptorProto {
 	out := make([]*descriptorpb.FileDescriptorProto, len(files))
 	for i, f := range files {
 		out[i] = f.proto
 	}
 	return out
+}
+
+// Pairs aligns a breaking target's entities across the old and new
+// sides' checked files (REQ-break-pairing): files by path; packages,
+// messages, enums, services, methods and extensions by fully
+// qualified name; fields and enum values by number within their
+// paired parent — enum values sharing a number, aliases, by name
+// among them; oneofs by name within their paired message; an entity
+// on one side alone paired with an absent side; the set once over the
+// two sides. Pairs come in the new side's order, then the old side's
+// for entities the new side lacks.
+func Pairs(t check.Target, old, new *Set, oldChecked, newChecked []string) ([]Binding, error) {
+	oldSide, err := old.Population(t, oldChecked)
+	if err != nil {
+		return nil, err
+	}
+	newSide, err := new.Population(t, newChecked)
+	if err != nil {
+		return nil, err
+	}
+	if t == check.TargetSet {
+		return []Binding{{Vars: map[string]any{BindOldFiles: oldSide[0].Vars[BindFiles], BindNewFiles: newSide[0].Vars[BindFiles]}}}, nil
+	}
+	type side struct{ old, new *Binding }
+	var slots []*side
+	byKey := map[string]*side{}
+	oldKeys, newKeys := pairKeys(t, oldSide, newSide)
+	for i, k := range newKeys {
+		s := &side{new: &newSide[i]}
+		slots = append(slots, s)
+		if _, taken := byKey[k]; !taken {
+			byKey[k] = s
+		}
+	}
+	for i, k := range oldKeys {
+		// An occupied slot is never overwritten: a counterpart joins
+		// its pair, anything else stands alone.
+		if s, ok := byKey[k]; ok && s.old == nil {
+			s.old = &oldSide[i]
+			continue
+		}
+		slots = append(slots, &side{old: &oldSide[i]})
+	}
+	out := make([]Binding, 0, len(slots))
+	for _, s := range slots {
+		b := Binding{Vars: targets[t].pair(s.old, s.new)}
+		if s.new != nil {
+			b.New, b.Path = s.new.New, s.new.Path
+		}
+		if s.old != nil {
+			b.Old = s.old.New
+			if s.new == nil {
+				b.Path, b.Base = s.old.Path, true
+			}
+		}
+		out = append(out, b)
+	}
+	return out, nil
+}
+
+// pairKeys is what aligns each side's entities with their
+// counterparts: a file's path, a package's name, a field's number
+// within its parent's full name, an enum value's number within its
+// enum's — and, where either side has several values of one enum at
+// one number, the name among them — a oneof's name within its
+// message's, any other's full name.
+func pairKeys(t check.Target, oldSide, newSide []Binding) (oldKeys, newKeys []string) {
+	key := func(b Binding) string {
+		d := b.Located()
+		switch t {
+		case check.TargetPackage:
+			return b.Vars[BindPackage].(string)
+		case check.TargetFile:
+			return b.Path
+		case check.TargetField:
+			fd := d.(protoreflect.FieldDescriptor)
+			return string(fd.ContainingMessage().FullName()) + "#" + strconv.Itoa(int(fd.Number()))
+		case check.TargetEnumValue:
+			vd := d.(protoreflect.EnumValueDescriptor)
+			return string(vd.Parent().FullName()) + "#" + strconv.Itoa(int(vd.Number()))
+		case check.TargetOneof:
+			return string(d.Parent().FullName()) + "/" + string(d.Name())
+		}
+		return string(d.FullName())
+	}
+	keysOf := func(side []Binding) []string {
+		keys := make([]string, len(side))
+		for i, b := range side {
+			keys[i] = key(b)
+		}
+		return keys
+	}
+	oldKeys, newKeys = keysOf(oldSide), keysOf(newSide)
+	if t != check.TargetEnumValue {
+		return oldKeys, newKeys
+	}
+	// Aliases: a number that either side holds several values at
+	// pairs its values by name on both sides.
+	aliased := map[string]bool{}
+	for _, keys := range [][]string{oldKeys, newKeys} {
+		count := map[string]int{}
+		for _, k := range keys {
+			count[k]++
+			if count[k] > 1 {
+				aliased[k] = true
+			}
+		}
+	}
+	name := func(side []Binding, keys []string) {
+		for i, k := range keys {
+			if aliased[k] {
+				keys[i] = k + "/" + string(side[i].Located().Name())
+			}
+		}
+	}
+	name(oldSide, oldKeys)
+	name(newSide, newKeys)
+	return oldKeys, newKeys
 }

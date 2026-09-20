@@ -26,6 +26,19 @@ const ModuleFileName = "pb.yaml"
 // carries them beside the protobuf files.
 const RuleFileSuffix = ".rules.yaml"
 
+// ProtoFileSuffix names a protobuf file: every file so named under a
+// module's root, at any depth outside a nested module, is one of the
+// module's files.
+const ProtoFileSuffix = ".proto"
+
+// IsProtoFile and IsRuleFile judge a file by its name — the one
+// predicate every walk over a module's files applies, from the
+// working tree, an archive, or a repository's tree alike.
+func IsProtoFile(name string) bool { return strings.HasSuffix(name, ProtoFileSuffix) }
+
+// IsRuleFile reports whether a file name names a rule file.
+func IsRuleFile(name string) bool { return strings.HasSuffix(name, RuleFileSuffix) }
+
 // ErrInvalidPath is wrapped by every module-path rejection.
 var ErrInvalidPath = errors.New("invalid module path")
 

@@ -64,9 +64,9 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		files, rules := map[string][]byte{}, map[string][]byte{}
 		for p, content := range all {
 			switch {
-			case strings.HasSuffix(p, ".proto"):
+			case module.IsProtoFile(p):
 				files[p] = content
-			case strings.HasSuffix(p, module.RuleFileSuffix):
+			case module.IsRuleFile(p):
 				rules[p] = content
 			}
 		}
@@ -95,8 +95,8 @@ func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, map[string][]by
 		}
 		into := files
 		switch {
-		case strings.HasSuffix(p, ".proto"):
-		case strings.HasSuffix(p, module.RuleFileSuffix):
+		case module.IsProtoFile(p):
+		case module.IsRuleFile(p):
 			into = rules
 		default:
 			return nil

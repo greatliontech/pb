@@ -405,10 +405,11 @@ func Select(f *File, sets []Ruleset) ([]rules.Rule, error) {
 	return out, nil
 }
 
-// String spells a base for messages: its form and value.
+// String spells a base for messages: its form and, where one is
+// known, its value — the pinned form's once resolved.
 func (b Base) String() string {
-	if b.Form == BasePinned {
-		return string(BasePinned)
+	if b.Value == "" {
+		return string(b.Form)
 	}
 	return string(b.Form) + " " + b.Value
 }

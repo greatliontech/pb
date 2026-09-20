@@ -3,42 +3,42 @@
 
 bindings {
   requirement_id: "REQ-lint-suppression"
-  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
-  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  content_hash: "879093be5f1b0fc4f355158d017c581caf7dcaafb5838d12fe4fb99e2be76ea0"
+  source_hash: "5171124f52962773c019ed5082b4a84bc8d1b0e4e4b8d1f5f17d76292111409f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/lint.text.suppresses"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.text.suppresses"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "528d17a93a8fc481acedca2de85a0bcb83f05f26287274e1a50b3add57bcb74a"
+  shape_hash: "e4d11d27eca2093a567d03eb3d98e430dda47cfb4a8a033fee9e064595a3b4b7"
 }
 
 bindings {
   requirement_id: "REQ-lint-suppression"
-  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
-  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  content_hash: "879093be5f1b0fc4f355158d017c581caf7dcaafb5838d12fe4fb99e2be76ea0"
+  source_hash: "5171124f52962773c019ed5082b4a84bc8d1b0e4e4b8d1f5f17d76292111409f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/lint.TestFindings"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.TestFindings"
   role: BINDING_ROLE_TESTS
-  shape_hash: "bdf46945b3ff71b7f16322f8a000cea24a7f5dc8338b7597bbc5e806c448da1a"
+  shape_hash: "1c6c8924782a67a833002e131e4754888dfc3c918b89a130998b47cd7ce748d7"
 }
 
 bindings {
   requirement_id: "REQ-lint-suppression"
-  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
-  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  content_hash: "879093be5f1b0fc4f355158d017c581caf7dcaafb5838d12fe4fb99e2be76ea0"
+  source_hash: "5171124f52962773c019ed5082b4a84bc8d1b0e4e4b8d1f5f17d76292111409f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/lint.TestLineComment"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.TestLineComment"
   role: BINDING_ROLE_TESTS
-  shape_hash: "bf5b600b32a35805fae4f481de9b67f19bbf80109354558ef964202a487be42c"
+  shape_hash: "fa1797ac3a541c19e9e22e0d20ab341a1a631e7d94ff3cdaa8d971f596d0fb1c"
 }
 
 bindings {
   requirement_id: "REQ-lint-suppression"
-  content_hash: "be51b2bf65c600d6cdff58c34b4e5235f3cd5c236baa093eb31493f28363effe"
-  source_hash: "95558cfb201ee38274d11659ab65f0a797df22dee24ac66ad90210e4bd07bf9e"
+  content_hash: "879093be5f1b0fc4f355158d017c581caf7dcaafb5838d12fe4fb99e2be76ea0"
+  source_hash: "5171124f52962773c019ed5082b4a84bc8d1b0e4e4b8d1f5f17d76292111409f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/lint.newText"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.newText"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "7248798fa15111377133fec914f85ffa67b518f930d222bc5e14822624efc55a"
+  shape_hash: "f2eab57820319d9c330acc703eed5e0e4ecce4f25d97cf8c5f20ad2a4e3e27f1"
 }
 
 bindings {
@@ -129,4 +129,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Declared"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "998fdd7c278cfb2a5ed106c6920a128785ccc681a0fcc7fbe1bd1228926c39b0"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "879093be5f1b0fc4f355158d017c581caf7dcaafb5838d12fe4fb99e2be76ea0"
+  source_hash: "5171124f52962773c019ed5082b4a84bc8d1b0e4e4b8d1f5f17d76292111409f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.TestBreaking"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "aabb051fd0e4657ad927f19d6431c4994fab640e52860c91c85b9f89f32b8d16"
 }

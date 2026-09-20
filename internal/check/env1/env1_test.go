@@ -45,8 +45,10 @@ message Outer { // Outer trails.
   optional int32 opt = 5;
   message Inner {
     enum Kind {
+      option allow_alias = true;
       KIND_UNSPECIFIED = 0;
       KIND_A = 1;
+      KIND_ALIAS = 1;
     }
     Kind kind = 1 [deprecated = true, (c.field_opt) = {tag: "t", nums: [1, 2]}];
   }
@@ -657,15 +659,15 @@ func TestPopulation(t *testing.T) {
 		var out []string
 		for _, b := range bs {
 			switch {
-			case b.Desc == nil && b.Path == "":
+			case b.New == nil && b.Path == "":
 				out = append(out, "set")
-			case b.Desc == nil:
+			case b.New == nil:
 				out = append(out, b.Vars[BindPackage].(string)+"@"+b.Path)
 			default:
-				if _, ok := b.Desc.(protoreflect.FileDescriptor); ok {
+				if _, ok := b.New.(protoreflect.FileDescriptor); ok {
 					out = append(out, b.Path)
 				} else {
-					out = append(out, string(b.Desc.FullName()))
+					out = append(out, string(b.New.FullName()))
 				}
 			}
 		}
@@ -677,7 +679,7 @@ func TestPopulation(t *testing.T) {
 		check.TargetField:     {"a.Outer.name", "a.Outer.counts", "a.Outer.x", "a.Outer.thing", "a.Outer.opt", "a.Outer.inner", "a.Outer.y", "a.Outer.tags", "a.Outer.Inner.kind"},
 		check.TargetOneof:     {"a.Outer.choice"},
 		check.TargetEnum:      {"a.Color", "a.Outer.Inner.Kind"},
-		check.TargetEnumValue: {"a.COLOR_UNSPECIFIED", "a.Outer.Inner.KIND_UNSPECIFIED", "a.Outer.Inner.KIND_A"},
+		check.TargetEnumValue: {"a.COLOR_UNSPECIFIED", "a.Outer.Inner.KIND_UNSPECIFIED", "a.Outer.Inner.KIND_A", "a.Outer.Inner.KIND_ALIAS"},
 		check.TargetService:   {"a.Svc"},
 		check.TargetMethod:    {"a.Svc.Do"},
 		check.TargetExtension: {},
@@ -747,5 +749,160 @@ func TestPopulation(t *testing.T) {
 				t.Errorf("%s: %v %v", target, ok, err)
 			}
 		}
+	}
+}
+
+// Breaking pairs align each side's entities — files by path,
+// packages by name, fields and values by number within the paired
+// parent, oneofs by name within the message, the rest by full name —
+// an entity one side lacks paired with nil, located at the new side
+// or, absent, at the old side marked as the base's; the set once
+// (REQ-break-pairing, REQ-env1-population, REQ-env1-bindings).
+func TestPairs(t *testing.T) {
+	oldSrc := map[string]string{}
+	for k, v := range fixture {
+		oldSrc[k] = v
+	}
+	// The old side: a field and a value renamed (same numbers), a
+	// field and a value gone, a file added, a oneof renamed, a message
+	// gone.
+	oldSrc["a/a.proto"] = strings.NewReplacer(
+		"string name = 1;", "string old_name = 1;\n  string gone = 9;",
+		"KIND_A = 1;", "KIND_FORMER = 1;\n      KIND_GONE = 2;\n      KIND_ALIAS_GONE = 1;",
+		"oneof choice {", "oneof former {",
+	).Replace(fixture["a/a.proto"])
+	oldSrc["a/old.proto"] = "syntax = \"proto3\";\npackage a;\nmessage Old {}\n"
+	// a/y.proto stays in the old set (c/c.proto imports it) but is not
+	// among the old side's checked files.
+	oldSrc["a/a.proto"] = strings.Replace(oldSrc["a/a.proto"], "  Y y = 7;\n", "", 1)
+	oldSet, newSet := compileSet(t, oldSrc), compileSet(t, fixture)
+	oldChecked := []string{"a/a.proto", "a/old.proto"}
+	newChecked := []string{"a/a.proto", "a/y.proto"}
+	describe := func(p Binding) string {
+		name := func(d protoreflect.Descriptor) string {
+			if d == nil {
+				return "-"
+			}
+			if _, ok := d.(protoreflect.FileDescriptor); ok {
+				return d.(protoreflect.FileDescriptor).Path()
+			}
+			return string(d.FullName())
+		}
+		s := name(p.Old) + "|" + name(p.New) + "@" + p.Path
+		if p.Base {
+			s += "[base]"
+		}
+		if p.Located() != nil && p.Located() != p.New && p.Located() != p.Old {
+			s += "[mislocated]"
+		}
+		return s
+	}
+	pairs := func(target check.Target) []string {
+		ps, err := Pairs(target, oldSet, newSet, oldChecked, newChecked)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, p := range ps {
+			out = append(out, describe(p))
+		}
+		return out
+	}
+	want := map[check.Target][]string{
+		check.TargetFile:      {"a/a.proto|a/a.proto@a/a.proto", "-|a/y.proto@a/y.proto", "a/old.proto|-@a/old.proto[base]"},
+		check.TargetMessage:   {"a.Outer|a.Outer@a/a.proto", "a.Outer.Inner|a.Outer.Inner@a/a.proto", "-|a.Y@a/y.proto", "a.Old|-@a/old.proto[base]"},
+		check.TargetField:     {"a.Outer.old_name|a.Outer.name@a/a.proto", "a.Outer.counts|a.Outer.counts@a/a.proto", "a.Outer.x|a.Outer.x@a/a.proto", "a.Outer.thing|a.Outer.thing@a/a.proto", "a.Outer.opt|a.Outer.opt@a/a.proto", "a.Outer.inner|a.Outer.inner@a/a.proto", "-|a.Outer.y@a/a.proto", "a.Outer.tags|a.Outer.tags@a/a.proto", "a.Outer.Inner.kind|a.Outer.Inner.kind@a/a.proto", "a.Outer.gone|-@a/a.proto[base]"},
+		check.TargetOneof:     {"-|a.Outer.choice@a/a.proto", "a.Outer.former|-@a/a.proto[base]"},
+		// Values at one number pair by name among the aliases: KIND_A
+		// and KIND_ALIAS keep their names, KIND_FORMER and
+		// KIND_ALIAS_GONE stand alone.
+		check.TargetEnumValue: {"a.COLOR_UNSPECIFIED|a.COLOR_UNSPECIFIED@a/a.proto", "a.Outer.Inner.KIND_UNSPECIFIED|a.Outer.Inner.KIND_UNSPECIFIED@a/a.proto", "-|a.Outer.Inner.KIND_A@a/a.proto", "a.Outer.Inner.KIND_ALIAS|a.Outer.Inner.KIND_ALIAS@a/a.proto", "a.Outer.Inner.KIND_FORMER|-@a/a.proto[base]", "a.Outer.Inner.KIND_GONE|-@a/a.proto[base]", "a.Outer.Inner.KIND_ALIAS_GONE|-@a/a.proto[base]"},
+		check.TargetPackage:   {"-|-@a/a.proto"},
+	}
+	for target, w := range want {
+		if got := pairs(target); strings.Join(got, " ") != strings.Join(w, " ") {
+			t.Errorf("%s:\n%q\nwant\n%q", target, got, w)
+		}
+	}
+	// The set once, both sides' files; a package pair carries both
+	// names and file lists; an absent side is nil in every binding.
+	ps, err := Pairs(check.TargetSet, oldSet, newSet, oldChecked, newChecked)
+	if err != nil || len(ps) != 1 || len(ps[0].Vars[BindOldFiles].([]*descriptorpb.FileDescriptorProto)) != 2 || len(ps[0].Vars[BindNewFiles].([]*descriptorpb.FileDescriptorProto)) != 2 || ps[0].Path != "" || ps[0].Base {
+		t.Fatalf("set: %+v %v", ps, err)
+	}
+	ps, err = Pairs(check.TargetPackage, oldSet, newSet, oldChecked, []string{"b/b.proto"})
+	if err != nil || len(ps) != 2 {
+		t.Fatalf("packages: %+v %v", ps, err)
+	}
+	if ps[0].Vars[BindNewPkg] != "b" || ps[0].Vars[BindOldPkg] != nil || ps[0].Vars[BindOldFiles] != nil || ps[0].Path != "b/b.proto" || ps[0].Base {
+		t.Errorf("new-only package: %+v", ps[0])
+	}
+	if ps[1].Vars[BindOldPkg] != "a" || ps[1].Vars[BindNewPkg] != nil || ps[1].Path != "a/a.proto" || !ps[1].Base {
+		t.Errorf("old-only package: %+v", ps[1])
+	}
+	// Every pair evaluates under its target's breaking program; the
+	// bindings are the sides' own protos.
+	env, err := New(newSet, oldSet)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range check.Targets() {
+		ps, err := Pairs(target, oldSet, newSet, oldChecked, newChecked)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expr := "true"
+		switch target {
+		case check.TargetSet:
+			expr = "oldFiles.size() == 2 && newFiles.size() == 2"
+		case check.TargetPackage:
+			expr = "oldPackage == newPackage"
+		case check.TargetFile:
+			expr = "(old == null || new == null) || old.name == new.name"
+		default:
+			expr = "(old == null || file(old) == oldFile) && (new == null || file(new) == newFile) && (old == null || new == null || fullName(old) != '' )"
+		}
+		prg, err := env.Compile(rules.Rule{ID: "T", Kind: check.KindBreaking, Target: target, CEL: expr})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range ps {
+			if ok, err := prg.Eval(p.Vars); err != nil || !ok {
+				t.Errorf("%s %s: %v %v", target, describe(p), ok, err)
+			}
+		}
+	}
+	if _, err := Pairs(check.TargetField, oldSet, newSet, []string{"nonesuch"}, newChecked); err == nil {
+		t.Error("a path outside the old set paired")
+	}
+	// Aliases on one side alone: a number either side holds several
+	// values at pairs by name on both, so adding or removing an alias
+	// is one addition or one removal, the unchanged value still paired.
+	plain := map[string]string{"e/e.proto": "syntax = \"proto3\";\npackage e;\nenum K {\n  K_ZERO = 0;\n  K_ONE = 1;\n}\n"}
+	aliased := map[string]string{"e/e.proto": "syntax = \"proto3\";\npackage e;\nenum K {\n  option allow_alias = true;\n  K_ZERO = 0;\n  K_ONE = 1;\n  K_UNO = 1;\n}\n"}
+	plainSet, aliasedSet := compileSet(t, plain), compileSet(t, aliased)
+	values := func(old, new *Set) string {
+		ps, err := Pairs(check.TargetEnumValue, old, new, []string{"e/e.proto"}, []string{"e/e.proto"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, p := range ps {
+			out = append(out, describe(p))
+		}
+		return strings.Join(out, " ")
+	}
+	if got := values(plainSet, aliasedSet); got != "e.K_ZERO|e.K_ZERO@e/e.proto e.K_ONE|e.K_ONE@e/e.proto -|e.K_UNO@e/e.proto" {
+		t.Errorf("alias added: %s", got)
+	}
+	if got := values(aliasedSet, plainSet); got != "e.K_ZERO|e.K_ZERO@e/e.proto e.K_ONE|e.K_ONE@e/e.proto e.K_UNO|-@e/e.proto[base]" {
+		t.Errorf("alias removed: %s", got)
+	}
+	// The old side's aliasing alone decides too: with the alias
+	// declared first on the old side, the surviving value still pairs
+	// by name, never with the first value at the number.
+	firstAlias := map[string]string{"e/e.proto": "syntax = \"proto3\";\npackage e;\nenum K {\n  option allow_alias = true;\n  K_ZERO = 0;\n  K_UNO = 1;\n  K_ONE = 1;\n}\n"}
+	if got := values(compileSet(t, firstAlias), plainSet); got != "e.K_ZERO|e.K_ZERO@e/e.proto e.K_ONE|e.K_ONE@e/e.proto e.K_UNO|-@e/e.proto[base]" {
+		t.Errorf("alias declared first, removed: %s", got)
 	}
 }

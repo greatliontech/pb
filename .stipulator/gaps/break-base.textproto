@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-break-base"
-reason: "the check domain is specced and not yet built"
-content_hash: "11946e457de24955b73f15b8bfef2a3685aa9efc671126e95108e61b214c40d7"
-source_hash: "a4beb3dea3bb82250a69cb442e98783e1d987f336642bcf77fe126430b8d5ea5"
-lands { manual { condition: "breaking alignment and the base are built" } }
