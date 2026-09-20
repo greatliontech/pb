@@ -9,8 +9,8 @@ import (
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/provtest"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // provFixture serves a root module at v1.0.0 whose provenance envelope

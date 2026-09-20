@@ -12,9 +12,9 @@ test beside it, chunk 1).
 - [x] 2. module: archive, modpath, version, modfile, mvs, workspace,
       lockfile under internal/module, the path rule as the root
       package; bindings and records retargeted
-- [ ] 3. provenance: the tag verifier as the root package, imagesig as
-      image with the evidence store folded in and discovery kept apart
-      for its no-network allowlist, trust beside them
+- [x] 3. provenance: the tag verifier as the root package, imagesig as
+      image with discovery and the evidence store its subpackages, the
+      judge's no-network allowlist kept narrow, trust beside them
 - [ ] 4. source: proxy, origin, direct, modfetch under internal/source
       as proxy, origin, direct, fetch, the HTTPS posture as the root
       package

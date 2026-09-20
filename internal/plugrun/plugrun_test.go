@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 // A Spec with any unbounded resource is refused before anything runs

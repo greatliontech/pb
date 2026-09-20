@@ -10,8 +10,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/imagesig"
-	"github.com/greatliontech/pb/internal/imagesig/evidence"
+	"github.com/greatliontech/pb/internal/provenance/image"
+	"github.com/greatliontech/pb/internal/provenance/image/evidence"
 )
 
 var digest = v1.Hash{Algorithm: "sha256", Hex: strings.Repeat("5a", 32)}
@@ -26,7 +26,7 @@ func TestStoreRoundTrips(t *testing.T) {
 	if _, ok := store.Load(digest); ok {
 		t.Fatal("an empty store holds evidence")
 	}
-	in := []imagesig.Carrier{{Where: "referrer a", Value: bundle}, {Where: "tag b layer 0", Value: env}}
+	in := []image.Carrier{{Where: "referrer a", Value: bundle}, {Where: "tag b layer 0", Value: env}}
 	if err := store.Save(digest, in); err != nil {
 		t.Fatal(err)
 	}
@@ -112,10 +112,10 @@ func TestStoreUnreadableIsAbsent(t *testing.T) {
 // than kept mangled.
 func TestStoreRefusesForeignShapes(t *testing.T) {
 	store := evidence.Store{Dir: t.TempDir()}
-	if err := store.Save(digest, []imagesig.Carrier{{Where: "x", Value: gitprov.SigstoreBundle{}}}); err == nil {
+	if err := store.Save(digest, []image.Carrier{{Where: "x", Value: gitprov.SigstoreBundle{}}}); err == nil {
 		t.Fatal("an empty bundle was kept")
 	}
-	if err := store.Save(digest, []imagesig.Carrier{{Where: "x", Value: nil}}); err == nil {
+	if err := store.Save(digest, []image.Carrier{{Where: "x", Value: nil}}); err == nil {
 		t.Fatal("a carrier of no shape was kept")
 	}
 	if _, ok := store.Load(digest); ok {

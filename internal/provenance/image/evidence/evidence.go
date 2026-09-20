@@ -18,7 +18,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/atomicfile"
-	"github.com/greatliontech/pb/internal/imagesig"
+	"github.com/greatliontech/pb/internal/provenance/image"
 )
 
 // MaxEntryBytes bounds a kept entry (REQ-prov-plugin-evidence-store):
@@ -63,7 +63,7 @@ func (s Store) path(digest v1.Hash) string {
 // unreadable, over the bound, not the store's shape — is absent,
 // never an error: kept evidence carries no authority and a fetch
 // replaces it (REQ-prov-plugin-evidence-kept).
-func (s Store) Load(digest v1.Hash) ([]imagesig.Carrier, bool) {
+func (s Store) Load(digest v1.Hash) ([]image.Carrier, bool) {
 	f, err := os.Open(s.path(digest))
 	if err != nil {
 		return nil, false
@@ -77,14 +77,14 @@ func (s Store) Load(digest v1.Hash) ([]imagesig.Carrier, bool) {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		return nil, false
 	}
-	out := make([]imagesig.Carrier, 0, len(doc.Carriers))
+	out := make([]image.Carrier, 0, len(doc.Carriers))
 	for _, c := range doc.Carriers {
 		switch {
 		case c.Bundle != nil && c.Envelope == nil:
-			out = append(out, imagesig.Carrier{Where: c.Where, Value: gitprov.SigstoreBundle{JSON: c.Bundle}})
+			out = append(out, image.Carrier{Where: c.Where, Value: gitprov.SigstoreBundle{JSON: c.Bundle}})
 		case c.Envelope != nil && c.Bundle == nil:
 			e := c.Envelope
-			out = append(out, imagesig.Carrier{Where: c.Where, Value: gitprov.SimpleSigningEnvelope{
+			out = append(out, image.Carrier{Where: c.Where, Value: gitprov.SimpleSigningEnvelope{
 				Payload: e.Payload, Signature: e.Signature, Certificate: e.Certificate,
 				Chain: e.Chain, RekorBundle: e.RekorBundle, RFC3161Timestamp: e.RFC3161Timestamp,
 			}})
@@ -100,7 +100,7 @@ func (s Store) Load(digest v1.Hash) ([]imagesig.Carrier, bool) {
 
 // Save keeps carriers for digest, replacing what was kept, written
 // atomically and whole; nothing is kept for no carriers.
-func (s Store) Save(digest v1.Hash, carriers []imagesig.Carrier) error {
+func (s Store) Save(digest v1.Hash, carriers []image.Carrier) error {
 	if len(carriers) == 0 {
 		return nil
 	}

@@ -1,11 +1,11 @@
-// Package imagesig judges a plugin image's signature evidence: cosign's
+// Package image judges a plugin image's signature evidence: cosign's
 // carriers, found by the discover package, are judged in order through
 // gitprov against the pinned trusted root until one is accepted
 // (provenance.md REQ-prov-plugin-classification). The judgement is
 // offline — this package reaches no network — and a carrier is
 // fetched only as it is judged, so nothing past the accepted one is
 // fetched. What a carrier means is gitprov's.
-package imagesig
+package image
 
 import (
 	"context"
@@ -22,9 +22,9 @@ import (
 // not accept — and for one that accepted nothing the caller's
 // acceptance admits. Any other failure is rejected evidence.
 var (
-	ErrNoEvidence          = errors.New("imagesig: no provenance evidence found")
-	ErrIdentityNotAccepted = errors.New("imagesig: evidence identity not accepted by policy")
-	ErrRecordNotReproduced = errors.New("imagesig: no evidence reproduces the recorded provenance")
+	ErrNoEvidence          = errors.New("image: no provenance evidence found")
+	ErrIdentityNotAccepted = errors.New("image: evidence identity not accepted by policy")
+	ErrRecordNotReproduced = errors.New("image: no evidence reproduces the recorded provenance")
 )
 
 // Carrier is one piece of evidence found for a digest, and where it
@@ -95,7 +95,7 @@ func Judge(ctx context.Context, digest string, carriers Carriers, id gitprov.Ide
 		}
 		timed, err := gitprov.HasImageTime(c.Value)
 		if err != nil {
-			return lockfile.Provenance{}, fmt.Errorf("imagesig: evidence rejected: %s: %w", c.Where, err)
+			return lockfile.Provenance{}, fmt.Errorf("image: evidence rejected: %s: %w", c.Where, err)
 		}
 		if !timed {
 			unverifiable++
@@ -115,7 +115,7 @@ func Judge(ctx context.Context, digest string, carriers Carriers, id gitprov.Ide
 		case errors.Is(err, gitprov.ErrIdentityMismatch):
 			refused++
 		default:
-			return lockfile.Provenance{}, fmt.Errorf("imagesig: evidence rejected: %s: %w", c.Where, err)
+			return lockfile.Provenance{}, fmt.Errorf("image: evidence rejected: %s: %w", c.Where, err)
 		}
 	}
 	switch {

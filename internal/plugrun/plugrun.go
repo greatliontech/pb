@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 // Spec is one plugin run: the image rootfs, its process, the request

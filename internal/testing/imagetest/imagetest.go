@@ -1,4 +1,4 @@
-// Package imagesigtest serves registries and pushes signature carriers
+// Package imagetest serves registries and pushes signature carriers
 // for tests of image-signature discovery: a registry that answers the
 // OCI referrers API as the distribution specification describes it —
 // a referrer's descriptor carrying the manifest's artifact type and
@@ -6,7 +6,7 @@
 // one without the API, the fallback tag kept as cosign keeps it; and
 // the pushes cosign's two conventions make, spelled here on their own
 // so a test of discovery does not share discovery's constants.
-package imagesigtest
+package imagetest
 
 import (
 	"bytes"

@@ -12,7 +12,7 @@ import (
 	"syscall"
 
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/sandbox"
 )
 

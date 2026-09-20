@@ -15,9 +15,9 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 var ctx = context.Background()

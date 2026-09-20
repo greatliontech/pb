@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/rapidtest"
-	"github.com/greatliontech/pb/internal/trust"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )

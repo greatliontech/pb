@@ -8,8 +8,8 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/provtest"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // Cached info entries are validated like fetched ones: junk at the

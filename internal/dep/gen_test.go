@@ -23,7 +23,7 @@ import (
 	"github.com/greatliontech/pb/internal/pluglocal"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 	"pgregory.net/rapid"

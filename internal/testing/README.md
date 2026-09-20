@@ -17,7 +17,7 @@ here ships, which the layering test at `internal/` enforces:
   since the client's own suite imports the fixture.
 - `provtest` — gitsign-shaped signed tags over gitprov's synthetic
   sigstore, the evidence the provenance and fetch suites verify.
-- `imagesigtest` — a registry double answering the OCI referrers API
+- `imagetest` — a registry double answering the OCI referrers API
   as the specification describes it, and the pushes cosign's
   conventions make.
 

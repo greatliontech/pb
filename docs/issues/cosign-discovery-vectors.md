@@ -5,11 +5,11 @@ capture's referrers list (the registry's answer and the fallback
 tag's index) and signature-tag manifest are added under testdata and
 discovery runs over them
 
-Discovery (`internal/imagesig`) reads cosign's storage conventions:
+Discovery (`internal/provenance/image/discover`) reads cosign's storage conventions:
 the bundle referrer's artifact type and predicate annotation, the
 legacy signature artifact's configuration media type, the
 simple-signing layer media type and annotations, the signature tag.
-Every test pushes carriers through `imagesigtest`, which spells those
+Every test pushes carriers through `imagetest`, which spells those
 conventions on its own from cosign's source and the OCI distribution
 specification: a registry double answering the referrers API with the
 manifest's artifact type and annotations, and the fallback tag kept

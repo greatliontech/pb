@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/greatliontech/gitprov"
-	"github.com/greatliontech/pb/internal/imagesig"
+	"github.com/greatliontech/pb/internal/provenance/image"
 )
 
 // cosign's storage conventions: the bundle referrer's artifact type
@@ -57,17 +57,17 @@ const MaxCarrierBytes = 4 << 20
 // referrer with other than one layer, a carrier over MaxCarrierBytes
 // — is yielded as rejected evidence; a registry error is yielded as
 // the step's error.
-func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ...remote.Option) imagesig.Carriers {
+func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ...remote.Option) image.Carriers {
 	opts = append(slices.Clone(opts), remote.WithContext(ctx))
-	return func(yield func(imagesig.Carrier, error) bool) {
+	return func(yield func(image.Carrier, error) bool) {
 		idx, err := remote.Referrers(repo.Digest(digest.String()), opts...)
 		if err != nil {
-			yield(imagesig.Carrier{}, fmt.Errorf("discover: referrers of %s: %w", digest, err))
+			yield(image.Carrier{}, fmt.Errorf("discover: referrers of %s: %w", digest, err))
 			return
 		}
 		im, err := idx.IndexManifest()
 		if err != nil {
-			yield(imagesig.Carrier{}, fmt.Errorf("discover: referrers of %s: %w", digest, err))
+			yield(image.Carrier{}, fmt.Errorf("discover: referrers of %s: %w", digest, err))
 			return
 		}
 		referrers := slices.Clone(im.Manifests)
@@ -87,7 +87,7 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 			where := "referrer " + d.Digest.String()
 			img, err := remote.Image(repo.Digest(d.Digest.String()), opts...)
 			if err != nil {
-				yield(imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
+				yield(image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
 				return
 			}
 			if !envelopes(img, where, yield) {
@@ -98,7 +98,7 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 		img, err := remote.Image(tag, opts...)
 		if err != nil {
 			if !notFound(err) {
-				yield(imagesig.Carrier{}, fmt.Errorf("discover: tag %s: %w", tag.TagStr(), err))
+				yield(image.Carrier{}, fmt.Errorf("discover: tag %s: %w", tag.TagStr(), err))
 			}
 			return
 		}
@@ -108,41 +108,41 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 
 // bundleReferrer reads the bundle a referrer carries as its one
 // layer; another layer count is not cosign's shape.
-func bundleReferrer(repo name.Repository, d v1.Descriptor, opts []remote.Option) (imagesig.Carrier, error) {
+func bundleReferrer(repo name.Repository, d v1.Descriptor, opts []remote.Option) (image.Carrier, error) {
 	where := "referrer " + d.Digest.String()
 	img, err := remote.Image(repo.Digest(d.Digest.String()), opts...)
 	if err != nil {
-		return imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
 	}
 	layers, err := img.Layers()
 	if err != nil {
-		return imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
 	}
 	if len(layers) != 1 {
-		return imagesig.Carrier{}, fmt.Errorf("discover: evidence rejected: %s: %d layers, want the bundle as one", where, len(layers))
+		return image.Carrier{}, fmt.Errorf("discover: evidence rejected: %s: %d layers, want the bundle as one", where, len(layers))
 	}
 	raw, err := layerBytes(layers[0])
 	if err != nil {
-		return imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
 	}
-	return imagesig.Carrier{Where: where, Value: gitprov.SigstoreBundle{JSON: raw}}, nil
+	return image.Carrier{Where: where, Value: gitprov.SigstoreBundle{JSON: raw}}, nil
 }
 
 // envelopes yields every simple-signing layer of a signature image as
 // an envelope, the parts from the layer's annotations; layers of
 // another media type are not evidence. It reports whether the
 // consumer wants more.
-func envelopes(img v1.Image, where string, yield func(imagesig.Carrier, error) bool) bool {
+func envelopes(img v1.Image, where string, yield func(image.Carrier, error) bool) bool {
 	m, err := img.Manifest()
 	if err != nil {
-		return yield(imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
+		return yield(image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
 	}
 	layers, err := img.Layers()
 	if err != nil {
-		return yield(imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
+		return yield(image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
 	}
 	if len(layers) != len(m.Layers) {
-		return yield(imagesig.Carrier{}, fmt.Errorf("discover: %s: %d layers for %d descriptors", where, len(layers), len(m.Layers)))
+		return yield(image.Carrier{}, fmt.Errorf("discover: %s: %d layers for %d descriptors", where, len(layers), len(m.Layers)))
 	}
 	for i, d := range m.Layers {
 		if string(d.MediaType) != simpleSigningMediaType {
@@ -151,9 +151,9 @@ func envelopes(img v1.Image, where string, yield func(imagesig.Carrier, error) b
 		at := fmt.Sprintf("%s layer %d", where, i)
 		payload, err := layerBytes(layers[i])
 		if err != nil {
-			return yield(imagesig.Carrier{}, fmt.Errorf("discover: %s: %w", at, err))
+			return yield(image.Carrier{}, fmt.Errorf("discover: %s: %w", at, err))
 		}
-		c := imagesig.Carrier{Where: at, Value: gitprov.SimpleSigningEnvelope{
+		c := image.Carrier{Where: at, Value: gitprov.SimpleSigningEnvelope{
 			Payload:          payload,
 			Signature:        d.Annotations[annotationSignature],
 			Certificate:      d.Annotations[annotationCertificate],

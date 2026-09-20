@@ -16,8 +16,8 @@ import (
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/provenance"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // ModfileHash renders the module-file hash of exact module-file bytes

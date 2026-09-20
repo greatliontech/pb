@@ -236,9 +236,9 @@ bindings {
   content_hash: "fa0e92e90d9bc6254ea8f07241bd429ee42b7ca60aa61f1008f259916f9dc802"
   source_hash: "9ff678553bf37b33e2978a2ded310e68a4a371c7190d748a95612e2f8c36f7e3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/trust.TestEffectiveLimits"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestEffectiveLimits"
   role: BINDING_ROLE_TESTS
-  shape_hash: "4e4130fbfba9d8fef5633d34345c5a69fd9545eb5cdac50c488c9dc77059a072"
+  shape_hash: "3e0feb38b3eaa3218950f5ad3f0a9ddc82a8d1725108967ba028897e5b08e0e1"
 }
 
 bindings {
@@ -246,9 +246,9 @@ bindings {
   content_hash: "fa0e92e90d9bc6254ea8f07241bd429ee42b7ca60aa61f1008f259916f9dc802"
   source_hash: "9ff678553bf37b33e2978a2ded310e68a4a371c7190d748a95612e2f8c36f7e3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/trust.Execution.EffectiveLimits"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.Execution.EffectiveLimits"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "2b057329738c6247433f6d295179ba8f6370638cfbfd276f61638d0d3c75bb29"
+  shape_hash: "e51198d0e8e31fd60ecaff7d6b564e4e3feccc8450c485c102dbd9e056cd6f28"
 }
 
 bindings {
@@ -758,7 +758,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugrun.DockerRunner.prepare"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "b38f346e163759bf67bd6d8227314ca6fd64682d6a48605371196a3a7e8c9e79"
+  shape_hash: "81c2852a5ae092a57bc64b8b1d3bb4cf48515220f1818017d761bbd2cfbaf1d1"
 }
 
 bindings {

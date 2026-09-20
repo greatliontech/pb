@@ -14,9 +14,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/imagesig"
-	"github.com/greatliontech/pb/internal/imagesig/discover"
-	"github.com/greatliontech/pb/internal/testing/imagesigtest"
+	"github.com/greatliontech/pb/internal/provenance/image"
+	"github.com/greatliontech/pb/internal/provenance/image/discover"
+	"github.com/greatliontech/pb/internal/testing/imagetest"
 )
 
 const (
@@ -28,8 +28,8 @@ var ctx = context.Background()
 
 // all takes every step of a discovery, the carriers and the first
 // error.
-func all(seq imagesig.Carriers) ([]imagesig.Carrier, error) {
-	var out []imagesig.Carrier
+func all(seq image.Carriers) ([]image.Carrier, error) {
+	var out []image.Carrier
 	for c, err := range seq {
 		if err != nil {
 			return out, err
@@ -50,24 +50,24 @@ func TestDiscoverFindsEveryLocationInOrder(t *testing.T) {
 	for mode, api := range modes {
 		t.Run(mode, func(t *testing.T) {
 			s := sigstoretest.New(t)
-			repo := imagesigtest.Registry(t, api)
-			digest := imagesigtest.PushIndex(t, repo, "v1")
+			repo := imagetest.Registry(t, api)
+			digest := imagetest.PushIndex(t, repo, "v1")
 			bundle := s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{})
 			legacy := s.Envelope(t, digest.String(), subject, issuer, sigstoretest.EnvelopeOptions{})
 			tagged := s.Envelope(t, digest.String(), subject, issuer, sigstoretest.EnvelopeOptions{Timestamp: true})
 
 			// The tag first, then the referrers, so discovery's order is
 			// the contract's and not the push order.
-			imagesigtest.Tag(t, repo, imagesigtest.SignatureTag(digest), []imagesigtest.Layer{
+			imagetest.Tag(t, repo, imagetest.SignatureTag(digest), []imagetest.Layer{
 				{MediaType: "application/vnd.oci.image.layer.v1.tar", Content: []byte("not a signature")},
-				imagesigtest.EnvelopeLayer(tagged),
+				imagetest.EnvelopeLayer(tagged),
 			})
-			imagesigtest.Attach(t, repo, digest, imagesigtest.Artifact{ArtifactType: imagesigtest.LegacyConfigMediaType, Layers: []imagesigtest.Layer{imagesigtest.EnvelopeLayer(legacy)}})
+			imagetest.Attach(t, repo, digest, imagetest.Artifact{ArtifactType: imagetest.LegacyConfigMediaType, Layers: []imagetest.Layer{imagetest.EnvelopeLayer(legacy)}})
 			// An attestation under the bundle media type is not a signature.
-			imagesigtest.Attach(t, repo, digest, imagesigtest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{Predicate: "https://slsa.dev/provenance/v1"}), "https://slsa.dev/provenance/v1"))
+			imagetest.Attach(t, repo, digest, imagetest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{Predicate: "https://slsa.dev/provenance/v1"}), "https://slsa.dev/provenance/v1"))
 			// An unrelated referrer is not evidence either.
-			imagesigtest.Attach(t, repo, digest, imagesigtest.Artifact{ArtifactType: "application/vnd.example.sbom", Layers: []imagesigtest.Layer{{MediaType: "application/json", Content: []byte("{}")}}})
-			imagesigtest.Attach(t, repo, digest, imagesigtest.BundleArtifact(bundle, imagesigtest.CosignSignPredicate))
+			imagetest.Attach(t, repo, digest, imagetest.Artifact{ArtifactType: "application/vnd.example.sbom", Layers: []imagetest.Layer{{MediaType: "application/json", Content: []byte("{}")}}})
+			imagetest.Attach(t, repo, digest, imagetest.BundleArtifact(bundle, imagetest.CosignSignPredicate))
 
 			carriers, err := all(discover.Discover(ctx, repo, digest))
 			if err != nil {
@@ -82,7 +82,7 @@ func TestDiscoverFindsEveryLocationInOrder(t *testing.T) {
 			if e, ok := carriers[1].Value.(gitprov.SimpleSigningEnvelope); !ok || e.Signature != legacy.Signature || !strings.HasPrefix(carriers[1].Where, "referrer ") {
 				t.Fatalf("second carrier = %+v, want the legacy referrer's envelope", carriers[1])
 			}
-			if e, ok := carriers[2].Value.(gitprov.SimpleSigningEnvelope); !ok || e.Signature != tagged.Signature || e.RFC3161Timestamp != tagged.RFC3161Timestamp || carriers[2].Where != "tag "+imagesigtest.SignatureTag(digest)+" layer 1" {
+			if e, ok := carriers[2].Value.(gitprov.SimpleSigningEnvelope); !ok || e.Signature != tagged.Signature || e.RFC3161Timestamp != tagged.RFC3161Timestamp || carriers[2].Where != "tag "+imagetest.SignatureTag(digest)+" layer 1" {
 				t.Fatalf("third carrier = %+v, want the tag's second layer", carriers[2])
 			}
 			// Every carrier found verifies as fetched.
@@ -99,8 +99,8 @@ func TestDiscoverFindsEveryLocationInOrder(t *testing.T) {
 // evidence: no carriers, no error.
 func TestDiscoverNothing(t *testing.T) {
 	for mode, api := range modes {
-		repo := imagesigtest.Registry(t, api)
-		digest := imagesigtest.PushIndex(t, repo, "v1")
+		repo := imagetest.Registry(t, api)
+		digest := imagetest.PushIndex(t, repo, "v1")
 		carriers, err := all(discover.Discover(ctx, repo, digest))
 		if err != nil || len(carriers) != 0 {
 			t.Fatalf("%s: %v %v", mode, carriers, err)
@@ -112,15 +112,15 @@ func TestDiscoverNothing(t *testing.T) {
 // carrier recorded is a function of the repository's content.
 func TestDiscoverOrdersReferrersByDigest(t *testing.T) {
 	s := sigstoretest.New(t)
-	repo := imagesigtest.Registry(t, true)
-	digest := imagesigtest.PushIndex(t, repo, "v1")
-	bundle := func() imagesigtest.Artifact {
-		return imagesigtest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagesigtest.CosignSignPredicate)
+	repo := imagetest.Registry(t, true)
+	digest := imagetest.PushIndex(t, repo, "v1")
+	bundle := func() imagetest.Artifact {
+		return imagetest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate)
 	}
-	first := imagesigtest.Attach(t, repo, digest, bundle())
+	first := imagetest.Attach(t, repo, digest, bundle())
 	// The second pushed sorts before the first: the push order is not
 	// the digest order.
-	imagesigtest.AttachOrdered(t, repo, digest, bundle(), imagesigtest.Before, first)
+	imagetest.AttachOrdered(t, repo, digest, bundle(), imagetest.Before, first)
 	carriers, err := all(discover.Discover(ctx, repo, digest))
 	if err != nil || len(carriers) != 2 {
 		t.Fatalf("%v %v", carriers, err)
@@ -140,12 +140,12 @@ func TestDiscoverOrdersReferrersByDigest(t *testing.T) {
 // sorting before it is rejected evidence (REQ-prov-plugin-carriers).
 func TestDiscoverFetchesAsTaken(t *testing.T) {
 	s := sigstoretest.New(t)
-	repo := imagesigtest.Registry(t, true)
-	digest := imagesigtest.PushIndex(t, repo, "v1")
-	good := imagesigtest.Attach(t, repo, digest, imagesigtest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagesigtest.CosignSignPredicate))
-	malformed := imagesigtest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagesigtest.CosignSignPredicate)
+	repo := imagetest.Registry(t, true)
+	digest := imagetest.PushIndex(t, repo, "v1")
+	good := imagetest.Attach(t, repo, digest, imagetest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate))
+	malformed := imagetest.BundleArtifact(s.Bundle(t, digest.String(), subject, issuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate)
 	malformed.Layers = append(malformed.Layers, malformed.Layers[0])
-	imagesigtest.AttachOrdered(t, repo, digest, malformed, imagesigtest.After, good)
+	imagetest.AttachOrdered(t, repo, digest, malformed, imagetest.After, good)
 
 	// Stopping at the first carrier: the good one, no error.
 	for c, err := range discover.Discover(ctx, repo, digest) {
@@ -159,7 +159,7 @@ func TestDiscoverFetchesAsTaken(t *testing.T) {
 		t.Fatalf("the malformed carrier taken: %v", err)
 	}
 	// One sorting before the good one is reached first.
-	imagesigtest.AttachOrdered(t, repo, digest, malformed, imagesigtest.Before, good)
+	imagetest.AttachOrdered(t, repo, digest, malformed, imagetest.Before, good)
 	for c, err := range discover.Discover(ctx, repo, digest) {
 		if err == nil || !strings.Contains(err.Error(), "evidence rejected") || !strings.Contains(err.Error(), "2 layers") {
 			t.Fatalf("first step = %+v %v, want the malformed carrier's rejection", c, err)
@@ -171,10 +171,10 @@ func TestDiscoverFetchesAsTaken(t *testing.T) {
 // A carrier over the bound is rejected evidence, not read
 // (REQ-prov-plugin-carriers).
 func TestDiscoverRejectsOversizedCarrier(t *testing.T) {
-	repo := imagesigtest.Registry(t, true)
-	digest := imagesigtest.PushIndex(t, repo, "v1")
-	huge := imagesigtest.BundleArtifact(gitprov.SigstoreBundle{JSON: bytes.Repeat([]byte("x"), discover.MaxCarrierBytes+1)}, imagesigtest.CosignSignPredicate)
-	imagesigtest.Attach(t, repo, digest, huge)
+	repo := imagetest.Registry(t, true)
+	digest := imagetest.PushIndex(t, repo, "v1")
+	huge := imagetest.BundleArtifact(gitprov.SigstoreBundle{JSON: bytes.Repeat([]byte("x"), discover.MaxCarrierBytes+1)}, imagetest.CosignSignPredicate)
+	imagetest.Attach(t, repo, digest, huge)
 	if _, err := all(discover.Discover(ctx, repo, digest)); err == nil || !strings.Contains(err.Error(), "evidence rejected") || !strings.Contains(err.Error(), "over") {
 		t.Fatalf("an oversized carrier: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestDiscoverRegistryErrorIsAnError(t *testing.T) {
 // A registry failing the signature tag's fetch with anything but
 // "no such manifest" is an error, never absence.
 func TestDiscoverTagErrorIsAnError(t *testing.T) {
-	inner := imagesigtest.Handler(true)
+	inner := imagetest.Handler(true)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, ".sig") {
 			http.Error(w, "the tag is unavailable", http.StatusInternalServerError)
@@ -207,7 +207,7 @@ func TestDiscoverTagErrorIsAnError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	digest := imagesigtest.PushIndex(t, repo, "v1")
+	digest := imagetest.PushIndex(t, repo, "v1")
 	// One attempt: the client's retries on a server error are its own.
 	if _, err := all(discover.Discover(ctx, repo, digest, remote.WithRetryBackoff(remote.Backoff{Steps: 1}))); err == nil || !strings.Contains(err.Error(), "tag ") {
 		t.Fatalf("a failing tag fetch: %v", err)

@@ -1,4 +1,4 @@
-package imagesig_test
+package image_test
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/imagesig"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 )
 
@@ -24,14 +24,14 @@ func identity() gitprov.Identity { return gitprov.Identity{Subject: subject, Iss
 
 // step is one discovery step: a carrier, or the error fetching it.
 type step struct {
-	c   imagesig.Carrier
+	c   image.Carrier
 	err error
 }
 
 // sequence is discovery yielding steps in order, recording how many
 // were taken.
-func sequence(taken *int, steps ...step) imagesig.Carriers {
-	return func(yield func(imagesig.Carrier, error) bool) {
+func sequence(taken *int, steps ...step) image.Carriers {
+	return func(yield func(image.Carrier, error) bool) {
 		for _, s := range steps {
 			*taken++
 			if !yield(s.c, s.err) {
@@ -50,35 +50,35 @@ func sequence(taken *int, steps ...step) imagesig.Carriers {
 func TestJudgeClassifies(t *testing.T) {
 	s := sigstoretest.New(t)
 	digest := "sha256:" + strings.Repeat("5a", 32)
-	good := step{c: imagesig.Carrier{Where: "good", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{})}}
-	other := step{c: imagesig.Carrier{Where: "other signer", Value: s.Bundle(t, digest, "other@example.com", issuer, sigstoretest.BundleOptions{})}}
-	untimed := step{c: imagesig.Carrier{Where: "untimed", Value: s.Envelope(t, digest, subject, issuer, sigstoretest.EnvelopeOptions{NoRekorBundle: true})}}
-	rejected := step{c: imagesig.Carrier{Where: "two signatures", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{TwoSignatures: true})}}
-	wrongDigest := step{c: imagesig.Carrier{Where: "another digest", Value: s.Bundle(t, "sha256:"+strings.Repeat("6b", 32), subject, issuer, sigstoretest.BundleOptions{})}}
+	good := step{c: image.Carrier{Where: "good", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{})}}
+	other := step{c: image.Carrier{Where: "other signer", Value: s.Bundle(t, digest, "other@example.com", issuer, sigstoretest.BundleOptions{})}}
+	untimed := step{c: image.Carrier{Where: "untimed", Value: s.Envelope(t, digest, subject, issuer, sigstoretest.EnvelopeOptions{NoRekorBundle: true})}}
+	rejected := step{c: image.Carrier{Where: "two signatures", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{TwoSignatures: true})}}
+	wrongDigest := step{c: image.Carrier{Where: "another digest", Value: s.Bundle(t, "sha256:"+strings.Repeat("6b", 32), subject, issuer, sigstoretest.BundleOptions{})}}
 	unfetched := step{err: errors.New("discover: referrer x: the registry went away")}
-	garbage := step{c: imagesig.Carrier{Where: "garbage", Value: gitprov.SigstoreBundle{JSON: []byte("{")}}}
+	garbage := step{c: image.Carrier{Where: "garbage", Value: gitprov.SigstoreBundle{JSON: []byte("{")}}}
 	sigstoretest.RefuseNetwork(t)
 
 	want := lockfile.Provenance{Type: lockfile.ProvenanceImageSignature, SAN: subject, Issuer: issuer}
 	taken := 0
-	if rec, err := imagesig.Judge(ctx, digest, sequence(&taken, untimed, other, good, rejected, unfetched), identity(), s.TrustedRoot(), nil); err != nil || rec != want {
+	if rec, err := image.Judge(ctx, digest, sequence(&taken, untimed, other, good, rejected, unfetched), identity(), s.TrustedRoot(), nil); err != nil || rec != want {
 		t.Fatalf("accepted = %+v, %v; want %+v", rec, err, want)
 	}
 	if taken != 3 {
 		t.Fatalf("%d steps taken, want 3: nothing past the accepted carrier", taken)
 	}
-	if _, err := imagesig.Judge(ctx, digest, sequence(&taken), identity(), s.TrustedRoot(), nil); !errors.Is(err, imagesig.ErrNoEvidence) {
+	if _, err := image.Judge(ctx, digest, sequence(&taken), identity(), s.TrustedRoot(), nil); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("no carriers: %v", err)
 	}
-	if _, err := imagesig.Judge(ctx, digest, sequence(&taken, untimed), identity(), s.TrustedRoot(), nil); !errors.Is(err, imagesig.ErrNoEvidence) || !strings.Contains(err.Error(), "no signed time") {
+	if _, err := image.Judge(ctx, digest, sequence(&taken, untimed), identity(), s.TrustedRoot(), nil); !errors.Is(err, image.ErrNoEvidence) || !strings.Contains(err.Error(), "no signed time") {
 		t.Fatalf("an unverifiable carrier alone: %v", err)
 	}
-	if _, err := imagesig.Judge(ctx, digest, sequence(&taken, untimed, other), identity(), s.TrustedRoot(), nil); !errors.Is(err, imagesig.ErrIdentityNotAccepted) {
+	if _, err := image.Judge(ctx, digest, sequence(&taken, untimed, other), identity(), s.TrustedRoot(), nil); !errors.Is(err, image.ErrIdentityNotAccepted) {
 		t.Fatalf("a refused signer: %v", err)
 	}
 	for _, bad := range []step{rejected, wrongDigest, garbage, unfetched} {
-		_, err := imagesig.Judge(ctx, digest, sequence(&taken, bad, good), identity(), s.TrustedRoot(), nil)
-		if err == nil || errors.Is(err, imagesig.ErrNoEvidence) || errors.Is(err, imagesig.ErrIdentityNotAccepted) {
+		_, err := image.Judge(ctx, digest, sequence(&taken, bad, good), identity(), s.TrustedRoot(), nil)
+		if err == nil || errors.Is(err, image.ErrNoEvidence) || errors.Is(err, image.ErrIdentityNotAccepted) {
 			t.Fatalf("%s before a good carrier: %v, want rejection", bad.c.Where, err)
 		}
 		if bad.c.Where != "" && !strings.Contains(err.Error(), bad.c.Where) {
@@ -97,20 +97,20 @@ func TestJudgePrefersTheAcceptedRecord(t *testing.T) {
 	recorded := lockfile.Provenance{Type: lockfile.ProvenanceImageSignature, SAN: subject, Issuer: issuer}
 	pinned := func(rec lockfile.Provenance) bool { return rec == recorded }
 	any := gitprov.Identity{IssuerGlob: "**", SubjectGlob: "**"}
-	mine := step{c: imagesig.Carrier{Where: "mine", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{})}}
-	theirs := step{c: imagesig.Carrier{Where: "theirs", Value: s.Bundle(t, digest, "other@example.com", issuer, sigstoretest.BundleOptions{})}}
+	mine := step{c: image.Carrier{Where: "mine", Value: s.Bundle(t, digest, subject, issuer, sigstoretest.BundleOptions{})}}
+	theirs := step{c: image.Carrier{Where: "theirs", Value: s.Bundle(t, digest, "other@example.com", issuer, sigstoretest.BundleOptions{})}}
 	taken := 0
-	if rec, err := imagesig.Judge(ctx, digest, sequence(&taken, theirs, mine), any, s.TrustedRoot(), pinned); err != nil || rec != recorded {
+	if rec, err := image.Judge(ctx, digest, sequence(&taken, theirs, mine), any, s.TrustedRoot(), pinned); err != nil || rec != recorded {
 		t.Fatalf("the reproducing carrier after a declined one: %+v %v", rec, err)
 	}
-	rec, err := imagesig.Judge(ctx, digest, sequence(&taken, theirs), any, s.TrustedRoot(), pinned)
-	if !errors.Is(err, imagesig.ErrRecordNotReproduced) || rec.SAN != "other@example.com" {
+	rec, err := image.Judge(ctx, digest, sequence(&taken, theirs), any, s.TrustedRoot(), pinned)
+	if !errors.Is(err, image.ErrRecordNotReproduced) || rec.SAN != "other@example.com" {
 		t.Fatalf("nothing reproducing the record: %+v %v", rec, err)
 	}
 	// Declined outranks refused and absent in the reason given.
-	refused := step{c: imagesig.Carrier{Where: "refused", Value: s.Bundle(t, digest, "third@example.com", issuer, sigstoretest.BundleOptions{})}}
+	refused := step{c: image.Carrier{Where: "refused", Value: s.Bundle(t, digest, "third@example.com", issuer, sigstoretest.BundleOptions{})}}
 	mineOnly := gitprov.Identity{Issuer: issuer, SubjectGlob: "{" + subject + ",other@example.com}"}
-	if _, err := imagesig.Judge(ctx, digest, sequence(&taken, refused, theirs), mineOnly, s.TrustedRoot(), pinned); !errors.Is(err, imagesig.ErrRecordNotReproduced) {
+	if _, err := image.Judge(ctx, digest, sequence(&taken, refused, theirs), mineOnly, s.TrustedRoot(), pinned); !errors.Is(err, image.ErrRecordNotReproduced) {
 		t.Fatalf("declined beside refused: %v", err)
 	}
 }
@@ -118,9 +118,9 @@ func TestJudgePrefersTheAcceptedRecord(t *testing.T) {
 // A recorder keeps what the judgement took, in order, up to the
 // stop, and never an erring step.
 func TestRecorderKeepsWhatWasTaken(t *testing.T) {
-	steps := []step{{c: imagesig.Carrier{Where: "a"}}, {err: errors.New("b unfetched")}, {c: imagesig.Carrier{Where: "c"}}, {c: imagesig.Carrier{Where: "d"}}}
+	steps := []step{{c: image.Carrier{Where: "a"}}, {err: errors.New("b unfetched")}, {c: image.Carrier{Where: "c"}}, {c: image.Carrier{Where: "d"}}}
 	taken := 0
-	var r imagesig.Recorder
+	var r image.Recorder
 	n := 0
 	for c, err := range r.Of(sequence(&taken, steps...)) {
 		n++
@@ -139,8 +139,8 @@ func TestRecorderKeepsWhatWasTaken(t *testing.T) {
 // The judge reaches no network: its imports carry no capability to
 // (REQ-prov-offline), the structural half of the witness above.
 func TestJudgeImportsCarryNoNetworkCapability(t *testing.T) {
-	structural.ImportAllowlist(t, "github.com/greatliontech/pb/internal/imagesig", map[string]structural.ImportRule{
-		"github.com/greatliontech/pb/internal/imagesig": {
+	structural.ImportAllowlist(t, "github.com/greatliontech/pb/internal/provenance/image", map[string]structural.ImportRule{
+		"github.com/greatliontech/pb/internal/provenance/image": {
 			Internal:                []string{"github.com/greatliontech/pb/internal/module/lockfile"},
 			ThirdParty:              []string{"github.com/greatliontech/gitprov"},
 			RestrictStandardLibrary: true,

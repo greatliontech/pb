@@ -386,9 +386,9 @@ bindings {
   content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
   source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/imagesig.TestJudgePrefersTheAcceptedRecord"
+  symbol: "github.com/greatliontech/pb/internal/provenance/image.TestJudgePrefersTheAcceptedRecord"
   role: BINDING_ROLE_TESTS
-  shape_hash: "5986cc0c3a1a66e23e5c9d47f2bf92b33a6a6c6134853f47f6e11cfe30923737"
+  shape_hash: "75a8033a3125baa0f6a162b0fef30598a08e790e1c4f7649bdb128deb7272be6"
 }
 
 bindings {

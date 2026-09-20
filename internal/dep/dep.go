@@ -26,8 +26,8 @@ import (
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/mvs"
 	"github.com/greatliontech/pb/internal/module/workspace"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/resolve"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // Config carries the assembled seams a Session is loaded over. WS is

@@ -21,7 +21,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 // Acquired is a resolved local plugin: the process to run — the

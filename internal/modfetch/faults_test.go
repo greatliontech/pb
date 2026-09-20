@@ -14,10 +14,10 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/provenance"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/proxy"
 	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"github.com/greatliontech/pb/internal/testing/provtest"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // The fault-injection filesystem lives in internal/testing/modfetchtest; local

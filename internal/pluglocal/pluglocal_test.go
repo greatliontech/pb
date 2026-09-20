@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 var ctx = context.Background()

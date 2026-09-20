@@ -26,12 +26,12 @@ import (
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/genfile"
-	"github.com/greatliontech/pb/internal/imagesig"
-	"github.com/greatliontech/pb/internal/imagesig/discover"
-	"github.com/greatliontech/pb/internal/imagesig/evidence"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/image"
+	"github.com/greatliontech/pb/internal/provenance/image/discover"
+	"github.com/greatliontech/pb/internal/provenance/image/evidence"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 // The two reasons no evidence is judged for an image
@@ -389,7 +389,7 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	prov, err := a.evidence(ctx, id.Reference, digest, decision, accept, acq.fresh)
 	switch {
 	case err == nil:
-	case errors.Is(err, imagesig.ErrRecordNotReproduced):
+	case errors.Is(err, image.ErrRecordNotReproduced):
 		return fmt.Errorf("plugoci: %s: %w", acq.declaredRef, lockfile.CheckProvenanceTransition(acq.pinnedProvenance, prov))
 	case tolerable(err):
 		if decision.Require {
@@ -414,7 +414,7 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 // REQ-prov-plugin-identity): absence, a signer the policy refuses, no
 // identity rule, no trusted root.
 func tolerable(err error) bool {
-	return errors.Is(err, imagesig.ErrNoEvidence) || errors.Is(err, imagesig.ErrIdentityNotAccepted) ||
+	return errors.Is(err, image.ErrNoEvidence) || errors.Is(err, image.ErrIdentityNotAccepted) ||
 		errors.Is(err, ErrNoIdentityRule) || errors.Is(err, ErrNoTrustedRoot)
 }
 
@@ -460,13 +460,13 @@ func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decis
 	}
 	if a.kept != nil && !fresh {
 		if kept, ok := a.kept.Load(h); ok {
-			if rec, err := imagesig.Judge(ctx, digest, imagesig.Sequence(kept), id, a.root, accept); err == nil {
+			if rec, err := image.Judge(ctx, digest, image.Sequence(kept), id, a.root, accept); err == nil {
 				return rec, nil
 			}
 		}
 	}
-	var fetched imagesig.Recorder
-	rec, err := imagesig.Judge(ctx, digest, fetched.Of(discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain()))), id, a.root, accept)
+	var fetched image.Recorder
+	rec, err := image.Judge(ctx, digest, fetched.Of(discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain()))), id, a.root, accept)
 	if a.kept != nil && (err == nil || tolerable(err)) {
 		// The keep is for later acquisitions; one that fails changes
 		// no outcome (REQ-prov-plugin-evidence-kept), as the cache

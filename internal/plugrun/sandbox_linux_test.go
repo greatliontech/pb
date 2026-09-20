@@ -19,7 +19,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/plugrun/testdata/behavior"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/sandbox"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"

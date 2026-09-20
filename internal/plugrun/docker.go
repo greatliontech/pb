@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 // DockerRunner runs an oci plugin in a container of a Docker daemon

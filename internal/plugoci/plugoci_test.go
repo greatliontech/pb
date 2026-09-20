@@ -20,9 +20,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/gitprov/sigstoretest"
-	"github.com/greatliontech/pb/internal/imagesig"
-	"github.com/greatliontech/pb/internal/imagesig/evidence"
-	"github.com/greatliontech/pb/internal/testing/imagesigtest"
+	"github.com/greatliontech/pb/internal/provenance/image"
+	"github.com/greatliontech/pb/internal/provenance/image/evidence"
+	"github.com/greatliontech/pb/internal/testing/imagetest"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -32,7 +32,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
 var ctx = context.Background()
@@ -122,7 +122,7 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
-	fixtures.serve(host, imagesigtest.Handler(false))
+	fixtures.serve(host, imagetest.Handler(false))
 	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform(), v1.Platform{OS: "plan9", Architecture: "mips"})
 	return &fixture{host: host, digest: digest}
@@ -321,7 +321,7 @@ type signedFixture struct {
 func newSignedFixture(t *testing.T, referrersAPI bool) *signedFixture {
 	t.Helper()
 	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
-	fixtures.serve(host, imagesigtest.Handler(referrersAPI))
+	fixtures.serve(host, imagetest.Handler(referrersAPI))
 	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform())
 	repo, err := name.NewRepository(host + "/org/plugin")
@@ -344,15 +344,15 @@ func (fx *signedFixture) hash(t *testing.T) v1.Hash {
 // subject and issuer, as cosign's default sign would.
 func (fx *signedFixture) signBundle(t *testing.T, subject, issuer string, o sigstoretest.BundleOptions) v1.Hash {
 	t.Helper()
-	return fx.signBundleOrdered(t, subject, issuer, o, imagesigtest.Anywhere, v1.Hash{})
+	return fx.signBundleOrdered(t, subject, issuer, o, imagetest.Anywhere, v1.Hash{})
 }
 
 // signBundleOrdered is signBundle with the referrer's digest placed
 // before or after pivot's.
-func (fx *signedFixture) signBundleOrdered(t *testing.T, subject, issuer string, o sigstoretest.BundleOptions, order imagesigtest.Order, pivot v1.Hash) v1.Hash {
+func (fx *signedFixture) signBundleOrdered(t *testing.T, subject, issuer string, o sigstoretest.BundleOptions, order imagetest.Order, pivot v1.Hash) v1.Hash {
 	t.Helper()
 	b := fx.sig.Bundle(t, fx.digest, subject, issuer, o)
-	return imagesigtest.AttachOrdered(t, fx.repo, fx.hash(t), imagesigtest.BundleArtifact(b, imagesigtest.CosignSignPredicate), order, pivot, remote.WithTransport(fixtures))
+	return imagetest.AttachOrdered(t, fx.repo, fx.hash(t), imagetest.BundleArtifact(b, imagetest.CosignSignPredicate), order, pivot, remote.WithTransport(fixtures))
 }
 
 const (
@@ -391,14 +391,14 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 				t.Fatalf("require without a trusted root: %v", err)
 			}
 			unsigned := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
-			if _, err := unsigned.Acquire(ctx, ref); !errors.Is(err, imagesig.ErrNoEvidence) {
+			if _, err := unsigned.Acquire(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
 				t.Fatalf("require on an unsigned image: %v", err)
 			}
 
 			fx.signBundle(t, "someone@example.com", signerIssuer, sigstoretest.BundleOptions{})
 			lock := &lockfile.File{}
 			other := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-			if _, err := other.Acquire(ctx, ref); !errors.Is(err, imagesig.ErrIdentityNotAccepted) {
+			if _, err := other.Acquire(ctx, ref); !errors.Is(err, image.ErrIdentityNotAccepted) {
 				t.Fatalf("another signer: %v", err)
 			}
 			if len(lock.Plugins) != 0 {
@@ -422,13 +422,13 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 			// carriers past the accepted one are never fetched.
 			corrupt := newSignedFixture(t, api)
 			accepted := corrupt.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
-			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagesigtest.After, accepted)
+			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.After, accepted)
 			corruptPolicy := &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}
 			a3 := newAcquirer(t, corrupt.fixture, &lockfile.File{}, corruptPolicy, corrupt.sig.TrustedRoot())
 			if got, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
 				t.Fatalf("rejected evidence past the accepted carrier: %+v %v", got, err)
 			}
-			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagesigtest.Before, accepted)
+			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.Before, accepted)
 			lock3 := &lockfile.File{}
 			a4 := newAcquirer(t, corrupt.fixture, lock3, corruptPolicy, corrupt.sig.TrustedRoot())
 			if _, err := a4.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
@@ -502,7 +502,7 @@ func TestAcquireIdentityRuleFlows(t *testing.T) {
 		rule(fx.host+"/org/plugin", trust.RequireProvenance, "https://github.com/other/**"),
 	}}
 	b := newAcquirer(t, fx.fixture, &lockfile.File{}, reversed, fx.sig.TrustedRoot())
-	if _, err := b.Acquire(ctx, ref); !errors.Is(err, imagesig.ErrIdentityNotAccepted) {
+	if _, err := b.Acquire(ctx, ref); !errors.Is(err, image.ErrIdentityNotAccepted) {
 		t.Fatalf("the shorter rule's identity governed: %v", err)
 	}
 }
@@ -515,7 +515,7 @@ func TestAcquireLegacySignatureTag(t *testing.T) {
 	fx := newSignedFixture(t, false)
 	ref := fx.host + "/org/plugin:v1"
 	e := fx.sig.Envelope(t, fx.digest, signerSAN, signerIssuer, sigstoretest.EnvelopeOptions{})
-	imagesigtest.Tag(t, fx.repo, imagesigtest.SignatureTag(fx.hash(t)), []imagesigtest.Layer{imagesigtest.EnvelopeLayer(e)}, remote.WithTransport(fixtures))
+	imagetest.Tag(t, fx.repo, imagetest.SignatureTag(fx.hash(t)), []imagetest.Layer{imagetest.EnvelopeLayer(e)}, remote.WithTransport(fixtures))
 	sigstoretest.RefuseNetwork(t)
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
@@ -545,7 +545,7 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 
 	// Unsigned: nothing found, nothing kept, asked again each time.
-	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); !errors.Is(err, imagesig.ErrNoEvidence) {
+	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("unsigned: %v", err)
 	}
 	if entries, _ := os.ReadDir(kept); len(entries) != 0 {
@@ -619,7 +619,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	// first's; a policy accepting only it refuses the kept evidence,
 	// fetches, passes the first over, accepts the second, and keeps
 	// both in that order.
-	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.After, firstReferrer)
+	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.After, firstReferrer)
 	workDir := t.TempDir()
 	pinnedToSecond := &lockfile.File{}
 	second := newAcquirerAt(t, fx.fixture, pinnedToSecond, accepting(otherSAN), fx.sig.TrustedRoot(), workDir, kept)
@@ -739,7 +739,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// update fetches anew rather than judging the kept evidence, so
 	// the record follows the registry.
 	const thirdSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v3"
-	fx.signBundleOrdered(t, thirdSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.Before, otherReferrer)
+	fx.signBundleOrdered(t, thirdSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Before, otherReferrer)
 	refreshing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
 	if _, after3, err := refreshing.UpdatePlugin(ctx, ref); err != nil || after3.Digest != fx.digest || after3.Provenance != imageRecord(thirdSAN) {
 		t.Fatalf("the update judged kept evidence instead of fetching: %+v %v", after3, err)
@@ -750,7 +750,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// require-provenance the update fails and the pin stands.
 	fx.digest = pushIndex(t, ref, hostPlatform())
 	refusing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if _, _, err := refusing.UpdatePlugin(ctx, ref); !errors.Is(err, imagesig.ErrNoEvidence) {
+	if _, _, err := refusing.UpdatePlugin(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("an unsigned image under require-provenance updated: %v", err)
 	}
 	if pin, _ := lock.Plugin(ref, lockfile.SchemeOCI); pin.Digest != after.Digest || pin.Provenance != imageRecord(thirdSAN) {
@@ -788,9 +788,9 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	// A second signature the policy also accepts, sorting before the
 	// recorded one, does not displace the record: the carrier
 	// reproducing it is the one taken.
-	recorded := fx.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.Anywhere, v1.Hash{})
+	recorded := fx.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Anywhere, v1.Hash{})
 	const otherSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v2"
-	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.Before, recorded)
+	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Before, recorded)
 	broad := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/acme/plugin/**")}}
 	both := newAcquirer(t, fx.fixture, lock, broad, fx.sig.TrustedRoot())
 	if got, err := both.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
@@ -931,10 +931,10 @@ func TestAcquireOverride(t *testing.T) {
 	if err := remote.WriteIndex(sfx.repo.Tag("elsewhere"), idx, remote.WithTransport(fixtures)); err != nil {
 		t.Fatal(err)
 	}
-	imagesigtest.Attach(t, sfx.repo, overrideDigest, imagesigtest.BundleArtifact(sfx.sig.Bundle(t, overrideDigest.String(), signerSAN, signerIssuer, sigstoretest.BundleOptions{}), imagesigtest.CosignSignPredicate), remote.WithTransport(fixtures))
+	imagetest.Attach(t, sfx.repo, overrideDigest, imagetest.BundleArtifact(sfx.sig.Bundle(t, overrideDigest.String(), signerSAN, signerIssuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate), remote.WithTransport(fixtures))
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(sfx.host+"/org", trust.RequireProvenance, signerSAN)}}
 	judged := newAcquirer(t, sfx.fixture, &lockfile.File{}, governed, sfx.sig.TrustedRoot())
-	if _, err := judged.AcquireOverride(ctx, sfx.host+"/org/plugin:v1", layoutDir); !errors.Is(err, imagesig.ErrNoEvidence) {
+	if _, err := judged.AcquireOverride(ctx, sfx.host+"/org/plugin:v1", layoutDir); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("require-provenance on an override: %v", err)
 	}
 	if _, err := a.AcquireOverride(ctx, ref, filepath.Join(t.TempDir(), "missing")); err == nil {

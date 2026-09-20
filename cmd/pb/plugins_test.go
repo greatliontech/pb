@@ -14,7 +14,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
-	"github.com/greatliontech/pb/internal/trust"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 

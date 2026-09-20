@@ -29,8 +29,8 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/proxy"
-	"github.com/greatliontech/pb/internal/trust"
 )
 
 // fetchLimit bounds every artifact response (REQ-proxy-client-

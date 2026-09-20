@@ -4,6 +4,11 @@
 // and plugin images alike (REQ-prov-trust-schema, REQ-prov-policy-eval).
 // Parsing goes through the YAML AST so the accepted surface is the
 // schema's, not the parser's, exactly as the other contract files do.
+// The file's execution block is this package's too: the sandbox tier
+// floor, the resource bounds, which identity schemes and overrides
+// a root admits (REQ-prov-exec-policy) — the policy the runners are
+// held to, evaluated here beside the provenance policy because one
+// file states both.
 //
 // Prefix matching is path-segment-aware: a rule prefix matches a
 // subject that equals it or extends it at a "/" boundary — a plain
