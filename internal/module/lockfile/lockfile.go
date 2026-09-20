@@ -25,7 +25,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/module"
-	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/plugin"
 )
 
 // ErrInvalid is wrapped by every lockfile rejection.
@@ -75,8 +75,8 @@ type ModulePin struct {
 // Plugin identity schemes (REQ-lock-plugin-entry), named from their one
 // home for callers already reaching them through this package.
 const (
-	SchemeOCI   = plugexec.SchemeOCI
-	SchemeLocal = plugexec.SchemeLocal
+	SchemeOCI   = plugin.SchemeOCI
+	SchemeLocal = plugin.SchemeLocal
 )
 
 // PluginPin is one plugin entry (REQ-lock-plugin-entry): identity facts

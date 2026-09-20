@@ -11,13 +11,13 @@ while the tree does another.
 | Domain | Governing specs | Packages |
 |---|---|---|
 | shared rules | the contract-file prologue, atomic writes, the root-contained path rule, each a rule several specs share | `contractfile`, `atomicfile`, `rootpath` |
-| plugin vocabulary | plugin-execution.md | `plugexec` |
+| plugin vocabulary | plugin-execution.md | `plugin` |
 | module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `provenance/image`, `provenance/image/discover`, `provenance/image/evidence`, `provenance/trust` |
 | source | module-proxy.md, module-resolution.md (the path resolution half) | `source`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
 | proto | generation.md (the compile half), module-resolution.md (the import satisfaction half) | `proto/modfiles`, `proto/compile`, `proto/importcheck` |
 | user configuration | user-config.md | `userconfig` |
-| plugin | plugin-execution.md, generation.md | `pluglocal`, `plugoci`, `plugrun`, `genfile`, `genrequest` |
+| plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
 | driver | module-resolution.md | `resolve` |
 | verbs | dep-verbs.md | `dep`, `cmd/pb` |
 

@@ -11,8 +11,8 @@ import (
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/plugoci"
-	"github.com/greatliontech/pb/internal/plugrun"
+	"github.com/greatliontech/pb/internal/plugin/oci"
+	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/userconfig"
@@ -20,7 +20,7 @@ import (
 
 type noDaemonRunner struct{}
 
-func (noDaemonRunner) Run(context.Context, plugrun.Spec) (*plugrun.Result, error) {
+func (noDaemonRunner) Run(context.Context, runner.Spec) (*runner.Result, error) {
 	return nil, errors.New("not run")
 }
 func (noDaemonRunner) Platform() (string, string) { return "linux", "fake" }
@@ -47,7 +47,7 @@ func TestAcquirerConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := plugoci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: plugoci.Platform{OS: "linux", Arch: "fake"}, Pull: plugoci.PullDaemon}
+	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: oci.Platform{OS: "linux", Arch: "fake"}, Pull: oci.PullDaemon}
 	if !reflect.DeepEqual(cfg, want) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}
@@ -63,19 +63,19 @@ func TestAcquirerConfig(t *testing.T) {
 func TestPullMode(t *testing.T) {
 	file := "the user configuration file /home/u/.config/pb/config.yaml"
 	for _, c := range []struct {
-		value  userconfig.Value
-		runner plugrun.Runner
-		want   plugoci.PullMode
-		text   string
+		value userconfig.Value
+		run   runner.Runner
+		want  oci.PullMode
+		text  string
 	}{
-		{userconfig.Value{}, noDaemonRunner{}, plugoci.PullStore, ""},
-		{userconfig.Value{Value: "store", From: file}, noDaemonRunner{}, plugoci.PullStore, ""},
-		{userconfig.Value{Value: "docker", From: file}, daemonRunner{}, plugoci.PullDaemon, ""},
+		{userconfig.Value{}, noDaemonRunner{}, oci.PullStore, ""},
+		{userconfig.Value{Value: "store", From: file}, noDaemonRunner{}, oci.PullStore, ""},
+		{userconfig.Value{Value: "docker", From: file}, daemonRunner{}, oci.PullDaemon, ""},
 		{userconfig.Value{Value: "docker", From: file}, noDaemonRunner{}, 0, file + `: plugin-pull "docker": only the docker runner`},
 		{userconfig.Value{Value: "docker", From: "the PBPLUGINPULL environment variable"}, noDaemonRunner{}, 0, `the PBPLUGINPULL environment variable: plugin-pull "docker"`},
 		{userconfig.Value{Value: "rsync", From: file}, daemonRunner{}, 0, file + `: plugin-pull "rsync" names no byte path (byte paths: store, docker)`},
 	} {
-		got, err := pullMode(c.value, c.runner)
+		got, err := pullMode(c.value, c.run)
 		if c.text == "" {
 			if err != nil || got != c.want {
 				t.Errorf("%+v: %v %v", c.value, got, err)

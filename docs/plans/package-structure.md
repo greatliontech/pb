@@ -21,9 +21,14 @@ test beside it, chunk 1).
 - [x] 5. proto: modfiles, protocomp, protoimport under internal/proto
       as modfiles, compile, importcheck (files and imports being the
       commonest locals in their importers)
-- [ ] 6. plugin: plugexec as the root vocabulary, pluglocal, plugoci,
+- [x] 6. plugin: plugexec as the root vocabulary, pluglocal, plugoci,
       plugrun, genfile, genrequest under internal/plugin as local, oci,
-      run, genfile, genrequest
+      runner (run and runner being locals in the importers; the
+      locals named runner become run), genfile, genrequest
 - [ ] 7. The driver and the verbs: resolve and dep against the final
       layering, the command's assembly with them; the CI paths, the
-      issue cites, the README of internal/testing; plan close-out
+      issue cites, the README of internal/testing; the host platform
+      one type on the plugin root (host-platform-spelled-three-ways)
+- [ ] 8. One acquirer seam: a scheme-tagged Acquired in a subpackage
+      of the plugin domain, one dep.Acquirer keyed by scheme
+      (two-acquirer-shapes); plan close-out

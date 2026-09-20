@@ -19,10 +19,10 @@ import (
 	"github.com/go-git/go-billy/v6/util"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
-	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/pluglocal"
-	"github.com/greatliontech/pb/internal/plugoci"
-	"github.com/greatliontech/pb/internal/plugrun"
+	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/local"
+	"github.com/greatliontech/pb/internal/plugin/oci"
+	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -32,12 +32,12 @@ import (
 type stubAcquirer struct {
 	overrides []string
 	got       []string
-	acq       *plugoci.Acquired
+	acq       *oci.Acquired
 	err       error
 	onAcquire func()
 }
 
-func (s *stubAcquirer) Acquire(_ context.Context, ref string) (*plugoci.Acquired, error) {
+func (s *stubAcquirer) Acquire(_ context.Context, ref string) (*oci.Acquired, error) {
 	s.got = append(s.got, ref)
 	if s.onAcquire != nil {
 		s.onAcquire()
@@ -46,16 +46,16 @@ func (s *stubAcquirer) Acquire(_ context.Context, ref string) (*plugoci.Acquired
 }
 
 type stubRunner struct {
-	spec plugrun.Spec
-	res  *plugrun.Result
+	spec runner.Spec
+	res  *runner.Result
 	err  error
 }
 
 // Run records the spec and refuses what every real runner refuses
 // first, so a spec gen builds that no runner would run fails here.
-func (s *stubRunner) Run(_ context.Context, spec plugrun.Spec) (*plugrun.Result, error) {
+func (s *stubRunner) Run(_ context.Context, spec runner.Spec) (*runner.Result, error) {
 	s.spec = spec
-	if err := plugrun.CheckSpec(spec); err != nil {
+	if err := runner.CheckSpec(spec); err != nil {
 		return nil, err
 	}
 	return s.res, s.err
@@ -98,8 +98,8 @@ func genFixture(t *testing.T, genYaml string) (*depFixture, *Session) {
 // REQ-gen-out-containment end to end).
 func TestGenHappyPath(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    opt: k=v\n")
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/plugin"}}, Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"a/x.pb.go": "code", "doc/readme.md": "d"}), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/plugin"}}, Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a/x.pb.go": "code", "doc/readme.md": "d"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var out strings.Builder
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &out); err != nil {
 		t.Fatal(err)
@@ -129,24 +129,24 @@ func TestGenHappyPath(t *testing.T) {
 // explicit lowering path (REQ-plugin-min-tier, REQ-plugin-reported-tier).
 func TestGenTierFloor(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierOS, Bounds: plugrun.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierOS, Bounds: runner.BoundsCgroups}}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "tier OS, below the required Strong") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
 	// The floor reaches the runner, and a runner refusing below it
 	// before anything runs is reported with the same lowering path.
-	if run.spec.MinTier != plugexec.TierStrong {
+	if run.spec.MinTier != plugin.TierStrong {
 		t.Fatalf("runner received floor %q", run.spec.MinTier)
 	}
-	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the os row; strong required", plugrun.ErrTierUnreachable)}
+	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the os row; strong required", runner.ErrTierUnreachable)}
 	err = Gen(ctx, s, GenDeps{Acquirer: acq, Runner: refusing}, &strings.Builder{})
-	if !errors.Is(err, plugrun.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the os row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
+	if !errors.Is(err, runner.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the os row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
 	// An explicitly lowered floor accepts the same run.
-	s.Client.Policy = &trust.Policy{Execution: trust.Execution{MinTier: plugexec.TierOS}}
+	s.Client.Policy = &trust.Policy{Execution: trust.Execution{MinTier: plugin.TierOS}}
 	var out strings.Builder
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &out); err != nil {
 		t.Fatal(err)
@@ -161,8 +161,8 @@ func TestGenTierFloor(t *testing.T) {
 func TestGenContainment(t *testing.T) {
 	for _, hostile := range []string{"/abs.go", "../up.go", "a/../../up.go", "a//b.go", "..", ".", "./x.go"} {
 		fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-		acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
-		run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", hostile: "y"}), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+		acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
+		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", hostile: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "is not a clean relative path inside the output directory") {
 			t.Fatalf("%q: err = %v", hostile, err)
@@ -181,8 +181,8 @@ func TestGenContainment(t *testing.T) {
 		{Name: proto.String("x.go"), Content: proto.String("two")},
 	}}
 	db, _ := proto.Marshal(dup)
-	runDup := &stubRunner{res: &plugrun.Result{Stdout: db, Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
-	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}, Runner: runDup}, &strings.Builder{})
+	runDup := &stubRunner{res: &runner.Result{Stdout: db, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: runDup}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), `names file "x.go" twice`) {
 		t.Fatalf("duplicate name: %v", err)
 	}
@@ -193,8 +193,8 @@ func TestGenContainment(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	resp := &pluginpb.CodeGeneratorResponse{File: []*pluginpb.CodeGeneratorResponse_File{{Name: proto.String("x.go"), InsertionPoint: proto.String("imports"), Content: proto.String("y")}}}
 	b, _ := proto.Marshal(resp)
-	run := &stubRunner{res: &plugrun.Result{Stdout: b, Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
-	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+	run := &stubRunner{res: &runner.Result{Stdout: b, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "insertion point") {
 		t.Fatalf("insertion point: %v", err)
 	}
@@ -224,8 +224,8 @@ func TestGenSchemeGate(t *testing.T) {
 func TestGenPlumbing(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Limits: trust.Limits{Pids: 7}}}
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestGenPlumbing(t *testing.T) {
 
 	declared := &pluginpb.CodeGeneratorResponse{Error: proto.String("cannot handle editions")}
 	b, _ := proto.Marshal(declared)
-	run2 := &stubRunner{res: &plugrun.Result{Stdout: b, Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	run2 := &stubRunner{res: &runner.Result{Stdout: b, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run2}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "cannot handle editions") {
 		t.Fatalf("declared error: %v", err)
@@ -267,8 +267,8 @@ func TestGenContainmentProperty(t *testing.T) {
 			name = "/" + name
 		}
 		_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-		run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{name: "y"}), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
-		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{name: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
 		clean := name != "" && name != "." && name != ".." && !strings.HasPrefix(name, "/") && !strings.HasPrefix(name, "../") && pathpkg.Clean(name) == name
 		if clean && err != nil {
 			rt.Fatalf("clean %q refused: %v", name, err)
@@ -283,10 +283,10 @@ func TestGenContainmentProperty(t *testing.T) {
 // each row breaks one stage and the run reports it.
 func TestGenFailurePaths(t *testing.T) {
 	okAcq := func() *stubAcquirer {
-		return &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
+		return &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
 	}
 	okRun := func() *stubRunner {
-		return &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+		return &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	}
 	genEntry := "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n"
 
@@ -390,14 +390,14 @@ func TestGenFailurePaths(t *testing.T) {
 func TestGenPersistsPins(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	acq := &stubAcquirer{
-		acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}},
+		acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}},
 		onAcquire: func() {
 			if err := s.Lock.AddPlugin(lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("ab", 32)}); err != nil {
 				t.Fatal(err)
 			}
 		},
 	}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -425,8 +425,8 @@ func TestGenWriteRealFS(t *testing.T) {
 	}
 	deps := func(files map[string]string) GenDeps {
 		return GenDeps{
-			Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}},
-			Runner:   &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, files), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}},
+			Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}},
+			Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, files), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
 		}
 	}
 
@@ -508,8 +508,8 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			}
 			s := fx.session(t, pathpkg.Join(root, "."))
 			deps := GenDeps{
-				Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}},
-				Runner:   &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", "sub/deep/x.go": "y"}), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}},
+				Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}},
+				Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", "sub/deep/x.go": "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
 			}
 			err := Gen(ctx, s, deps, &strings.Builder{})
 			if err == nil || !strings.Contains(err.Error(), `passes through "sub", a symlink`) {
@@ -526,7 +526,7 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			if err := fx.ws.Symlink(filepath.Join(outside, "leaf"), at("gen/leaf.go")); err != nil {
 				t.Fatal(err)
 			}
-			deps.Runner = &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"leaf.go": "z"}), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+			deps.Runner = &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"leaf.go": "z"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 			if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 				t.Fatal(err)
 			}
@@ -547,8 +547,8 @@ func TestGenRequestDeterministic(t *testing.T) {
 	var runs [][]byte
 	for i := 0; i < 2; i++ {
 		_, s := genFixture(t, gen)
-		run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
-		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{}); err != nil {
+		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{}); err != nil {
 			t.Fatal(err)
 		}
 		runs = append(runs, run.spec.Stdin)
@@ -561,7 +561,7 @@ func TestGenRequestDeterministic(t *testing.T) {
 // Every arm of the verb names the failing entry (REQ-gen-verb), and
 // the runner's report must carry a tier and a bounds mechanism.
 func TestGenNamesEntry(t *testing.T) {
-	okAcq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	okAcq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: x.proto\n    option: (m1.nosuch)\n    value: x\n")
 	err := Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: &stubRunner{}}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: ") || !strings.Contains(err.Error(), "no extension") {
@@ -572,10 +572,10 @@ func TestGenNamesEntry(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: registry down") {
 		t.Fatalf("acquire arm: %v", err)
 	}
-	for _, res := range []*plugrun.Result{
-		{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong},
-		{Stdout: respBytes(t, nil), Bounds: plugrun.BoundsCgroups},
-		{Stdout: respBytes(t, nil), Tier: "Absolute", Bounds: plugrun.BoundsCgroups},
+	for _, res := range []*runner.Result{
+		{Stdout: respBytes(t, nil), Tier: plugin.TierStrong},
+		{Stdout: respBytes(t, nil), Bounds: runner.BoundsCgroups},
+		{Stdout: respBytes(t, nil), Tier: "Absolute", Bounds: runner.BoundsCgroups},
 	} {
 		_, s = genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 		err = Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: &stubRunner{res: res}}, &strings.Builder{})
@@ -599,12 +599,12 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 			acq.err = errors.New("registry down")
 			return
 		}
-		acq.acq = &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}
+		acq.acq = &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}
 		if err := s.Lock.AddPlugin(lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("ab", 32)}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/q:v1: registry down") {
 		t.Fatalf("err = %v", err)
@@ -617,18 +617,18 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 	}
 }
 
-func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string) (*plugoci.Acquired, error) {
+func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string) (*oci.Acquired, error) {
 	s.overrides = append(s.overrides, ref+"="+source)
 	return s.acq, s.err
 }
 
 type stubLocal struct {
 	value string
-	acq   *pluglocal.Acquired
+	acq   *local.Acquired
 	err   error
 }
 
-func (s *stubLocal) Acquire(_ context.Context, value string) (*pluglocal.Acquired, error) {
+func (s *stubLocal) Acquire(_ context.Context, value string) (*local.Acquired, error) {
 	s.value = value
 	return s.acq, s.err
 }
@@ -640,22 +640,22 @@ func (s *stubLocal) Acquire(_ context.Context, value string) (*pluglocal.Acquire
 // runner.
 func TestGenLocalEntry(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen2\n")
-	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugexec.SchemeOCI, plugexec.SchemeLocal}}}
-	local := &stubLocal{acq: &pluglocal.Acquired{Process: plugexec.Process{Argv: []string{"/abs/tools/gen"}}}}
-	localRun := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, map[string]string{"a.go": "x"}), Tier: plugexec.TierMinimal, Bounds: plugrun.BoundsRlimits}}
-	ociRun := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugin.SchemeOCI, plugin.SchemeLocal}}}
+	loc := &stubLocal{acq: &local.Acquired{Process: plugin.Process{Argv: []string{"/abs/tools/gen"}}}}
+	localRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a.go": "x"}), Tier: plugin.TierMinimal, Bounds: runner.BoundsRlimits}}
+	ociRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
 	var out strings.Builder
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: local, Runner: localRun}}, &out); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
 		t.Fatal(err)
 	}
-	if local.value != "tools/gen" {
-		t.Fatalf("local acquirer got %q", local.value)
+	if loc.value != "tools/gen" {
+		t.Fatalf("local acquirer got %q", loc.value)
 	}
-	if localRun.spec.Scheme != plugexec.SchemeLocal || localRun.spec.Rootfs != "" || localRun.spec.MinTier != plugexec.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
+	if localRun.spec.Scheme != plugin.SchemeLocal || localRun.spec.Rootfs != "" || localRun.spec.MinTier != plugin.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
 		t.Fatalf("local run spec = %+v", localRun.spec)
 	}
-	if ociRun.spec.Scheme != plugexec.SchemeOCI || ociRun.spec.Rootfs != "/r" || ociRun.spec.MinTier != plugexec.TierStrong {
+	if ociRun.spec.Scheme != plugin.SchemeOCI || ociRun.spec.Rootfs != "/r" || ociRun.spec.MinTier != plugin.TierStrong {
 		t.Fatalf("oci run spec = %+v", ociRun.spec)
 	}
 	if !strings.Contains(out.String(), "tools/gen: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
@@ -674,8 +674,8 @@ func TestGenLocalEntry(t *testing.T) {
 // error; the lockfile is untouched in both directions.
 func TestGenOverrides(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - ref: ghcr.io/o/q:v1\n    out: gen2\n")
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Process: plugexec.Process{Argv: []string{"/p"}}}}
-	run := &stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var diag strings.Builder
 	deps := GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}, Diagnostics: &diag}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
@@ -714,9 +714,9 @@ func TestGenOverrides(t *testing.T) {
 		t.Fatalf("unknown key: %v", err)
 	}
 	_, sl := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n")
-	sl.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugexec.SchemeOCI, plugexec.SchemeLocal}}}
-	local := &stubLocal{acq: &pluglocal.Acquired{Process: plugexec.Process{Argv: []string{"/abs/tools/gen"}}}}
-	deps = GenDeps{Acquirer: acq, Runner: run, Local: &LocalDeps{Acquirer: local, Runner: run}, Overrides: map[string]string{"tools/gen": "/tmp/x"}}
+	sl.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugin.SchemeOCI, plugin.SchemeLocal}}}
+	loc := &stubLocal{acq: &local.Acquired{Process: plugin.Process{Argv: []string{"/abs/tools/gen"}}}}
+	deps = GenDeps{Acquirer: acq, Runner: run, Local: &LocalDeps{Acquirer: loc, Runner: run}, Overrides: map[string]string{"tools/gen": "/tmp/x"}}
 	if err := Gen(ctx, sl, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "names no oci plugin entry") {
 		t.Fatalf("local key: %v", err)
 	}
@@ -735,8 +735,8 @@ func TestGenOverrides(t *testing.T) {
 func TestGenPulledImage(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
-	acq := &stubAcquirer{acq: &plugoci.Acquired{Image: image, Platform: "linux/arm/v6", Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
-	run := &daemonStubRunner{stubRunner{res: &plugrun.Result{Stdout: respBytes(t, nil), Tier: plugexec.TierStrong, Bounds: plugrun.BoundsCgroups}}}
+	acq := &stubAcquirer{acq: &oci.Acquired{Image: image, Platform: "linux/arm/v6", Pin: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI}}}
+	run := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -750,7 +750,7 @@ func TestGenPulledImage(t *testing.T) {
 	}
 	// A store acquisition carries the admitted platform too — the
 	// export is that child — and the runner is told none of it.
-	stored := &stubAcquirer{acq: &plugoci.Acquired{Rootfs: "/r", Platform: "linux/arm/v6", Process: plugexec.Process{Argv: []string{"/p"}}}}
+	stored := &stubAcquirer{acq: &oci.Acquired{Rootfs: "/r", Platform: "linux/arm/v6", Process: plugin.Process{Argv: []string{"/p"}}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: plain}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}

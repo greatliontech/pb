@@ -246,9 +246,9 @@ bindings {
   content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
   source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.UpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "09390338f43eb90fabab7128993fdcb92be3e0680fe76ea8a51e03d44d6e6dbd"
+  shape_hash: "9c1b2a89bcf87b5a4f247abee98413cd43158da63b171c8848283f04ae674ad2"
 }
 
 bindings {
@@ -266,9 +266,9 @@ bindings {
   content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
   source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
-  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
+  shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
 }
 
 bindings {

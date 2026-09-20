@@ -5,9 +5,9 @@
       "editDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
       "rawEditDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
       "files": [
-        "internal/plugrun/sandbox_linux.go"
+        "internal/plugin/runner/sandbox_linux.go"
       ],
-      "testPkg": "github.com/greatliontech/pb/internal/plugrun",
+      "testPkg": "github.com/greatliontech/pb/internal/plugin/runner",
       "run": "^Test",
       "reason": "checkLimits refuses a Spec with any zero limit before New, and sandbox's contract reports AccountingNone only when no limit was stated, so a bounded run never reaches this branch with AccountingNone; the guard is the runtime check of the Structural-check gate over a state the seam cannot construct",
       "commit": "c505c53c5845acf18c3cd5ed55137b5dca3bc484",
@@ -29,9 +29,9 @@
       "editDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "rawEditDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "files": [
-        "internal/plugoci/override.go"
+        "internal/plugin/oci/override.go"
       ],
-      "testPkg": "github.com/greatliontech/pb/internal/plugoci",
+      "testPkg": "github.com/greatliontech/pb/internal/plugin/oci",
       "run": "^Test",
       "reason": "the store is constructed with the verification seam (ocifs.WithVerifier) and runs it on every Pull, so a pull that returned without the seam setting resolved is unreachable through this acquirer; the guard mirrors Acquire's and exists so a seamless store could never yield an override",
       "commit": "4f70d29c0fc104e37e235951e08a1b98e0566b3a",

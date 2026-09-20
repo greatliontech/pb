@@ -181,8 +181,8 @@ func TestLayeringRefuses(t *testing.T) {
 		want  string
 	}{
 		"an edge against the order":                   {edit(func(m map[string][]string) { m["internal/module/modfile"] = []string{"internal/dep"} }), "against the order"},
-		"an edge up the list between level domains":   {edit(func(m map[string][]string) { m["internal/source/proxy"] = []string{"internal/genfile"} }), "against the order"},
-		"an edge down the list between level domains": {edit(func(m map[string][]string) { m["internal/genfile"] = []string{"internal/source/proxy"} }), "against the order"},
+		"an edge up the list between level domains":   {edit(func(m map[string][]string) { m["internal/source/proxy"] = []string{"internal/plugin/genfile"} }), "against the order"},
+		"an edge down the list between level domains": {edit(func(m map[string][]string) { m["internal/plugin/genfile"] = []string{"internal/source/proxy"} }), "against the order"},
 		"a package outside every domain":              {edit(func(m map[string][]string) { m["internal/stray"] = nil }), "belongs to no domain"},
 		"an import outside every domain":              {edit(func(m map[string][]string) { m["internal/dep"] = []string{"internal/stray"} }), "belongs to no domain"},
 		"test support shipped":                        {edit(func(m map[string][]string) { m["internal/dep"] = []string{"internal/testing/gittest"} }), "ships"},

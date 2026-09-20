@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/dep"
-	"github.com/greatliontech/pb/internal/pluglocal"
-	"github.com/greatliontech/pb/internal/plugoci"
-	"github.com/greatliontech/pb/internal/plugrun"
+	"github.com/greatliontech/pb/internal/plugin/local"
+	"github.com/greatliontech/pb/internal/plugin/oci"
+	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/userconfig"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,7 @@ func generateCmd() *cobra.Command {
 		Use: "generate", Short: "generate code from the workspace's protobuf files", Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
 			var flag *string
-			if c.Flags().Changed(plugrun.FlagRunner) {
+			if c.Flags().Changed(runner.FlagRunner) {
 				flag = &runnerFlag
 			}
 			// The settings and the session are loaded apart here, the
@@ -38,7 +38,7 @@ func generateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			runner, err := plugrun.Open(flag, settings.Get(userconfig.KeyRunner))
+			run, err := runner.Open(flag, settings.Get(userconfig.KeyRunner))
 			if err != nil {
 				return err
 			}
@@ -57,30 +57,30 @@ func generateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg, err := acquirerConfig(settings, runner, s)
+			cfg, err := acquirerConfig(settings, run, s)
 			if err != nil {
 				return err
 			}
-			acq, err := plugoci.New(cfg)
+			acq, err := oci.New(cfg)
 			if err != nil {
 				return err
 			}
 			defer acq.Close()
-			deps := dep.GenDeps{Acquirer: acq, Runner: runner, Diagnostics: os.Stderr, Overrides: overrideMap}
+			deps := dep.GenDeps{Acquirer: acq, Runner: run, Diagnostics: os.Stderr, Overrides: overrideMap}
 			// Local plugins run on the native runner wherever it exists.
 			// The session's root is a path within the working tree,
 			// which is rooted at the host's filesystem root.
-			if native, err := plugrun.NativeRunner(); err == nil {
+			if native, err := runner.NativeRunner(); err == nil {
 				root := filepath.Join(string(filepath.Separator), filepath.FromSlash(s.Root.Dir))
 				deps.Local = &dep.LocalDeps{
-					Acquirer: &pluglocal.Acquirer{Root: root, Lock: s.Lock, Policy: s.Client.Policy},
+					Acquirer: &local.Acquirer{Root: root, Lock: s.Lock, Policy: s.Client.Policy},
 					Runner:   native,
 				}
 			}
 			return dep.Gen(c.Context(), s, deps, os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&runnerFlag, plugrun.FlagRunner, "", "runner for oci plugins: native or docker (over "+userconfig.Keys[userconfig.KeyRunner].Env+", over the user configuration file's runner key, over the platform default)")
+	cmd.Flags().StringVar(&runnerFlag, runner.FlagRunner, "", "runner for oci plugins: native or docker (over "+userconfig.Keys[userconfig.KeyRunner].Env+", over the user configuration file's runner key, over the platform default)")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "REF=SOURCE: run the oci plugin REF from SOURCE for this invocation — an OCI layout directory, an OCI layout archive or docker-save tarball, or docker://IMAGE (docker runner); repeatable")
 	return cmd
 }

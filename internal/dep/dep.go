@@ -15,7 +15,7 @@ import (
 	"path"
 
 	"github.com/go-git/go-billy/v6/util"
-	"github.com/greatliontech/pb/internal/genfile"
+	"github.com/greatliontech/pb/internal/plugin/genfile"
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/helper/iofs"

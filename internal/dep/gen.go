@@ -10,13 +10,13 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/atomicfile"
-	"github.com/greatliontech/pb/internal/genfile"
-	"github.com/greatliontech/pb/internal/genrequest"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/plugexec"
-	"github.com/greatliontech/pb/internal/pluglocal"
-	"github.com/greatliontech/pb/internal/plugoci"
-	"github.com/greatliontech/pb/internal/plugrun"
+	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/genfile"
+	"github.com/greatliontech/pb/internal/plugin/genrequest"
+	"github.com/greatliontech/pb/internal/plugin/local"
+	"github.com/greatliontech/pb/internal/plugin/oci"
+	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/rootpath"
@@ -26,17 +26,17 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// Acquirer materializes an oci-scheme plugin; plugoci.Acquirer is the
+// Acquirer materializes an oci-scheme plugin; oci.Acquirer is the
 // production implementation, injected for the verb's own tests.
 type Acquirer interface {
-	Acquire(ctx context.Context, ref string) (*plugoci.Acquired, error)
-	AcquireOverride(ctx context.Context, ref, source string) (*plugoci.Acquired, error)
+	Acquire(ctx context.Context, ref string) (*oci.Acquired, error)
+	AcquireOverride(ctx context.Context, ref, source string) (*oci.Acquired, error)
 }
 
 // LocalAcquirer resolves and pins a local-scheme plugin;
-// pluglocal.Acquirer is the production implementation.
+// local.Acquirer is the production implementation.
 type LocalAcquirer interface {
-	Acquire(ctx context.Context, value string) (*pluglocal.Acquired, error)
+	Acquire(ctx context.Context, value string) (*local.Acquired, error)
 }
 
 // LocalDeps are the local scheme's seams, present together or not at
@@ -44,7 +44,7 @@ type LocalAcquirer interface {
 // whichever runner the oci entries selected.
 type LocalDeps struct {
 	Acquirer LocalAcquirer
-	Runner   plugrun.Runner
+	Runner   runner.Runner
 }
 
 // GenDeps are the seams the gen verb runs over: the oci acquirer and
@@ -53,7 +53,7 @@ type LocalDeps struct {
 // runs.
 type GenDeps struct {
 	Acquirer Acquirer
-	Runner   plugrun.Runner
+	Runner   runner.Runner
 	Local    *LocalDeps
 	// Overrides are the invocation's plugin overrides, declared oci
 	// reference to source (REQ-plugin-override): a path to an OCI
@@ -75,7 +75,7 @@ type acquired struct {
 	image    string
 	pull     bool   // image is the registry's at a verified digest, for the daemon to pull
 	platform string // the admitted entry's platform, for a pulled image
-	process  plugexec.Process
+	process  plugin.Process
 }
 
 // Gen is the generate verb (REQ-gen-verb): parse pb.gen.yaml, compile
@@ -96,11 +96,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if !exec.SchemeAllowed(p.Scheme) {
 			return fmt.Errorf("generate: the trust policy does not permit %s-scheme plugins (plugin %s)", p.Scheme, p.Ref)
 		}
-		if p.Scheme == plugexec.SchemeLocal && deps.Local == nil {
+		if p.Scheme == plugin.SchemeLocal && deps.Local == nil {
 			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Ref)
 		}
 	}
-	_, daemonRunner := deps.Runner.(plugrun.DaemonImages)
+	_, daemonRunner := deps.Runner.(runner.DaemonImages)
 	// Overrides are judged before anything is acquired: the policy
 	// admits them or not, and every key names a declared oci entry
 	// (REQ-plugin-override).
@@ -110,13 +110,13 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	for key, source := range deps.Overrides {
 		found := false
 		for _, p := range gf.Plugins {
-			found = found || (p.Scheme == plugexec.SchemeOCI && p.Ref == key)
+			found = found || (p.Scheme == plugin.SchemeOCI && p.Ref == key)
 		}
 		if !found {
 			return fmt.Errorf("generate: override %s names no oci plugin entry", key)
 		}
 		if !daemonRunner && strings.HasPrefix(source, OverrideDaemonPrefix) {
-			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs (select it with --%s docker)", key, plugrun.FlagRunner)
+			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs (select it with --%s docker)", key, runner.FlagRunner)
 		}
 	}
 	diag := deps.Diagnostics
@@ -147,8 +147,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	var acqErr error
 	for i, entry := range gf.Plugins {
 		switch entry.Scheme {
-		case plugexec.SchemeLocal:
-			var a *pluglocal.Acquired
+		case plugin.SchemeLocal:
+			var a *local.Acquired
 			a, acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref)
 			if acqErr == nil {
 				plugins[i] = acquired{process: a.Process}
@@ -163,14 +163,14 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				plugins[i] = acquired{image: strings.TrimPrefix(source, OverrideDaemonPrefix)}
 				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, plugins[i].image)
 			case overridden:
-				var a *plugoci.Acquired
+				var a *oci.Acquired
 				a, acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
 				if acqErr == nil {
 					plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
 					fmt.Fprintf(diag, "overriding %s with %s\n", entry.Ref, source)
 				}
 			default:
-				var a *plugoci.Acquired
+				var a *oci.Acquired
 				a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
 				if acqErr == nil && a.Image != "" && !daemonRunner {
 					// The acquisition yielded a digest for the daemon
@@ -222,11 +222,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		// a sandbox row gives an image, so whatever row the host puts
 		// around the binary is reported and none is required
 		// (plugin-execution.md, "Local binaries").
-		runner, floor := deps.Runner, minTier
-		if entry.Scheme == plugexec.SchemeLocal {
-			runner, floor = deps.Local.Runner, plugexec.TierNone
+		run, floor := deps.Runner, minTier
+		if entry.Scheme == plugin.SchemeLocal {
+			run, floor = deps.Local.Runner, plugin.TierNone
 		}
-		res, err := runner.Run(ctx, plugrun.Spec{
+		res, err := run.Run(ctx, runner.Spec{
 			Scheme:   entry.Scheme,
 			Rootfs:   plugins[i].rootfs,
 			Image:    plugins[i].image,
@@ -237,7 +237,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			Limits:   limits,
 			MinTier:  floor,
 		})
-		if errors.Is(err, plugrun.ErrTierUnreachable) {
+		if errors.Is(err, runner.ErrTierUnreachable) {
 			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)
 		}
 		if err != nil {
@@ -246,13 +246,13 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		// The runner's report is the record the tier floor and the
 		// bounds clause are judged on; a runner that reports neither
 		// has broken its contract.
-		if !plugexec.ValidTier(res.Tier) || res.Bounds == "" {
+		if !plugin.ValidTier(res.Tier) || res.Bounds == "" {
 			return fmt.Errorf("generate: plugin %s: the runner reported no sandbox tier or bounds mechanism (tier %q, bounds %q)", entry.Ref, res.Tier, res.Bounds)
 		}
-		if plugexec.TierBelow(res.Tier, floor) {
+		if plugin.TierBelow(res.Tier, floor) {
 			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Ref, res.Tier, floor, lowerFloorHint)
 		}
-		resp, err := plugrun.Respond(res)
+		resp, err := runner.Respond(res)
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
 		}

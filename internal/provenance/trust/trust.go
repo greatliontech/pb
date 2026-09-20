@@ -28,7 +28,7 @@ import (
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/greatliontech/pb/internal/contractfile"
-	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/plugin"
 )
 
 // FileName is the trust policy file, at the resolution root next to the
@@ -64,14 +64,14 @@ type Rule struct {
 }
 
 // Vocabulary re-exported for callers already naming it through this
-// package; the one home is plugexec.
+// package; the one home is plugin.
 const (
-	TierStrong  = plugexec.TierStrong
-	TierOS      = plugexec.TierOS
-	TierMinimal = plugexec.TierMinimal
-	TierNone    = plugexec.TierNone
-	SchemeOCI   = plugexec.SchemeOCI
-	SchemeLocal = plugexec.SchemeLocal
+	TierStrong  = plugin.TierStrong
+	TierOS      = plugin.TierOS
+	TierMinimal = plugin.TierMinimal
+	TierNone    = plugin.TierNone
+	SchemeOCI   = plugin.SchemeOCI
+	SchemeLocal = plugin.SchemeLocal
 )
 
 // Limits are plugin resource bounds overriding the implementation
@@ -297,7 +297,7 @@ func parseExecution(n ast.Node) (*Execution, error) {
 		switch key {
 		case "min-tier":
 			s, ok := kv.Value.(*ast.StringNode)
-			if !ok || !plugexec.ValidTier(s.Value) {
+			if !ok || !plugin.ValidTier(s.Value) {
 				return nil, fmt.Errorf("%w: execution.min-tier must be one of Strong, OS, Minimal, None", ErrInvalid)
 			}
 			e.MinTier = s.Value
@@ -309,7 +309,7 @@ func parseExecution(n ast.Node) (*Execution, error) {
 			schemes := make([]string, 0, len(seq.Values))
 			for _, sn := range seq.Values {
 				s, ok := sn.(*ast.StringNode)
-				if !ok || !plugexec.ValidScheme(s.Value) {
+				if !ok || !plugin.ValidScheme(s.Value) {
 					return nil, fmt.Errorf("%w: execution.schemes entries are oci or local", ErrInvalid)
 				}
 				if slices.Contains(schemes, s.Value) {

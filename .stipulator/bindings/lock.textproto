@@ -356,9 +356,9 @@ bindings {
   content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
   source_hash: "058653cd7a7775f4a08f6acaddd17eafb81c9b563f0cf455e3313aa632e5cb11"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireFirstUse"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireFirstUse"
   role: BINDING_ROLE_TESTS
-  shape_hash: "7f74c83fc65d5f1a138080ff5a6c031ac94a46d0bd051572b945aa48033fdd34"
+  shape_hash: "58d6047a49b83bc99217935871e271174c2f2d8eceed80aabaa0960659fa432d"
 }
 
 bindings {
@@ -376,9 +376,9 @@ bindings {
   content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
   source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireReverifiesPinnedRecord"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireReverifiesPinnedRecord"
   role: BINDING_ROLE_TESTS
-  shape_hash: "23c0b0e88ea99360fc8ea9033c1aa60eabf4129b6221e3d07bc856b70c70e042"
+  shape_hash: "f5d22ab3211f1dc0e3e132c22d12446f965d4909152c187089741f702cda8756"
 }
 
 bindings {
@@ -426,7 +426,7 @@ bindings {
   content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
   source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
-  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
+  shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
 }

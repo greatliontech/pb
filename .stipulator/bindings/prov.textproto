@@ -226,9 +226,9 @@ bindings {
   content_hash: "052d2fd4aad4257f8527a3329a5df4d4b11f1300cd6642edd85dae2a55f5305c"
   source_hash: "5bf248267ecb1b528873d7c5e757872b493c343896f61b034e281b91326870b4"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireFirstUse"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireFirstUse"
   role: BINDING_ROLE_TESTS
-  shape_hash: "7f74c83fc65d5f1a138080ff5a6c031ac94a46d0bd051572b945aa48033fdd34"
+  shape_hash: "58d6047a49b83bc99217935871e271174c2f2d8eceed80aabaa0960659fa432d"
 }
 
 bindings {
@@ -236,9 +236,9 @@ bindings {
   content_hash: "c7c3c0de579a28921489ead7f7e6f64268fba9a7fce0c19b9953d4da1b06c929"
   source_hash: "f95064b896d522a6328414cfe20672efc29eed321719fd30ff97fe496ddcfbdb"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ac9a4c75c0095077a7fc3a6a035a2d6d3550f0df45c15079e6e293c9a54cae10"
+  shape_hash: "0e8f6e93eafda2b633bcc0342dd47f0d697aa0d194d15e4f71e35b9928da6327"
 }
 
 bindings {
@@ -246,9 +246,9 @@ bindings {
   content_hash: "c7c3c0de579a28921489ead7f7e6f64268fba9a7fce0c19b9953d4da1b06c929"
   source_hash: "f95064b896d522a6328414cfe20672efc29eed321719fd30ff97fe496ddcfbdb"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireProvenancePolicy"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireProvenancePolicy"
   role: BINDING_ROLE_TESTS
-  shape_hash: "eb110873bab985f195cf0588f97d08a48c168822aabe256127cd35eb01122eb1"
+  shape_hash: "ec599151100843cb273b5a72b78c630df17eb97f6a4bacaec2cee37860d2fc50"
 }
 
 bindings {
@@ -266,9 +266,9 @@ bindings {
   content_hash: "e87f42efb97589318166ea6cd4742f318306b6cdbb4c69b112ee8e8ce9e5dc32"
   source_hash: "e0686ec41f36adf4f383472e125b473ec26132a0c2329ecb9fca68dd3dbf1234"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireOpportunisticVerification"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireOpportunisticVerification"
   role: BINDING_ROLE_TESTS
-  shape_hash: "7c91cc91fbab09ef032016c5da3e9af630ae156efebe03b36f62d62ae1c45656"
+  shape_hash: "dd13136733623ca8c6b37894fe2b1865fbab56f2cd0af22d973194821a3d44df"
 }
 
 bindings {
@@ -276,9 +276,9 @@ bindings {
   content_hash: "29c69657fdb8aad6de317a97379452a9e2964eda69120d5e6a123c40e47c3572"
   source_hash: "c8b66923c3f57eb15dc78626b37960d8919d9ce0f62520623b62bdf687bee83a"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ac9a4c75c0095077a7fc3a6a035a2d6d3550f0df45c15079e6e293c9a54cae10"
+  shape_hash: "0e8f6e93eafda2b633bcc0342dd47f0d697aa0d194d15e4f71e35b9928da6327"
 }
 
 bindings {
@@ -286,9 +286,9 @@ bindings {
   content_hash: "29c69657fdb8aad6de317a97379452a9e2964eda69120d5e6a123c40e47c3572"
   source_hash: "c8b66923c3f57eb15dc78626b37960d8919d9ce0f62520623b62bdf687bee83a"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireProvenancePolicy"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireProvenancePolicy"
   role: BINDING_ROLE_TESTS
-  shape_hash: "eb110873bab985f195cf0588f97d08a48c168822aabe256127cd35eb01122eb1"
+  shape_hash: "ec599151100843cb273b5a72b78c630df17eb97f6a4bacaec2cee37860d2fc50"
 }
 
 bindings {
@@ -296,9 +296,9 @@ bindings {
   content_hash: "29c69657fdb8aad6de317a97379452a9e2964eda69120d5e6a123c40e47c3572"
   source_hash: "c8b66923c3f57eb15dc78626b37960d8919d9ce0f62520623b62bdf687bee83a"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireOpportunisticVerification"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireOpportunisticVerification"
   role: BINDING_ROLE_TESTS
-  shape_hash: "7c91cc91fbab09ef032016c5da3e9af630ae156efebe03b36f62d62ae1c45656"
+  shape_hash: "dd13136733623ca8c6b37894fe2b1865fbab56f2cd0af22d973194821a3d44df"
 }
 
 bindings {
@@ -366,9 +366,9 @@ bindings {
   content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
   source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireOverride"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireOverride"
   role: BINDING_ROLE_TESTS
-  shape_hash: "fb4fca2a219fb130daa7f262ae24cd0ac302f5593dda6ed026c72f8daa43b66d"
+  shape_hash: "9569a05118e9a702cc113f8aa4b8d844e5672de09c1c912612875fdb34bf8177"
 }
 
 bindings {
@@ -386,9 +386,9 @@ bindings {
   content_hash: "e87f42efb97589318166ea6cd4742f318306b6cdbb4c69b112ee8e8ce9e5dc32"
   source_hash: "e0686ec41f36adf4f383472e125b473ec26132a0c2329ecb9fca68dd3dbf1234"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireReverifiesPinnedRecord"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireReverifiesPinnedRecord"
   role: BINDING_ROLE_TESTS
-  shape_hash: "23c0b0e88ea99360fc8ea9033c1aa60eabf4129b6221e3d07bc856b70c70e042"
+  shape_hash: "f5d22ab3211f1dc0e3e132c22d12446f965d4909152c187089741f702cda8756"
 }
 
 bindings {
@@ -426,9 +426,9 @@ bindings {
   content_hash: "edaad3cf6f9dd37878ad3d3fa2f3ae2c621977ed52a67bb6685ffe6bfe588fd0"
   source_hash: "855422b1207833ea0cd20cef9be25b2f1b3b69a8c7985409e61fb6555aa200fb"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireLegacySignatureTag"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireLegacySignatureTag"
   role: BINDING_ROLE_TESTS
-  shape_hash: "a99fe77747e2a39515a6697f5bcbcc17632b1153b629006f7342cce33f62fca3"
+  shape_hash: "dccc781ae687e7c4f3981ffc531990443b14e684b9800cee44012c66fab12fda"
 }
 
 bindings {
@@ -436,9 +436,9 @@ bindings {
   content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
   source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.evidence"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ac9a4c75c0095077a7fc3a6a035a2d6d3550f0df45c15079e6e293c9a54cae10"
+  shape_hash: "0e8f6e93eafda2b633bcc0342dd47f0d697aa0d194d15e4f71e35b9928da6327"
 }
 
 bindings {
@@ -446,9 +446,9 @@ bindings {
   content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
   source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireKeepsEvidence"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireKeepsEvidence"
   role: BINDING_ROLE_TESTS
-  shape_hash: "68d7e057f02db7acc321d95a7011c7bc74524f65c54edac2ec43364de09ceffb"
+  shape_hash: "7733aabe5d755dd1057a7237b515f39e5fb26624376f5ea590cb4ffa4d3a5bdc"
 }
 
 bindings {
@@ -456,9 +456,9 @@ bindings {
   content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
   source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquireKeptEvidenceReplaced"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireKeptEvidenceReplaced"
   role: BINDING_ROLE_TESTS
-  shape_hash: "bab6842f095a2a28b6d2c7399f69b1ea35cf0ae8f87802df0e3d81d26a38f535"
+  shape_hash: "8cbd5c781f70958ead221ee152bb0afe6fe998e5c76986a7b0f35b568f381c1c"
 }
 
 bindings {
@@ -526,7 +526,7 @@ bindings {
   content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
   source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
-  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
+  shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
 }

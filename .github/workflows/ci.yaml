@@ -65,7 +65,7 @@ jobs:
       # The runner suite runs once, below, with its live arms demanded;
       # running it here too would only double its exposure to the
       # daemon's own losses. The two unit legs share the one list.
-      - run: echo "UNIT_PACKAGES=$(go list ./... | grep -v /internal/plugrun | tr '\n' ' ')" >> "$GITHUB_ENV"
+      - run: echo "UNIT_PACKAGES=$(go list ./... | grep -v /internal/plugin/runner | tr '\n' ' ')" >> "$GITHUB_ENV"
       - run: go test -race $UNIT_PACKAGES -count=1 -timeout=30m
       # The suites pin rapid's seed for oracle determinism, which fixes
       # every property test to one trajectory. This leg restores the
@@ -88,7 +88,7 @@ jobs:
       # the row or delegate, or whose daemon does not answer, fails this
       # leg instead of letting the arms skip.
       - name: Live runner arms under a delegated scope, against the daemon
-        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 RAPID_SEED=${{ github.run_id }} go test ./internal/plugrun/ -count=1 -timeout=30m
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 RAPID_SEED=${{ github.run_id }} go test ./internal/plugin/runner/ -count=1 -timeout=30m
       # The spec corpus against the tree: every requirement's witnesses
       # executed, the live ones included — the runner suite's bound
       # witnesses run a second time here, the whole suite having run
@@ -106,4 +106,4 @@ jobs:
       - name: Refuse unprivileged user namespaces
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=1
       - name: The OS row's arm under a delegated scope
-        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_OS_ROW=1 go test ./internal/plugrun/ -run '^TestRunOnOSRow$' -count=1 -timeout=10m
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_OS_ROW=1 go test ./internal/plugin/runner/ -run '^TestRunOnOSRow$' -count=1 -timeout=10m

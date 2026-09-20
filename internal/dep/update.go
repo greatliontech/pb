@@ -16,12 +16,12 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/plugexec"
+	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/source/fetch"
 )
 
 // PluginUpdater re-resolves a pinned oci plugin reference and rewrites
-// its pin, returning the pin as it was and as it is; plugoci.Acquirer
+// its pin, returning the pin as it was and as it is; oci.Acquirer
 // is the one implementation.
 type PluginUpdater interface {
 	UpdatePlugin(ctx context.Context, ref string) (before, after lockfile.PluginPin, err error)
@@ -68,7 +68,7 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 			if plugins == nil {
 				return fmt.Errorf("dep update: %s is a plugin, and no plugin updater is wired", pluginTargets[0])
 			}
-			if !s.Client.Policy.Execution.SchemeAllowed(plugexec.SchemeOCI) {
+			if !s.Client.Policy.Execution.SchemeAllowed(plugin.SchemeOCI) {
 				return fmt.Errorf("dep update: the trust policy does not permit oci-scheme plugins (plugin %s)", pluginTargets[0])
 			}
 		}
@@ -240,7 +240,7 @@ func declaredPlugins(s *Session) (map[string]bool, error) {
 	}
 	refs := map[string]bool{}
 	for _, p := range gf.Plugins {
-		if p.Scheme == plugexec.SchemeOCI {
+		if p.Scheme == plugin.SchemeOCI {
 			refs[p.Ref] = true
 		}
 	}

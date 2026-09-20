@@ -6,6 +6,8 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
+| [host-platform-spelled-three-ways](host-platform-spelled-three-ways.md) | oci, local and the runners each spell the platform in their own shape; one plugin.Platform on the domain root would make the host's two spellings one and type the runners' reports | package-structure plan chunk 7 |
+| [two-acquirer-shapes](two-acquirer-shapes.md) | the generate verb takes two acquirer interfaces returning parallel results; one Acquired in a subpackage, the image's facts behind a pointer the local scheme leaves nil, one dep.Acquirer keyed by scheme | package-structure plan chunk 8 |
 | [mutation-record-ledger-names-old-packages](mutation-record-ledger-names-old-packages.md) | the mutation record's ledger and candidate positions keep the pre-move package names, which no retarget rewrites; the relation between a historic record and its re-measurement under the new name is lost to a reader | gomutant's retarget issue resolved with its ledger arm |
 | [archive-extraction-evidence-machine-local](archive-extraction-evidence-machine-local.md) | the scratch namespace declared, the campaign measures; ExtractZip/writeMember records stay machine-local on a `/` input classification and open reachability in the analysis layer | gomutant serves the records as repo evidence: three issues filed there and in gofresh, awaiting triage |
 | [plugrun-oracle-sandbox-bound](plugrun-oracle-sandbox-bound.md) | runner mutation evidence machine-local: kernel-sandbox oracles disqualify attribution | gomutant's bracket admits a runner's kernel inputs: a SandboxRunner.Run mutant classified other than unstable-oracle |
