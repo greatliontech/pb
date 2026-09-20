@@ -120,3 +120,53 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "f296661d89d302fc47f49701fadbabcdb64f5f37b18ec979e01c575723593107"
 }
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+  source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Breaking"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4cc83d857710f4d84cbea9980aab845061d8ef7b2c04140f02045add1af5baca"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+  source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBreaking"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "27c4979264f1a245826960ef7910ae7cb612911f9f47c83e1abd68a31e5f623a"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+  source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.CompileOnly"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b30f575f65187660a51b0b3e1234242e0d843f5cd4bb2d584bc6dcc97b74ea17"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+  source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/importcheck.CheckRequirers"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "04cf1390e41e0f08fb2c4777dc99ebb7de9638295f2cb413913c1d0655ca7b2c"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ddeb27316a365acb1b617a5faef8c14d81e98167cb199b50d452441b8f33bed8"
+  source_hash: "19b814fd2ac06c27c122b282e0784eeafa04eacd16ef239b7dc130ec885a9a87"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileOnly"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "be2bdf11fe01565828a72849ebbdee5245fb8944ee52041c78a7a030f27d64b4"
+}

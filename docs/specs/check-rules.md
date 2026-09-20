@@ -227,7 +227,8 @@ rules never walk the diff.
 
 **module under check** (term): One workspace module: `pb breaking`
 runs per workspace module, each compared against a base of its own
-made from the one `breaking.base` form.
+made from the one `breaking.base` form; a workspace module holding no
+protobuf files has nothing to pair and needs no base.
 
 **REQ-break-base** (behavior): The comparison base MUST come from the
 lint file's `breaking.base`, one form of the three: a git reference,
@@ -322,4 +323,5 @@ location last in the same order less the path.
 **REQ-check-exit-status** (behavior): A check verb MUST exit with
 status 1 when any finding of severity `error` remains after
 suppression, and 0 otherwise — warnings never fail the run, and zero
-rules enabled is status 0.
+rules enabled is status 0; a run that fails to complete exits nonzero
+with its cause on standard error.

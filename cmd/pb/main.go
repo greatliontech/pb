@@ -5,17 +5,32 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
+	"github.com/greatliontech/pb/internal/dep"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "pb:", err)
+		if msg := failure(err); msg != "" {
+			fmt.Fprintln(os.Stderr, msg)
+		}
 		os.Exit(1)
 	}
+}
+
+// failure is what a failed run says on standard error before exiting
+// 1: the cause, prefixed — or nothing for a check verb's failing
+// status, spoken for by the findings it printed (check-rules.md
+// REQ-check-exit-status).
+func failure(err error) string {
+	if errors.Is(err, dep.ErrFindings) {
+		return ""
+	}
+	return "pb: " + err.Error()
 }
 
 func rootCmd() *cobra.Command {
@@ -27,5 +42,7 @@ func rootCmd() *cobra.Command {
 	}
 	root.AddCommand(depCmd())
 	root.AddCommand(generateCmd())
+	root.AddCommand(lintCmd())
+	root.AddCommand(breakingCmd())
 	return root
 }

@@ -149,7 +149,12 @@ func (e *UnsatisfiedError) Error() string {
 // sorted by module, file, then import, independent of input order —
 // REQ-resolve-unsatisfied-imports pins the report as exhaustive and
 // deterministically ordered.
-func Check(modules []Module) error {
+func Check(modules []Module) error { return CheckRequirers(modules, modules) }
+
+// CheckRequirers verifies the requirers' imports against every
+// module's files: what a module compiled alone, the rest resolving
+// its imports, needs (check-rules.md REQ-break-base-materialized).
+func CheckRequirers(modules, requirers []Module) error {
 	provided := make(map[string]bool)
 	for _, m := range modules {
 		for f := range m.Files {
@@ -157,7 +162,7 @@ func Check(modules []Module) error {
 		}
 	}
 	var missing []Unsatisfied
-	for _, m := range modules {
+	for _, m := range requirers {
 		for f, imports := range m.Files {
 			for _, imp := range imports {
 				if WellKnown(imp) || provided[imp] {

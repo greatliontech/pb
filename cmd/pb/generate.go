@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/greatliontech/pb/internal/dep"
@@ -71,9 +70,8 @@ func generateCmd() *cobra.Command {
 			// The session's root is a path within the working tree,
 			// which is rooted at the host's filesystem root.
 			if native, err := runner.NativeRunner(); err == nil {
-				root := filepath.Join(string(filepath.Separator), filepath.FromSlash(s.Root.Dir))
 				deps.Local = &dep.LocalDeps{
-					Acquirer: &local.Acquirer{Root: root, Lock: s.Lock, Policy: s.Client.Policy},
+					Acquirer: &local.Acquirer{Root: rootOSPath(s), Lock: s.Lock, Policy: s.Client.Policy},
 					Runner:   native,
 				}
 			}

@@ -2,19 +2,15 @@ package dep
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 	"path"
 	"slices"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
 
-	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
-	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
@@ -58,23 +54,16 @@ func Tidy(ctx context.Context, s *Session) error {
 }
 
 func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool, err error) {
-	list, _, err := s.Driver.BuildList(ctx)
+	// The import-relevant view of every module, from the shared file-set
+	// loader (modfiles): workspace modules from the working tree,
+	// externals from their verified archives.
+	list, mods, err := s.Modules(ctx)
 	if err != nil {
 		return false, err
 	}
 	selected := map[string]string{}
 	for _, r := range list {
 		selected[r.Path] = r.Version.String()
-	}
-
-	// The import-relevant view of every module, from the shared file-set
-	// loader (modfiles): workspace modules from the working tree,
-	// externals from their verified archives.
-	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
-		return s.Client.Zip(ctx, modPath, v)
-	})
-	if err != nil {
-		return false, err
 	}
 	// A malformed file is named by a path the user can find: a workspace
 	// file by its place in the tree, an external by module and version.
@@ -206,17 +195,9 @@ func depsEqual(a, b map[string]string) bool {
 // is no workspace module — tidy never adds a declaration
 // (REQ-dep-tidy-rulesets).
 func (s *Session) rulesets() ([]string, error) {
-	p := path.Join(s.Root.Dir, lintfile.FileName)
-	b, err := fs.ReadFile(iofs.New(s.WS), p)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	}
+	lf, err := s.LintFile()
 	if err != nil {
 		return nil, err
-	}
-	lf, err := lintfile.Parse(b)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", p, err)
 	}
 	for _, r := range lf.Rulesets {
 		if !lintfile.Declared(s.Root, r) {

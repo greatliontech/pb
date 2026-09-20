@@ -62,23 +62,43 @@ type Result struct {
 // a missing import is reported exhaustively rather than as the
 // compiler's first failure.
 func Compile(ctx context.Context, mods []modfiles.Module) (*Result, error) {
-	check, err := importcheck.Views(mods, func(m modfiles.Module, _ string) string { return moduleLabel(m) })
+	var targets []string
+	for _, m := range mods {
+		if m.Local {
+			targets = append(targets, m.Protos()...)
+		}
+	}
+	return compileTargets(ctx, mods, -1, targets)
+}
+
+// CompileOnly compiles the files of one module of a build, mods[i],
+// every module a provider of imports and none other a target nor a
+// requirer: what a base stands in for its module as (check-rules.md
+// REQ-break-base-materialized).
+func CompileOnly(ctx context.Context, mods []modfiles.Module, i int) (*Result, error) {
+	return compileTargets(ctx, mods, i, mods[i].Protos())
+}
+
+// compileTargets compiles the target files with every module
+// providing imports, the requirers' imports — one module's, mods[i],
+// or every module's for a negative i — checked for satisfaction
+// first.
+func compileTargets(ctx context.Context, mods []modfiles.Module, i int, targets []string) (*Result, error) {
+	views, err := importcheck.Views(mods, func(m modfiles.Module, _ string) string { return moduleLabel(m) })
 	if err != nil {
 		return nil, err
 	}
-	if err := importcheck.Check(check); err != nil {
+	requirers := views
+	if i >= 0 {
+		requirers = views[i : i+1]
+	}
+	if err := importcheck.CheckRequirers(views, requirers); err != nil {
 		return nil, err
 	}
 
 	sources, err := providerIndex(mods)
 	if err != nil {
 		return nil, err
-	}
-	var targets []string
-	for _, m := range mods {
-		if m.Local {
-			targets = append(targets, m.Protos()...)
-		}
 	}
 	c := protocompile.Compiler{
 		// The composite consults module sources first and the embedded

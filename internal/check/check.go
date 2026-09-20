@@ -8,6 +8,13 @@
 // lint file — are its subpackages.
 package check
 
+import (
+	"cmp"
+	"slices"
+	"strconv"
+	"strings"
+)
+
 // Kind is a rule's kind (REQ-rules-file-schema): a lint rule judges one
 // schema, a breaking rule an aligned pair.
 type Kind string
@@ -118,4 +125,58 @@ type Finding struct {
 type Report struct {
 	Findings []Finding
 	Rules    int
+}
+
+// Sort orders findings as a check verb prints them
+// (REQ-check-findings-output): by path, then line and column, then
+// rule id, then message; findings without a location last, in the
+// same order less the path.
+func Sort(findings []Finding) {
+	located := func(f Finding) int {
+		if f.Path == "" {
+			return 1
+		}
+		return 0
+	}
+	slices.SortStableFunc(findings, func(a, b Finding) int {
+		return cmp.Or(
+			cmp.Compare(located(a), located(b)),
+			strings.Compare(a.Path, b.Path),
+			cmp.Compare(a.Line, b.Line),
+			cmp.Compare(a.Column, b.Column),
+			strings.Compare(a.RuleID, b.RuleID),
+			strings.Compare(a.Message, b.Message),
+		)
+	})
+}
+
+// String is a finding's one printed line (REQ-check-findings-output):
+// `path:line:column: severity rule-id: message`, a base finding with
+// ` [base]` after the message, a finding without a position omitting
+// `:line:column`, one without a location the path and its colon.
+func (f Finding) String() string {
+	var b strings.Builder
+	if f.Path != "" {
+		b.WriteString(f.Path)
+		if f.Line > 0 {
+			b.WriteString(":" + strconv.Itoa(f.Line) + ":" + strconv.Itoa(f.Column))
+		}
+		b.WriteString(": ")
+	}
+	b.WriteString(string(f.Severity) + " " + f.RuleID + ": " + f.Message)
+	if f.Base {
+		b.WriteString(" [base]")
+	}
+	return b.String()
+}
+
+// Failing reports whether the findings fail a check verb
+// (REQ-check-exit-status): any of severity error.
+func Failing(findings []Finding) bool {
+	for _, f := range findings {
+		if f.Severity == SeverityError {
+			return true
+		}
+	}
+	return false
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/helper/iofs"
@@ -24,6 +25,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/resolve"
@@ -107,6 +109,38 @@ func (s *Session) GenFile() (*genfile.File, error) {
 		return nil, fmt.Errorf("reading %s: %w", genfile.FileName, err)
 	}
 	return genfile.Parse(data)
+}
+
+// Modules is the build's modules: the build list resolved and every
+// module's files loaded, an external through the client — verified
+// and pinned — and the pins saved before anything follows, so a
+// first-use resolution is the record whatever a verb does next
+// (REQ-lock-first-use).
+func (s *Session) Modules(ctx context.Context) ([]mvs.Requirement, []modfiles.Module, error) {
+	list, _, err := s.Driver.BuildList(ctx)
+	if err := savePins(s, err); err != nil {
+		return nil, nil, err
+	}
+	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
+		return s.Client.Zip(ctx, modPath, v)
+	})
+	if err := savePins(s, err); err != nil {
+		return nil, nil, err
+	}
+	return list, mods, nil
+}
+
+// savePins saves the lockfile after a step that may have pinned,
+// whatever the step's outcome: the step's error, joined with the
+// save's where both fail; the save's alone; or nothing.
+func savePins(s *Session, stepErr error) error {
+	if saveErr := s.SaveLock(); saveErr != nil {
+		if stepErr != nil {
+			return fmt.Errorf("%w (and the lockfile could not be saved: %v)", stepErr, saveErr)
+		}
+		return saveErr
+	}
+	return stepErr
 }
 
 // SaveLock writes the lockfile canonically at the resolution root when

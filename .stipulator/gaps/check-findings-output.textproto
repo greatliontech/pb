@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-check-findings-output"
-reason: "the check domain is specced and not yet built"
-content_hash: "48a1b583b4712ad7faaa35baf3aa2a7291586a343179520b85cf9ea430a9cd71"
-source_hash: "e5e006c3dc5c499ee731c9ce6baf91e3166874783ce11f1b5a0250e112653aca"
-lands { manual { condition: "the check verbs are built" } }

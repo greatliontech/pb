@@ -20,7 +20,7 @@ while the tree does another.
 | plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
 | check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
 | driver | module-resolution.md | `resolve` |
-| verbs | dep-verbs.md | `dep`, `cmd/pb` |
+| verbs | dep-verbs.md, check-rules.md §Verbs | `dep`, `cmd/pb` |
 
 The rows are the order, top to bottom. Source, proto and plugin stand
 level: none imports another, in either direction. The plugin

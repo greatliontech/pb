@@ -18,7 +18,7 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
       with its ruleset, tidy keeping them
 - [x] 6. Breaking: the pairing, oneofs and extensions included; the
       base's three forms materialized and compiled
-- [ ] 7. The verbs: `pb lint` and `pb breaking` with the command's
+- [x] 7. The verbs: `pb lint` and `pb breaking` with the command's
       assembly
 - [ ] 8. The catalog: buf's lint and breaking rules in CEL as the
       engine's fixture corpus, the environment proven closed

@@ -10,16 +10,13 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/atomicfile"
-	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/plugin/genrequest"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/proto/compile"
-	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/rootpath"
 
-	"github.com/go-git/go-billy/v6/helper/iofs"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -117,13 +114,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		diag = io.Discard
 	}
 
-	list, _, err := s.Driver.BuildList(ctx)
-	if err != nil {
-		return err
-	}
-	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
-		return s.Client.Zip(ctx, modPath, v)
-	})
+	_, mods, err := s.Modules(ctx)
 	if err != nil {
 		return err
 	}

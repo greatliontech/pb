@@ -134,6 +134,9 @@ func fromVersion(ctx context.Context, form lintfile.Base, m Module, v version.Ve
 // tree is no file of the base: a repository stores the link, not
 // what it points at.
 func fromRef(ref string, m Module, src Sources) (*Base, error) {
+	if src.Repo == nil {
+		return nil, fmt.Errorf("%w ref %s: no repository source is wired", ErrBase, ref)
+	}
 	repo, rootDir, err := src.Repo()
 	if err != nil {
 		return nil, fmt.Errorf("%w ref %s: %v", ErrBase, ref, err)

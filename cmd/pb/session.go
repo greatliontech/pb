@@ -51,6 +51,13 @@ func loadSession(settings *userconfig.Settings) (*dep.Session, error) {
 	return dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
 }
 
+// rootOSPath is the resolution root's path on the host: the session's
+// root is a path within the working tree, which workingTree roots at
+// the host's filesystem root.
+func rootOSPath(s *dep.Session) string {
+	return filepath.Join(string(filepath.Separator), filepath.FromSlash(s.Root.Dir))
+}
+
 // workingTree roots the writable working tree at the filesystem root so
 // the workspace walk can find roots above the working directory.
 // Unix-shaped deliberately: a Windows port needs a drive-aware root and

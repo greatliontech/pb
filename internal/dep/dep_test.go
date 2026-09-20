@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -1305,5 +1306,212 @@ func TestTidyKeepsRulesets(t *testing.T) {
 	s = fx.session(t, ".")
 	if err := Tidy(ctx, s); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
 		t.Fatalf("malformed lint file: %v", err)
+	}
+}
+
+// The check fixture: two workspace modules, a workspace ruleset with
+// lint and breaking rules, an external ruleset, a lint file selecting
+// and ignoring; b imports a.
+func newCheck(t *testing.T, lint string) *depFixture {
+	t.Helper()
+	fx := newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\n  - b\n  - house\n",
+		"pb.lint.yaml": lint,
+		"a/pb.yaml":    ws("example.com/a", "  example.com/std: v1.0.0\n"),
+		"a/a.proto": "syntax = \"proto3\";\npackage a;\n\nmessage Thing {\n" +
+			"  string BadName = 1;\n" +
+			"  string Other = 2; // pb:ignore FIELD_NAMES kept for now\n" +
+			"  string ok = 3;\n" +
+			"}\n",
+		"a/vendor/v.proto": "syntax = \"proto3\";\npackage a.vendor;\nmessage V {\n  string Vendored = 1;\n}\n",
+		"b/pb.yaml":        ws("example.com/b", "  example.com/a: v0.0.1\n"),
+		"b/b.proto":        "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n}\n",
+		"house/pb.yaml":    ws("example.com/house", ""),
+		"house/house.rules.yaml": "celEnv: 1\nrules:\n" +
+			"  - id: FIELD_NAMES\n    kind: lint\n    target: field\n    severity: error\n    tags: [naming]\n    cel: case(field.name, 'snake') == field.name\n    message: field names are snake_case\n" +
+			"  - id: MESSAGE_COUNT\n    kind: lint\n    target: set\n    severity: warning\n    cel: messages(files).size() < 3\n    message: too many messages\n" +
+			"  - id: FIELD_GONE\n    kind: breaking\n    target: field\n    severity: error\n    cel: new != null\n    message: field removed\n" +
+			"  - id: FIELD_TYPE\n    kind: breaking\n    target: field\n    severity: warning\n    cel: old == null || new == null || old.type == new.type\n    message: type changed\n",
+	})
+	fx.serve(t, "example.com/std", "v1.0.0", map[string]string{
+		"pb.yaml":        ws("example.com/std", ""),
+		"std.rules.yaml": "celEnv: 1\nrules:\n  - id: PACKAGE_DEFINED\n    kind: lint\n    target: file\n    severity: error\n    cel: file.package != ''\n    message: files declare a package\n",
+	})
+	return fx
+}
+
+// pb lint evaluates the enabled lint rules over every checked module,
+// prints the findings sorted with the ignored ones dropped, and fails
+// on an error finding; a comment suppresses; zero lint rules enabled
+// is said on standard error and passes (REQ-check-lint-verb,
+// REQ-check-findings-output, REQ-check-exit-status).
+func TestLint(t *testing.T) {
+	fx := newCheck(t, "rulesets:\n  - example.com/house\n  - example.com/std\nignore:\n  - paths: [\"vendor/**\"]\n")
+	s := fx.session(t, ".")
+	var out, diag strings.Builder
+	err := Lint(ctx, s, &out, &diag)
+	if !errors.Is(err, ErrFindings) {
+		t.Fatalf("Lint: %v", err)
+	}
+	want := "a.proto:5:3: error FIELD_NAMES: field names are snake_case\nb.proto:6:3: error FIELD_NAMES: field names are snake_case\nwarning MESSAGE_COUNT: too many messages\n"
+	if out.String() != want || diag.String() != "" {
+		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
+	}
+	// The external ruleset's first use is pinned and saved.
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "example.com/std") {
+		t.Fatalf("the ruleset was not pinned: %q", lock)
+	}
+	// Warnings alone pass; a severity override turns the error down.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [naming]\nseverity:\n  FIELD_NAMES: warning\nignore:\n  - paths: [\"vendor/**\"]\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
+		t.Fatalf("warnings: %v %q", err, out.String())
+	}
+	// Zero rules enabled.
+	fx = newCheck(t, "")
+	out.Reset()
+	diag.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "pb lint: zero lint rules enabled\n" {
+		t.Fatalf("zero rules: %v %q %q", err, out.String(), diag.String())
+	}
+	// A build list that pins one dependency and fails on another keeps
+	// the pin: the record survives the failure (REQ-lock-first-use).
+	fx = newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/std: v1.0.0\n  example.com/zzz: v1.0.0\n"),
+		"a/a.proto": "syntax = \"proto3\";\npackage a;\n",
+	})
+	fx.serve(t, "example.com/std", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/std", "")})
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "example.com/zzz") {
+		t.Fatalf("unserved dependency: %v", err)
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "example.com/std") {
+		t.Fatalf("the served dependency's pin was lost with the failure: %q", lock)
+	}
+	// A ruleset the lint file names that no module declares fails.
+	fx = newCheck(t, "rulesets:\n  - example.com/nowhere\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/nowhere") {
+		t.Fatalf("undeclared ruleset: %v", err)
+	}
+}
+
+// pb breaking materializes each module's base in the lint file's
+// form, pairs it with the checked schema, evaluates the breaking
+// rules, and reports every module's findings as one stream, base
+// findings marked; a version base is pinned; no base configured fails
+// naming the file; zero breaking rules is said on standard error
+// (REQ-check-breaking-verb, REQ-break-base).
+func TestBreaking(t *testing.T) {
+	fx := newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.9.0\n")
+	// The bases: a had a field since removed and a field whose type
+	// changed; b had a field since removed.
+	fx.serve(t, "example.com/a", "v0.9.0", map[string]string{
+		"pb.yaml": ws("example.com/a", ""),
+		"a.proto": "syntax = \"proto3\";\npackage a;\n\nmessage Thing {\n  string BadName = 1;\n  string Other = 2;\n  int32 ok = 3;\n  string gone = 4;\n}\n",
+	})
+	fx.serve(t, "example.com/b", "v0.9.0", map[string]string{
+		"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"),
+		"b.proto": "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n  string dropped = 3;\n}\n",
+	})
+	// house holds no protobuf files: nothing to pair, no base needed,
+	// none served.
+	s := fx.session(t, ".")
+	var out, diag strings.Builder
+	err := Breaking(ctx, s, BreakingDeps{}, &out, &diag)
+	if !errors.Is(err, ErrFindings) {
+		t.Fatalf("Breaking: %v", err)
+	}
+	want := "a.proto:7:3: warning FIELD_TYPE: type changed\na.proto:8:3: error FIELD_GONE: field removed [base]\nb.proto:7:3: error FIELD_GONE: field removed [base]\n"
+	if out.String() != want || diag.String() != "" {
+		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "example.com/a") || !strings.Contains(lock, "v0.9.0") {
+		t.Fatalf("the version base was not pinned: %q", lock)
+	}
+	// No base configured.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\n")
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "names no breaking base") {
+		t.Fatalf("no base: %v", err)
+	}
+	// Zero breaking rules.
+	fx = newCheck(t, "rulesets:\n  - example.com/std\nbreaking:\n  base:\n    pinned: true\n")
+	out.Reset()
+	diag.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err != nil || diag.String() != "pb breaking: zero breaking rules enabled\n" {
+		t.Fatalf("zero rules: %v %q", err, diag.String())
+	}
+	// A base the origin does not serve fails naming the module and the
+	// form; a base pinned before the failure stays pinned.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.8.0\n")
+	fx.serve(t, "example.com/a", "v0.8.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {}\n"})
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "breaking: example.com/b: breaking base version v0.8.0") {
+		t.Fatalf("unserved base: %v", err)
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "v0.8.0") {
+		t.Fatalf("a's base pin lost on b's failure: %q", lock)
+	}
+	// The base compiles with the build's other modules resolving its
+	// imports and none other a target: a's base lacking a message b
+	// uses now is a's base still; an ignore drops a base finding.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.7.0\nignore:\n  - paths: [\"b.proto\"]\n    rules: [FIELD_GONE]\n")
+	fx.serve(t, "example.com/a", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Former {\n  string gone = 1;\n}\n"})
+	fx.serve(t, "example.com/b", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": "syntax = \"proto3\";\npackage b;\nmessage Use {\n  string Loud = 2;\n  string dropped = 3;\n}\n"})
+	out.Reset()
+	err = Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
+	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error FIELD_GONE: field removed [base]\n" {
+		t.Fatalf("base lacking what b uses: %v %q", err, out.String())
+	}
+	// A file a gained after its base, imported by b now: a's base run
+	// checks a's imports alone, b's being no requirer of it.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.7.0\n")
+	fx.serve(t, "example.com/a", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {\n  string BadName = 1;\n}\n"})
+	fx.serve(t, "example.com/b", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n}\n"})
+	fx.write(t, "b/b.proto", "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"vendor/v.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  a.vendor.V v = 2;\n}\n")
+	out.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err != nil || out.String() != "" {
+		t.Fatalf("a's base with b importing a's newer file: %v %q", err, out.String())
+	}
+	// A reference base with no repository source wired fails naming
+	// it.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    ref: HEAD\n")
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "no repository source is wired") {
+		t.Fatalf("no repo source: %v", err)
+	}
+}
+
+// refusingFS refuses every write: what a resolution root on read-only
+// storage looks like to SaveLock.
+type refusingFS struct{ billy.Filesystem }
+
+func (refusingFS) Create(string) (billy.File, error) { return nil, errors.New("read-only") }
+func (refusingFS) OpenFile(string, int, os.FileMode) (billy.File, error) {
+	return nil, errors.New("read-only")
+}
+func (refusingFS) TempFile(string, string) (billy.File, error) { return nil, errors.New("read-only") }
+func (refusingFS) Rename(string, string) error                 { return errors.New("read-only") }
+
+// Pins are saved after a step whatever its outcome, and a save that
+// fails never hides the step's own cause (REQ-lock-first-use).
+func TestSavePins(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", ""),
+	})
+	s := fx.session(t, ".")
+	if err := savePins(s, nil); err != nil {
+		t.Fatalf("nothing to save: %v", err)
+	}
+	if err := savePins(s, errors.New("step failed")); err == nil || err.Error() != "step failed" {
+		t.Fatalf("the step's error alone: %v", err)
+	}
+	s.Lock.Modules = append(s.Lock.Modules, lockfile.ModulePin{Path: "example.com/x", Version: "v1.0.0", Digest: "pb1:" + strings.Repeat("ab", 32)})
+	s.WS = refusingFS{s.WS}
+	err := savePins(s, nil)
+	if err == nil || !strings.Contains(err.Error(), "read-only") {
+		t.Fatalf("the save's error alone: %v", err)
+	}
+	err = savePins(s, errors.New("step failed"))
+	if err == nil || !strings.HasPrefix(err.Error(), "step failed (and the lockfile could not be saved: ") {
+		t.Fatalf("both: %v", err)
 	}
 }

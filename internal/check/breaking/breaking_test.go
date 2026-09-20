@@ -126,6 +126,10 @@ func TestFromRef(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
+	// No repository source wired.
+	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "HEAD"}, m, Sources{}); err == nil || !strings.Contains(err.Error(), "no repository source is wired") {
+		t.Fatalf("no repo source: %v", err)
+	}
 	// A root in no repository.
 	outside := Sources{Repo: func() (*git.Repository, string, error) { return RepoOf(t.TempDir()) }}
 	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "HEAD"}, m, outside); err == nil || !strings.Contains(err.Error(), "lies in no git repository") {

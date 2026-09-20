@@ -140,3 +140,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "aabb051fd0e4657ad927f19d6431c4994fab640e52860c91c85b9f89f32b8d16"
 }
+
+bindings {
+  requirement_id: "REQ-lint-config-schema"
+  content_hash: "fcb47cbb63a7144fc8707923da58687e31d6837e92010171b69293d7641cb428"
+  source_hash: "d67005bea0ff6b5c24add3a1a147a8d5442965d1c6177732100fed150dc313b9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestLint"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "33302a0e79b4ed85c2f747cd483ed208fb77a6ebcf629eb25cbf6ed5dc786972"
+}

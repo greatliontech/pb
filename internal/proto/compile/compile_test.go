@@ -195,3 +195,24 @@ func TestCompileOrderProperty(t *testing.T) {
 		}
 	})
 }
+
+// CompileOnly compiles one module alone: every module provides
+// imports, and no other module's imports are checked or compiled —
+// a build where a's files no longer satisfy b's import still compiles
+// a (check-rules.md REQ-break-base-materialized).
+func TestCompileOnly(t *testing.T) {
+	mods := []modfiles.Module{
+		{Path: "example.com/a", Local: true, Dir: "a", Files: map[string][]byte{"a.proto": []byte("syntax = \"proto3\";\npackage a;\nmessage A {}\n")}},
+		{Path: "example.com/b", Local: true, Dir: "b", Files: map[string][]byte{"b.proto": []byte("syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"gone.proto\";\nmessage B { a.A a = 1; }\n")}},
+	}
+	if _, err := Compile(context.Background(), mods); err == nil {
+		t.Fatal("the build with an unsatisfied import compiled whole")
+	}
+	r, err := CompileOnly(context.Background(), mods, 0)
+	if err != nil || len(r.Files) != 1 || r.Files[0].Path() != "a.proto" {
+		t.Fatalf("a alone: %v %v", err, r)
+	}
+	if _, err := CompileOnly(context.Background(), mods, 1); err == nil {
+		t.Fatal("b alone compiled with its import unsatisfied")
+	}
+}

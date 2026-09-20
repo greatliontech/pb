@@ -430,3 +430,33 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
 }
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
+  source_hash: "058653cd7a7775f4a08f6acaddd17eafb81c9b563f0cf455e3313aa632e5cb11"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.savePins"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9372fb89fd77f6442e77b30650c719e9f3b4955f488cec14884f134d3622269f"
+}
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
+  source_hash: "058653cd7a7775f4a08f6acaddd17eafb81c9b563f0cf455e3313aa632e5cb11"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.Modules"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "30d7ddaf67b9fdcfb610eb2b061f47a4117b89e9f8ae6bd81e412b6c012210cf"
+}
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "f76326aa7bbccd7dbd0673aaca458cf7f8610d58861839d6eb2950d4fd83a395"
+  source_hash: "058653cd7a7775f4a08f6acaddd17eafb81c9b563f0cf455e3313aa632e5cb11"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestSavePins"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "014578744be2d9e5a629fbaaeb14aaf6f1ad7a35958aa56ce5aa549ab4e4b73a"
+}

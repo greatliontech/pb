@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
 
@@ -29,4 +32,16 @@ func plant(t *testing.T, content string) string {
 	}
 	t.Setenv("PATH", t.TempDir()) // no docker here
 	return p
+}
+
+// A failed run names its cause on standard error, except a check
+// verb's failing status, which the printed findings spoke for
+// (REQ-check-exit-status).
+func TestFailure(t *testing.T) {
+	if got := failure(errors.New("boom")); got != "pb: boom" {
+		t.Errorf("failure = %q", got)
+	}
+	if got := failure(fmt.Errorf("lint: %w", dep.ErrFindings)); got != "" {
+		t.Errorf("findings = %q", got)
+	}
 }
