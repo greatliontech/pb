@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/testing/provtest"
@@ -21,13 +22,13 @@ type provFixture struct {
 	commit plumbing.Hash
 }
 
-func newProvFixture(t *testing.T, signer *provtest.Signer, embedProof bool, tagName string) *provFixture {
+func newProvFixture(t *testing.T, signer *provtest.Signer, o sigstoretest.TagOptions, tagName string) *provFixture {
 	fx := newFixture(t)
 	files := declaredFiles()
 	commit := fx.CommitFor(files, gitWhen)
 	zip, _ := moduleZip(t, files)
 	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	tag := signer.SignedTag(t, tagPayload(commit, tagName), embedProof)
+	tag := signer.SignedTag(t, tagPayload(commit, tagName), o)
 	env := envelope(t, "sha1", tag, fx.Repo.Raw(plumbing.CommitObject, commit), nil)
 	fx.Endpoint("example.com/m", "v1.0.0", "prov", string(env))
 	return &provFixture{fixture: fx, signer: signer, commit: commit}
@@ -53,7 +54,7 @@ func explicitRule(san, issuer string, mode trust.Mode) *trust.Policy {
 // record): type, object format, the signed tag's own hash, and the
 // verified identity; the envelope is cached alongside the artifacts.
 func TestAcceptedEvidenceRecorded(t *testing.T) {
-	fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
+	fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v1.0.0")
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 
 	mf, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0"))
@@ -105,7 +106,7 @@ func TestUnacceptedIdentityClassifiedAsUnsigned(t *testing.T) {
 	signer := provtest.New(t)
 
 	t.Run("allow-unsigned records none", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(explicitRule("someone-else@example.com", provtest.Issuer, trust.AllowUnsigned))
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatalf("Module: %v", err)
@@ -117,7 +118,7 @@ func TestUnacceptedIdentityClassifiedAsUnsigned(t *testing.T) {
 	})
 
 	t.Run("require-provenance fails", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(explicitRule("someone-else@example.com", provtest.Issuer, trust.RequireProvenance))
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("an unaccepted identity satisfied require-provenance")
@@ -128,7 +129,7 @@ func TestUnacceptedIdentityClassifiedAsUnsigned(t *testing.T) {
 // Evidence with no embedded transparency proof is unverifiable and
 // treated as absent (REQ-prov-signed-tag): none under allow-unsigned.
 func TestNoTransparencyTreatedAsAbsent(t *testing.T) {
-	fx := newProvFixture(t, provtest.New(t), false, "v1.0.0")
+	fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{NoEntry: true}, "v1.0.0")
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.AllowUnsigned))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatalf("Module: %v", err)
@@ -144,7 +145,7 @@ func TestNoTransparencyTreatedAsAbsent(t *testing.T) {
 // (REQ-prov-tag-binding): the operation fails even under
 // allow-unsigned, and nothing is pinned.
 func TestMisboundEvidenceRejectedEvenWhenUnrequired(t *testing.T) {
-	fx := newProvFixture(t, provtest.New(t), true, "v2.0.0")
+	fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v2.0.0")
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.AllowUnsigned))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 		!strings.Contains(err.Error(), "rejected") {
@@ -166,7 +167,7 @@ func TestDefaultIdentityAcceptsOriginWorkflow(t *testing.T) {
 		ciIssuer = "https://token.actions.githubusercontent.com"
 	)
 	signer := provtest.NewWithIdentity(t, ciSAN, ciIssuer)
-	fx := newProvFixture(t, signer, true, "v1.0.0")
+	fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 	originOverride(fx.Fixture, repoURL)
 	c := fx.clientWithPolicy(&trust.Policy{Default: trust.RequireProvenance})
 
@@ -186,7 +187,7 @@ func TestDefaultIdentityUnknownForge(t *testing.T) {
 	signer := provtest.New(t)
 
 	t.Run("require-provenance fails", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(&trust.Policy{Default: trust.RequireProvenance})
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil {
 			t.Fatal("a forge with no known CI issuer produced an acceptable identity")
@@ -194,7 +195,7 @@ func TestDefaultIdentityUnknownForge(t *testing.T) {
 	})
 
 	t.Run("allow-unsigned records none", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(nil)
 		c.TrustedRoot = signer.TrustedRoot()
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {

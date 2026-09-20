@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/testing/provtest"
 	"github.com/greatliontech/pb/internal/trust"
@@ -44,7 +45,7 @@ func TestDownloadHealsCorruptCachedInfo(t *testing.T) {
 // than being ignored because the pin already exists.
 func TestDownloadReverifiesEvidence(t *testing.T) {
 	signer := provtest.New(t)
-	fx := newProvFixture(t, signer, true, "v1.0.0")
+	fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	fx.Endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
@@ -66,7 +67,7 @@ func TestDownloadReverifiesEvidence(t *testing.T) {
 	})
 
 	t.Run("served tampered evidence aborts", func(t *testing.T) {
-		misbound := signer.SignedTag(t, tagPayload(fx.commit, "v9.9.9"), true)
+		misbound := signer.SignedTag(t, tagPayload(fx.commit, "v9.9.9"), sigstoretest.TagOptions{})
 		env := envelope(t, "sha1", misbound, fx.Repo.Raw(plumbing.CommitObject, fx.commit), nil)
 		fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = env
 		c2 := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))

@@ -299,8 +299,8 @@ github.com/googleapis/enterprise-certificate-proxy v0.3.15 h1:xolVQTEXusUcAA5Ugt
 github.com/googleapis/enterprise-certificate-proxy v0.3.15/go.mod h1:vqVt9yG9480NtzREnTlmGSBmFrA+bzb0yl0TxoBQXOg=
 github.com/googleapis/gax-go/v2 v2.22.0 h1:PjIWBpgGIVKGoCXuiCoP64altEJCj3/Ei+kSU5vlZD4=
 github.com/googleapis/gax-go/v2 v2.22.0/go.mod h1:irWBbALSr0Sk3qlqb9SyJ1h68WjgeFuiOzI4Rqw5+aY=
-github.com/greatliontech/gitprov v0.0.0-20260920073225-6e638832f36b h1:05KQ5NVwhVkGJMcW22dppek3PH00/6b0Nz5cn+/CmJk=
-github.com/greatliontech/gitprov v0.0.0-20260920073225-6e638832f36b/go.mod h1:97RftQ9IK9J20CFa/rFI8P+sQAJviN9RCPbBahR1Aeo=
+github.com/greatliontech/gitprov v0.0.0-20260920110659-e51aee896408 h1:KzV/a90uffElGh6PxwEdYPPApO3p3/WstDAWoDIUp2w=
+github.com/greatliontech/gitprov v0.0.0-20260920110659-e51aee896408/go.mod h1:97RftQ9IK9J20CFa/rFI8P+sQAJviN9RCPbBahR1Aeo=
 github.com/greatliontech/glob v0.2.0 h1:OmPq3qe+eyaMykavqdqRF6ChmC+FWwpd7b7O4up5IWU=
 github.com/greatliontech/glob v0.2.0/go.mod h1:2GCLEmzSHTM+1L3ZxH7gr4CEAOwPM1N1SEyk8R25Ke0=
 github.com/greatliontech/gmdb v0.5.1 h1:/QFjIqP3ggaeb8kK2AH6s5DGG8tXK2adfoM5gJJkt2o=

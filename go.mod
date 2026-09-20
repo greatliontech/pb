@@ -4,17 +4,15 @@ go 1.26.6
 
 require (
 	github.com/bufbuild/protocompile v0.14.1
-	github.com/github/smimesign v0.2.0
 	github.com/go-git/go-billy/v6 v6.0.0-alpha.2
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-containerregistry v0.22.0
-	github.com/greatliontech/gitprov v0.0.0-20260920073225-6e638832f36b
+	github.com/greatliontech/gitprov v0.0.0-20260920110659-e51aee896408
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/ocifs v0.8.1-0.20260920092258-6c7dac6c6b3c
 	github.com/greatliontech/sandbox v0.4.0
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
-	github.com/sigstore/gitsign v0.16.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.40.0
 	golang.org/x/net v0.58.0
@@ -71,6 +69,7 @@ require (
 	github.com/elastic/go-seccomp-bpf v1.6.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-chi/chi/v5 v5.3.0 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
 	github.com/go-git/go-git/v5 v5.19.2 // indirect
@@ -151,6 +150,7 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sigstore/cosign/v3 v3.0.6 // indirect
 	github.com/sigstore/fulcio v1.8.6 // indirect
+	github.com/sigstore/gitsign v0.16.0 // indirect
 	github.com/sigstore/protobuf-specs v0.5.1 // indirect
 	github.com/sigstore/rekor v1.5.2 // indirect
 	github.com/sigstore/rekor-tiles/v2 v2.2.2-0.20260601073857-5d098a2b6443 // indirect

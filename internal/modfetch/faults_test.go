@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
 	"github.com/greatliontech/pb/internal/lockfile"
@@ -188,7 +189,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 	signer := provtest.New(t)
 
 	t.Run("evidence with no trusted root configured", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.Client("proxy") // no TrustedRoot, no Policy: allow-unsigned
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatalf("Module: %v", err)
@@ -205,7 +206,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 	})
 
 	t.Run("invalid explicit identity rule surfaces", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(explicitRule("[", provtest.Issuer, trust.AllowUnsigned))
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
 			!strings.Contains(err.Error(), "trust: identity rule") {
@@ -214,7 +215,7 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 	})
 
 	t.Run("underivable default identity beyond no-forge surfaces", func(t *testing.T) {
-		fx := newProvFixture(t, signer, true, "v1.0.0")
+		fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 		originOverride(fx.Fixture, "https://github.com/"+strings.Repeat("a", 8000))
 		c := fx.clientWithPolicy(nil)
 		c.TrustedRoot = signer.TrustedRoot()
@@ -335,7 +336,7 @@ func TestSelectiveCacheFaults(t *testing.T) {
 	})
 
 	t.Run("prov write fault at first use is fatal", func(t *testing.T) {
-		fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
+		fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v1.0.0")
 		c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 		c.Cache = &Cache{FS: &errFS{Filesystem: memfs.New(), FailRenameSfx: ".prov", PutFailAfter: -1}}
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, errInjected) {
@@ -560,7 +561,7 @@ func TestVersionsFailureArms(t *testing.T) {
 // re-signed tag) is skipped, never fatal and never a downgrade.
 func TestReverifySkipsNonReproducingEvidence(t *testing.T) {
 	signer := provtest.New(t)
-	fx := newProvFixture(t, signer, true, "v1.0.0")
+	fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
@@ -571,7 +572,7 @@ func TestReverifySkipsNonReproducingEvidence(t *testing.T) {
 	// binds, but hashes to a different signed object than the pin. The
 	// reproducing object is the exact tag first use recorded — CMS
 	// signing is randomized, so only the original bytes reproduce.
-	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), true)
+	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), sigstoretest.TagOptions{})
 	pinned := servedTag(t, fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"])
 	rawCommit := fx.Repo.Raw(plumbing.CommitObject, fx.commit)
 	env := twoEvidenceEnvelope(t, other, pinned, rawCommit)
@@ -737,7 +738,7 @@ func TestVersionsSeamFailures(t *testing.T) {
 // never mere verification.
 func TestReverifyRequiresExactRecord(t *testing.T) {
 	signer := provtest.New(t)
-	fx := newProvFixture(t, signer, true, "v1.0.0")
+	fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
@@ -745,7 +746,7 @@ func TestReverifyRequiresExactRecord(t *testing.T) {
 	}
 	// Serve only a re-signed tag: verifies, but is a different signed
 	// object than the pin records.
-	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), true)
+	other := signer.SignedTag(t, append(tagPayload(fx.commit, "v1.0.0"), '\n'), sigstoretest.TagOptions{})
 	rawCommit := fx.Repo.Raw(plumbing.CommitObject, fx.commit)
 	fx.Endpoints[proxyHost+"/example.com/m/@v/v1.0.0.prov"] = envelope(t, "sha1", other, rawCommit, nil)
 
@@ -759,7 +760,7 @@ func TestReverifyRequiresExactRecord(t *testing.T) {
 // Evidence present but the origin unresolvable: the evaluation cannot
 // bind a subject and fails.
 func TestEvidenceWithUnresolvableOriginFails(t *testing.T) {
-	fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
+	fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v1.0.0")
 	fx.ResolveOverride = func(context.Context, string) (origin.Origin, error) {
 		return origin.Origin{}, errInjected
 	}
@@ -848,7 +849,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 func TestDownloadProvFailureClasses(t *testing.T) {
 	seedVerified := func(t *testing.T) (*provFixture, *Client) {
 		t.Helper()
-		fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
+		fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v1.0.0")
 		fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 		c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
 		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
@@ -990,7 +991,7 @@ func TestDownloadModfileTransportFailureAborts(t *testing.T) {
 // A second Download with verified provenance reuses the cached
 // envelope: re-verification runs against local bytes, no refetch.
 func TestSecondDownloadReusesCachedEnvelope(t *testing.T) {
-	fx := newProvFixture(t, provtest.New(t), true, "v1.0.0")
+	fx := newProvFixture(t, provtest.New(t), sigstoretest.TagOptions{}, "v1.0.0")
 	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	fx.Endpoint("example.com/m", "v1.0.0", "mod", declaredFiles()["pb.yaml"])
 	c := fx.clientWithPolicy(explicitRule(provtest.Subject, provtest.Issuer, trust.RequireProvenance))
