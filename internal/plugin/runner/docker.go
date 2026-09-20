@@ -291,7 +291,7 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 	// platform, which stamped the image.
 	platform := r.platform.String()
 	if spec.Pull {
-		platform = spec.Platform
+		platform = spec.Entry
 		// The daemon fetches the content at the digest pb verified
 		// with its own credentials; the image is then the daemon's
 		// own and stays (REQ-plugin-core-verifies).

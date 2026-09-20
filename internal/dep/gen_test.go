@@ -733,12 +733,12 @@ func TestGenOverrides(t *testing.T) {
 func TestGenPulledImage(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Reference: image, Pull: true, Platform: "linux/arm/v6"}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Reference: image, Pull: true, Entry: "linux/arm/v6"}}}
 	run := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
-	if run.spec.Reference != image || !run.spec.Pull || run.spec.Platform != "linux/arm/v6" || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
+	if run.spec.Reference != image || !run.spec.Pull || run.spec.Entry != "linux/arm/v6" || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
 		t.Fatalf("runner received %+v", run.spec)
 	}
 	plain := &stubRunner{res: run.res}
@@ -746,13 +746,13 @@ func TestGenPulledImage(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Reference != "" {
 		t.Fatalf("a runner without a daemon ran a pulled image: %v %+v", err, plain.spec)
 	}
-	// A store acquisition carries the admitted platform too — the
+	// A store acquisition carries the admitted entry too — the
 	// export is that child — and the runner is told none of it.
-	stored := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r", Platform: "linux/arm/v6"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	stored := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r", Entry: "linux/arm/v6"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: plain}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
-	if plain.spec.Platform != "" || plain.spec.Pull || plain.spec.Rootfs != "/r" {
+	if plain.spec.Entry != "" || plain.spec.Pull || plain.spec.Rootfs != "/r" {
 		t.Fatalf("the store path's spec: %+v", plain.spec)
 	}
 }

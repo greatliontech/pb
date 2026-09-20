@@ -105,7 +105,7 @@ type acquisition struct {
 	pinnedDigest     string // "" on first use and on an explicit update
 	pinnedProvenance lockfile.Provenance
 	fresh            bool   // an explicit update: evidence fetched anew, kept evidence not judged
-	platform         string // the admitted manifest-list entry's platform, as a daemon spells it
+	entry            string // the manifest-list entry the seam admitted, os/arch with its variant
 	resolved         string
 	provenance       lockfile.Provenance
 }
@@ -203,7 +203,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 		if err := record(); err != nil {
 			return nil, err
 		}
-		return &plugin.Acquired{Image: &plugin.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Platform: acq.platform}}, nil
+		return &plugin.Acquired{Image: &plugin.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Entry: acq.entry}}, nil
 	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
@@ -223,7 +223,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 	if err != nil {
 		return nil, fmt.Errorf("oci: %s: %v", ref, err)
 	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs, Platform: acq.platform}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs, Entry: acq.entry}}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the
@@ -331,11 +331,11 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	if acq.pinnedDigest != "" && digest != acq.pinnedDigest {
 		return fmt.Errorf("oci: %s resolved to %s, pin records %s (%w)", acq.declaredRef, digest, acq.pinnedDigest, lockfile.ErrPinMismatch)
 	}
-	platform, err := a.checkPlatforms(acq.declaredRef, id.Artifact)
+	entry, err := a.checkPlatforms(acq.declaredRef, id.Artifact)
 	if err != nil {
 		return err
 	}
-	acq.platform = platform
+	acq.entry = entry
 	// Evidence is always judged — the module pipeline's semantics:
 	// what verifies is recorded even under allow-unsigned, and none
 	// is recorded only when nothing was accepted for a tolerable

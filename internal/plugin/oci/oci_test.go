@@ -314,17 +314,17 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := host.OS + "/" + host.Architecture + "/v9"; got.Image.Platform != want {
-		t.Fatalf("admitted platform = %q, want %q", got.Image.Platform, want)
+	if want := host.OS + "/" + host.Architecture + "/v9"; got.Image.Entry != want {
+		t.Fatalf("admitted entry = %q, want %q", got.Image.Entry, want)
 	}
 	plain := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Image.Platform != host.OS+"/"+host.Architecture {
+	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Image.Entry != host.OS+"/"+host.Architecture {
 		t.Fatalf("an entry without a variant: %+v %v", got, err)
 	}
 	// The store path exports that same child: the one entry that
 	// matched, whatever its variant — its own marker is in the export.
 	got, err = plain.Acquire(ctx, ref)
-	if err != nil || got.Image.Platform != host.OS+"/"+host.Architecture+"/v9" {
+	if err != nil || got.Image.Entry != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the store path's admitted child: %+v %v", got, err)
 	}
 	if marker, err := os.ReadFile(filepath.Join(got.Image.Rootfs, "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {

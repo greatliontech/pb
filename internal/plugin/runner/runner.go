@@ -45,17 +45,17 @@ type Spec struct {
 	// verified, for the daemon to pull (REQ-plugin-core-verifies);
 	// unset, Reference is a daemon-local image the daemon already holds.
 	Pull bool
-	// Platform is the manifest-list entry the seam admitted for a
+	// Entry is the manifest-list entry the seam admitted for a
 	// pulled image — os/arch, with its variant where stated — the one
 	// child the daemon is to pull and run; empty otherwise.
 	// The acquisition knows the admitted entry for an export too; the
 	// verb hands it on for a pulled image alone, so a spec never
 	// carries an acquisition's image facts whole.
-	Platform string
-	Process  plugin.Process
-	Stdin    []byte
-	Limits   trust.Limits
-	MinTier  string
+	Entry   string
+	Process plugin.Process
+	Stdin   []byte
+	Limits  trust.Limits
+	MinTier string
 }
 
 // Result is what a run reports: the plugin's stdout and stderr bytes,
@@ -172,11 +172,11 @@ func checkScheme(spec Spec) error {
 		if spec.Pull && !strings.Contains(spec.Reference, "@") {
 			return fmt.Errorf("runner: the daemon pulls a verified digest, and %q names none", spec.Reference)
 		}
-		if spec.Pull && spec.Platform == "" {
-			return errors.New("runner: the daemon pulls the admitted platform's child, and none is named")
+		if spec.Pull && spec.Entry == "" {
+			return errors.New("runner: the daemon pulls the admitted entry, and none is named")
 		}
-		if !spec.Pull && spec.Platform != "" {
-			return errors.New("runner: a platform is named for a pulled image alone")
+		if !spec.Pull && spec.Entry != "" {
+			return errors.New("runner: an entry is named for a pulled image alone")
 		}
 	case plugin.SchemeLocal:
 		if spec.Rootfs != "" || spec.Reference != "" || spec.Pull {

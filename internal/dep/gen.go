@@ -210,7 +210,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			// child.
 			spec.Rootfs, spec.Reference, spec.Pull = img.Rootfs, img.Reference, img.Pull
 			if spec.Pull {
-				spec.Platform = img.Platform
+				spec.Entry = img.Entry
 			}
 		}
 		res, err := run.Run(ctx, spec)

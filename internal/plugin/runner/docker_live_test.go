@@ -283,7 +283,7 @@ func TestDockerLivePull(t *testing.T) {
 	run := func(param string) (*Result, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Platform: platform, Stdin: request(t, param), Limits: limits(nil), MinTier: plugin.TierStrong})
+		return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: platform, Stdin: request(t, param), Limits: limits(nil), MinTier: plugin.TierStrong})
 	}
 	res, err := run("")
 	if err != nil {
@@ -302,7 +302,7 @@ func TestDockerLivePull(t *testing.T) {
 	unknown := host + "/live/plugin@sha256:" + strings.Repeat("1", 64)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	if _, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: unknown, Pull: true, Platform: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
+	if _, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: unknown, Pull: true, Entry: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
 		t.Fatalf("an unknown digest: %v", err)
 	}
 }

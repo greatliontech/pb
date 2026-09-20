@@ -580,7 +580,7 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
 	// The admitted entry's platform, variant included, is what the
 	// daemon is told — not the daemon's own os/arch.
-	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Platform: "linux/arm/v6", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
+	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: "linux/arm/v6", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -607,8 +607,8 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 		text string
 	}{
 		{Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Limits: l, MinTier: plugin.TierStrong}, "none is named"},
-		{Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Platform: "linux/arm/v6", Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
-		{Spec{Scheme: plugin.SchemeOCI, Rootfs: "/r", Platform: "linux/arm/v6", Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
+		{Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Entry: "linux/arm/v6", Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
+		{Spec{Scheme: plugin.SchemeOCI, Rootfs: "/r", Entry: "linux/arm/v6", Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
 	} {
 		if _, err := r.Run(context.Background(), c.spec); err == nil || !strings.Contains(err.Error(), c.text) {
 			t.Errorf("%+v: %v, want %q", c.spec, err, c.text)
@@ -619,14 +619,14 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	if !reflect.DeepEqual(argv[7], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
 		t.Fatalf("rm = %q", argv[7])
 	}
-	if _, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "ghcr.io/o/p:v1", Pull: true, Platform: "linux/fakearch", Limits: l, MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
+	if _, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "ghcr.io/o/p:v1", Pull: true, Entry: "linux/fakearch", Limits: l, MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
 		t.Fatalf("a tag to pull: %v", err)
 	}
 	dir = fakeDaemon(t)
 	if err := os.WriteFile(filepath.Join(dir, "pull-fails"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Platform: "linux/fakearch", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: "linux/fakearch", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "the daemon pulling "+image) || !strings.Contains(err.Error(), "manifest unknown") {
 		t.Fatalf("a refused pull: %v", err)
 	}

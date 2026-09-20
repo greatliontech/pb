@@ -127,12 +127,13 @@ type Image struct {
 	// Pull says the daemon pulls Reference at its verified digest
 	// before running it; a daemon-local image is run without.
 	Pull bool
-	// Platform is the manifest-list entry the seam admitted for the
+	// Entry is the manifest-list entry the seam admitted for the
 	// platform — os/arch, with its variant where the entry states one
 	// — the one child of the verified index the run uses: an export
 	// already is that child; a daemon is told it (Reference) and
-	// pulls exactly that.
-	Platform string
+	// pulls exactly that. Not the platform itself (Platform): the
+	// entry the seam admitted for it.
+	Entry string
 }
 
 // Acquired is one plugin ready to run, whichever scheme yielded it:
