@@ -101,9 +101,11 @@ boundary also falls at a lower-case letter followed by an upper-case
 one (`fooBar` is `foo`, `Bar`), within a run of upper-case letters
 before the last one when a lower-case letter follows it
 (`HTTPServer` is `HTTP`, `Server`), and at a digit followed by an
-upper-case letter (`Foo2Bar` is `Foo2`, `Bar`); no boundary falls
-between a letter and a following digit or a digit and a following
-lower-case letter (`v1beta1` is one word). A name's words are its
+upper-case letter in a run that also holds a lower-case letter
+(`Foo2Bar` is `Foo2`, `Bar`; `V2X` is one word, so an upper-snake
+name is its own words); no boundary falls between a letter and a
+following digit or a digit and a following lower-case letter
+(`v1beta1` is one word). A name's words are its
 non-empty runs between boundaries, so a qualified name's dots yield
 no words and a rule judging its segments splits it first.
 
@@ -126,15 +128,17 @@ extension wherever declared; `set` once, over the checked modules'
 files.
 
 **REQ-env1-bindings** (wire): Environment 1 MUST bind, for a lint rule,
-the entity under its target's name as its standard descriptor proto
+the entity under its target's name — `enum-value` as `enumValue`, a
+binding being an identifier — as its standard descriptor proto
 (`google.protobuf.FileDescriptorProto` for `file`, `DescriptorProto` for
 `message`, `FieldDescriptorProto` for `field` and `extension`,
 `OneofDescriptorProto` for `oneof`, `EnumDescriptorProto` for `enum`,
 `EnumValueDescriptorProto` for `enum-value`, `ServiceDescriptorProto`
 for `service`, `MethodDescriptorProto` for `method`), `file` as the
 containing file for every target but `package` and `set` (a `file`
-rule's `file` being its entity), for `package` the name as `package` and
-the package's checked files as `files`, and for `set` the checked
+rule's `file` being its entity), for `package` the name as `pkg` —
+`package` being a reserved word of CEL — and the package's checked
+files as `files`, and for `set` the checked
 modules' files as `files`; a breaking run binds, on each side, only the
 files of the module under check, for `package` and `set` alike; for a
 breaking rule each binding in two forms in place of the one — `old` and
@@ -152,28 +156,40 @@ a nested message, field, oneof, enum or extension declared in one,
 the enum for a value, the service for a method, the file for a
 top-level declaration, `null` for a file; `file(entity)`, the
 containing file; `fullName(entity)`, the fully qualified name without
-a leading dot; `messages(x)`, `enums(x)`, `extensions(x)` and
+a leading dot, a file's its path; `messages(x)`, `enums(x)`, `extensions(x)` and
 `services(x)`, the declarations of that kind under a file, a list of
 files or a message — the receiver excluded, nested ones included,
 map-entry messages excluded, in declaration order, an empty list
 where the kind cannot occur; `resolve(name)`, the declaration a fully
-qualified name names, with or without a leading dot — a message,
-enum, enum value, service, method, field or extension — `null` for
-none; `fileByName(path)`, the file of that import path, `null` for
+qualified name names, with or without a leading dot — a message (a
+map-entry message, the compiler's, excepted), enum, enum value,
+oneof, service, method, field or extension — `null` for none; `fileByName(path)`, the file of that import path, `null` for
 none; `imports(file)`, the files the file imports directly, in
 declaration order; `visible(file)`, the file itself, the files it
 imports, and, through public imports, transitively, in that order;
 `references(file)`, the fully qualified names the file references
-through field and extension types, method request and response types,
-extendees and custom option extensions, each once in first-use order;
+through field and extension types — a map field's its value's type —
+method request and response types, extendees and custom option
+extensions, each once in first-use order over the file's options,
+then its messages (each its options, fields, oneofs, enums,
+extensions, nested messages), enums, extensions and services with
+their methods, each list in declaration order and a declaration's
+type before its options;
 `features(entity)`, the entity's resolved `google.protobuf.FeatureSet`
 with the message's own fields and no extension, editions inheritance
-applied and a proto2 or proto3 file's syntax expressed as the features
-it implies, for any entity but a package or the set; `options(entity)`,
-a map from fully qualified option name to value — a scalar option's
-value the scalar, an enum option's its name, a repeated option's a list,
-a message-valued option's a map by field name — holding exactly the
-options set, custom options included; `words(name)`, the identifier's
+applied and, in a proto2 or proto3 file, the syntax and a field's
+modifiers expressed as the features they imply (`optional` and
+oneof membership in proto3 explicit presence, `required` legacy
+required, a group delimited, `packed` as written and otherwise the
+syntax's default), for any entity but a package or the set; a
+message-typed field reports the resolved value in every syntax, its
+presence being its kind's to read; `options(entity)`,
+a map from option name to value — a built-in option under its field
+name, a custom option under its extension's fully qualified name in
+parentheses, as the language writes it, so the two never collide; a scalar option's value the scalar, an enum
+option's its name, a repeated option's a list, a message-valued
+option's a map by field name — holding exactly the options set,
+custom options included; `words(name)`, the identifier's
 words by word segmentation; `case(name, style)`, the identifier
 rebuilt from its words in `pascal`, `camel`, `snake` or `upper-snake`
 — `snake` the words lower-cased and joined by `_`, `upper-snake`
@@ -182,14 +198,15 @@ upper-cased and the rest lower-cased except an acronym kept whole,
 `camel` as `pascal` with the first word lower-cased — so that a name
 is in a style exactly when `case(name, style)` equals it; and
 `packageCycles(files)`, the strongly connected components of two or
-more packages, or of one package importing itself, in the files'
-package import graph, each a list of package names in sorted order,
-the components sorted by their first name.
+more packages in the files' package import graph — a file's import of
+a file of its own package is no edge — each a list of package names
+in sorted order, the components sorted by their first name.
 
 **REQ-env1-lookup-scope** (invariant): The lookup functions MUST search
-the whole compiled set, dependencies included, while `files` names the
-checked modules' files alone, so a rule judges the workspace and can
-see through its imports.
+the whole compiled set, dependencies included — in a breaking run the
+new side's, the old side's entities being at hand in the pair — while
+`files` names the checked modules' files alone, so a rule judges the
+workspace and can see through its imports.
 
 ## Breaking-change alignment
 

@@ -100,3 +100,43 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "34cf9b51dc35e46e4cf3993ed162ec1e8682b17a629accb72cf93a712333fa05"
 }
+
+bindings {
+  requirement_id: "REQ-rules-bounded"
+  content_hash: "5fcb57333307094284cbd0d40ce9744c6321553254b8ef684f30d9c57103253e"
+  source_hash: "0dba6bee0fff8d944e01589f08f4a9007d320614960140b92a5ac044ba47891e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.costs.CallCost"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "f6e1b30a723dd88f77ecf46217609a78bf2f2b7bbf9fe4e788efb7c3e8bdcd00"
+}
+
+bindings {
+  requirement_id: "REQ-rules-bounded"
+  content_hash: "5fcb57333307094284cbd0d40ce9744c6321553254b8ef684f30d9c57103253e"
+  source_hash: "0dba6bee0fff8d944e01589f08f4a9007d320614960140b92a5ac044ba47891e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.costLimit"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8d73d527d92053428f3d6739e45f37aae7f7ec3172e23604c4066f09de1f8674"
+}
+
+bindings {
+  requirement_id: "REQ-rules-bounded"
+  content_hash: "5fcb57333307094284cbd0d40ce9744c6321553254b8ef684f30d9c57103253e"
+  source_hash: "0dba6bee0fff8d944e01589f08f4a9007d320614960140b92a5ac044ba47891e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestChargedBySize"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "81d4e907e3f00ed0d65c572833c848379e96d06999bf9745c85db5568afb0bac"
+}
+
+bindings {
+  requirement_id: "REQ-rules-bounded"
+  content_hash: "5fcb57333307094284cbd0d40ce9744c6321553254b8ef684f30d9c57103253e"
+  source_hash: "0dba6bee0fff8d944e01589f08f4a9007d320614960140b92a5ac044ba47891e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestBounded"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2a6b6459539d412ae9497afc922538ad9adc10dc78d498cafe3f6b8c4540267d"
+}

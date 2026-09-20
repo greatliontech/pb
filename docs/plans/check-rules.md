@@ -9,7 +9,7 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
       two verbs
 - [x] 2. Rule files: `*.rules.yaml` parsed and validated, the
       environment version refused where unprovided
-- [ ] 3. Environment 1: cel-go over descriptor protos, the bindings
+- [x] 3. Environment 1: cel-go over descriptor protos, the bindings
       and the library, bounded evaluation, the segmentation rule
 - [ ] 4. Lint evaluation: entities bound per target, verdicts located
       through source info, no defaults, suppression comments
