@@ -83,3 +83,12 @@ jobs:
       # hundred at the worst measured rate, which is accepted.
       - name: Spec verification
         run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 go run github.com/greatliontech/stipulator/cmd/stipulator@v0.64.11 check
+      # The native runner's OS row is reached only where user
+      # namespaces are refused, which no floor can ask for: the
+      # AppArmor knob is closed again and the row's arm demanded — a
+      # host that then reaches any other row fails the leg. A host
+      # without the knob cannot close them, and says so by failing.
+      - name: Refuse unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=1
+      - name: The OS row's arm under a delegated scope
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_OS_ROW=1 go test ./internal/plugrun/ -run '^TestRunOnOSRow$' -count=1 -timeout=10m

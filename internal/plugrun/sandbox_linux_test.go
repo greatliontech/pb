@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -25,8 +26,7 @@ import (
 )
 
 var (
-	sandboxUnavailable string // non-empty when the host reaches no Strong row
-	harnessErr         error  // a probe failure that is not the host's tier: the live tests fail on it
+	harnessErr error // a probe failure that is not the host's tier: the live tests fail on it
 )
 
 // setupSandbox probes the host through sandbox directly — not
@@ -36,16 +36,28 @@ var (
 func setupSandbox(m *testing.M) int {
 	if rootfsErr != nil {
 		harnessErr = rootfsErr
+	} else if os.Getenv(coldProbeEnv) != "" {
+		probeSkipped = true
 	} else {
-		sandboxUnavailable, harnessErr = probeSandbox()
+		harnessErr = probeSandbox()
 	}
 	return m.Run()
 }
 
+// coldProbeEnv marks a child test process whose sandbox probe never
+// runs, so the runner's own read of the row is the first in the
+// process (TestRunCancelledBeforeProbe); probeSkipped records that
+// it was, so the child proves it ran cold rather than passing by
+// the warm path.
+const coldProbeEnv = "PB_TEST_COLD_PROBE"
+
+var probeSkipped bool
+
 // probeSandbox runs the plugin once on the Strong row with the rootfs
 // as its Root: a host that reaches no Strong row is the one condition
-// the live tests skip for; any other failure is a broken harness.
-func probeSandbox() (unavailable string, err error) {
+// the live tests skip for (requireRow reads the row); any other
+// failure is a broken harness.
+func probeSandbox() error {
 	req, _ := proto.Marshal(&pluginpb.CodeGeneratorRequest{})
 	var stderr strings.Builder
 	sb, err := sandbox.New(sandbox.Spec{
@@ -58,20 +70,20 @@ func probeSandbox() (unavailable string, err error) {
 		Stderr:  &stderr,
 	})
 	if err != nil {
-		return "", fmt.Errorf("sandbox probe: %w", err)
+		return fmt.Errorf("sandbox probe: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	if err := sb.Start(ctx); err != nil {
 		if errors.Is(err, sandbox.ErrWeakerThanRequired) {
-			return err.Error(), nil
+			return nil
 		}
-		return "", fmt.Errorf("sandbox probe failed for a reason other than the tier: %v (stderr: %s)", err, stderr.String())
+		return fmt.Errorf("sandbox probe failed for a reason other than the tier: %v (stderr: %s)", err, stderr.String())
 	}
 	if es, err := sb.Wait(); err != nil || es.Code != 0 {
-		return "", fmt.Errorf("sandbox probe: %+v %v (stderr: %s)", es, err, stderr.String())
+		return fmt.Errorf("sandbox probe: %+v %v (stderr: %s)", es, err, stderr.String())
 	}
-	return "", nil
+	return nil
 }
 
 // requireSandbox skips a live native arm where the Strong row is
@@ -81,18 +93,51 @@ func probeSandbox() (unavailable string, err error) {
 // native arm.
 func requireSandbox(t *testing.T) {
 	t.Helper()
+	requireRow(t, sandbox.Strong, "PB_TEST_REQUIRE_SANDBOX")
+}
+
+// requireOSRow skips the OS row's arm where the host reaches another
+// row — the sandbox selects its highest row, and no floor caps it —
+// unless PB_TEST_REQUIRE_OS_ROW demands it: a host meant to reach the
+// OS row, continuous integration with user namespaces closed again,
+// fails instead.
+func requireOSRow(t *testing.T) {
+	t.Helper()
+	requireRow(t, sandbox.OS, "PB_TEST_REQUIRE_OS_ROW")
+}
+
+// requireRow is the one gate over the row this host reaches, read
+// from the sandbox as the runner reads it: the arm skips where the
+// host reaches another row, and fails where the named variable
+// demands this one.
+func requireRow(t *testing.T, row sandbox.Isolation, demand string) {
+	t.Helper()
 	if harnessErr != nil {
 		t.Fatal(harnessErr)
 	}
-	if sandboxUnavailable != "" {
-		if os.Getenv("PB_TEST_REQUIRE_SANDBOX") != "" {
-			t.Fatalf("PB_TEST_REQUIRE_SANDBOX is set and the Strong row is unavailable on this host: %s", sandboxUnavailable)
-		}
-		t.Skipf("the Strong row is unavailable on this host: %s", sandboxUnavailable)
+	reached, lacking, err := sandbox.Reach(context.Background(), sandbox.Spec{})
+	if err != nil {
+		t.Fatal(err)
 	}
+	if reached == row {
+		return
+	}
+	why := fmt.Sprintf("this host reaches the %s row, not the %s row", reached, row)
+	if len(lacking) > 0 {
+		why += " (" + strings.Join(lacking, "; ") + ")"
+	}
+	if os.Getenv(demand) != "" {
+		t.Fatalf("%s is set and %s", demand, why)
+	}
+	t.Skip(why)
 }
 
 func run(t *testing.T, param string, l trust.Limits) (*Result, error) {
+	t.Helper()
+	return runAt(t, param, l, plugexec.TierStrong)
+}
+
+func runAt(t *testing.T, param string, l trust.Limits, floor string) (*Result, error) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -102,7 +147,7 @@ func run(t *testing.T, param string, l trust.Limits) (*Result, error) {
 		Process: plugexec.Process{Argv: []string{"/plugin"}},
 		Stdin:   request(t, ""),
 		Limits:  l,
-		MinTier: plugexec.TierStrong,
+		MinTier: floor,
 	}.withParam(t, param))
 }
 
@@ -159,6 +204,85 @@ func TestRunHappyPath(t *testing.T) {
 	}
 	if got := content(t, res); got != "files=2" {
 		t.Fatalf("plugin saw %q", got)
+	}
+}
+
+// On the OS row — a host without user namespaces, the floor lowered
+// to os — the plugin runs from the export at its host path with no
+// hostname stated: the request reaches stdin and the response comes
+// back, the run reports the os tier and an accounting, the root is
+// not writable, the network is denied, and the Strong floor is
+// refused naming the row reached (REQ-plugin-sandboxed,
+// REQ-plugin-min-tier, REQ-plugin-reported-tier).
+func TestRunOnOSRow(t *testing.T) {
+	requireOSRow(t)
+	res, err := runAt(t, "", limits(nil), plugexec.TierOS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Tier != plugexec.TierOS || res.ExitCode != 0 {
+		t.Fatalf("result = tier %s, exit %d", res.Tier, res.ExitCode)
+	}
+	if res.Bounds != BoundsCgroups && res.Bounds != BoundsRlimits {
+		t.Fatalf("bounds = %q", res.Bounds)
+	}
+	if got := content(t, res); got != "files=2" {
+		t.Fatalf("plugin saw %q", got)
+	}
+	res, err = runAt(t, behavior.Write, limits(nil), plugexec.TierOS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := content(t, res); got != "write-err=true" {
+		t.Fatalf("the world writable from the OS row: %q", got)
+	}
+	res, err = runAt(t, behavior.Net, limits(nil), plugexec.TierOS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := content(t, res); !strings.HasSuffix(got, "dial-err=true") {
+		t.Fatalf("network reachable from the OS row: %q", got)
+	}
+	_, err = run(t, "", limits(nil))
+	var te *sandbox.TierError
+	if !errors.Is(err, ErrTierUnreachable) || !errors.As(err, &te) || te.Reached != sandbox.OS {
+		t.Fatalf("the Strong floor on an OS host: %v", err)
+	}
+}
+
+// A run cancelled before the row is read reports the cancellation,
+// whatever step it ended: in a process whose probe never ran, the
+// runner's read of the row is the first, and a context already
+// ended there is a cancelled run, not a probe failure. The child
+// test process runs cold; the parent reads its verdict.
+func TestRunCancelledBeforeProbe(t *testing.T) {
+	if os.Getenv(coldProbeEnv) != "" {
+		if harnessErr != nil {
+			t.Fatal(harnessErr)
+		}
+		if !probeSkipped {
+			t.Fatal("the child's probe ran: a warm process passes by Start's own cancellation, not the read's")
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err := (&SandboxRunner{}).Run(ctx, Spec{
+			Scheme:  plugexec.SchemeOCI,
+			Rootfs:  rootfsDir,
+			Process: plugexec.Process{Argv: []string{"/plugin"}},
+			Stdin:   request(t, ""),
+			Limits:  limits(nil),
+			MinTier: plugexec.TierNone,
+		})
+		if err == nil || !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "plugin run cancelled") {
+			t.Fatalf("a run cancelled before the probe: %v", err)
+		}
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestRunCancelledBeforeProbe$", "-test.count=1")
+	cmd.Env = append(os.Environ(), coldProbeEnv+"=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil || !strings.Contains(string(out), "PASS") {
+		t.Fatalf("the cold child: %v\n%s", err, out)
 	}
 }
 
@@ -348,9 +472,9 @@ func TestStartError(t *testing.T) {
 	if err := startError(plugexec.SchemeLocal, minimal, nil); !errors.Is(err, ErrTierUnreachable) {
 		t.Fatalf("the minimal row for a local run is a tier refusal: %v", err)
 	}
-	err = startError(plugexec.SchemeOCI, fmt.Errorf("%w: the minimal row cannot restrict the world to a Root", sandbox.ErrUndeliverable), nil)
-	if errors.Is(err, ErrTierUnreachable) || !strings.Contains(err.Error(), "lowering the tier floor cannot help") || !strings.Contains(err.Error(), "cannot restrict the world") {
-		t.Fatalf("undeliverable intent: %v", err)
+	err = startError(plugexec.SchemeOCI, fmt.Errorf("%w: exec /plugin: dynamically linked: this row loads static entrypoints from the tree only", sandbox.ErrUndeliverable), nil)
+	if errors.Is(err, ErrTierUnreachable) || strings.Contains(err.Error(), "lowering the tier floor cannot help") || !strings.Contains(err.Error(), "cannot run this oci plugin") || !strings.Contains(err.Error(), "dynamically linked") {
+		t.Fatalf("undeliverable intent names the sandbox's reason: %v", err)
 	}
 	err = startError(plugexec.SchemeLocal, fmt.Errorf("%w: exec /x: built for EM_386; this row runs EM_X86_64 only", sandbox.ErrUndeliverable), nil)
 	if errors.Is(err, ErrTierUnreachable) || strings.Contains(err.Error(), "oci plugin") || !strings.Contains(err.Error(), "cannot run this local plugin") {
@@ -375,7 +499,7 @@ func TestSpecOf(t *testing.T) {
 		Process: plugexec.Process{Argv: []string{"/bin/plugin", "--x"}, Env: []string{"A=1"}, WorkDir: "/w"},
 		Stdin:   []byte("req"),
 		Limits:  trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second},
-	}, sandbox.OS, &out, &errs)
+	}, sandbox.OS, sandbox.Strong, &out, &errs)
 	stdin, _ := io.ReadAll(got.Stdin)
 	got.Stdin = nil
 	want := sandbox.Spec{
@@ -387,9 +511,23 @@ func TestSpecOf(t *testing.T) {
 	if string(stdin) != "req" || !reflect.DeepEqual(got, want) {
 		t.Fatalf("specOf = %+v (stdin %q), want %+v", got, stdin, want)
 	}
+	// On the OS row, which presents no hostname, none is stated;
+	// everything else of the intent is the same.
+	onOS := specOf(Spec{
+		Scheme:  plugexec.SchemeOCI,
+		Rootfs:  "/export",
+		Process: plugexec.Process{Argv: []string{"/bin/plugin", "--x"}, Env: []string{"A=1"}, WorkDir: "/w"},
+		Stdin:   []byte("req"),
+		Limits:  trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second},
+	}, sandbox.OS, sandbox.OS, &out, &errs)
+	onOS.Stdin = nil
+	want.Hostname = ""
+	if !reflect.DeepEqual(onOS, want) {
+		t.Fatalf("specOf on the OS row = %+v, want %+v", onOS, want)
+	}
 	// A local run: the host binary in the host's world, network and
 	// environment, no Root, no hostname, any row.
-	local := specOf(Spec{Scheme: plugexec.SchemeLocal, Process: plugexec.Process{Argv: []string{"/usr/bin/gen"}}, Stdin: []byte("req"), Limits: trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}}, sandbox.None, &out, &errs)
+	local := specOf(Spec{Scheme: plugexec.SchemeLocal, Process: plugexec.Process{Argv: []string{"/usr/bin/gen"}}, Stdin: []byte("req"), Limits: trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}}, sandbox.None, sandbox.Strong, &out, &errs)
 	local.Stdin = nil
 	wantLocal := sandbox.Spec{Exec: "/usr/bin/gen", Args: []string{}, Network: true, Limits: sandbox.Limits{MemoryBytes: 1 << 20, CPUSeconds: 181, MaxProcs: 7}, MinTier: sandbox.None, Stdout: &out, Stderr: &errs}
 	if !reflect.DeepEqual(local, wantLocal) {

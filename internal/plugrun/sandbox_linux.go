@@ -69,7 +69,18 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	if create == nil {
 		create = sandbox.New
 	}
-	sb, err := create(specOf(spec, floor, &stdout, &stderr))
+	// The row this host reaches for an oci run's intent (no network),
+	// read ahead: the fixed hostname is stated only where the row
+	// presents one (specOf); Start still derives the tier from what
+	// applied. A local run states nothing a row decides.
+	row := sandbox.Strong
+	if spec.Scheme == plugexec.SchemeOCI {
+		var err error
+		if row, _, err = sandbox.Reach(ctx, sandbox.Spec{}); err != nil {
+			return nil, beforeStart(ctx, fmt.Errorf("plugrun: %w", err))
+		}
+	}
+	sb, err := create(specOf(spec, floor, row, &stdout, &stderr))
 	if err != nil {
 		return nil, fmt.Errorf("plugrun: %w", err)
 	}
@@ -116,13 +127,15 @@ func accountingOf(a sandbox.Accounting) Accounting {
 
 // specOf is the whole of pb's intent for one run. An oci run: the
 // image export as the Root, the process from the image's config, an
-// empty network, a fixed hostname — a plugin never observes the
-// host's, so its output cannot depend on it
-// (REQ-plugin-runner-independence) — the policy's limits, and the
-// policy's floor. A local run: the host binary in the host's world,
-// the host's environment and network, no hostname of its own, the
+// empty network, a fixed hostname where the row this host reaches
+// presents one — the Strong row's UTS namespace; the OS row has
+// none and refuses a stated hostname, so a plugin there observes
+// the host's, one of that row's stated exposures
+// (REQ-plugin-sandboxed) — the policy's limits, and the policy's
+// floor. A local run: the host binary in the host's world, the
+// host's environment and network, no hostname of its own, the
 // policy's limits, and any row the host affords.
-func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbox.Spec {
+func specOf(spec Spec, floor, row sandbox.Isolation, stdout, stderr io.Writer) sandbox.Spec {
 	out := sandbox.Spec{
 		Exec:    spec.Process.Argv[0],
 		Args:    spec.Process.Argv[1:],
@@ -144,7 +157,9 @@ func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbo
 	}
 	out.Root = spec.Rootfs
 	out.Network = false
-	out.Hostname = pluginHostname
+	if row == sandbox.Strong {
+		out.Hostname = pluginHostname
+	}
 	return out
 }
 
@@ -154,10 +169,11 @@ func specOf(spec Spec, floor sandbox.Isolation, stdout, stderr io.Writer) sandbo
 // Minimal one and the run is an oci plugin's, which no floor admits:
 // that row can neither deny the network nor restrict the world to
 // the export, so the refusal says lowering cannot help and is not a
-// tier refusal a lowering could answer; an intent the host's row
-// cannot deliver at all — a Root to restrict the world to, a denied
-// network — is named the same way; anything else is the run failing
-// to start, with the plugin's stderr so far.
+// tier refusal a lowering could answer; an intent the row this host
+// reaches cannot deliver — on the OS row a dynamically linked
+// entrypoint, which that row does not load — is named as the
+// sandbox states it, the row's own rule being the reason; anything
+// else is the run failing to start, with the plugin's stderr so far.
 func startError(scheme string, err error, stderr []byte) error {
 	var te *sandbox.TierError
 	if errors.As(err, &te) {
@@ -170,7 +186,7 @@ func startError(scheme string, err error, stderr []byte) error {
 		if scheme == plugexec.SchemeLocal {
 			return fmt.Errorf("plugrun: the sandbox row this host reaches cannot run this local plugin: %w", err)
 		}
-		return fmt.Errorf("plugrun: the sandbox row this host reaches cannot deliver an oci plugin's isolation (a read-only image root and no network are required at every tier, so lowering the tier floor cannot help): %w", err)
+		return fmt.Errorf("plugrun: the sandbox row this host reaches cannot run this oci plugin: %w", err)
 	}
 	return fmt.Errorf("plugrun: starting the plugin process: %w (stderr: %s)", err, tailBytes(stderr))
 }

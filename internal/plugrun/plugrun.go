@@ -121,9 +121,12 @@ func beforeStart(ctx context.Context, err error) error {
 	return err
 }
 
-// pluginHostname is the hostname every run presents, on every
-// runner: a plugin never observes the host's, or a per-run one
-// (REQ-plugin-runner-independence).
+// pluginHostname is the hostname a run presents wherever its row
+// presents one — the docker runner's container, the native runner's
+// Strong row: a plugin there never observes the host's, or a per-run
+// one (REQ-plugin-runner-independence). The native runner's OS row
+// presents none, and a plugin there observes the host's
+// (REQ-plugin-sandboxed).
 const pluginHostname = "pb-plugin"
 
 // DaemonImages marks a runner that runs a daemon image (Spec.Image,

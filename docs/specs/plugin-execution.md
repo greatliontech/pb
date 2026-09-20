@@ -192,7 +192,23 @@ other than as it declares is not what a daemon image means: a declared
 `VOLUME` is a writable anonymous volume over the read-only root,
 released with the container; `USER` sets the process's uid; a
 `HEALTHCHECK` runs. The native runner presents none of these: its world
-is the image's alone. INV-docker-deviations: every mount over the
+is the image's alone, as `Root` bounds it on the sandbox row that ran
+(sandbox's "Root is world-restriction"): the export at `/` on the
+`Strong` row, with a fixed hostname; on the Linux `OS` row — reached
+where the host refuses unprivileged user namespaces but has Landlock
+and seccomp (sandbox's ladder), and admitted only by an explicit
+lowering (`REQ-plugin-min-tier`) — the export at its host path,
+read-only, with no network, where only a static entrypoint loads: a
+plugin whose entrypoint is a script, dynamically linked, or
+unreadable is refused before it runs, the refusal naming the
+sandbox's reason. That row's exposures are the lowering's to accept:
+a plugin that dereferences image-absolute paths at runtime observes
+the host's resolution, the row presents no hostname so the plugin
+observes the host's, and the IPC the row leaves open to the same
+user — unix sockets by path, and abstract sockets and signals where
+the kernel does not scope them — is reachable by a plugin that goes
+for it, its own doing as the `docker` deviations are; pb hands it
+the standard streams alone on every row. INV-docker-deviations: every mount over the
 image's root is a filesystem the runtime created under one of the three
 roots — mounted whole, or re-bound from one of those very filesystems as
 the runtime's masks are, never a host directory bound there — or a name
@@ -261,7 +277,8 @@ are observable to a plugin that goes and reads them — its uid, the
 daemon's `/etc` files, a declared volume — and such a plugin's output
 is its own doing, not the runner's: the invariant binds what pb
 hands a plugin and takes from it, and pb passes no runner-specific
-fact by either.
+fact by either. The native runner's `OS` row leaves the host's
+hostname and paths observable the same way (`REQ-plugin-sandboxed`).
 
 **REQ-plugin-response-authority** (behavior): Generated output MUST come
 exclusively from the plugin's `CodeGeneratorResponse`; a plugin exiting
