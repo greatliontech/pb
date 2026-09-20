@@ -26,6 +26,7 @@ import (
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/pb/internal/provenance/image/discover"
@@ -158,31 +159,6 @@ func (a *Acquirer) Close() error {
 	return a.fs.Close()
 }
 
-// Acquired is one materialized plugin image.
-type Acquired struct {
-	// Rootfs is the exported root filesystem — the store's shared
-	// export-cache entry; treat it as read-only. Empty under
-	// PullDaemon.
-	Rootfs string
-	// Image is the repository at the verified digest, for the daemon
-	// to pull (PullDaemon); empty where a rootfs was exported.
-	Image string
-	// Platform is the manifest-list entry the seam admitted for the
-	// host — os/arch, with its variant where the entry states one —
-	// the one child of the verified index the run uses: an export
-	// already is that child; a daemon is told it (Image) and pulls
-	// exactly that.
-	Platform string
-	// Process is the image config's process: argv as Entrypoint then
-	// Cmd, exactly as OCI runtimes compose them, environment, and
-	// working directory. Zero under PullDaemon: the daemon applies
-	// the image's own configuration.
-	Process plugin.Process
-	// Pin is the lockfile pin the acquisition ran under, freshly
-	// recorded on first use.
-	Pin lockfile.PluginPin
-}
-
 // Acquire materializes ref (REQ-plugin-digest-pin, REQ-lock-first-use):
 // a pinned reference is materialized at its pinned digest — the tag is
 // never re-resolved — and a first use resolves the tag once through
@@ -190,7 +166,7 @@ type Acquired struct {
 // seam runs the same and the pin is recorded the same, but nothing
 // materializes: the acquisition yields the repository at the verified
 // digest for the daemon to pull (REQ-plugin-core-verifies).
-func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
+func (a *Acquirer) Acquire(ctx context.Context, ref string) (*acquire.Acquired, error) {
 	pin, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
 	target := ref
 	acq := &acquisition{declaredRef: ref}
@@ -229,7 +205,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 		if err := record(); err != nil {
 			return nil, err
 		}
-		return &Acquired{Image: atDigest(ref, res.Digest.String()), Platform: acq.platform, Pin: pin}, nil
+		return &acquire.Acquired{Pin: pin, Image: &acquire.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Platform: acq.platform}}, nil
 	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
@@ -249,7 +225,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if err != nil {
 		return nil, fmt.Errorf("oci: %s: %v", ref, err)
 	}
-	return &Acquired{Rootfs: rootfs, Process: process, Platform: acq.platform, Pin: pin}, nil
+	return &acquire.Acquired{Process: process, Pin: pin, Image: &acquire.Image{Rootfs: rootfs, Platform: acq.platform}}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the

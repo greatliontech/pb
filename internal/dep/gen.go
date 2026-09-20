@@ -12,10 +12,9 @@ import (
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/plugin/genrequest"
-	"github.com/greatliontech/pb/internal/plugin/local"
-	"github.com/greatliontech/pb/internal/plugin/oci"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
@@ -26,24 +25,29 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// Acquirer materializes an oci-scheme plugin; oci.Acquirer is the
-// production implementation, injected for the verb's own tests.
+// Acquirer yields an entry's plugin from the entry's value — an oci
+// reference or a local binary's name — whichever scheme it acquires
+// for; oci.Acquirer and local.Acquirer are the production
+// implementations, injected for the verb's own tests.
 type Acquirer interface {
-	Acquire(ctx context.Context, ref string) (*oci.Acquired, error)
-	AcquireOverride(ctx context.Context, ref, source string) (*oci.Acquired, error)
+	Acquire(ctx context.Context, value string) (*acquire.Acquired, error)
 }
 
-// LocalAcquirer resolves and pins a local-scheme plugin;
-// local.Acquirer is the production implementation.
-type LocalAcquirer interface {
-	Acquire(ctx context.Context, value string) (*local.Acquired, error)
+// ImageAcquirer is the oci scheme's acquirer, which also honors an
+// override: an entry's reference materialized from a source the
+// invocation names in its place (REQ-plugin-override). What it yields
+// is an image, so its results carry the image's facts always; the
+// verb reads them without a guard.
+type ImageAcquirer interface {
+	Acquirer
+	AcquireOverride(ctx context.Context, ref, source string) (*acquire.Acquired, error)
 }
 
 // LocalDeps are the local scheme's seams, present together or not at
 // all: the acquirer, and the native runner a host binary runs on —
 // whichever runner the oci entries selected.
 type LocalDeps struct {
-	Acquirer LocalAcquirer
+	Acquirer Acquirer
 	Runner   runner.Runner
 }
 
@@ -52,7 +56,7 @@ type LocalDeps struct {
 // where the host has a native runner — without one, no local plugin
 // runs.
 type GenDeps struct {
-	Acquirer Acquirer
+	Acquirer ImageAcquirer
 	Runner   runner.Runner
 	Local    *LocalDeps
 	// Overrides are the invocation's plugin overrides, declared oci
@@ -67,16 +71,6 @@ type GenDeps struct {
 // OverrideDaemonPrefix spells a daemon-local image as an override
 // source (plugin-execution.md, REQ-plugin-override).
 const OverrideDaemonPrefix = "docker://"
-
-// acquired is one entry's plugin, whichever scheme produced it: an
-// export, a daemon-local image, or a host binary.
-type acquired struct {
-	rootfs   string
-	image    string
-	pull     bool   // image is the registry's at a verified digest, for the daemon to pull
-	platform string // the admitted entry's platform, for a pulled image
-	process  plugin.Process
-}
 
 // Gen is the generate verb (REQ-gen-verb): parse pb.gen.yaml, compile
 // the build (REQ-gen-compile), acquire every entry's plugin — pins
@@ -143,16 +137,12 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	// runs, and the pins persist whatever follows: a first-use
 	// resolution is the record even when a later entry fails
 	// (REQ-plugin-digest-pin, REQ-lock-first-use).
-	plugins := make([]acquired, len(gf.Plugins))
+	plugins := make([]*acquire.Acquired, len(gf.Plugins))
 	var acqErr error
 	for i, entry := range gf.Plugins {
 		switch entry.Scheme {
 		case plugin.SchemeLocal:
-			var a *local.Acquired
-			a, acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref)
-			if acqErr == nil {
-				plugins[i] = acquired{process: a.Process}
-			}
+			plugins[i], acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref)
 		default:
 			source, overridden := deps.Overrides[entry.Ref]
 			switch {
@@ -160,32 +150,20 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				// A daemon-local image: the daemon's already, run by
 				// the docker runner as it is; the process is the
 				// image's own configuration, which the daemon applies.
-				plugins[i] = acquired{image: strings.TrimPrefix(source, OverrideDaemonPrefix)}
-				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, plugins[i].image)
+				plugins[i] = &acquire.Acquired{Image: &acquire.Image{Reference: strings.TrimPrefix(source, OverrideDaemonPrefix)}}
+				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, plugins[i].Image.Reference)
 			case overridden:
-				var a *oci.Acquired
-				a, acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
+				plugins[i], acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
 				if acqErr == nil {
-					plugins[i] = acquired{rootfs: a.Rootfs, process: a.Process}
 					fmt.Fprintf(diag, "overriding %s with %s\n", entry.Ref, source)
 				}
 			default:
-				var a *oci.Acquired
-				a, acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
-				if acqErr == nil && a.Image != "" && !daemonRunner {
+				plugins[i], acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
+				if acqErr == nil && plugins[i].Image.Pull && !daemonRunner {
 					// The acquisition yielded a digest for the daemon
 					// to pull; the CLI refuses the byte path for this
 					// runner first, so this is the seam's own guard.
-					acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the selected runner runs no daemon images", a.Image)
-				}
-				if acqErr == nil {
-					// The admitted entry's platform is the daemon's to
-					// be told for a pulled image; an export already is
-					// that child.
-					plugins[i] = acquired{rootfs: a.Rootfs, image: a.Image, pull: a.Image != "", process: a.Process}
-					if a.Image != "" {
-						plugins[i].platform = a.Platform
-					}
+					acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the selected runner runs no daemon images", plugins[i].Image.Reference)
 				}
 			}
 		}
@@ -226,17 +204,17 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if entry.Scheme == plugin.SchemeLocal {
 			run, floor = deps.Local.Runner, plugin.TierNone
 		}
-		res, err := run.Run(ctx, runner.Spec{
-			Scheme:   entry.Scheme,
-			Rootfs:   plugins[i].rootfs,
-			Image:    plugins[i].image,
-			Pull:     plugins[i].pull,
-			Platform: plugins[i].platform,
-			Process:  plugins[i].process,
-			Stdin:    reqBytes,
-			Limits:   limits,
-			MinTier:  floor,
-		})
+		spec := runner.Spec{Scheme: entry.Scheme, Process: plugins[i].Process, Stdin: reqBytes, Limits: limits, MinTier: floor}
+		if img := plugins[i].Image; img != nil {
+			// The admitted entry's platform is the daemon's to be
+			// told for a pulled image; an export already is that
+			// child.
+			spec.Rootfs, spec.Image, spec.Pull = img.Rootfs, img.Reference, img.Pull
+			if spec.Pull {
+				spec.Platform = img.Platform
+			}
+		}
+		res, err := run.Run(ctx, spec)
 		if errors.Is(err, runner.ErrTierUnreachable) {
 			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)
 		}

@@ -20,16 +20,9 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 )
-
-// Acquired is a resolved local plugin: the process to run — the
-// binary at its host path, alone, with the host's environment and
-// working directory — and its pin.
-type Acquired struct {
-	Process plugin.Process
-	Pin     lockfile.PluginPin
-}
 
 // Acquirer resolves local plugins against a resolution root and pins
 // them in a lockfile under a trust policy.
@@ -86,7 +79,7 @@ func (a *Acquirer) Resolve(value string) (string, error) {
 // and checked on every later one, naming both hashes on a mismatch;
 // a binary that moved with the same bytes is a non-event. A policy
 // disabling local pinning records and checks nothing.
-func (a *Acquirer) Acquire(ctx context.Context, value string) (*Acquired, error) {
+func (a *Acquirer) Acquire(ctx context.Context, value string) (*acquire.Acquired, error) {
 	path, err := a.Resolve(value)
 	if err != nil {
 		return nil, err
@@ -95,7 +88,7 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*Acquired, error)
 	if err != nil {
 		return nil, fmt.Errorf("local: hashing %s: %w", path, err)
 	}
-	acq := &Acquired{Process: plugin.Process{Argv: []string{path}}}
+	acq := &acquire.Acquired{Process: plugin.Process{Argv: []string{path}}}
 	if a.Policy != nil && !a.Policy.Execution.LocalPinEnabled() {
 		return acq, nil
 	}

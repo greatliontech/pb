@@ -177,11 +177,15 @@ func TestAcquireFirstUse(t *testing.T) {
 	if _, ok := lock.Plugin(fx.host+"/org/plugin:v1", lockfile.SchemeOCI); !ok {
 		t.Fatal("pin not recorded")
 	}
-	fi, err := os.Stat(got.Rootfs)
-	if err != nil || !fi.IsDir() {
-		t.Fatalf("rootfs %q: %v", got.Rootfs, err)
+	// The store path exports: nothing for a daemon to pull.
+	if got.Image == nil || got.Image.Pull || got.Image.Reference != "" {
+		t.Fatalf("a store acquisition's image = %+v, want an export alone", got.Image)
 	}
-	entries, err := os.ReadDir(got.Rootfs)
+	fi, err := os.Stat(got.Image.Rootfs)
+	if err != nil || !fi.IsDir() {
+		t.Fatalf("rootfs %q: %v", got.Image.Rootfs, err)
+	}
+	entries, err := os.ReadDir(got.Image.Rootfs)
 	if err != nil || len(entries) == 0 {
 		t.Fatalf("rootfs empty: %v %v", entries, err)
 	}
@@ -289,20 +293,20 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := host.OS + "/" + host.Architecture + "/v9"; got.Platform != want {
-		t.Fatalf("admitted platform = %q, want %q", got.Platform, want)
+	if want := host.OS + "/" + host.Architecture + "/v9"; got.Image.Platform != want {
+		t.Fatalf("admitted platform = %q, want %q", got.Image.Platform, want)
 	}
 	plain := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Platform != host.OS+"/"+host.Architecture {
+	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Image.Platform != host.OS+"/"+host.Architecture {
 		t.Fatalf("an entry without a variant: %+v %v", got, err)
 	}
 	// The store path exports that same child: the one entry that
 	// matched, whatever its variant — its own marker is in the export.
 	got, err = plain.Acquire(ctx, ref)
-	if err != nil || got.Platform != host.OS+"/"+host.Architecture+"/v9" {
+	if err != nil || got.Image.Platform != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the store path's admitted child: %+v %v", got, err)
 	}
-	if marker, err := os.ReadFile(filepath.Join(got.Rootfs, "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {
+	if marker, err := os.ReadFile(filepath.Join(got.Image.Rootfs, "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the export is not the admitted child's: %q %v", marker, err)
 	}
 }
@@ -894,7 +898,7 @@ func TestAcquireOverride(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
-		if got.Process.Argv[0] != "/plugin" || got.Rootfs == "" || got.Pin.Ref != "" || got.Pin.Digest != "" {
+		if got.Process.Argv[0] != "/plugin" || got.Image.Rootfs == "" || got.Pin.Ref != "" || got.Pin.Digest != "" {
 			t.Fatalf("%s: %+v", source, got)
 		}
 	}
@@ -1340,7 +1344,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Image != fx.host+"/org/plugin@"+fx.digest || got.Rootfs != "" || len(got.Process.Argv) != 0 {
+	if got.Image.Reference != fx.host+"/org/plugin@"+fx.digest || !got.Image.Pull || got.Image.Rootfs != "" || len(got.Process.Argv) != 0 {
 		t.Fatalf("acquired %+v, want the repository at %s and nothing else", got, fx.digest)
 	}
 	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Digest != fx.digest || got.Pin.Digest != pin.Digest {
@@ -1372,7 +1376,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	// pinned digest.
 	pushIndex(t, ref, hostPlatform())
 	again, err := a.Acquire(ctx, ref)
-	if err != nil || again.Image != got.Image {
+	if err != nil || again.Image.Reference != got.Image.Reference {
 		t.Fatalf("pinned acquisition: %+v %v", again, err)
 	}
 	// A pin the registry contradicts fails closed.

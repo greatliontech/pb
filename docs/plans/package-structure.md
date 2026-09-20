@@ -29,6 +29,9 @@ test beside it, chunk 1).
       layering, the command's assembly with them; the CI paths, the
       issue cites, the README of internal/testing; the host platform
       one type on the plugin root (host-platform-spelled-three-ways)
-- [ ] 8. One acquirer seam: a scheme-tagged Acquired in a subpackage
+- [x] 8. One acquirer seam: a scheme-tagged Acquired in a subpackage
       of the plugin domain, one dep.Acquirer keyed by scheme
-      (two-acquirer-shapes); plan close-out
+      (two-acquirer-shapes)
+- [ ] 9. The acquisition result on the domain root, the runner's spec
+      taking the image facts as that type
+      (acquisition-result-on-the-root); plan close-out

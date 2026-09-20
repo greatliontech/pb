@@ -80,6 +80,9 @@ func TestAcquirePins(t *testing.T) {
 		t.Fatal(err)
 	}
 	pin, ok := a.Lock.Plugin("tools/bin/gen", lockfile.SchemeLocal)
+	if got.Image != nil {
+		t.Fatalf("a host binary carries image facts: %+v", got.Image)
+	}
 	if !ok || len(pin.Binary) != 1 || !strings.HasPrefix(pin.Binary["linux/amd64"], "sha256:") || got.Process.Argv[0] != filepath.Join(root, "tools", "bin", "gen") {
 		t.Fatalf("first use: %+v %+v", pin, got)
 	}
