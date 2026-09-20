@@ -1,6 +1,6 @@
 # Plugin evidence is fetched on every acquisition
 
-Lands: user decision
+Lands: plugin-evidence plan chunk 1
 
 A plugin image governed by a `plugins` identity rule has its
 signature evidence fetched from its registry on every acquisition —

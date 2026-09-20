@@ -1,6 +1,6 @@
 # A plugin pin has no explicit update
 
-Lands: user decision
+Lands: plugin-evidence plan chunk 2
 
 A module pin moves through `pb dep update`, the explicit user-invoked
 rewrite REQ-lock-no-silent-downgrade sanctions. A plugin pin has no
