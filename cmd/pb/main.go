@@ -232,13 +232,24 @@ func depCmd() *cobra.Command {
 		RunE: run(func(ctx context.Context, s *dep.Session) error { return dep.Verify(ctx, s, os.Stdout) }),
 	})
 	cmd.AddCommand(&cobra.Command{
-		Use: "update [module path...]", Short: "move requirements to the highest discovered release",
+		Use: "update [module path or oci plugin reference...]", Short: "move requirements to the highest discovered release, or re-resolve a plugin",
 		RunE: func(c *cobra.Command, args []string) error {
-			s, err := session()
+			settings, err := userconfig.Load()
 			if err != nil {
 				return err
 			}
-			return dep.Update(c.Context(), s, os.Stdout, args...)
+			s, err := loadSession(settings)
+			if err != nil {
+				return err
+			}
+			// A plugin named for update is re-resolved through the
+			// acquirer the generation verb would run it with — the
+			// runner the settings select, its platform the one the
+			// seam checks — opened only when a plugin is named, so a
+			// module update needs no runner.
+			plugins := &lazyUpdater{settings: settings, session: s}
+			defer plugins.Close() //nolint:errcheck — the verb's own error is the one reported
+			return dep.Update(c.Context(), s, os.Stdout, plugins, args...)
 		},
 	})
 	cmd.AddCommand(&cobra.Command{
@@ -252,6 +263,44 @@ func depCmd() *cobra.Command {
 		},
 	})
 	return cmd
+}
+
+// lazyUpdater is the update verb's plugin updater, the acquirer
+// opened on the first plugin named and closed with the verb.
+type lazyUpdater struct {
+	settings *userconfig.Settings
+	session  *dep.Session
+	acq      *plugoci.Acquirer
+}
+
+func (u *lazyUpdater) UpdatePlugin(ctx context.Context, ref string) (lockfile.PluginPin, lockfile.PluginPin, error) {
+	if u.acq == nil {
+		runner, err := plugrun.Open(nil, u.settings.Get(userconfig.KeyRunner))
+		if err != nil {
+			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+		}
+		cfg, err := acquirerConfig(u.settings, runner, u.session)
+		if err != nil {
+			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+		}
+		acq, err := plugoci.New(cfg)
+		if err != nil {
+			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+		}
+		u.acq = acq
+	}
+	return u.acq.UpdatePlugin(ctx, ref)
+}
+
+// Close releases the acquirer if one was opened; a second close is
+// nothing.
+func (u *lazyUpdater) Close() error {
+	if u.acq == nil {
+		return nil
+	}
+	acq := u.acq
+	u.acq = nil
+	return acq.Close()
 }
 
 // workingTree roots the writable working tree at the filesystem root so

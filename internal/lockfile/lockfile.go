@@ -607,10 +607,8 @@ func (f *File) Module(path, version string) (ModulePin, bool) {
 // in its own scheme, so an entry migrated between schemes takes a fresh
 // first-use pin.
 func (f *File) Plugin(ref, scheme string) (PluginPin, bool) {
-	for _, p := range f.Plugins {
-		if p.Ref == ref && p.Scheme == scheme {
-			return p, true
-		}
+	if i := f.pluginIndex(ref, scheme); i >= 0 {
+		return f.Plugins[i], true
 	}
 	return PluginPin{}, false
 }
@@ -623,11 +621,22 @@ func (f *File) AddPlugin(pin PluginPin) error {
 	if err := checkPluginPin(pin); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
-	if _, exists := f.Plugin(pin.Ref, pin.Scheme); exists {
+	if f.pluginIndex(pin.Ref, pin.Scheme) >= 0 {
 		return fmt.Errorf("%w: plugin pin for %s (%s) already exists", ErrPinMismatch, pin.Ref, pin.Scheme)
 	}
 	f.Plugins = append(f.Plugins, pin)
 	return nil
+}
+
+// pluginIndex is the position of the pin for (ref, scheme), -1 for
+// none.
+func (f *File) pluginIndex(ref, scheme string) int {
+	for i, p := range f.Plugins {
+		if p.Ref == ref && p.Scheme == scheme {
+			return i
+		}
+	}
+	return -1
 }
 
 // SetPluginBinary records a local plugin's content hash for one host
@@ -687,6 +696,24 @@ func (f *File) UpdateModule(pin ModulePin) error {
 		}
 	}
 	return fmt.Errorf("%w: no pin for %s@%s to update", ErrPinMismatch, pin.Path, pin.Version)
+}
+
+// UpdatePlugin replaces the oci pin for pin.Ref with pin: the explicit
+// user-invoked update REQ-lock-no-silent-downgrade sanctions, so no
+// transition is judged. A reference with no oci pin is a mismatch.
+func (f *File) UpdatePlugin(pin PluginPin) error {
+	if err := checkPluginPin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if pin.Scheme != SchemeOCI {
+		return fmt.Errorf("%w: plugin %q: only an oci pin is updated", ErrInvalid, pin.Ref)
+	}
+	i := f.pluginIndex(pin.Ref, SchemeOCI)
+	if i < 0 {
+		return fmt.Errorf("%w: no oci pin for %s to update", ErrPinMismatch, pin.Ref)
+	}
+	f.Plugins[i] = pin
+	return nil
 }
 
 // VerifyModule enforces a fetched artifact against its pin

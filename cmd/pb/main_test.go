@@ -200,3 +200,26 @@ func TestPullMode(t *testing.T) {
 		}
 	}
 }
+
+// The update verb's plugin updater opens the acquirer only on the
+// first plugin named: a module update needs no runner, and a runner
+// the settings select but the host lacks fails the plugin update
+// alone (REQ-dep-update).
+func TestLazyUpdaterOpensOnFirstPlugin(t *testing.T) {
+	plant(t, "runner: docker\n")
+	t.Setenv("DOCKER_HOST", "unix:///nonexistent.sock")
+	settings, err := userconfig.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &dep.Session{Lock: &lockfile.File{}, Client: &modfetch.Client{Policy: &trust.Policy{}}}
+	up := &lazyUpdater{settings: settings, session: s}
+	up.Close()
+	if up.acq != nil {
+		t.Fatal("an updater opened an acquirer before any plugin was named")
+	}
+	if _, _, err := up.UpdatePlugin(context.Background(), "ghcr.io/o/p:v1"); err == nil || !strings.Contains(err.Error(), "docker") {
+		t.Fatalf("a plugin named under an unavailable runner: %v", err)
+	}
+	up.Close()
+}

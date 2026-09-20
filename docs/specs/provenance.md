@@ -167,7 +167,9 @@ judged exactly as fetched evidence is, kept evidence that cannot be
 read is absent, never an error, and a keep that cannot be written
 changes no outcome. A fetch that takes no carrier keeps nothing, so
 an unsigned image is asked for again on every acquisition, and a
-fetch that rejects keeps nothing.
+fetch that rejects keeps nothing. An explicit update of the pin
+(`dep-verbs.md`) fetches anew without judging what was kept, and
+keeps what it takes.
 
 **REQ-prov-plugin-evidence-store** (wire): Kept evidence MUST live at
 `<user cache>/pb/plugin-evidence/<algorithm>/<hex>.json` for the

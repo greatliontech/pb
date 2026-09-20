@@ -110,8 +110,9 @@ type Acquirer struct {
 // acquisition carries one Acquire call's seam contract and results.
 type acquisition struct {
 	declaredRef      string // the reference as declared in generation config
-	pinnedDigest     string // "" on first use
+	pinnedDigest     string // "" on first use and on an explicit update
 	pinnedProvenance lockfile.Provenance
+	fresh            bool   // an explicit update: evidence fetched anew, kept evidence not judged
 	platform         string // the admitted manifest-list entry's platform, as a daemon spells it
 	resolved         string
 	provenance       lockfile.Provenance
@@ -218,10 +219,11 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 		if pinned {
 			return nil
 		}
-		if acq.resolved == "" {
-			return fmt.Errorf("plugoci: %s: acquisition ran no verification seam", ref)
+		p, err := acq.pin()
+		if err != nil {
+			return err
 		}
-		pin = lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: acq.resolved, Provenance: acq.provenance}
+		pin = p
 		return a.lock.AddPlugin(pin)
 	}
 	if a.pull == PullDaemon {
@@ -258,6 +260,48 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	return &Acquired{Rootfs: rootfs, Process: process, Platform: acq.platform, Pin: pin}, nil
 }
 
+// UpdatePlugin re-resolves ref and rewrites its pin: the tag to the
+// digest it names now, the evidence fetched anew and judged under
+// the policy, the pin's digest and record replaced — the explicit
+// user-invoked update REQ-lock-no-silent-downgrade sanctions
+// (dep-verbs.md REQ-dep-update). Nothing materializes. A reference
+// with no pin, or one the seam refuses, fails and leaves the pin.
+// Returns the pin as it was and as it is.
+func (a *Acquirer) UpdatePlugin(ctx context.Context, ref string) (before, after lockfile.PluginPin, err error) {
+	before, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
+	if !pinned {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, fmt.Errorf("plugoci: %s: no pin to update", ref)
+	}
+	acq := &acquisition{declaredRef: ref, fresh: true}
+	if err := a.enter(ref, acq); err != nil {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+	}
+	defer a.leave(ref)
+	// The tag is asked of the registry for this call alone: the
+	// store's own policy would answer a cached tag from the cache.
+	if _, err := a.fs.Resolve(ctx, ref, ocifs.ResolveUnder(ocifs.PullAlways)); err != nil {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+	}
+	after, err = acq.pin()
+	if err != nil {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+	}
+	if err := a.lock.UpdatePlugin(after); err != nil {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+	}
+	return before, after, nil
+}
+
+// pin is the pin the seam's verdict makes for the declared reference:
+// what resolved and what was judged; an acquisition that ran no seam
+// has none.
+func (acq *acquisition) pin() (lockfile.PluginPin, error) {
+	if acq.resolved == "" {
+		return lockfile.PluginPin{}, fmt.Errorf("plugoci: %s: acquisition ran no verification seam", acq.declaredRef)
+	}
+	return lockfile.PluginPin{Ref: acq.declaredRef, Scheme: lockfile.SchemeOCI, Digest: acq.resolved, Provenance: acq.provenance}, nil
+}
+
 // atDigest is ref's repository at digest: the digest-form reference
 // a pinned acquisition resolves and a daemon pulls.
 func atDigest(ref, digest string) string {
@@ -279,6 +323,11 @@ func processOf(cfg *v1.ConfigFile) (plugexec.Process, error) {
 	return plugexec.Process{Argv: argv, Env: cfg.Config.Env, WorkDir: cfg.Config.WorkingDir}, nil
 }
 
+// enter admits one acquisition of target at a time; an acquisition is
+// keyed by what it resolves — a pinned one by its digest form, a
+// first use and an update by the tag — so the guard is against two
+// resolutions of one target, not against every pairing of one
+// plugin, and the lockfile is the verb's to serialize.
 func (a *Acquirer) enter(target string, acq *acquisition) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -337,7 +386,7 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 			return lockfile.CheckProvenanceTransition(acq.pinnedProvenance, rec) == nil
 		}
 	}
-	prov, err := a.evidence(ctx, id.Reference, digest, decision, accept)
+	prov, err := a.evidence(ctx, id.Reference, digest, decision, accept, acq.fresh)
 	switch {
 	case err == nil:
 	case errors.Is(err, imagesig.ErrRecordNotReproduced):
@@ -387,9 +436,10 @@ func evidenceStore(dir string) *evidence.Store {
 // REQ-prov-plugin-classification). The judgement is against the
 // identity rule governing the declared reference; accept is the
 // caller's further acceptance of a verified record, nil for every
-// one. With no identity rule or no trusted root nothing is judged:
+// one; fresh — an explicit update — fetches without judging what was
+// kept. With no identity rule or no trusted root nothing is judged:
 // no evidence could be accepted (REQ-prov-plugin-identity).
-func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decision trust.Decision, accept func(lockfile.Provenance) bool) (lockfile.Provenance, error) {
+func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decision trust.Decision, accept func(lockfile.Provenance) bool, fresh bool) (lockfile.Provenance, error) {
 	if decision.Identity == nil {
 		return lockfile.Provenance{}, ErrNoIdentityRule
 	}
@@ -408,7 +458,7 @@ func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decis
 	if err != nil {
 		return lockfile.Provenance{}, fmt.Errorf("plugoci: %w", err)
 	}
-	if a.kept != nil {
+	if a.kept != nil && !fresh {
 		if kept, ok := a.kept.Load(h); ok {
 			if rec, err := imagesig.Judge(ctx, digest, imagesig.Sequence(kept), id, a.root, accept); err == nil {
 				return rec, nil

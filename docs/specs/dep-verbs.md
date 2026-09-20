@@ -100,7 +100,22 @@ release higher than its declaration, skipping the rest. Updated
 declarations are rewritten canonically in their declaring module files;
 pin changes for updated versions follow `REQ-lock-first-use`, and any
 rewrite of an existing pin is the explicit user-invoked update
-`REQ-lock-no-silent-downgrade` sanctions.
+`REQ-lock-no-silent-downgrade` sanctions. An argument naming an `oci`
+plugin reference the root's generation configuration declares — that
+configuration alone, and the plugin before any module of the same
+spelling — updates that plugin's pin instead: the reference is
+resolved anew — its tag to the digest it names now — its evidence
+fetched anew and judged under the trust policy, and the pin's digest
+and provenance record rewritten to what resolved and what was judged,
+the same explicit update, reported with the record's transition; a
+plugin reference with no pin, or one whose evidence the policy
+requires and refuses, fails and leaves the pin as it was, and a
+plugin is refused under a trust policy that forbids the `oci`
+execution scheme, as generation refuses it. Every argument is placed
+before any is moved, so an argument naming nothing fails the run
+whole and moves nothing. Without arguments plugins are left as
+pinned: a tag is its author's pointer, not a release order to move
+along.
 
 **REQ-dep-graph** (behavior): `graph` MUST print the requirement graph
 — every edge of the reachable graph `REQ-resolve-mvs` defines — one

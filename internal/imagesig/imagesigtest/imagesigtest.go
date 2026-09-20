@@ -272,8 +272,11 @@ func AttachOrdered(t testing.TB, repo name.Repository, subject v1.Hash, a Artifa
 		if order == Anywhere || (order == Before && cmp < 0) || (order == After && cmp > 0) {
 			return put(t, repo, m, blobs, "", opts)
 		}
-		if nonce > 64 {
-			t.Fatal("sixty-four nonces gave no digest on the wanted side")
+		// A try lands on the wanted side with the pivot's own share
+		// of the digest space; the cap leaves a pivot within a
+		// hundred-thousandth of either end as the one that fails.
+		if nonce > 1<<16 {
+			t.Fatalf("%d nonces gave no digest on the wanted side of %s", nonce, pivot)
 		}
 	}
 }

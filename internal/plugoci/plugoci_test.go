@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -670,6 +671,100 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	}
 	if entries, _ := os.ReadDir(corruptKept); len(entries) != 0 {
 		t.Fatalf("a rejected fetch kept evidence: %v", entries)
+	}
+}
+
+// An explicit update re-resolves the tag and rewrites the pin: the
+// digest to what the tag names now, the record to what a fresh fetch
+// judged, kept evidence replaced; a reference with no pin fails; an
+// image the policy refuses fails and leaves the pin
+// (REQ-dep-update, REQ-lock-no-silent-downgrade).
+func TestUpdatePlugin(t *testing.T) {
+	fx := newSignedFixture(t, true)
+	ref := fx.host + "/org/plugin:v1"
+	kept := t.TempDir()
+	const otherSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v2"
+	both := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, "https://github.com/acme/plugin/**")}}
+	fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
+	lock := &lockfile.File{}
+	workDir := t.TempDir()
+	first := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
+	if _, _, err := first.UpdatePlugin(ctx, ref); err == nil || !strings.Contains(err.Error(), "no pin to update") {
+		t.Fatalf("an unpinned reference updated: %v", err)
+	}
+	got, err := first.Acquire(ctx, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.Close()
+	oldDigest := fx.digest
+
+	// The tag moves to a new image, signed by another signer.
+	fx.digest = pushIndex(t, ref, hostPlatform())
+	otherReferrer := fx.signBundle(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{})
+	// An acquisition keeps the pin: the tag is never re-resolved
+	// implicitly (REQ-plugin-digest-pin) — over a cold store, so the
+	// pin and not the cache holds it.
+	still := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), t.TempDir(), kept)
+	if again, err := still.Acquire(ctx, ref); err != nil || again.Pin.Digest != oldDigest {
+		t.Fatalf("an acquisition re-resolved the tag: %+v %v", again, err)
+	}
+	still.Close()
+	updater := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
+	before, after, err := updater.UpdatePlugin(ctx, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before, got.Pin) || after.Digest != fx.digest || after.Provenance != imageRecord(otherSAN) || after.Ref != ref || after.Scheme != lockfile.SchemeOCI {
+		t.Fatalf("update = %+v -> %+v", before, after)
+	}
+	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || !reflect.DeepEqual(pin, after) {
+		t.Fatalf("the pin was not rewritten: %+v", pin)
+	}
+	h, err := v1.NewHash(fx.digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if carriers, ok := (evidence.Store{Dir: kept}).Load(h); !ok || len(carriers) != 1 {
+		t.Fatalf("the update kept nothing for the new digest: %v %v", carriers, ok)
+	}
+	updater.Close()
+	// An acquisition at the moved pin runs the new image under its
+	// new record, the kept evidence reproducing it.
+	moved := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
+	if got, err := moved.Acquire(ctx, ref); err != nil || got.Pin.Digest != fx.digest || got.Pin.Provenance != imageRecord(otherSAN) {
+		t.Fatalf("an acquisition at the moved pin: %+v %v", got, err)
+	}
+	moved.Close()
+
+	// The tag unmoved, a signature the judgement prefers added: the
+	// update fetches anew rather than judging the kept evidence, so
+	// the record follows the registry.
+	const thirdSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v3"
+	fx.signBundleOrdered(t, thirdSAN, signerIssuer, sigstoretest.BundleOptions{}, imagesigtest.Before, otherReferrer)
+	refreshing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
+	if _, after3, err := refreshing.UpdatePlugin(ctx, ref); err != nil || after3.Digest != fx.digest || after3.Provenance != imageRecord(thirdSAN) {
+		t.Fatalf("the update judged kept evidence instead of fetching: %+v %v", after3, err)
+	}
+	refreshing.Close()
+
+	// The tag moves again, to an unsigned image: under
+	// require-provenance the update fails and the pin stands.
+	fx.digest = pushIndex(t, ref, hostPlatform())
+	refusing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
+	if _, _, err := refusing.UpdatePlugin(ctx, ref); !errors.Is(err, imagesig.ErrNoEvidence) {
+		t.Fatalf("an unsigned image under require-provenance updated: %v", err)
+	}
+	if pin, _ := lock.Plugin(ref, lockfile.SchemeOCI); pin.Digest != after.Digest || pin.Provenance != imageRecord(thirdSAN) {
+		t.Fatalf("a refused update moved the pin: %+v", pin)
+	}
+	refusing.Close()
+	// Under allow-unsigned the same update rewrites the record to
+	// none: the explicit update, not a silent downgrade.
+	tolerant := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/acme/plugin/**")}}
+	downgrading := newAcquirerAt(t, fx.fixture, lock, tolerant, fx.sig.TrustedRoot(), workDir, kept)
+	if _, after2, err := downgrading.UpdatePlugin(ctx, ref); err != nil || after2.Digest != fx.digest || after2.Provenance != (lockfile.Provenance{}) {
+		t.Fatalf("the explicit update to an unsigned image: %+v %v", after2, err)
 	}
 }
 

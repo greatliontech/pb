@@ -14,6 +14,9 @@ import (
 	"io/fs"
 	"path"
 
+	"github.com/go-git/go-billy/v6/util"
+	"github.com/greatliontech/pb/internal/genfile"
+
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/greatliontech/pb/internal/atomicfile"
@@ -94,6 +97,16 @@ func Load(cfg Config) (*Session, error) {
 	s.Client.Lock = s.Lock
 	s.Driver = &resolve.Driver{Root: root, Client: s.Client}
 	return s, nil
+}
+
+// GenFile is the root's generation configuration, parsed
+// (generation.md); a workspace has one at its root or none.
+func (s *Session) GenFile() (*genfile.File, error) {
+	data, err := util.ReadFile(s.WS, path.Join(s.Root.Dir, genfile.FileName))
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", genfile.FileName, err)
+	}
+	return genfile.Parse(data)
 }
 
 // SaveLock writes the lockfile canonically at the resolution root when

@@ -410,3 +410,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "7d3b254a7a6f072241188e1d6d93c260c8edf3a7bb86634e4b0aff1e3ffcc48b"
 }
+
+bindings {
+  requirement_id: "REQ-lock-no-silent-downgrade"
+  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
+  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lockfile.TestUpdatePlugin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c6ca2b861b037403a0035bf44af408eda861feaefbd499cb9afc3d6ca3e926c2"
+}
+
+bindings {
+  requirement_id: "REQ-lock-no-silent-downgrade"
+  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
+  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
+}

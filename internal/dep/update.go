@@ -3,8 +3,10 @@ package dep
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"slices"
 
@@ -12,8 +14,16 @@ import (
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
 	"github.com/greatliontech/pb/internal/modfile"
+	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/version"
 )
+
+// PluginUpdater re-resolves a pinned oci plugin reference and rewrites
+// its pin, returning the pin as it was and as it is; plugoci.Acquirer
+// is the one implementation.
+type PluginUpdater interface {
+	UpdatePlugin(ctx context.Context, ref string) (before, after lockfile.PluginPin, err error)
+}
 
 // Update moves requirements to the highest tagged release discovered
 // for each module (REQ-dep-update): with arguments, exactly the named
@@ -21,10 +31,47 @@ import (
 // with no discoverable release, and on a name whose highest release is
 // lower than a declaration; without arguments, every direct external
 // requirement with a discoverable release higher than its declaration,
-// skipping the rest. Rewritten declarations are emitted canonically;
+// skipping the rest. An argument naming an oci plugin reference the
+// root's generation configuration declares updates that plugin's pin
+// through plugins instead — the reference resolved anew, its evidence
+// fetched anew — and fails with no updater; without arguments plugins
+// are left as pinned. Rewritten declarations are emitted canonically;
 // rewrites are per-file atomic, not transactional — a failed run may
 // leave some declaring files updated, and rerunning converges.
-func Update(ctx context.Context, s *Session, out io.Writer, targets ...string) error {
+func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdater, targets ...string) error {
+	// Every target is placed before any is moved, so a name that is
+	// nothing fails the run whole: a declared oci plugin reference
+	// names the plugin, anything else a module. The configuration is
+	// consulted only for named targets; the unnamed sweep leaves
+	// plugins as pinned.
+	var pluginTargets, moduleTargets []string
+	if len(targets) > 0 {
+		pluginRefs, err := declaredPlugins(s)
+		if err != nil {
+			return err
+		}
+		seen := map[string]bool{}
+		for _, target := range targets {
+			if seen[target] {
+				continue
+			}
+			seen[target] = true
+			if pluginRefs[target] {
+				pluginTargets = append(pluginTargets, target)
+			} else {
+				moduleTargets = append(moduleTargets, target)
+			}
+		}
+		if len(pluginTargets) > 0 {
+			if plugins == nil {
+				return fmt.Errorf("dep update: %s is a plugin, and no plugin updater is wired", pluginTargets[0])
+			}
+			if !s.Client.Policy.Execution.SchemeAllowed(plugexec.SchemeOCI) {
+				return fmt.Errorf("dep update: the trust policy does not permit oci-scheme plugins (plugin %s)", pluginTargets[0])
+			}
+		}
+	}
+
 	declared := map[string][]int{} // path -> indexes of declaring modules
 	for i, m := range s.Root.Modules {
 		for p := range m.File.Deps {
@@ -37,7 +84,7 @@ func Update(ctx context.Context, s *Session, out io.Writer, targets ...string) e
 
 	named := len(targets) > 0
 	if !named {
-		targets = slices.Sorted(func(yield func(string) bool) {
+		moduleTargets = slices.Sorted(func(yield func(string) bool) {
 			for p := range declared {
 				if !yield(p) {
 					return
@@ -45,14 +92,28 @@ func Update(ctx context.Context, s *Session, out io.Writer, targets ...string) e
 			}
 		})
 	}
+	for _, target := range moduleTargets {
+		if _, ok := declared[target]; !ok && named {
+			return fmt.Errorf("dep update: no workspace module requires %s", target)
+		}
+	}
+	// A moved plugin pin is durable before it is reported, whatever
+	// the module arm does after.
+	for _, target := range pluginTargets {
+		before, after, err := plugins.UpdatePlugin(ctx, target)
+		if err != nil {
+			return fmt.Errorf("dep update: %w", err)
+		}
+		if err := s.SaveLock(); err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "plugin %s: %s -> %s, provenance %s -> %s\n", target, before.Digest, after.Digest, provenanceSpelling(before.Provenance), provenanceSpelling(after.Provenance))
+	}
 
 	changed := map[int]bool{}
-	for _, target := range targets {
+	for _, target := range moduleTargets {
 		declarers, ok := declared[target]
 		if !ok {
-			if named {
-				return fmt.Errorf("dep update: no workspace module requires %s", target)
-			}
 			continue
 		}
 		versions, err := s.Client.Versions(ctx, target)
@@ -163,4 +224,33 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 	}
 	fmt.Fprintf(out, "verified %d cached module(s)\n", verified)
 	return nil
+}
+
+// declaredPlugins is the set of oci plugin references the root's
+// generation configuration declares, empty with no configuration.
+func declaredPlugins(s *Session) (map[string]bool, error) {
+	gf, err := s.GenFile()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("dep update: %w", err)
+	}
+	refs := map[string]bool{}
+	for _, p := range gf.Plugins {
+		if p.Scheme == plugexec.SchemeOCI {
+			refs[p.Ref] = true
+		}
+	}
+	return refs, nil
+}
+
+// provenanceSpelling is a record as the update reports it: none, or
+// the type and both halves of the identity, so a change of either
+// half reads as the change it is.
+func provenanceSpelling(p lockfile.Provenance) string {
+	if p == (lockfile.Provenance{}) {
+		return "none"
+	}
+	return p.Type + " " + p.SAN + " by " + p.Issuer
 }

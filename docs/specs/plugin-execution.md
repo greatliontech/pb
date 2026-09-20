@@ -84,7 +84,8 @@ to `library/ubuntu`).
 **REQ-plugin-digest-pin** (invariant): A plugin MUST execute only at the
 manifest-list digest its reference is pinned to in the lockfile; a tag is
 resolved to a digest when the pin is created, and never re-resolved
-implicitly.
+implicitly — only by the explicit update of the pin (`dep-verbs.md`
+REQ-dep-update).
 
 **REQ-plugin-platform-strict** (invariant): A plugin whose manifest list
 contains no entry matching the host platform MUST be refused with an

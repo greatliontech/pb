@@ -259,6 +259,30 @@ func TestImageSignatureRecordRoundTrips(t *testing.T) {
 	}
 }
 
+// An explicit plugin update replaces the oci pin whole, any record to
+// any record, and refuses a reference with no oci pin or a local pin
+// (REQ-dep-update's explicit update under REQ-lock-no-silent-downgrade).
+func TestUpdatePlugin(t *testing.T) {
+	signed := Provenance{Type: ProvenanceImageSignature, SAN: "https://ci.example/wf", Issuer: "https://issuer.example"}
+	f := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + strings.Repeat("11", 32), Provenance: signed}}}
+	moved := PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + strings.Repeat("22", 32)}
+	if err := f.UpdatePlugin(moved); err != nil {
+		t.Fatal(err)
+	}
+	if pin, ok := f.Plugin("ghcr.io/a/b:v1", SchemeOCI); !ok || !reflect.DeepEqual(pin, moved) || len(f.Plugins) != 1 {
+		t.Fatalf("pins = %+v", f.Plugins)
+	}
+	if err := f.UpdatePlugin(PluginPin{Ref: "ghcr.io/a/c:v1", Scheme: SchemeOCI, Digest: moved.Digest}); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("an unpinned reference: %v", err)
+	}
+	if err := f.UpdatePlugin(PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + strings.Repeat("33", 32)}}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("a local pin: %v", err)
+	}
+	if err := f.UpdatePlugin(PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "bad"}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("an invalid pin: %v", err)
+	}
+}
+
 func TestProvenanceTransition(t *testing.T) {
 	none := Provenance{}
 	if err := CheckProvenanceTransition(none, goldenProv); err != nil {

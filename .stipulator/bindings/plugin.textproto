@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
-  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
-  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
+  content_hash: "f1f6b3e730da919c99c859a05f8b5e5e7b552ec9669d846a01d07770b12ce8cb"
+  source_hash: "6a99cd76ecd055d6dc0445890a34d0732fb1b6d76f0702e2d7048f6947936e0a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
-  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
-  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
+  content_hash: "f1f6b3e730da919c99c859a05f8b5e5e7b552ec9669d846a01d07770b12ce8cb"
+  source_hash: "6a99cd76ecd055d6dc0445890a34d0732fb1b6d76f0702e2d7048f6947936e0a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinnedIgnoresMovedTag"
   role: BINDING_ROLE_TESTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-digest-pin"
-  content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
-  source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
+  content_hash: "f1f6b3e730da919c99c859a05f8b5e5e7b552ec9669d846a01d07770b12ce8cb"
+  source_hash: "6a99cd76ecd055d6dc0445890a34d0732fb1b6d76f0702e2d7048f6947936e0a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugoci.TestAcquirePinMismatchFailsClosed"
   role: BINDING_ROLE_TESTS
@@ -879,4 +879,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugrun.TestRunOnOSRow"
   role: BINDING_ROLE_TESTS
   shape_hash: "a5bbeb59e2e36a2f341dc9f7dfda76758c13a4d7a20ab26fb0e8e9931845277d"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-digest-pin"
+  content_hash: "f1f6b3e730da919c99c859a05f8b5e5e7b552ec9669d846a01d07770b12ce8cb"
+  source_hash: "6a99cd76ecd055d6dc0445890a34d0732fb1b6d76f0702e2d7048f6947936e0a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
 }

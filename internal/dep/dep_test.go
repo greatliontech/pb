@@ -61,6 +61,13 @@ func (fx *depFixture) session(t *testing.T, dir string) *Session {
 	return s
 }
 
+func (fx *depFixture) write(t *testing.T, name, content string) {
+	t.Helper()
+	if err := util.WriteFile(fx.ws, name, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func (fx *depFixture) read(t *testing.T, name string) string {
 	t.Helper()
 	b, err := util.ReadFile(fx.ws, name)
@@ -302,7 +309,7 @@ func TestUpdateVerb(t *testing.T) {
 		serve(fx)
 		s := fx.session(t, ".")
 		var out bytes.Buffer
-		if err := Update(ctx, s, &out, "example.com/m1"); err != nil {
+		if err := Update(ctx, s, &out, nil, "example.com/m1"); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 		if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/m1: v1.2.0\n") {
@@ -313,11 +320,97 @@ func TestUpdateVerb(t *testing.T) {
 		}
 	})
 
+	t.Run("named update of a declared plugin re-resolves it", func(t *testing.T) {
+		withPlugin := map[string]string{}
+		for k, v := range files {
+			withPlugin[k] = v
+		}
+		withPlugin["pb.gen.yaml"] = "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - local: tools/local-gen\n    out: gen\n"
+		fx := newDep(t, withPlugin)
+		serve(fx)
+		s := fx.session(t, ".")
+		moved := "sha256:" + strings.Repeat("22", 32)
+		up := &stubUpdater{lock: s.Lock, after: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: moved}}
+		var out bytes.Buffer
+		if err := Update(ctx, s, &out, up, "ghcr.io/o/p:v1", "example.com/m1"); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		if up.got != "ghcr.io/o/p:v1" {
+			t.Fatalf("the updater saw %q", up.got)
+		}
+		if !strings.Contains(out.String(), "plugin ghcr.io/o/p:v1: ") || !strings.Contains(out.String(), "provenance none -> image-signature https://ci.example/wf by https://issuer.example") || !strings.Contains(out.String(), "example.com/m1 v1.0.0 -> v1.2.0") {
+			t.Fatalf("out = %q", out.String())
+		}
+		// A plugin named alone: the pin it rewrote is saved.
+		s = fx.session(t, ".")
+		up = &stubUpdater{lock: s.Lock, after: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("33", 32)}}
+		if err := Update(ctx, s, &bytes.Buffer{}, up, "ghcr.io/o/p:v1"); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		if !strings.Contains(fx.read(t, "pb.lock"), strings.Repeat("33", 32)) {
+			t.Fatal("a plugin-only update left the lockfile unsaved")
+		}
+		// Every argument is placed before any is moved: a name that
+		// is nothing fails the run whole, the plugin untouched.
+		up.got = ""
+		if err := Update(ctx, s, &bytes.Buffer{}, up, "ghcr.io/o/p:v1", "example.com/none"); err == nil || !strings.Contains(err.Error(), "no workspace module requires") || up.got != "" {
+			t.Fatalf("a bad module beside a plugin: %v, updater saw %q", err, up.got)
+		}
+		// A plugin moved is durable before the module arm runs: a
+		// module whose listing fails afterwards fails the run, the
+		// plugin pin saved and reported.
+		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
+		s = fx.session(t, ".")
+		up = &stubUpdater{lock: s.Lock, after: lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("44", 32)}}
+		out.Reset()
+		if err := Update(ctx, s, &out, up, "ghcr.io/o/p:v1", "example.com/m1"); err == nil || !strings.Contains(err.Error(), "no discoverable release") {
+			t.Fatalf("a module failing after the plugin: %v", err)
+		}
+		if !strings.Contains(fx.read(t, "pb.lock"), strings.Repeat("44", 32)) || !strings.Contains(out.String(), "plugin ghcr.io/o/p:v1: ") {
+			t.Fatalf("the moved plugin was not durable before the module arm: %q", out.String())
+		}
+		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.2.0\n")
+		// A plugin named with no updater wired fails; a name that is
+		// not a declared oci plugin — undeclared, or a local entry —
+		// is a module; the same name twice is one update.
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "ghcr.io/o/p:v1"); err == nil || !strings.Contains(err.Error(), "no plugin updater") {
+			t.Fatalf("no updater: %v", err)
+		}
+		for _, name := range []string{"ghcr.io/o/other:v1", "tools/local-gen"} {
+			if err := Update(ctx, s, &bytes.Buffer{}, up, name); err == nil || !strings.Contains(err.Error(), "no workspace module requires") {
+				t.Fatalf("%s: %v", name, err)
+			}
+		}
+		up.calls = 0
+		if err := Update(ctx, s, &bytes.Buffer{}, up, "ghcr.io/o/p:v1", "ghcr.io/o/p:v1"); err != nil || up.calls != 1 {
+			t.Fatalf("a repeated name: %d updates, %v", up.calls, err)
+		}
+		// A trust policy forbidding the oci scheme refuses the update
+		// as generation would, before the updater runs.
+		s.Client.Policy.Execution.Schemes = []string{"local"}
+		up.got = ""
+		if err := Update(ctx, s, &bytes.Buffer{}, up, "ghcr.io/o/p:v1"); err == nil || !strings.Contains(err.Error(), "does not permit oci-scheme") || up.got != "" {
+			t.Fatalf("under a policy forbidding oci: %v, updater saw %q", err, up.got)
+		}
+		// Without arguments plugins are left as pinned, and the
+		// configuration is not even read.
+		s = fx.session(t, ".")
+		up = &stubUpdater{lock: s.Lock}
+		if err := Update(ctx, s, &bytes.Buffer{}, up); err != nil || up.got != "" {
+			t.Fatalf("an unnamed update touched a plugin: %q %v", up.got, err)
+		}
+		fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: [not, a, string]\n")
+		s = fx.session(t, ".")
+		if err := Update(ctx, s, &bytes.Buffer{}, up); err != nil {
+			t.Fatalf("an unnamed update read the configuration: %v", err)
+		}
+	})
+
 	t.Run("named update of an unrequired module fails", func(t *testing.T) {
 		fx := newDep(t, files)
 		serve(fx)
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/none"); err == nil ||
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/none"); err == nil ||
 			!strings.Contains(err.Error(), "no workspace module requires") {
 			t.Fatalf("err = %v", err)
 		}
@@ -328,7 +421,7 @@ func TestUpdateVerb(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/m1"); err == nil ||
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil ||
 			!strings.Contains(err.Error(), "no discoverable release") {
 			t.Fatalf("err = %v", err)
 		}
@@ -339,7 +432,7 @@ func TestUpdateVerb(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v0.9.0\n")
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/m1"); err == nil ||
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil ||
 			!strings.Contains(err.Error(), "origin regressed") {
 			t.Fatalf("err = %v", err)
 		}
@@ -357,7 +450,7 @@ func TestUpdateVerb(t *testing.T) {
 		fx.serve(t, "example.com/m3", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m3", "")})
 		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m3/@v/list"] = []byte("")
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}); err != nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 		got := fx.read(t, "a/pb.yaml")
@@ -844,7 +937,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		})
 		// No listing exists for the local path; consulting it would fail.
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}); err != nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatalf("sweep over a local-only declaration: %v", err)
 		}
 	})
@@ -856,7 +949,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		})
 		// No list endpoint and nothing at the origin: Versions errors.
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/m1"); err == nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil {
 			t.Fatal("a failing listing did not fail update")
 		}
 	})
@@ -873,7 +966,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}); err != nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		got := fx.read(t, "a/pb.yaml")
@@ -892,7 +985,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		fx.serve(t, "example.com/aaa", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/aaa", "")})
 		fx.serve(t, "example.com/m1", "v1.2.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}); err != nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		got := fx.read(t, "a/pb.yaml")
@@ -910,7 +1003,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
 		var out bytes.Buffer
-		if err := Update(ctx, s, &out, "example.com/m1"); err != nil {
+		if err := Update(ctx, s, &out, nil, "example.com/m1"); err != nil {
 			t.Fatalf("equal-version named update: %v", err)
 		}
 		if out.Len() != 0 {
@@ -930,7 +1023,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Update(ctx, s, &bytes.Buffer{}); err != nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil); err != nil {
 			t.Fatalf("no-op sweep wrote a module file: %v", err)
 		}
 	})
@@ -947,7 +1040,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/m1"); !errors.Is(err, modfetchtest.ErrInjected) {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); !errors.Is(err, modfetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -961,7 +1054,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		fx.Endpoints[modfetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v2.0.0\n")
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
-		if err := Update(ctx, s, &bytes.Buffer{}, "example.com/m1"); err == nil {
+		if err := Update(ctx, s, &bytes.Buffer{}, nil, "example.com/m1"); err == nil {
 			t.Fatal("an unresolvable updated version did not fail")
 		}
 	})
@@ -1088,4 +1181,30 @@ func TestVerbEdgeArms(t *testing.T) {
 			t.Fatalf("output = %q, want the root attribution", out.String())
 		}
 	})
+}
+
+// stubUpdater records the reference an update named, rewrites the
+// session's lock as the acquirer would, and answers with a fixed pin.
+type stubUpdater struct {
+	got   string
+	calls int
+	lock  *lockfile.File
+	after lockfile.PluginPin
+}
+
+func (u *stubUpdater) UpdatePlugin(_ context.Context, ref string) (lockfile.PluginPin, lockfile.PluginPin, error) {
+	u.got = ref
+	u.calls++
+	before := lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("11", 32)}
+	after := u.after
+	after.Provenance = lockfile.Provenance{Type: lockfile.ProvenanceImageSignature, SAN: "https://ci.example/wf", Issuer: "https://issuer.example"}
+	if _, ok := u.lock.Plugin(ref, lockfile.SchemeOCI); !ok {
+		if err := u.lock.AddPlugin(before); err != nil {
+			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+		}
+	}
+	if err := u.lock.UpdatePlugin(after); err != nil {
+		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
+	}
+	return before, after, nil
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/greatliontech/pb/internal/version"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
-	"github.com/go-git/go-billy/v6/util"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -88,13 +87,9 @@ type acquired struct {
 // entry's out directory (REQ-gen-out-containment). Entry schemes are
 // gated by the trust policy's execution posture.
 func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
-	data, err := util.ReadFile(s.WS, path.Join(s.Root.Dir, genfile.FileName))
+	gf, err := s.GenFile()
 	if err != nil {
-		return fmt.Errorf("generate: reading %s: %w", genfile.FileName, err)
-	}
-	gf, err := genfile.Parse(data)
-	if err != nil {
-		return err
+		return fmt.Errorf("generate: %w", err)
 	}
 	exec := &s.Client.Policy.Execution
 	for _, p := range gf.Plugins {

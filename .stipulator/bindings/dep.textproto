@@ -163,18 +163,18 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "65655bef7cb626ab9a3315d099d991763f00888b495494a55f7cb68f6e60969e"
-  source_hash: "a8cbead418398165abba05a8566c63405e2b6f1434db69a4e59c7b080c914add"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Update"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "992910ebb04563aadf4db68ead3c06060931c6a97d657be70fab49bc107c521e"
+  shape_hash: "9d297d5c89ad266e759f28f6ee84cb4c64a24e5ed503fe3c2ed2f7ccbf9b3829"
 }
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "65655bef7cb626ab9a3315d099d991763f00888b495494a55f7cb68f6e60969e"
-  source_hash: "a8cbead418398165abba05a8566c63405e2b6f1434db69a4e59c7b080c914add"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateVerb"
   role: BINDING_ROLE_TESTS
@@ -239,4 +239,44 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestVerifyVerb"
   role: BINDING_ROLE_TESTS
   shape_hash: "e9f5e34dd9e634d2c1b4df81c022d0aca9f6435100367677926db92bb82750cd"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.Acquirer.UpdatePlugin"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5bdb3e66afa2ffcf0e7bb4740eac88414a7772e320746e82c2ef066b02a43b59"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lockfile.File.UpdatePlugin"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "081b3498d4afb2b6955d86960f21989d94f9e62098faebbaa9313f91ed18e31b"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugoci.TestUpdatePlugin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a330702abe40188b96432803eefb177b903b690de76fbdb1fd43f3c8807b6f61"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lockfile.TestUpdatePlugin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c6ca2b861b037403a0035bf44af408eda861feaefbd499cb9afc3d6ca3e926c2"
 }

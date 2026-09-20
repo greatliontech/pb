@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-plugin-digest-pin"
 reason: "Acquire enforces the pin with executed example witnesses (moved-tag and mismatch anchors); the invariant-class property witness is outstanding"
-content_hash: "79c6323995921db619875d09680a10a1b4dbaff063571df2226c33bf3f5addda"
-source_hash: "98b9728a2bf509ba3c77898da35e4c53e9479b15d54017c698db8bf7e389fb84"
+content_hash: "f1f6b3e730da919c99c859a05f8b5e5e7b552ec9669d846a01d07770b12ce8cb"
+source_hash: "6a99cd76ecd055d6dc0445890a34d0732fb1b6d76f0702e2d7048f6947936e0a"
 lands { manual { condition: "a property witness over arbitrary pin/served digest pairs exists" } }
