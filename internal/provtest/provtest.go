@@ -1,11 +1,11 @@
 // Package provtest builds gitsign-equivalent signed-tag evidence for
 // tests: a synthetic sigstore (gitprov's sigstoretest — a Fulcio whose
-// leaves carry a certificate timestamp, a virtual Rekor log) signs tag
-// payloads and embeds a genuine, offline-verifiable Rekor transparency
-// proof in the CMS unsigned attributes — the exact shape gitsign's
-// offline Rekor mode produces — so verification paths under test run
-// real cryptography end to end against the matching pinned trusted
-// root.
+// leaves carry a certificate timestamp, a Rekor log of its own signing
+// entry timestamps and checkpoints) signs tag payloads and embeds a
+// genuine, offline-verifiable Rekor transparency proof in the CMS
+// unsigned attributes — the exact shape gitsign's offline Rekor mode
+// produces — so verification paths under test run real cryptography
+// end to end against the matching pinned trusted root.
 package provtest
 
 import (
@@ -68,16 +68,39 @@ func (s *Signer) Identity() gitprov.Identity {
 	return gitprov.Identity{Issuer: s.issuer, Subject: s.subject}
 }
 
+// EvidenceOptions shape a signed tag's embedded entry away from the
+// default, the log's own: CheckpointBy is the sigstore whose log signs
+// the entry's checkpoint in its place, a checkpoint no pinned key
+// verifies.
+type EvidenceOptions struct {
+	CheckpointBy *sigstoretest.Sigstore
+}
+
 // SignedTag signs payload and returns the raw tag bytes with the
 // signature appended in-body, with or without an embedded Rekor proof.
 func (s *Signer) SignedTag(t testing.TB, payload []byte, embedProof bool) []byte {
+	t.Helper()
+	if !embedProof {
+		return s.signedTag(t, payload, nil)
+	}
+	return s.SignedTagWith(t, payload, EvidenceOptions{})
+}
+
+// SignedTagWith is SignedTag with an embedded proof shaped by o.
+func (s *Signer) SignedTagWith(t testing.TB, payload []byte, o EvidenceOptions) []byte {
+	t.Helper()
+	return s.signedTag(t, payload, &o)
+}
+
+// signedTag signs payload, embedding an entry when o is not nil.
+func (s *Signer) signedTag(t testing.TB, payload []byte, o *EvidenceOptions) []byte {
 	t.Helper()
 	der, err := cms.SignDetached(payload, []*x509.Certificate{s.leaf}, s.key)
 	if err != nil {
 		t.Fatalf("SignDetached: %v", err)
 	}
-	if embedProof {
-		der = s.embedRekor(t, der)
+	if o != nil {
+		der = s.embedRekor(t, der, *o)
 	}
 	sig := pem.EncodeToMemory(&pem.Block{Type: "SIGNED MESSAGE", Bytes: der})
 	raw, err := gitsign.JoinTag(&gitsign.TagSig{Payload: payload, InBody: sig})
@@ -87,13 +110,13 @@ func (s *Signer) SignedTag(t testing.TB, payload []byte, embedProof bool) []byte
 	return raw
 }
 
-// embedRekor logs the CMS signature in the virtual Rekor and embeds the
-// resulting entry — SET, inclusion proof, checkpoint — as the gitsign
-// unsigned attribute, returning the re-encoded DER. The entry is
-// integrated now, which the synthetic sigstore holds to the leaf's
-// validity window, so the verifier judging the leaf at the integrated
-// time accepts it.
-func (s *Signer) embedRekor(t testing.TB, der []byte) []byte {
+// embedRekor logs the CMS signature in the synthetic sigstore's Rekor
+// log and embeds the resulting entry — SET, inclusion proof,
+// checkpoint — as the gitsign unsigned attribute, returning the
+// re-encoded DER. The entry is integrated now, which the synthetic
+// sigstore holds to the leaf's validity window, so the verifier
+// judging the leaf at the integrated time accepts it.
+func (s *Signer) embedRekor(t testing.TB, der []byte, o EvidenceOptions) []byte {
 	t.Helper()
 	ci, err := protocol.ParseContentInfo(der)
 	if err != nil {
@@ -112,7 +135,7 @@ func (s *Signer) embedRekor(t testing.TB, der []byte) []byte {
 	if err != nil {
 		t.Fatalf("HashedRekordBody: %v", err)
 	}
-	pbBytes, err := proto.Marshal(s.ss.LogEntry(t, s.leaf, body, time.Time{}))
+	pbBytes, err := proto.Marshal(s.ss.LogEntryWith(t, s.leaf, body, time.Time{}, sigstoretest.EntryOptions{CheckpointBy: o.CheckpointBy}))
 	if err != nil {
 		t.Fatal(err)
 	}

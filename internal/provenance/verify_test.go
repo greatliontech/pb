@@ -106,6 +106,17 @@ func TestVerify(t *testing.T) {
 		}
 	})
 
+	t.Run("rejected: a checkpoint another log signed", func(t *testing.T) {
+		// The entry's log promised the entry, another log's key signed
+		// the checkpoint: corrupt evidence, rejected, never absent.
+		tag := s.SignedTagWith(t, tagPayload(fx.commitHash, "v1.2.3"), provtest.EvidenceOptions{CheckpointBy: sigstoretest.New(t)})
+		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
+		_, err := Verify(ctx, ev, Subject{Version: v(t, "v1.2.3")}, fx.rootTree, id, s.TrustedRoot())
+		if err == nil || errors.Is(err, ErrNoTransparency) || errors.Is(err, gitprov.ErrIdentityMismatch) || !strings.Contains(err.Error(), "checkpoint") {
+			t.Fatalf("Verify = %v, want a checkpoint rejection", err)
+		}
+	})
+
 	t.Run("absent: no embedded transparency proof", func(t *testing.T) {
 		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v1.2.3"), false)
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit}
