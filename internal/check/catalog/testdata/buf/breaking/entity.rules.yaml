@@ -1,0 +1,91 @@
+celEnv: 1
+rules:
+  - id: ENUM_VALUE_SAME_NAME
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: old == null || new == null || old.name == new.name
+    message: an enum value's name changed
+  - id: ENUM_SAME_TYPE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || features(old).enum_type == features(new).enum_type
+    message: an enum changed between open and closed
+  - id: ENUM_SAME_JSON_FORMAT
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: old == null || new == null || features(old).json_format == features(new).json_format
+    message: an enum's JSON format changed
+  - id: MESSAGE_SAME_JSON_FORMAT
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: old == null || new == null || features(old).json_format == features(new).json_format
+    message: a message's JSON format changed
+  - id: MESSAGE_SAME_MESSAGE_SET_WIRE_FORMAT
+    kind: breaking
+    target: message
+    severity: error
+    cel: old == null || new == null || (has(options(old).message_set_wire_format) == has(options(new).message_set_wire_format) && (!has(options(old).message_set_wire_format) || options(old).message_set_wire_format == options(new).message_set_wire_format))
+    message: a message's message_set_wire_format changed
+  - id: MESSAGE_NO_REMOVE_STANDARD_DESCRIPTOR_ACCESSOR
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || !(has(options(new).no_standard_descriptor_accessor) && options(new).no_standard_descriptor_accessor)
+      || (has(options(old).no_standard_descriptor_accessor) && options(old).no_standard_descriptor_accessor)
+    message: a message's standard descriptor accessor was removed
+  - id: MESSAGE_SAME_REQUIRED_FIELDS
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: >-
+      old == null || new == null
+      || old.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
+         == new.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
+    message: a message's required fields changed
+  - id: RPC_SAME_REQUEST_TYPE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.input_type == new.input_type
+    message: an rpc's request type changed
+  - id: RPC_SAME_RESPONSE_TYPE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.output_type == new.output_type
+    message: an rpc's response type changed
+  - id: RPC_SAME_CLIENT_STREAMING
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.client_streaming == new.client_streaming
+    message: an rpc's client streaming changed
+  - id: RPC_SAME_SERVER_STREAMING
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.server_streaming == new.server_streaming
+    message: an rpc's server streaming changed
+  - id: RPC_SAME_IDEMPOTENCY_LEVEL
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || (has(options(old).idempotency_level) == has(options(new).idempotency_level) && (!has(options(old).idempotency_level) || options(old).idempotency_level == options(new).idempotency_level))
+    message: an rpc's idempotency level changed

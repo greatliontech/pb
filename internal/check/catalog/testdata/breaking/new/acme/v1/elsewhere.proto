@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package acme.v1;
+
+message MovedMessage {
+  optional string a = 1;
+}
+
+enum MovedEnum {
+  MOVED_ENUM_UNSPECIFIED = 0;
+}
+
+service MovedService {
+  rpc Do(MovedMessage) returns (MovedMessage);
+}
+
+extend Extendable {
+  optional string moved_ext = 100;
+}
+
+message Extendable {
+  extensions 100 to 200;
+}

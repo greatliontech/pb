@@ -1,0 +1,7 @@
+// cycle_c is cyc.a's second file.
+syntax = "proto3";
+
+package cyc.a;
+
+// C is empty.
+message C {}

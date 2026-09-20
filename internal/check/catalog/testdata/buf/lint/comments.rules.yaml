@@ -1,0 +1,51 @@
+celEnv: 1
+rules:
+  - id: COMMENT_ENUM
+    kind: lint
+    target: enum
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(enum).leading.trim() != ''
+    message: enums have a non-empty leading comment
+  - id: COMMENT_ENUM_VALUE
+    kind: lint
+    target: enum-value
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(enumValue).leading.trim() != ''
+    message: enum values have a non-empty leading comment
+  - id: COMMENT_FIELD
+    kind: lint
+    target: field
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(field).leading.trim() != ''
+    message: fields have a non-empty leading comment
+  - id: COMMENT_MESSAGE
+    kind: lint
+    target: message
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(message).leading.trim() != ''
+    message: messages have a non-empty leading comment
+  - id: COMMENT_ONEOF
+    kind: lint
+    target: oneof
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(oneof).leading.trim() != ''
+    message: oneofs have a non-empty leading comment
+  - id: COMMENT_RPC
+    kind: lint
+    target: method
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(method).leading.trim() != ''
+    message: rpcs have a non-empty leading comment
+  - id: COMMENT_SERVICE
+    kind: lint
+    target: service
+    severity: error
+    tags: [COMMENTS]
+    cel: comments(service).leading.trim() != ''
+    message: services have a non-empty leading comment

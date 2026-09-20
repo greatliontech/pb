@@ -1,0 +1,18 @@
+// Old is proto2 with a required field, in a package with no version.
+syntax = "proto2";
+
+package acme.legacy;
+
+// Old carries a required field.
+message Old {
+  // must is required.
+  required string must = 1;
+}
+
+// Sort is a proto2 enum whose first value is not zero.
+enum Sort {
+  // SORT_ASC comes first.
+  SORT_ASC = 1;
+  // SORT_UNSPECIFIED is the zero value.
+  SORT_UNSPECIFIED = 0;
+}

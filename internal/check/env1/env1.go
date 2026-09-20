@@ -130,7 +130,15 @@ func (s *Set) addFile(fd protoreflect.FileDescriptor) *fileEntry {
 	if f := s.byPath[fd.Path()]; f != nil {
 		return f
 	}
-	fdp := protodesc.ToFileDescriptorProto(fd)
+	// The compiler's own proto of a file it parsed keeps what the
+	// descriptor view forgets — a declared proto2 syntax, a weak
+	// import; a file known by descriptor alone is rebuilt from it.
+	var fdp *descriptorpb.FileDescriptorProto
+	if r, ok := fd.(linker.Result); ok {
+		fdp = r.FileDescriptorProto()
+	} else {
+		fdp = protodesc.ToFileDescriptorProto(fd)
+	}
 	f := &fileEntry{fd: fd, proto: fdp}
 	f.entry = entry{desc: fd, msg: fdp, file: f, set: s}
 	s.byPath[fd.Path()] = f
@@ -215,6 +223,9 @@ type Env struct {
 	base     *cel.Env
 	adapter  types.Adapter
 	limit    uint64
+	// The library's functions by name: the ones the cost tracker
+	// charges by size.
+	charged map[string]bool
 	// The environment extended with each target's bindings, for the
 	// one kind the environment compiles.
 	byTarget map[check.Target]*cel.Env
@@ -234,7 +245,11 @@ func New(newSide, oldSide *Set) (*Env, error) {
 		ext.Strings(),
 		ext.Lists(),
 	}
-	opts = append(opts, e.library()...)
+	e.charged = map[string]bool{}
+	for _, f := range e.library() {
+		opts = append(opts, f.opt)
+		e.charged[f.name] = true
+	}
 	base, err := cel.NewEnv(opts...)
 	if err != nil {
 		return nil, err
@@ -455,7 +470,6 @@ func (b Binding) Located() protoreflect.Descriptor {
 	}
 	return b.Old
 }
-
 
 // Population lists a lint target's bindings over the checked files,
 // given by path, taken once each in path order (REQ-env1-population):

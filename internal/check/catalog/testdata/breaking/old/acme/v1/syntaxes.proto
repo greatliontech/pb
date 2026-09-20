@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package acme.v1;
+
+enum Closed {
+  CLOSED_UNSPECIFIED = 0;
+}
+
+message Presence {
+  optional string implicit_now = 1;
+  optional bytes checked = 2;
+}

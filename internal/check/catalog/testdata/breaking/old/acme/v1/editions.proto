@@ -1,0 +1,16 @@
+edition = "2023";
+
+package acme.v1;
+
+enum Formatted {
+  FORMATTED_UNSPECIFIED = 0;
+}
+
+message Shaped {
+  string text = 1;
+}
+
+message Setted {
+  option message_set_wire_format = true;
+  extensions 4 to max;
+}

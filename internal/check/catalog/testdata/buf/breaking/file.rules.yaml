@@ -1,0 +1,130 @@
+celEnv: 1
+rules:
+  - id: FILE_SAME_PACKAGE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.package == new.package
+    message: a file's package changed
+  - id: FILE_SAME_SYNTAX
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || ((old.syntax == '' ? 'proto2' : old.syntax) == (new.syntax == '' ? 'proto2' : new.syntax) && old.edition == new.edition)
+    message: a file's syntax changed
+  - id: FILE_SAME_CC_ENABLE_ARENAS
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).cc_enable_arenas) == has(options(new).cc_enable_arenas) && (!has(options(old).cc_enable_arenas) || options(old).cc_enable_arenas == options(new).cc_enable_arenas))
+    message: a file's cc_enable_arenas changed
+  - id: FILE_SAME_CC_GENERIC_SERVICES
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).cc_generic_services) == has(options(new).cc_generic_services) && (!has(options(old).cc_generic_services) || options(old).cc_generic_services == options(new).cc_generic_services))
+    message: a file's cc_generic_services changed
+  - id: FILE_SAME_CSHARP_NAMESPACE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).csharp_namespace) == has(options(new).csharp_namespace) && (!has(options(old).csharp_namespace) || options(old).csharp_namespace == options(new).csharp_namespace))
+    message: a file's csharp_namespace changed
+  - id: FILE_SAME_GO_PACKAGE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).go_package) == has(options(new).go_package) && (!has(options(old).go_package) || options(old).go_package == options(new).go_package))
+    message: a file's go_package changed
+  - id: FILE_SAME_JAVA_GENERIC_SERVICES
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).java_generic_services) == has(options(new).java_generic_services) && (!has(options(old).java_generic_services) || options(old).java_generic_services == options(new).java_generic_services))
+    message: a file's java_generic_services changed
+  - id: FILE_SAME_JAVA_MULTIPLE_FILES
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).java_multiple_files) == has(options(new).java_multiple_files) && (!has(options(old).java_multiple_files) || options(old).java_multiple_files == options(new).java_multiple_files))
+    message: a file's java_multiple_files changed
+  - id: FILE_SAME_JAVA_OUTER_CLASSNAME
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).java_outer_classname) == has(options(new).java_outer_classname) && (!has(options(old).java_outer_classname) || options(old).java_outer_classname == options(new).java_outer_classname))
+    message: a file's java_outer_classname changed
+  - id: FILE_SAME_JAVA_PACKAGE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).java_package) == has(options(new).java_package) && (!has(options(old).java_package) || options(old).java_package == options(new).java_package))
+    message: a file's java_package changed
+  - id: FILE_SAME_OBJC_CLASS_PREFIX
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).objc_class_prefix) == has(options(new).objc_class_prefix) && (!has(options(old).objc_class_prefix) || options(old).objc_class_prefix == options(new).objc_class_prefix))
+    message: a file's objc_class_prefix changed
+  - id: FILE_SAME_OPTIMIZE_FOR
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).optimize_for) == has(options(new).optimize_for) && (!has(options(old).optimize_for) || options(old).optimize_for == options(new).optimize_for))
+    message: a file's optimize_for changed
+  - id: FILE_SAME_PHP_CLASS_PREFIX
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).php_class_prefix) == has(options(new).php_class_prefix) && (!has(options(old).php_class_prefix) || options(old).php_class_prefix == options(new).php_class_prefix))
+    message: a file's php_class_prefix changed
+  - id: FILE_SAME_PHP_METADATA_NAMESPACE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).php_metadata_namespace) == has(options(new).php_metadata_namespace) && (!has(options(old).php_metadata_namespace) || options(old).php_metadata_namespace == options(new).php_metadata_namespace))
+    message: a file's php_metadata_namespace changed
+  - id: FILE_SAME_PHP_NAMESPACE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).php_namespace) == has(options(new).php_namespace) && (!has(options(old).php_namespace) || options(old).php_namespace == options(new).php_namespace))
+    message: a file's php_namespace changed
+  - id: FILE_SAME_PY_GENERIC_SERVICES
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).py_generic_services) == has(options(new).py_generic_services) && (!has(options(old).py_generic_services) || options(old).py_generic_services == options(new).py_generic_services))
+    message: a file's py_generic_services changed
+  - id: FILE_SAME_RUBY_PACKAGE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).ruby_package) == has(options(new).ruby_package) && (!has(options(old).ruby_package) || options(old).ruby_package == options(new).ruby_package))
+    message: a file's ruby_package changed
+  - id: FILE_SAME_SWIFT_PREFIX
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).swift_prefix) == has(options(new).swift_prefix) && (!has(options(old).swift_prefix) || options(old).swift_prefix == options(new).swift_prefix))
+    message: a file's swift_prefix changed

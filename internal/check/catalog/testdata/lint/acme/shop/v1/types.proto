@@ -1,0 +1,28 @@
+// Types shared by the shop.
+syntax = "proto3";
+
+package acme.shop.v1;
+
+option go_package = "example.com/acme/shop/v1;shopv1";
+option csharp_namespace = "Acme.Shop.V1";
+option java_multiple_files = true;
+option java_package = "com.acme.shop.v1";
+option php_namespace = "Acme\\Shop\\V1";
+option ruby_package = "Acme::Shop::V1";
+option swift_prefix = "ASV";
+
+// Item is a thing for sale.
+message Item {
+  // name is the item's name.
+  string name = 1;
+  // kind is the item's kind.
+  Kind kind = 2;
+}
+
+// Kind classifies items.
+enum Kind {
+  // KIND_UNSPECIFIED is the default.
+  KIND_UNSPECIFIED = 0;
+  // KIND_GOOD is a good.
+  KIND_GOOD = 1;
+}

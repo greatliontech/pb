@@ -1,0 +1,17 @@
+edition = "2023";
+
+package acme.v1;
+
+enum Formatted {
+  option features.json_format = LEGACY_BEST_EFFORT;
+  FORMATTED_UNSPECIFIED = 0;
+}
+
+message Shaped {
+  option features.json_format = LEGACY_BEST_EFFORT;
+  string text = 1 [features.utf8_validation = NONE];
+}
+
+message Setted {
+  extensions 4 to max;
+}

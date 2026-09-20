@@ -1,0 +1,116 @@
+syntax = "proto2";
+
+package acme.v1;
+
+option cc_enable_arenas = true;
+option cc_generic_services = false;
+option csharp_namespace = "Acme.V1";
+option go_package = "example.com/acme/v1;acmev1";
+option java_generic_services = false;
+option java_multiple_files = true;
+option java_outer_classname = "AcmeProto";
+option java_package = "com.acme.v1";
+option java_string_check_utf8 = false;
+option objc_class_prefix = "ACM";
+option optimize_for = SPEED;
+option php_class_prefix = "ACM";
+option php_metadata_namespace = "Acme\\Meta";
+option php_namespace = "Acme\\V1";
+option py_generic_services = false;
+option ruby_package = "Acme::V1";
+option swift_prefix = "ACM";
+
+message Thing {
+  optional string name = 1;
+  optional string renamed_json = 2 [json_name = "renamedJson"];
+  optional int32 retyped = 3;
+  repeated int32 relabeled = 4;
+  optional int32 widened = 5;
+  optional string to_bytes = 6;
+  optional int32 into_oneof = 7;
+  oneof choice {
+    int32 in_oneof = 8;
+    int32 out_of_oneof = 9;
+  }
+  optional int32 defaulted = 10 [default = 1];
+  optional int64 jstyped = 11 [jstype = JS_STRING];
+  optional string ctyped = 12 [ctype = CORD];
+  required int32 needed = 13;
+  optional int32 gone = 14;
+  optional int32 gone_reserved = 15;
+  optional int32 gone_named = 16;
+  map<string, int32> mapped = 17;
+  optional Level level = 18;
+  optional int32 moved_between = 19;
+  oneof other {
+    int32 was_here = 20;
+  }
+  reserved 100 to 110, 200;
+  reserved "old_name", "other_name";
+  extensions 1000 to 1999, 3000 to 3999;
+}
+
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_LOW = 1;
+  LEVEL_GONE = 2;
+  LEVEL_GONE_RESERVED = 3;
+  LEVEL_GONE_NAMED = 4;
+  LEVEL_RENAMED = 5;
+  reserved 50 to 60;
+  reserved "LEVEL_OLD";
+}
+
+enum Wider {
+  WIDER_UNSPECIFIED = 0;
+  WIDER_ONE = 1;
+}
+
+message Uses {
+  optional Wider by_enum = 1;
+  optional Level shrunk = 2;
+}
+
+message Wire {
+  optional int32 varint = 1;
+  optional int64 long = 2;
+  optional sint32 zigzag = 3;
+  optional fixed32 fixed = 4;
+  optional fixed64 fixed_long = 5;
+  optional string text = 6;
+  optional bool flag = 7;
+  optional int32 crossed = 8;
+  optional Level widened_enum = 9;
+  optional Level narrowed_enum = 10;
+  optional Level other_enum = 11;
+  optional Level renamed_enum = 12;
+}
+
+message Accessor {
+  optional int32 x = 1;
+}
+
+extend Thing {
+  optional int32 ext_gone = 1001;
+  optional int32 ext_kept = 1002;
+}
+
+message OneofHome {
+  oneof gone_oneof {
+    int32 a = 1;
+  }
+}
+
+service ThingService {
+  rpc Get(Thing) returns (Thing);
+  rpc Gone(Thing) returns (Thing);
+  rpc Retyped(Thing) returns (Thing);
+  rpc Streamed(Thing) returns (Thing);
+  rpc Idempotent(Thing) returns (Thing) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+service GoneService {
+  rpc Go(Thing) returns (Thing);
+}

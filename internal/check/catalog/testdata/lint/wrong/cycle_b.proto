@@ -1,0 +1,12 @@
+// cycle_b imports a file of cyc.a.
+syntax = "proto3";
+
+package cyc.b;
+
+import "wrong/cycle_c.proto";
+
+// B uses C.
+message B {
+  // c is a C.
+  cyc.a.C c = 1;
+}

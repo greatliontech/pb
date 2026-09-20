@@ -19,7 +19,10 @@ the CEL environment version they target.
 **CEL environment** (term): The versioned contract a rule evaluates in:
 the bound variables, the descriptor types, and pb's standard library of
 CEL functions (navigation, naming, comments, source info). Identified by
-an integer version; additions bump the version.
+an integer version. An environment freezes at the pb release that
+first ships it: from then on additions bump the version; until then
+the environment may still gain functions under its number, there
+being no rule file in the world that targets it.
 
 **target** (term): The entity kind a rule binds: `file`, `package`,
 `message`, `field`, `oneof`, `enum`, `enum-value`, `service`, `method`,
@@ -92,10 +95,15 @@ a position; for a `set` rule, no location.
 
 ## CEL environment 1
 
-The first environment. Every rule file targeting it evaluates over
-these bindings and this library and nothing else; a rule that needs
-more is the reason for environment 2, never for an addition under this
-number.
+The first environment, unreleased. Every rule file targeting it
+evaluates over these bindings and this library and nothing else; once
+a pb release ships it, a rule that needs more is the reason for
+environment 2, never for an addition under this number.
+INV-env1-library-names: the library's names are the ones this
+section lists; enforced by `env1.TestChargedFunctions`. The freeze
+itself is the rule this section states, an addition after the
+release being a spec amendment no test can tell from a declared
+one.
 
 **word segmentation** (term): The split of a name into words the
 naming functions share. Every character that is neither a letter nor
@@ -187,7 +195,12 @@ oneof membership in proto3 explicit presence, `required` legacy
 required, a group delimited, `packed` as written and otherwise the
 syntax's default), for any entity but a package or the set; a
 message-typed field reports the resolved value in every syntax, its
-presence being its kind's to read; `options(entity)`,
+presence being its kind's to read; `syntax(file)`, the syntax the file declares — `proto2`, `proto3` or
+`editions` — or the empty string where it declares none, since a
+descriptor spells no proto2 and a declaration is a source fact: a
+declaration the file's source information does not carry counts as
+none;
+`options(entity)`,
 a map from option name to value — a built-in option under its field
 name, a custom option under its extension's fully qualified name in
 parentheses, as the language writes it, so the two never collide; a scalar option's value the scalar, an enum

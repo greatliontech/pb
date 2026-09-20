@@ -280,3 +280,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "aabb051fd0e4657ad927f19d6431c4994fab640e52860c91c85b9f89f32b8d16"
 }
+
+bindings {
+  requirement_id: "REQ-rules-bounded"
+  content_hash: "5fcb57333307094284cbd0d40ce9744c6321553254b8ef684f30d9c57103253e"
+  source_hash: "0dba6bee0fff8d944e01589f08f4a9007d320614960140b92a5ac044ba47891e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestChargedFunctions"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "78070323934f635c89d04e538f3e0154e8e53b643b8eb6100f5bfb03f009b424"
+}

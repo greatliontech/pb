@@ -15,14 +15,11 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// libraryFunctions names pb's functions (REQ-env1-library): the ones
-// the cost tracker charges by size.
-var libraryFunctions = map[string]bool{
-	"comments": true, "parent": true, "file": true, "fullName": true,
-	"messages": true, "enums": true, "extensions": true, "services": true,
-	"resolve": true, "fileByName": true, "imports": true, "visible": true,
-	"references": true, "features": true, "options": true,
-	"words": true, "case": true, "packageCycles": true,
+// A function of pb's library (REQ-env1-library): its name, which the
+// cost tracker charges by size, and its declaration.
+type function struct {
+	name string
+	opt  cel.EnvOption
 }
 
 // The result and parameter types. A descriptor-taking function is
@@ -70,28 +67,28 @@ func unary(name string, params []*cel.Type, ret *cel.Type, f func(ref.Val) ref.V
 }
 
 // library declares pb's functions over the environment's sets.
-func (e *Env) library() []cel.EnvOption {
+func (e *Env) library() []function {
 	// entity is a function over one declaration of the schema.
-	entity := func(name string, params []*cel.Type, ret *cel.Type, f func(*entry) ref.Val) cel.EnvOption {
-		return unary(name, params, ret, func(v ref.Val) ref.Val {
+	entity := func(name string, params []*cel.Type, ret *cel.Type, f func(*entry) ref.Val) function {
+		return function{name, unary(name, params, ret, func(v ref.Val) ref.Val {
 			en, out := e.entityArg(v)
 			if en == nil {
 				return out
 			}
 			return f(en)
-		})
+		})}
 	}
 	// walk is a function over a file, a list of files, or a message,
 	// listing the declarations of one kind under it.
-	walk := func(name string, kind func(*entry) []proto.Message) cel.EnvOption {
-		return unary(name, walkable, dynList, func(v ref.Val) ref.Val { return e.declarations(v, kind) })
+	walk := func(name string, kind func(*entry) []proto.Message) function {
+		return function{name, unary(name, walkable, dynList, func(v ref.Val) ref.Val { return e.declarations(v, kind) })}
 	}
-	str := func(name string, f func(string) ref.Val) cel.EnvOption {
-		return cel.Function(name, cel.Overload(name+"_string", []*cel.Type{cel.StringType}, dyn, cel.UnaryBinding(func(v ref.Val) ref.Val {
+	str := func(name string, f func(string) ref.Val) function {
+		return function{name, cel.Function(name, cel.Overload(name+"_string", []*cel.Type{cel.StringType}, dyn, cel.UnaryBinding(func(v ref.Val) ref.Val {
 			return f(string(v.(types.String)))
-		})))
+		})))}
 	}
-	return []cel.EnvOption{
+	return []function{
 		entity("comments", descTypes, strDyn, e.comments),
 		entity("parent", descTypes, dyn, func(en *entry) ref.Val {
 			if en.isFile() {
@@ -127,18 +124,19 @@ func (e *Env) library() []cel.EnvOption {
 		entity("visible", fileOnly, filesType, func(en *entry) ref.Val { return e.files(en.file.visible()) }),
 		entity("references", fileOnly, strList, func(en *entry) ref.Val { return e.adapter.NativeToValue(en.file.references()) }),
 		entity("features", descTypes, featType, e.features),
+		entity("syntax", fileOnly, cel.StringType, func(en *entry) ref.Val { return types.String(declaredSyntax(en.file.fd)) }),
 		entity("options", descTypes, strDyn, e.options),
-		cel.Function("words", cel.Overload("words_string", []*cel.Type{cel.StringType}, strList, cel.UnaryBinding(func(v ref.Val) ref.Val {
+		function{"words", cel.Function("words", cel.Overload("words_string", []*cel.Type{cel.StringType}, strList, cel.UnaryBinding(func(v ref.Val) ref.Val {
 			return e.adapter.NativeToValue(Words(string(v.(types.String))))
-		}))),
-		cel.Function("case", cel.Overload("case_string_string", []*cel.Type{cel.StringType, cel.StringType}, cel.StringType, cel.BinaryBinding(func(name, style ref.Val) ref.Val {
+		})))},
+		function{"case", cel.Function("case", cel.Overload("case_string_string", []*cel.Type{cel.StringType, cel.StringType}, cel.StringType, cel.BinaryBinding(func(name, style ref.Val) ref.Val {
 			out, ok := Case(string(name.(types.String)), string(style.(types.String)))
 			if !ok {
 				return types.NewErr("case: %q is no style (pascal, camel, snake, upper-snake)", style.(types.String))
 			}
 			return types.String(out)
-		}))),
-		cel.Function("packageCycles", cel.Overload("packageCycles_list", []*cel.Type{filesType}, cel.ListType(strList), cel.UnaryBinding(func(v ref.Val) ref.Val {
+		})))},
+		function{"packageCycles", cel.Function("packageCycles", cel.Overload("packageCycles_list", []*cel.Type{filesType}, cel.ListType(strList), cel.UnaryBinding(func(v ref.Val) ref.Val {
 			files, err := e.fileArgs(v)
 			if err != nil {
 				return err
@@ -149,7 +147,7 @@ func (e *Env) library() []cel.EnvOption {
 				out[i] = c
 			}
 			return e.adapter.NativeToValue(out)
-		}))),
+		})))},
 	}
 }
 
@@ -424,6 +422,25 @@ func (f *fileEntry) references() []string {
 		}
 	}
 	return out
+}
+
+// declaredSyntax is the syntax a file declares — proto2, proto3 or
+// editions — or empty where it declares none: a descriptor spells no
+// proto2, so a proto2 declaration is read from the source
+// information's location of the syntax statement.
+func declaredSyntax(fd protoreflect.FileDescriptor) string {
+	switch fd.Syntax() {
+	case protoreflect.Proto3:
+		return "proto3"
+	case protoreflect.Editions:
+		return "editions"
+	}
+	// The syntax statement is FileDescriptorProto field 12; a location
+	// the file's source information lacks comes back with no path.
+	if len(fd.SourceLocations().ByPath(protoreflect.SourcePath{12}).Path) == 0 {
+		return ""
+	}
+	return "proto2"
 }
 
 // features is the entity's resolved FeatureSet: each of the message's

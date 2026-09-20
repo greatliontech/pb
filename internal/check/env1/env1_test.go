@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"cel.dev/cel-go/common/types"
 	"github.com/greatliontech/pb/internal/testing/prototest"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -93,6 +94,10 @@ message D {}
 `,
 	"n/n.proto": `syntax = "proto3";
 message N {}
+`,
+	"u/u.proto": `message U {
+  optional string s = 1;
+}
 `,
 	"e/e.proto": `edition = "2023";
 package e;
@@ -406,6 +411,19 @@ func TestLibrary(t *testing.T) {
 	fieldFeature(p.outer.Field[7], p.a, `field.name == 'tags' && features(field).repeated_field_encoding == google.protobuf.FeatureSet.RepeatedFieldEncoding.PACKED`)
 	fieldFeature(p.c.MessageType[1].Field[3], p.c, `field.name == 'delimited' && features(field).message_encoding == google.protobuf.FeatureSet.MessageEncoding.DELIMITED`)
 	fieldFeature(p.c.MessageType[1].Field[4], p.c, `field.name == 'must' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED`)
+	// syntax
+	holds(t, env, check.TargetFile, `syntax(file) == 'proto3' && syntax(fileByName('b/b.proto')) == 'proto2' && syntax(fileByName('c/c.proto')) == 'editions' && syntax(fileByName('n/n.proto')) == 'proto3' && syntax(fileByName('u/u.proto')) == '' && dyn(syntax(parent(file))) == null`, file)
+	// A file known by descriptor alone carries no source information,
+	// so its proto2 declaration counts as none.
+	if got := declaredSyntax(descriptorpb.File_google_protobuf_descriptor_proto); got != "" {
+		t.Errorf("descriptor.proto by descriptor alone declares %q, want none", got)
+	}
+	refusedAtCompile(t, env, check.TargetMessage, `syntax(message) == ''`, msg)
+	// The file-only functions take a file and nothing else; the
+	// lookups take a name; the naming functions take strings.
+	for _, expr := range []string{`imports(message).size() == 0`, `visible(message).size() == 0`, `references(message).size() == 0`, `resolve(message) == null`, `fileByName(message) == null`, `words(message).size() == 0`, `case(message, 'snake') == ''`, `packageCycles(message).size() == 0`, `comments(file.name).leading == ''`, `features(file.name) == null`, `options(file.name) == {}`} {
+		refusedAtCompile(t, env, check.TargetMessage, expr, msg)
+	}
 	// options
 	holds(t, env, check.TargetField, `options(field) == {'deprecated': true, '(c.field_opt)': {'tag': 't', 'nums': [1, 2]}} && options(field).deprecated && options(field)['(c.field_opt)'].nums[1] == 2`, kind)
 	holds(t, env, check.TargetField, `options(field) == {} && dyn(options(parent(file))) == null`, field)
@@ -616,6 +634,27 @@ func TestChargedBySize(t *testing.T) {
 	})
 }
 
+// The library's functions are the spec's, each charged by the cost
+// tracker, and cel's own functions are not.
+func TestChargedFunctions(t *testing.T) {
+	env, _ := lintEnv(t)
+	c := costs{env}
+	names := []string{"comments", "parent", "file", "fullName", "messages", "enums", "extensions", "services", "resolve", "fileByName", "imports", "visible", "references", "features", "syntax", "options", "words", "case", "packageCycles"}
+	for _, name := range names {
+		if c.CallCost(name, "", nil, types.String("")) == nil {
+			t.Errorf("%s is not charged", name)
+		}
+	}
+	if len(env.charged) != len(names) {
+		t.Errorf("%d functions charged, the spec names %d", len(env.charged), len(names))
+	}
+	for _, name := range []string{"size", "flatten", "distinct", "matches"} {
+		if c.CallCost(name, "", nil, types.String("")) != nil {
+			t.Errorf("%s is charged as a library function", name)
+		}
+	}
+}
+
 // inFile counts a file's declarations, itself included, from the
 // descriptor: the oracle for what a walk over it costs.
 func inFile(fd protoreflect.FileDescriptor) int {
@@ -809,10 +848,10 @@ func TestPairs(t *testing.T) {
 		return out
 	}
 	want := map[check.Target][]string{
-		check.TargetFile:      {"a/a.proto|a/a.proto@a/a.proto", "-|a/y.proto@a/y.proto", "a/old.proto|-@a/old.proto[base]"},
-		check.TargetMessage:   {"a.Outer|a.Outer@a/a.proto", "a.Outer.Inner|a.Outer.Inner@a/a.proto", "-|a.Y@a/y.proto", "a.Old|-@a/old.proto[base]"},
-		check.TargetField:     {"a.Outer.old_name|a.Outer.name@a/a.proto", "a.Outer.counts|a.Outer.counts@a/a.proto", "a.Outer.x|a.Outer.x@a/a.proto", "a.Outer.thing|a.Outer.thing@a/a.proto", "a.Outer.opt|a.Outer.opt@a/a.proto", "a.Outer.inner|a.Outer.inner@a/a.proto", "-|a.Outer.y@a/a.proto", "a.Outer.tags|a.Outer.tags@a/a.proto", "a.Outer.Inner.kind|a.Outer.Inner.kind@a/a.proto", "a.Outer.gone|-@a/a.proto[base]"},
-		check.TargetOneof:     {"-|a.Outer.choice@a/a.proto", "a.Outer.former|-@a/a.proto[base]"},
+		check.TargetFile:    {"a/a.proto|a/a.proto@a/a.proto", "-|a/y.proto@a/y.proto", "a/old.proto|-@a/old.proto[base]"},
+		check.TargetMessage: {"a.Outer|a.Outer@a/a.proto", "a.Outer.Inner|a.Outer.Inner@a/a.proto", "-|a.Y@a/y.proto", "a.Old|-@a/old.proto[base]"},
+		check.TargetField:   {"a.Outer.old_name|a.Outer.name@a/a.proto", "a.Outer.counts|a.Outer.counts@a/a.proto", "a.Outer.x|a.Outer.x@a/a.proto", "a.Outer.thing|a.Outer.thing@a/a.proto", "a.Outer.opt|a.Outer.opt@a/a.proto", "a.Outer.inner|a.Outer.inner@a/a.proto", "-|a.Outer.y@a/a.proto", "a.Outer.tags|a.Outer.tags@a/a.proto", "a.Outer.Inner.kind|a.Outer.Inner.kind@a/a.proto", "a.Outer.gone|-@a/a.proto[base]"},
+		check.TargetOneof:   {"-|a.Outer.choice@a/a.proto", "a.Outer.former|-@a/a.proto[base]"},
 		// Values at one number pair by name among the aliases: KIND_A
 		// and KIND_ALIAS keep their names, KIND_FORMER and
 		// KIND_ALIAS_GONE stand alone.

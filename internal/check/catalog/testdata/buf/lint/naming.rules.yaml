@@ -1,0 +1,88 @@
+celEnv: 1
+rules:
+  - id: ENUM_PASCAL_CASE
+    kind: lint
+    target: enum
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(enum.name, 'pascal') == enum.name
+    message: enum names are PascalCase
+  - id: ENUM_VALUE_UPPER_SNAKE_CASE
+    kind: lint
+    target: enum-value
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(enumValue.name, 'upper-snake') == enumValue.name
+    message: enum value names are UPPER_SNAKE_CASE
+  - id: ENUM_VALUE_PREFIX
+    kind: lint
+    target: enum-value
+    severity: error
+    tags: [STANDARD]
+    cel: enumValue.name.startsWith(case(parent(enumValue).name, 'upper-snake') + '_')
+    message: enum value names are prefixed with the enum name in UPPER_SNAKE_CASE
+  - id: ENUM_ZERO_VALUE_SUFFIX
+    kind: lint
+    target: enum-value
+    severity: error
+    tags: [STANDARD]
+    cel: enumValue.number != 0 || enumValue.name.endsWith('_UNSPECIFIED')
+    message: the zero value of an enum ends in _UNSPECIFIED
+  - id: FIELD_LOWER_SNAKE_CASE
+    kind: lint
+    target: field
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(field.name, 'snake') == field.name
+    message: field names are lower_snake_case
+  - id: FILE_LOWER_SNAKE_CASE
+    kind: lint
+    target: file
+    severity: error
+    tags: [STANDARD]
+    cel: >-
+      case(file.name.substring(file.name.lastIndexOf('/') + 1, file.name.size() - 6), 'snake')
+        == file.name.substring(file.name.lastIndexOf('/') + 1, file.name.size() - 6)
+    message: file names are lower_snake_case.proto
+  - id: MESSAGE_PASCAL_CASE
+    kind: lint
+    target: message
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(message.name, 'pascal') == message.name
+    message: message names are PascalCase
+  - id: ONEOF_LOWER_SNAKE_CASE
+    kind: lint
+    target: oneof
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(oneof.name, 'snake') == oneof.name
+    message: oneof names are lower_snake_case
+  - id: PACKAGE_LOWER_SNAKE_CASE
+    kind: lint
+    target: file
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: file.package.split('.').all(c, case(c, 'snake') == c)
+    message: package names are lower_snake_case
+  - id: RPC_PASCAL_CASE
+    kind: lint
+    target: method
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(method.name, 'pascal') == method.name
+    message: rpc names are PascalCase
+  - id: SERVICE_PASCAL_CASE
+    kind: lint
+    target: service
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: case(service.name, 'pascal') == service.name
+    message: service names are PascalCase
+  - id: SERVICE_SUFFIX
+    kind: lint
+    target: service
+    severity: error
+    tags: [STANDARD]
+    cel: service.name.endsWith('Service')
+    message: service names end in Service

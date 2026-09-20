@@ -1,0 +1,12 @@
+// Preview is unstable.
+syntax = "proto3";
+
+package acme.shop.v1beta1;
+
+import "acme/shop/v1/shop.proto";
+
+// Preview previews.
+message Preview {
+  // ok is fine.
+  bool ok = 1;
+}

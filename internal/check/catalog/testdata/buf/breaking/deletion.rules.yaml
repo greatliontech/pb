@@ -1,0 +1,171 @@
+celEnv: 1
+rules:
+  - id: FILE_NO_DELETE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE]
+    cel: new != null
+    message: a file was deleted
+  - id: PACKAGE_NO_DELETE
+    kind: breaking
+    target: package
+    severity: error
+    tags: [PACKAGE]
+    cel: newPackage != null
+    message: a package was deleted
+  - id: MESSAGE_NO_DELETE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE]
+    cel: old == null || (new != null && file(old).name == file(new).name)
+    message: a message was deleted from, or moved out of, its file
+  - id: PACKAGE_MESSAGE_NO_DELETE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [PACKAGE]
+    cel: new != null
+    message: a message was deleted from its package
+  - id: ENUM_NO_DELETE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE]
+    cel: old == null || (new != null && file(old).name == file(new).name)
+    message: an enum was deleted from, or moved out of, its file
+  - id: PACKAGE_ENUM_NO_DELETE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [PACKAGE]
+    cel: new != null
+    message: an enum was deleted from its package
+  - id: SERVICE_NO_DELETE
+    kind: breaking
+    target: service
+    severity: error
+    tags: [FILE]
+    cel: old == null || (new != null && file(old).name == file(new).name)
+    message: a service was deleted from, or moved out of, its file
+  - id: PACKAGE_SERVICE_NO_DELETE
+    kind: breaking
+    target: service
+    severity: error
+    tags: [PACKAGE]
+    cel: new != null
+    message: a service was deleted from its package
+  - id: EXTENSION_NO_DELETE
+    kind: breaking
+    target: extension
+    severity: error
+    tags: [FILE]
+    cel: old == null || (new != null && file(old).name == file(new).name)
+    message: an extension was deleted from, or moved out of, its file
+  - id: PACKAGE_EXTENSION_NO_DELETE
+    kind: breaking
+    target: extension
+    severity: error
+    tags: [PACKAGE]
+    cel: new != null
+    message: an extension was deleted from its package
+  - id: RPC_NO_DELETE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: new != null || resolve(fullName(parent(old))) == null
+    message: an rpc was deleted
+  - id: ONEOF_NO_DELETE
+    kind: breaking
+    target: oneof
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: new != null
+    message: a oneof was deleted
+  - id: ENUM_VALUE_NO_DELETE
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: new != null || resolve(fullName(parent(old))) == null
+    message: an enum value was deleted
+  - id: ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [WIRE, WIRE_JSON]
+    cel: >-
+      new != null
+      || resolve(fullName(parent(old))) == null
+      || resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number <= r.end)
+    message: an enum value was deleted without its number reserved
+  - id: ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [WIRE_JSON]
+    cel: >-
+      new != null
+      || resolve(fullName(parent(old))) == null
+      || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number <= r.end)
+          && old.name in resolve(fullName(parent(old))).reserved_name)
+    message: an enum value was deleted without its name and number reserved
+  - id: FIELD_NO_DELETE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: new != null || resolve(fullName(parent(old))) == null
+    message: a field was deleted
+  - id: FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE, WIRE_JSON]
+    cel: >-
+      new != null
+      || resolve(fullName(parent(old))) == null
+      || resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number < r.end)
+    message: a field was deleted without its number reserved
+  - id: FIELD_NO_DELETE_UNLESS_NAME_RESERVED
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON]
+    cel: >-
+      new != null
+      || resolve(fullName(parent(old))) == null
+      || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number < r.end)
+          && old.name in resolve(fullName(parent(old))).reserved_name)
+    message: a field was deleted without its name and number reserved
+  - id: RESERVED_MESSAGE_NO_DELETE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: >-
+      old == null || new == null
+      || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
+          && old.reserved_name.all(n, n in new.reserved_name))
+    message: a reserved range or name was deleted from a message
+  - id: RESERVED_ENUM_NO_DELETE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: >-
+      old == null || new == null
+      || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
+          && old.reserved_name.all(n, n in new.reserved_name))
+    message: a reserved range or name was deleted from an enum
+  - id: EXTENSION_MESSAGE_NO_DELETE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || old.extension_range.all(r, new.extension_range.exists(n, n.start <= r.start && r.end <= n.end))
+    message: an extension range was deleted from a message

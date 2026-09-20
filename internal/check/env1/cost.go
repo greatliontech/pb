@@ -25,7 +25,7 @@ func costLimit(size int) uint64 { return costBase + costPerEntry*uint64(size) }
 type costs struct{ env *Env }
 
 func (c costs) CallCost(function, overloadID string, args []ref.Val, result ref.Val) *uint64 {
-	if !libraryFunctions[function] {
+	if !c.env.charged[function] {
 		return nil
 	}
 	cost := uint64(1)

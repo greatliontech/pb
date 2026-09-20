@@ -1,0 +1,87 @@
+celEnv: 1
+rules:
+  - id: ENUM_FIRST_VALUE_ZERO
+    kind: lint
+    target: enum
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: enum.value.size() == 0 || enum.value[0].number == 0
+    message: the first enum value is the zero value
+  - id: ENUM_NO_ALLOW_ALIAS
+    kind: lint
+    target: enum
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: '!has(options(enum).allow_alias) || !options(enum).allow_alias'
+    message: enums do not allow aliases
+  - id: FIELD_NOT_REQUIRED
+    kind: lint
+    target: field
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: features(field).field_presence != google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED
+    message: fields are not required
+  - id: IMPORT_NO_PUBLIC
+    kind: lint
+    target: file
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: file.public_dependency.size() == 0
+    message: imports are not public
+  - id: IMPORT_NO_WEAK
+    kind: lint
+    target: file
+    severity: error
+    cel: file.weak_dependency.size() == 0
+    message: imports are not weak
+  - id: IMPORT_USED
+    kind: lint
+    target: file
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: >-
+      imports(file).all(i,
+        file.public_dependency.exists(p, file.dependency[p] == i.name)
+        || references(file).exists(r, resolve(r) != null && visible(i).exists(v, v.name == file(resolve(r)).name)))
+    message: every import is used
+  - id: RPC_NO_CLIENT_STREAMING
+    kind: lint
+    target: method
+    severity: error
+    tags: [UNARY_RPC]
+    cel: '!method.client_streaming'
+    message: rpcs do not stream from the client
+  - id: RPC_NO_SERVER_STREAMING
+    kind: lint
+    target: method
+    severity: error
+    tags: [UNARY_RPC]
+    cel: '!method.server_streaming'
+    message: rpcs do not stream to the client
+  - id: RPC_REQUEST_STANDARD_NAME
+    kind: lint
+    target: method
+    severity: error
+    tags: [STANDARD]
+    cel: >-
+      method.input_type.substring(method.input_type.lastIndexOf('.') + 1) == method.name + 'Request'
+      || method.input_type.substring(method.input_type.lastIndexOf('.') + 1) == parent(method).name + method.name + 'Request'
+    message: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+  - id: RPC_RESPONSE_STANDARD_NAME
+    kind: lint
+    target: method
+    severity: error
+    tags: [STANDARD]
+    cel: >-
+      method.output_type.substring(method.output_type.lastIndexOf('.') + 1) == method.name + 'Response'
+      || method.output_type.substring(method.output_type.lastIndexOf('.') + 1) == parent(method).name + method.name + 'Response'
+    message: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+  - id: RPC_REQUEST_RESPONSE_UNIQUE
+    kind: lint
+    target: set
+    severity: error
+    tags: [STANDARD]
+    cel: >-
+      files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3).size()
+        == files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3).distinct().size()
+    message: every request and response is used by one rpc

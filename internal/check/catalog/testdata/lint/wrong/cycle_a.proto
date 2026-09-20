@@ -1,0 +1,12 @@
+// cycle_a and cycle_b import each other's packages.
+syntax = "proto3";
+
+package cyc.a;
+
+import "wrong/cycle_b.proto";
+
+// A uses B.
+message A {
+  // b is a B.
+  cyc.b.B b = 1;
+}

@@ -87,8 +87,7 @@ var environments = [...]int{1}
 
 // Environments lists the CEL environment versions the engine provides,
 // in order; a rule file targeting any other is refused
-// (REQ-rules-env-versioned). Additions to an environment bump the
-// version: the contract a rule targets never changes under its number.
+// (REQ-rules-env-versioned).
 func Environments() []int { return append([]int(nil), environments[:]...) }
 
 // ProvidesEnvironment reports whether the engine provides environment

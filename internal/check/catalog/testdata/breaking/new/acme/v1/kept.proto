@@ -1,0 +1,132 @@
+syntax = "proto2";
+
+package acme.v1;
+
+option cc_enable_arenas = false;
+option cc_generic_services = true;
+option csharp_namespace = "Acme.V2";
+option go_package = "example.com/acme/v2;acmev2";
+option java_generic_services = true;
+option java_multiple_files = false;
+option java_outer_classname = "AcmeProtos";
+option java_package = "com.acme.v2";
+option java_string_check_utf8 = true;
+option objc_class_prefix = "ACX";
+option optimize_for = CODE_SIZE;
+option php_class_prefix = "ACX";
+option php_metadata_namespace = "Acme\\Metadata";
+option php_namespace = "Acme\\V2";
+option py_generic_services = true;
+option ruby_package = "Acme::V2";
+option swift_prefix = "ACX";
+
+message Thing {
+  optional string renamed = 1;
+  optional string renamed_json = 2 [json_name = "renamed_json"];
+  optional string retyped = 3;
+  optional int32 relabeled = 4;
+  optional int64 widened = 5;
+  optional bytes to_bytes = 6;
+  oneof choice {
+    int32 into_oneof = 7;
+    int32 in_oneof = 8;
+  }
+  optional int32 out_of_oneof = 9;
+  optional int32 defaulted = 10 [default = 2];
+  optional int64 jstyped = 11 [jstype = JS_NUMBER];
+  optional string ctyped = 12 [ctype = STRING];
+  optional int32 needed = 13;
+  optional int32 gone_reserved_kept = 21;
+  repeated string mapped = 17;
+  optional Level level = 18;
+  oneof other {
+    int32 moved_between = 19;
+  }
+  required int32 now_needed = 22;
+  reserved 100 to 105, 15;
+  reserved "old_name";
+  extensions 1000 to 1999;
+}
+
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_LOW = 1;
+  LEVEL_WAS_RENAMED = 5;
+  reserved 3;
+  reserved "LEVEL_GONE_NAMED";
+}
+
+enum Wider {
+  WIDER_UNSPECIFIED = 0;
+  WIDER_ONE = 1;
+  WIDER_TWO = 2;
+}
+
+message Uses {
+  optional Wider by_enum = 1;
+  optional Level shrunk = 2;
+}
+
+message Wire {
+  optional uint32 varint = 1;
+  optional uint64 long = 2;
+  optional sint64 zigzag = 3;
+  optional sfixed32 fixed = 4;
+  optional sfixed64 fixed_long = 5;
+  optional bytes text = 6;
+  optional int32 flag = 7;
+  optional sint32 crossed = 8;
+  optional Level widened_enum = 9;
+  optional Narrow.Level narrowed_enum = 10;
+  optional Wider other_enum = 11;
+  optional Versioned.LevelV2 renamed_enum = 12;
+  enum Level {
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_LOW = 1;
+    LEVEL_GONE = 2;
+    LEVEL_GONE_RESERVED = 3;
+    LEVEL_GONE_NAMED = 4;
+    LEVEL_RENAMED = 5;
+    LEVEL_EXTRA = 6;
+  }
+}
+
+message Versioned {
+  enum LevelV2 {
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_LOW = 1;
+    LEVEL_GONE = 2;
+    LEVEL_GONE_RESERVED = 3;
+    LEVEL_GONE_NAMED = 4;
+    LEVEL_RENAMED = 5;
+  }
+}
+
+message Narrow {
+  enum Level {
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_LOW = 1;
+  }
+}
+
+message Accessor {
+  option no_standard_descriptor_accessor = true;
+  optional int32 x = 1;
+}
+
+extend Thing {
+  optional int32 ext_kept = 1002;
+}
+
+message OneofHome {
+  optional int32 a = 1;
+}
+
+service ThingService {
+  rpc Get(Thing) returns (Thing);
+  rpc Retyped(Uses) returns (Uses);
+  rpc Streamed(stream Thing) returns (stream Thing);
+  rpc Idempotent(Thing) returns (Thing) {
+    option idempotency_level = IDEMPOTENT;
+  }
+}

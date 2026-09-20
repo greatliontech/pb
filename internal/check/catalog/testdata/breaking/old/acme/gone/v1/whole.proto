@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package acme.gone.v1;
+
+message Whole {
+  string a = 1;
+}

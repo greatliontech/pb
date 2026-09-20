@@ -1,0 +1,170 @@
+celEnv: 1
+rules:
+  - id: FIELD_SAME_NAME
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: old == null || new == null || old.name == new.name
+    message: a field's name changed
+  - id: FIELD_SAME_JSON_NAME
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: old == null || new == null || old.json_name == new.json_name
+    message: a field's json_name changed
+  - id: FIELD_SAME_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (old.type == new.type && old.type_name == new.type_name)
+    message: a field's type changed
+  - id: FIELD_SAME_LABEL
+    kind: breaking
+    target: field
+    severity: error
+    cel: old == null || new == null || old.label == new.label
+    message: a field's label changed
+  - id: FIELD_SAME_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || (old.label == new.label
+          && features(old).field_presence == features(new).field_presence
+          && parent(old).nested_type.exists(n, has(n.options) && n.options.map_entry && old.type_name == '.' + fullName(parent(old)) + '.' + n.name)
+             == parent(new).nested_type.exists(n, has(n.options) && n.options.map_entry && new.type_name == '.' + fullName(parent(new)) + '.' + n.name))
+    message: a field's cardinality changed
+  - id: FIELD_WIRE_COMPATIBLE_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE]
+    cel: >-
+      old == null || new == null
+      || (old.label == new.label
+          && (features(old).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
+             == (features(new).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED))
+    message: a field's cardinality changed beyond wire compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON]
+    cel: >-
+      old == null || new == null
+      || (old.label == new.label
+          && (features(old).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
+             == (features(new).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
+          && parent(old).nested_type.exists(n, has(n.options) && n.options.map_entry && old.type_name == '.' + fullName(parent(old)) + '.' + n.name)
+             == parent(new).nested_type.exists(n, has(n.options) && n.options.map_entry && new.type_name == '.' + fullName(parent(new)) + '.' + n.name))
+    message: a field's cardinality changed beyond JSON compatibility
+  - id: FIELD_WIRE_COMPATIBLE_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE]
+    cel: >-
+      old == null || new == null
+      || (old.type == new.type && old.type_name == new.type_name)
+      || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32, google.protobuf.FieldDescriptorProto.Type.TYPE_INT64, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT64, google.protobuf.FieldDescriptorProto.Type.TYPE_BOOL],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_SINT32, google.protobuf.FieldDescriptorProto.Type.TYPE_SINT64],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED32, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED32],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED64, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED64]]
+         .exists(g, old.type in g && new.type in g)
+      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_STRING && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES)
+      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM
+          && resolve(new.type_name) != null
+          && enums(visible(file(old))).exists(e, '.' + fullName(e) == old.type_name
+               && e.name == resolve(new.type_name).name
+               && e.value.all(v, resolve(new.type_name).value.exists(w, w.name == v.name && w.number == v.number))))
+    message: a field's type changed beyond wire compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON]
+    cel: >-
+      old == null || new == null
+      || (old.type == new.type && old.type_name == new.type_name)
+      || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_INT64, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT64],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED32, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED32],
+          [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED64, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED64]]
+         .exists(g, old.type in g && new.type in g)
+      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM
+          && resolve(new.type_name) != null
+          && enums(visible(file(old))).exists(e, '.' + fullName(e) == old.type_name
+               && e.name == resolve(new.type_name).name
+               && e.value.all(v, resolve(new.type_name).value.exists(w, w.name == v.name && w.number == v.number))))
+    message: a field's type changed beyond JSON compatibility
+  - id: FIELD_SAME_ONEOF
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: >-
+      old == null || new == null
+      || ((has(old.oneof_index) && !old.proto3_optional) == (has(new.oneof_index) && !new.proto3_optional)
+          && (!(has(old.oneof_index) && !old.proto3_optional)
+              || parent(old).oneof_decl[old.oneof_index].name == parent(new).oneof_decl[new.oneof_index].name))
+    message: a field moved into, out of, or between oneofs
+  - id: FIELD_SAME_DEFAULT
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: old == null || new == null || old.default_value == new.default_value
+    message: a field's default value changed
+  - id: FIELD_SAME_JSTYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).jstype) == has(options(new).jstype) && (!has(options(old).jstype) || options(old).jstype == options(new).jstype))
+    message: a field's jstype changed
+  - id: FIELD_SAME_CTYPE
+    kind: breaking
+    target: field
+    severity: error
+    cel: old == null || new == null || (has(options(old).ctype) == has(options(new).ctype) && (!has(options(old).ctype) || options(old).ctype == options(new).ctype))
+    message: a field's ctype changed
+  - id: FIELD_SAME_CPP_STRING_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: old == null || new == null || (has(options(old).ctype) == has(options(new).ctype) && (!has(options(old).ctype) || options(old).ctype == options(new).ctype))
+    message: a field's C++ string type changed
+  - id: FIELD_SAME_UTF8_VALIDATION
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING
+      || features(old).utf8_validation == features(new).utf8_validation
+    message: a field's UTF-8 validation changed
+  - id: FIELD_SAME_JAVA_UTF8_VALIDATION
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: >-
+      old == null || new == null
+      || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING
+      || (has(options(file(old)).java_string_check_utf8) == has(options(file(new)).java_string_check_utf8)
+          && (!has(options(file(old)).java_string_check_utf8)
+              || options(file(old)).java_string_check_utf8 == options(file(new)).java_string_check_utf8))
+    message: a field's Java UTF-8 validation changed
+  - id: FILE_SAME_JAVA_STRING_CHECK_UTF8
+    kind: breaking
+    target: file
+    severity: error
+    cel: old == null || new == null || (has(options(old).java_string_check_utf8) == has(options(new).java_string_check_utf8) && (!has(options(old).java_string_check_utf8) || options(old).java_string_check_utf8 == options(new).java_string_check_utf8))
+    message: a file's java_string_check_utf8 changed

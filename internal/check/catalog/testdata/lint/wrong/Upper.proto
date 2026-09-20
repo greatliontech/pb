@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package Wrong.Upper;
+
+message Fine {
+  string ok = 1;
+}

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package acme.shop.v1;
+
+import "acme/shop/v1/types.proto";
+import public "acme/legacy/old.proto";
+import "acme/shop/v1beta1/preview.proto";
+import weak "acme/shop/v1/shop.proto";
+
+option go_package = "example.com/acme/other;other";
+
+service shop_svc {
+  rpc get_thing(Item) returns (stream Item);
+  rpc Push(stream Item) returns (Item);
+}
+
+message bad_message {
+  string BadName = 1;
+  oneof BadOneof {
+    int32 x = 2;
+  }
+}
+
+enum Color {
+  option allow_alias = true;
+  COLOR_UNSPECIFIED = 0;
+  COLOR_RED = 1;
+  COLOR_CRIMSON = 1;
+  BLUE = 2;
+  Color_pink = 3;
+}
+
+enum bad_enum {
+  BAD_ENUM_UNSPECIFIED = 0;
+}
+
+enum Shade {
+  SHADE_NONE = 0;
+}

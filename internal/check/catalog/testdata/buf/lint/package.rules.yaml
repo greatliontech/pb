@@ -1,0 +1,119 @@
+celEnv: 1
+rules:
+  - id: PACKAGE_DEFINED
+    kind: lint
+    target: file
+    severity: error
+    tags: [MINIMAL, BASIC, STANDARD]
+    cel: file.package != ''
+    message: files declare a package
+  - id: SYNTAX_SPECIFIED
+    kind: lint
+    target: file
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: syntax(file) != ''
+    message: files declare a syntax
+  - id: DIRECTORY_SAME_PACKAGE
+    kind: lint
+    target: set
+    severity: error
+    tags: [MINIMAL, BASIC, STANDARD]
+    cel: >-
+      files.map(f, f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '').distinct().size()
+        == files.map(f, (f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '') + '\n' + f.package).distinct().size()
+    message: files in one directory declare one package
+  - id: PACKAGE_SAME_DIRECTORY
+    kind: lint
+    target: package
+    severity: error
+    tags: [MINIMAL, BASIC, STANDARD]
+    cel: >-
+      files.all(f,
+        (f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '')
+          == (files[0].name.contains('/') ? files[0].name.substring(0, files[0].name.lastIndexOf('/')) : ''))
+    message: a package's files live in one directory
+  - id: PACKAGE_DIRECTORY_MATCH
+    kind: lint
+    target: file
+    severity: error
+    tags: [MINIMAL, BASIC, STANDARD]
+    cel: >-
+      (file.name.contains('/') ? file.name.substring(0, file.name.lastIndexOf('/')) : '')
+        == file.package.replace('.', '/')
+    message: a file's directory matches its package
+  - id: PACKAGE_NO_IMPORT_CYCLE
+    kind: lint
+    target: set
+    severity: error
+    tags: [MINIMAL, BASIC, STANDARD]
+    cel: packageCycles(files).size() == 0
+    message: packages import no cycle
+  - id: PACKAGE_VERSION_SUFFIX
+    kind: lint
+    target: file
+    severity: error
+    tags: [STANDARD]
+    cel: >-
+      file.package.substring(file.package.lastIndexOf('.') + 1)
+        .matches('^v[1-9][0-9]*(test.*|(alpha|beta)[0-9]*|p[1-9][0-9]*(alpha|beta)[0-9]*)?$')
+    message: the package's last component is a version suffix
+  - id: STABLE_PACKAGE_NO_IMPORT_UNSTABLE
+    kind: lint
+    target: file
+    severity: error
+    cel: >-
+      !file.package.substring(file.package.lastIndexOf('.') + 1).matches('^v[1-9][0-9]*$')
+      || imports(file).all(i,
+           !i.package.substring(i.package.lastIndexOf('.') + 1)
+             .matches('^v[1-9][0-9]*(test.*|(alpha|beta)[0-9]*|p[1-9][0-9]*(alpha|beta)[0-9]*)$'))
+    message: a stable package imports no unstable package
+  - id: PACKAGE_SAME_CSHARP_NAMESPACE
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).csharp_namespace) == has(options(files[0]).csharp_namespace) && (!has(options(f).csharp_namespace) || options(f).csharp_namespace == options(files[0]).csharp_namespace))
+    message: a package's files agree on csharp_namespace
+  - id: PACKAGE_SAME_GO_PACKAGE
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).go_package) == has(options(files[0]).go_package) && (!has(options(f).go_package) || options(f).go_package == options(files[0]).go_package))
+    message: a package's files agree on go_package
+  - id: PACKAGE_SAME_JAVA_MULTIPLE_FILES
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).java_multiple_files) == has(options(files[0]).java_multiple_files) && (!has(options(f).java_multiple_files) || options(f).java_multiple_files == options(files[0]).java_multiple_files))
+    message: a package's files agree on java_multiple_files
+  - id: PACKAGE_SAME_JAVA_PACKAGE
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).java_package) == has(options(files[0]).java_package) && (!has(options(f).java_package) || options(f).java_package == options(files[0]).java_package))
+    message: a package's files agree on java_package
+  - id: PACKAGE_SAME_PHP_NAMESPACE
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).php_namespace) == has(options(files[0]).php_namespace) && (!has(options(f).php_namespace) || options(f).php_namespace == options(files[0]).php_namespace))
+    message: a package's files agree on php_namespace
+  - id: PACKAGE_SAME_RUBY_PACKAGE
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).ruby_package) == has(options(files[0]).ruby_package) && (!has(options(f).ruby_package) || options(f).ruby_package == options(files[0]).ruby_package))
+    message: a package's files agree on ruby_package
+  - id: PACKAGE_SAME_SWIFT_PREFIX
+    kind: lint
+    target: package
+    severity: error
+    tags: [BASIC, STANDARD]
+    cel: files.all(f, has(options(f).swift_prefix) == has(options(files[0]).swift_prefix) && (!has(options(f).swift_prefix) || options(f).swift_prefix == options(files[0]).swift_prefix))
+    message: a package's files agree on swift_prefix

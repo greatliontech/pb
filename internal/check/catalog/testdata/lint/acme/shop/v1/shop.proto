@@ -1,0 +1,47 @@
+// The compliant file: every rule passes here.
+syntax = "proto3";
+
+package acme.shop.v1;
+
+import "acme/shop/v1/types.proto";
+
+option go_package = "example.com/acme/shop/v1;shopv1";
+
+// Shop serves the catalog.
+service ShopService {
+  // GetItem fetches one item.
+  rpc GetItem(GetItemRequest) returns (GetItemResponse);
+  // ListItems lists items.
+  rpc ListItems(ShopServiceListItemsRequest) returns (ShopServiceListItemsResponse);
+}
+
+// GetItemRequest names the item.
+message GetItemRequest {
+  // id is the item's id.
+  string id = 1;
+}
+
+// GetItemResponse carries the item.
+message GetItemResponse {
+  // item is the item.
+  Item item = 1;
+}
+
+// ShopServiceListItemsRequest asks for a page.
+message ShopServiceListItemsRequest {
+  // page is the page.
+  int32 page = 1;
+}
+
+// ShopServiceListItemsResponse carries a page.
+message ShopServiceListItemsResponse {
+  // items are the page's items.
+  repeated Item items = 1;
+  // choice is a oneof.
+  oneof choice {
+    // total is the total.
+    int32 total = 2;
+    // more says whether more follow.
+    bool more = 3;
+  }
+}

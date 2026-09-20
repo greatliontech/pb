@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package acme.v1;
+
+enum Closed {
+  CLOSED_UNSPECIFIED = 0;
+}
+
+message Presence {
+  string implicit_now = 1;
+  string checked = 2;
+}
