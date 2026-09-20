@@ -7650,14 +7650,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.Load",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.Load",
         "maximalClosure": "2a4366f7187eeb1ae67096aeafe75c2c",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "Load",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -7670,14 +7670,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors",
         "maximalClosure": "fc8a40a6faa1f09535ead4cdb30d4ed1",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "TestLoadErrors",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -7690,14 +7690,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership",
         "maximalClosure": "433730f0fc450032e89dbfa5915cbf59",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "TestLoadOrderAndMembership",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -7710,14 +7710,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults",
         "maximalClosure": "b2ccf95bed0f60618296151126ae6c08",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "TestLoadWorkspaceFaults",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -7730,14 +7730,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.Module.Protos",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.Module.Protos",
         "maximalClosure": "db6802136dc87f25abb62de5401fa613",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "Module.Protos",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -7750,14 +7750,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.workspaceFiles",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.workspaceFiles",
         "maximalClosure": "9033a06329d83403e916038c5f26d516",
         "testVariantClosure": "8151fb7a5eebcd6c1a307f816e80fff2",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfiles",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/modfiles",
         "observationSubjectSymbol": "workspaceFiles",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.MkdirAll (path mutation)",
@@ -16428,14 +16428,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.AmbiguousError.Error",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.AmbiguousError.Error",
         "maximalClosure": "04b30f60ab38e68b86431f9c3e7b174d",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "AmbiguousError.Error",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16448,14 +16448,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider",
         "maximalClosure": "0096c193bead1ab19c0f89a934ad8f8c",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileAmbiguousProvider",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16468,14 +16468,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths",
         "maximalClosure": "faaf242b89c85dce6a0371b92861699e",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileAmbiguousTwoPaths",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16488,14 +16488,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileOrderProperty",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileOrderProperty",
         "maximalClosure": "d4f172fb6106d8a126c18b3e59e0b2df",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileOrderProperty",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16508,14 +16508,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileParseErrorLabels",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileParseErrorLabels",
         "maximalClosure": "4db22bfed1be814195a9aeecd76ebd04",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileParseErrorLabels",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16528,14 +16528,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules",
         "maximalClosure": "59c9ff1e195bc8134f28bd5378990431",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileResolvesAcrossModules",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16548,14 +16548,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport",
         "maximalClosure": "7ec04390aee2c68b08b51b09924c563c",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestCompileUnsatisfiedImport",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16568,14 +16568,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed",
         "maximalClosure": "a936c2ea47791e05f8611d9a1e7895d6",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestWellKnownNeverShadowed",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16588,14 +16588,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownSkipIsPerFile",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownSkipIsPerFile",
         "maximalClosure": "45c9ad9b1fca0ea7eacb8055857c7e53",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "TestWellKnownSkipIsPerFile",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16608,14 +16608,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.Compile",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.Compile",
         "maximalClosure": "c3e1b0c0d59c7b0cc56f8a027054350e",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "Compile",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16628,14 +16628,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.byteResolver.FindFileByPath",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.byteResolver.FindFileByPath",
         "maximalClosure": "b2c1ce4349c5850924f298a3f5ef03bc",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "byteResolver.FindFileByPath",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16648,14 +16648,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.moduleLabel",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.moduleLabel",
         "maximalClosure": "7ccccc838c517492cff052c6c4489408",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "moduleLabel",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16668,14 +16668,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.providerIndex",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.providerIndex",
         "maximalClosure": "726d17fdc05373fabfc76a993c80453d",
         "testVariantClosure": "efec0f32b52f42c621a96f9469142a4f",
         "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@27",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protocomp",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/compile",
         "observationSubjectSymbol": "providerIndex",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16688,14 +16688,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.Check",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.Check",
         "maximalClosure": "df7218e42233c73d5ef2e14ac686baff",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "Check",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16707,14 +16707,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestCheckCompletenessProperty",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckCompletenessProperty",
         "maximalClosure": "8182f2eb5d5e79193eaecafb2ae85bf5",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestCheckCompletenessProperty",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Remove (path mutation)",
@@ -16726,14 +16726,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestCheckGoFeaturesViaModule",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGoFeaturesViaModule",
         "maximalClosure": "50d566c6cbeb4caef7dc7794d4784290",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestCheckGoFeaturesViaModule",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16745,14 +16745,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden",
         "maximalClosure": "7788ec8245e995f05c10f2d833a8f15c",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestCheckGolden",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16764,14 +16764,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism",
         "maximalClosure": "ba3a3abf7a6e18d54ca7abca87844e20",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestCheckReportOrderDeterminism",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Remove (path mutation)",
@@ -16783,14 +16783,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied",
         "maximalClosure": "a004c212afc8e4fe3162ea7c2345bc96",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestCheckUnsatisfied",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16802,14 +16802,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden",
         "maximalClosure": "a4cb27570f799b14c5ede49a436c9198",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestImportsGolden",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16821,14 +16821,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestImportsMalformedSource",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsMalformedSource",
         "maximalClosure": "b85bf564b4bf32924c474f0ef6934263",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestImportsMalformedSource",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16840,14 +16840,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden",
         "maximalClosure": "2230a22ec7207d8351a63fc642c99baa",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "TestWellKnownGolden",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16859,14 +16859,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.Imports",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.Imports",
         "maximalClosure": "5d9cd8add87697b64de12432136a5786",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "Imports",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16878,14 +16878,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.UnsatisfiedError.Error",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.UnsatisfiedError.Error",
         "maximalClosure": "e38f70247736f81c03f7b6711a8eb12c",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "UnsatisfiedError.Error",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16897,14 +16897,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.WellKnown",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.WellKnown",
         "maximalClosure": "b455ec928e869a7e22b6351125f1eec7",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "WellKnown",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -16916,14 +16916,14 @@
     },
     {
       "evidence": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.wellKnownProbe",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.wellKnownProbe",
         "maximalClosure": "0bdd368d69bcfd1fea6850fe6267ab3c",
         "testVariantClosure": "2ef4a7d2204d5c21ec19ca6020c6aaad",
         "toolchain": "go1.26.5-X:nodwarf5 linux/amd64",
         "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
         "observationAssertion": "caller assertion",
         "observationStrategy": "gofresh/observation-rta@13",
-        "observationSubjectPackage": "github.com/greatliontech/pb/internal/protoimport",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/proto/importcheck",
         "observationSubjectSymbol": "wellKnownProbe",
         "observationObservable": false,
         "observationReason": "startup effect: reaches os.Open (file I/O)",
@@ -67473,7 +67473,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.Load",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.Load",
         "bodyHash": "1c57f919256117b0307c0591cd8a0a4f2098c0e74d1a4397af0c274312d0b04d",
         "operatorSet": "go/12",
         "budget": 0,
@@ -67586,187 +67586,187 @@
           {
             "position": "modfiles.go:45:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:45:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:47:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:47:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:47:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:47:10",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:47:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:48:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:48:16",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:50:3",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:50:56",
             "operator": "boolean literal: true -\u003e false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:52:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:52:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:54:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:54:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:54:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:54:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:54:10",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:54:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:55:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:55:16",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:58:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:58:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:58:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:58:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:58:10",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:58:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:59:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:59:16",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadErrors"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadErrors"
           },
           {
             "position": "modfiles.go:62:21",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:63:7",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:63:7",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:63:7",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:63:28",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:64:5",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:67:3",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:69:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           }
         ],
         "candidateEvidence": [
@@ -67800,7 +67800,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.Module.Protos",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.Module.Protos",
         "bodyHash": "c6f5026ea6d3154872a52131f7e8a374ce65ff3b1d366c7bb633fdecaa1c674b",
         "operatorSet": "go/12",
         "budget": 0,
@@ -67850,7 +67850,7 @@
           {
             "position": "modfiles.go:37:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           }
         ],
         "candidateEvidence": [
@@ -67872,7 +67872,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/modfiles.workspaceFiles",
+        "symbol": "github.com/greatliontech/pb/internal/proto/modfiles.workspaceFiles",
         "bodyHash": "41d23e7398fd6ca684c0ce8bd3ae85da1d4e541030cb24ef147f8bf1a7f38738",
         "operatorSet": "go/12",
         "budget": 0,
@@ -67985,257 +67985,257 @@
           {
             "position": "modfiles.go:79:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:79:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:79:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:79:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:79:10",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:79:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:80:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:80:11",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:82:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:82:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:82:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:82:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:82:16",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:7",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:7",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:7",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:83:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:84:5",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:84:71",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:84:75",
             "operator": "equality: == -\u003e !=",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:84:82",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:85:6",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:85:13",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:6",
             "operator": "unary: ! -\u003e identity",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:28",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:90:38",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:91:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:94:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:94:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:94:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:94:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:94:10",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:94:17",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:95:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:95:11",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:97:3",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:97:36",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:100:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:100:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:100:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:100:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           },
           {
             "position": "modfiles.go:100:16",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:101:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:101:15",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadWorkspaceFaults"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadWorkspaceFaults"
           },
           {
             "position": "modfiles.go:103:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+            "killer": "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
           }
         ],
         "survivors": [
@@ -100447,7 +100447,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.AmbiguousError.Error",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.AmbiguousError.Error",
         "bodyHash": "6063d473f9315fcaa77c1a93924b6b583b3d39db7a0c1196effb58d2614c0cbf",
         "operatorSet": "go/12",
         "budget": 0,
@@ -100561,62 +100561,62 @@
           {
             "position": "protocomp.go:42:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:42:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:43:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:43:8",
             "operator": "relational boundary: \u003e -\u003e \u003e=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:43:8",
             "operator": "relational negation: \u003e -\u003e \u003c=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:43:10",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:43:12",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:44:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:44:18",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:46:77",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:48:9",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:48:9",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           }
         ]
       },
@@ -100635,7 +100635,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.Compile",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.Compile",
         "bodyHash": "83e3c7666b30e6f9f3397b77f9e459eb410da5339b26dd10b2b5b999e0eb7e12",
         "operatorSet": "go/12",
         "budget": 0,
@@ -100749,197 +100749,197 @@
           {
             "position": "protocomp.go:66:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:66:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:68:15",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:68:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:70:7",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:70:7",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:70:7",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileParseErrorLabels"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileParseErrorLabels"
           },
           {
             "position": "protocomp.go:70:11",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:70:18",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileParseErrorLabels"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileParseErrorLabels"
           },
           {
             "position": "protocomp.go:71:5",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileParseErrorLabels"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileParseErrorLabels"
           },
           {
             "position": "protocomp.go:71:17",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileParseErrorLabels"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileParseErrorLabels"
           },
           {
             "position": "protocomp.go:73:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:75:3",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:77:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:77:38",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:77:38",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:77:38",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:77:42",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:77:49",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:78:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:78:15",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileUnsatisfiedImport"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileUnsatisfiedImport"
           },
           {
             "position": "protocomp.go:82:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:82:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:82:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:82:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:82:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:82:16",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:83:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:83:15",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:86:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:86:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:87:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:87:6",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:87:6",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:87:14",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:88:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:100:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:100:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:100:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           }
         ],
         "survivors": [
@@ -101066,7 +101066,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.byteResolver.FindFileByPath",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.byteResolver.FindFileByPath",
         "bodyHash": "d76af7c7c6804528f0a95fcd23a581f6be3b08aa81c7526d8e7d9851d3998fb0",
         "operatorSet": "go/12",
         "budget": 0,
@@ -101152,27 +101152,27 @@
           {
             "position": "protocomp.go:150:5",
             "operator": "unary: ! -\u003e identity",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:150:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:150:9",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:151:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:151:39",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           }
         ]
       },
@@ -101191,7 +101191,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.moduleLabel",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.moduleLabel",
         "bodyHash": "ad4a2b144a03811f45d7adca4893faa1702a59f1a4bf4ea97f44a82c4162368c",
         "operatorSet": "go/12",
         "budget": 0,
@@ -101277,47 +101277,47 @@
           {
             "position": "protocomp.go:107:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:107:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:107:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:107:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:107:13",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:108:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:108:10",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:110:9",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:110:18",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           }
         ]
       },
@@ -101336,7 +101336,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protocomp.providerIndex",
+        "symbol": "github.com/greatliontech/pb/internal/proto/compile.providerIndex",
         "bodyHash": "353ef88ecadd0901713edd9cf43b0263fe204eb451a044043a5e4703fb8bb0b3",
         "operatorSet": "go/12",
         "budget": 0,
@@ -101457,167 +101457,167 @@
           {
             "position": "protocomp.go:120:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:120:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:121:15",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:122:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed"
           },
           {
             "position": "protocomp.go:122:7",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:122:7",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:122:7",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed"
           },
           {
             "position": "protocomp.go:122:32",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed"
           },
           {
             "position": "protocomp.go:123:5",
             "operator": "loop control: continue -\u003e break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownSkipIsPerFile"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownSkipIsPerFile"
           },
           {
             "position": "protocomp.go:123:5",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed"
           },
           {
             "position": "protocomp.go:125:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:126:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:132:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:132:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:133:27",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:133:27",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:133:27",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:133:36",
             "operator": "relational boundary: \u003e -\u003e \u003e=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:133:36",
             "operator": "relational negation: \u003e -\u003e \u003c=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:133:38",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousTwoPaths"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousTwoPaths"
           },
           {
             "position": "protocomp.go:133:40",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:134:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:137:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:137:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:137:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:137:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:137:14",
             "operator": "relational boundary: \u003e -\u003e \u003e=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:137:14",
             "operator": "relational negation: \u003e -\u003e \u003c=",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           },
           {
             "position": "protocomp.go:137:16",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:137:18",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:138:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:138:15",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
           },
           {
             "position": "protocomp.go:140:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+            "killer": "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
           }
         ]
       },
@@ -101636,7 +101636,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.Check",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.Check",
         "bodyHash": "cfa903c0768e3eea7d8296b7595c420aa500078918cc5a66d05439e65e13cef7",
         "operatorSet": "go/12",
         "budget": 0,
@@ -101783,242 +101783,242 @@
           {
             "position": "protoimport.go:130:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:130:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:131:12",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:132:18",
             "operator": "boolean literal: true -\u003e false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:136:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:136:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:137:21",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:138:18",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:139:5",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:8",
             "operator": "boolean operand: -\u003e false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:8",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:8",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:139:8",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:23",
             "operator": "logical: || -\u003e \u0026\u0026",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:26",
             "operator": "boolean operand: -\u003e false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:139:40",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:140:6",
             "operator": "loop control: continue -\u003e break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckCompletenessProperty"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckCompletenessProperty"
           },
           {
             "position": "protoimport.go:140:6",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:142:5",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:146:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:146:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:146:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:146:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:146:18",
             "operator": "equality: == -\u003e !=",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:146:21",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:146:23",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:147:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
           },
           {
             "position": "protoimport.go:149:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:150:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:150:48",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:150:48",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:150:48",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:150:50",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:150:53",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:150:55",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:151:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:151:11",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:153:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:153:44",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:153:44",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:153:44",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:153:46",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:153:49",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:153:51",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:154:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:154:11",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckReportOrderDeterminism"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckReportOrderDeterminism"
           },
           {
             "position": "protoimport.go:156:10",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:158:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           }
         ]
       },
@@ -102037,7 +102037,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.Imports",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.Imports",
         "bodyHash": "5de329d9c788434124a32f750b71466f6cc1af735cf72c73195f0ec8cfad8386",
         "operatorSet": "go/12",
         "budget": 0,
@@ -102142,57 +102142,57 @@
           {
             "position": "protoimport.go:75:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:75:5",
             "operator": "condition: force true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:75:5",
             "operator": "condition: force false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsMalformedSource"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsMalformedSource"
           },
           {
             "position": "protoimport.go:75:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:75:16",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsMalformedSource"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsMalformedSource"
           },
           {
             "position": "protoimport.go:76:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsMalformedSource"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsMalformedSource"
           },
           {
             "position": "protoimport.go:76:15",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsMalformedSource"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsMalformedSource"
           },
           {
             "position": "protoimport.go:79:17",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:80:41",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:81:4",
             "operator": "assignment: drop store",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           },
           {
             "position": "protoimport.go:84:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestImportsGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestImportsGolden"
           }
         ],
         "candidateEvidence": [
@@ -102219,7 +102219,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.UnsatisfiedError.Error",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.UnsatisfiedError.Error",
         "bodyHash": "d98ce794b9cab88a60d56eec528b5b971fa788be2c4d598c440dbabbbf969306",
         "operatorSet": "go/12",
         "budget": 0,
@@ -102331,52 +102331,52 @@
           {
             "position": "protoimport.go:110:14",
             "operator": "range body: prepend break",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:110:2",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:111:6",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:111:8",
             "operator": "relational boundary: \u003e -\u003e \u003e=",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:111:8",
             "operator": "relational negation: \u003e -\u003e \u003c=",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:111:10",
             "operator": "integer literal: magnitude +1",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:111:12",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:112:4",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:112:18",
             "operator": "string literal: nonempty -\u003e empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           },
           {
             "position": "protoimport.go:117:9",
             "operator": "return: zero",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestCheckUnsatisfied"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
           }
         ]
       },
@@ -102395,7 +102395,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.WellKnown",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.WellKnown",
         "bodyHash": "601d88b33a94d86923d05ab220e32e1708080a089d61b04ab98988c179273eeb",
         "operatorSet": "go/12",
         "budget": 0,
@@ -102521,47 +102521,47 @@
           {
             "position": "protoimport.go:53:5",
             "operator": "condition: negate",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:53:9",
             "operator": "equality: != -\u003e ==",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:53:16",
             "operator": "block: empty",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:54:3",
             "operator": "statement: delete",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:54:10",
             "operator": "boolean literal: false -\u003e true",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:64:9",
             "operator": "boolean operand: -\u003e false",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:64:14",
             "operator": "equality: == -\u003e !=",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:64:21",
             "operator": "logical: || -\u003e \u0026\u0026",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:64:29",
             "operator": "equality: == -\u003e !=",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           }
         ],
         "survivors": [
@@ -102650,7 +102650,7 @@
     },
     {
       "finding": {
-        "symbol": "github.com/greatliontech/pb/internal/protoimport.wellKnownProbe",
+        "symbol": "github.com/greatliontech/pb/internal/proto/importcheck.wellKnownProbe",
         "bodyHash": "ab771414e2d6edd79699ab5c35056b746d623023e300e1406896235d23a15d06",
         "operatorSet": "go/12",
         "budget": 0,
@@ -102699,12 +102699,12 @@
           {
             "position": "protoimport.go:40:9",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           },
           {
             "position": "protoimport.go:42:40",
             "operator": "return: nil",
-            "killer": "github.com/greatliontech/pb/internal/protoimport.TestWellKnownGolden"
+            "killer": "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
           }
         ],
         "candidateEvidence": [

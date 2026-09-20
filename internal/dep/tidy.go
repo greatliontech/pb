@@ -9,11 +9,11 @@ import (
 	"github.com/greatliontech/pb/internal/module"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
-	"github.com/greatliontech/pb/internal/modfiles"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/proto/importcheck"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // tidyRounds bounds the tidy fixpoint. Rewriting declarations to the
@@ -60,34 +60,26 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 	// The import-relevant view of every module, from the shared file-set
 	// loader (modfiles): workspace modules from the working tree,
 	// externals from their verified archives.
-	type moduleFiles struct {
-		path  string
-		files map[string][]string // proto file -> imports
-	}
 	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
 		return s.Client.Zip(ctx, modPath, v)
 	})
 	if err != nil {
 		return false, err
 	}
-	var views []moduleFiles
-	provider := map[string]string{} // proto file -> module path
-	for _, m := range mods {
-		protos := map[string][]string{}
-		// Sorted iteration keeps this loop's control flow a function of
-		// the file set alone.
-		for _, p := range m.Protos() {
-			imports, err := protoimport.Imports(p, m.Files[p])
-			if err != nil {
-				if m.Local {
-					return false, fmt.Errorf("%s: %w", path.Join(s.Root.Dir, m.Dir, p), err)
-				}
-				return false, fmt.Errorf("%s@%s: %s: %w", m.Path, m.Version, p, err)
-			}
-			protos[p] = imports
+	// A malformed file is named by a path the user can find: a workspace
+	// file by its place in the tree, an external by module and version.
+	views, err := importcheck.Views(mods, func(m modfiles.Module, p string) string {
+		if m.Local {
+			return path.Join(s.Root.Dir, m.Dir, p)
 		}
-		views = append(views, moduleFiles{path: m.Path, files: protos})
-		for f := range protos {
+		return fmt.Sprintf("%s@%s: %s", m.Path, m.Version, p)
+	})
+	if err != nil {
+		return false, err
+	}
+	provider := map[string]string{} // proto file -> module path
+	for _, v := range views {
+		for f := range v.Files {
 			// First provider wins, deterministically: views are added in
 			// deterministic order (workspace use order, then build-list
 			// order), and within a view every file maps to the same
@@ -96,35 +88,31 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 			// adjudicate — any provider serves for attribution, and
 			// generation owns the conflict.
 			if _, ok := provider[f]; !ok {
-				provider[f] = m.Path
+				provider[f] = v.Path
 			}
 		}
 	}
 
 	// Satisfaction over the whole set (REQ-resolve-unsatisfied-imports):
 	// tidy never invents a module path for an unsatisfied import.
-	check := make([]protoimport.Module, len(views))
-	for i, v := range views {
-		check[i] = protoimport.Module{Path: v.path, Files: v.files}
-	}
-	if err := protoimport.Check(check); err != nil {
+	if err := importcheck.Check(views); err != nil {
 		return false, err
 	}
 
 	// Rewrite each workspace module's declarations to exactly its
 	// direct imports.
 	for _, m := range s.Root.Modules {
-		var view *moduleFiles
+		var view *importcheck.Module
 		for i := range views {
-			if views[i].path == m.File.Module {
+			if views[i].Path == m.File.Module {
 				view = &views[i]
 				break
 			}
 		}
 		want := map[string]string{}
-		for _, imports := range view.files {
+		for _, imports := range view.Files {
 			for _, imp := range imports {
-				if protoimport.WellKnown(imp) {
+				if importcheck.WellKnown(imp) {
 					continue
 				}
 				p, ok := provider[imp]

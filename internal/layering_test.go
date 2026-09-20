@@ -206,7 +206,7 @@ func TestLayeringRefuses(t *testing.T) {
 			var out []domain
 			for _, x := range d {
 				if x.name == "proto" {
-					x = domain{"compile", x.packages}
+					x = domain{"assembly", x.packages}
 				}
 				out = append(out, x)
 			}
@@ -225,7 +225,7 @@ func TestLayeringRefuses(t *testing.T) {
 	m := conforming()
 	m["internal/dep"] = []string{"internal/module/modfile"}
 	m["internal/module/modfile"] = []string{"internal/module/archive"}
-	m["internal/modfiles"] = []string{"internal/module/archive"}
+	m["internal/proto/modfiles"] = []string{"internal/module/archive"}
 	m["internal/testing/gittest"] = []string{"internal/dep"}
 	if got := violations(table, m); len(got) != 0 {
 		t.Errorf("the permitted shapes: %q", got)

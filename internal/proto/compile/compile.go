@@ -1,11 +1,11 @@
-// Package protocomp compiles a build's protobuf files into linked
+// Package compile compiles a build's protobuf files into linked
 // descriptors (generation.md REQ-gen-compile). Imports resolve first
 // against the toolchain's well-known sources and then against the
 // build's modules, each module's file set rooted at its own include
 // root; an import path two modules provide is an error — pb never
 // chooses a provider by heuristic. Output order is the workspace's:
 // module use order, then file path.
-package protocomp
+package compile
 
 import (
 	"bytes"
@@ -21,8 +21,8 @@ import (
 	"github.com/bufbuild/protocompile/wellknownimports"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	"github.com/greatliontech/pb/internal/modfiles"
-	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/proto/importcheck"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // AmbiguousError names every import path provided by more than one
@@ -62,19 +62,11 @@ type Result struct {
 // a missing import is reported exhaustively rather than as the
 // compiler's first failure.
 func Compile(ctx context.Context, mods []modfiles.Module) (*Result, error) {
-	check := make([]protoimport.Module, 0, len(mods))
-	for _, m := range mods {
-		files := map[string][]string{}
-		for _, p := range m.Protos() {
-			imports, err := protoimport.Imports(p, m.Files[p])
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", moduleLabel(m), err)
-			}
-			files[p] = imports
-		}
-		check = append(check, protoimport.Module{Path: m.Path, Files: files})
+	check, err := importcheck.Views(mods, func(m modfiles.Module, _ string) string { return moduleLabel(m) })
+	if err != nil {
+		return nil, err
 	}
-	if err := protoimport.Check(check); err != nil {
+	if err := importcheck.Check(check); err != nil {
 		return nil, err
 	}
 
@@ -119,7 +111,7 @@ func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {
 	providers := map[string][]string{}
 	for _, m := range mods {
 		for _, p := range m.Protos() {
-			if protoimport.WellKnown(p) {
+			if importcheck.WellKnown(p) {
 				continue
 			}
 			providers[p] = append(providers[p], moduleLabel(m))

@@ -12,13 +12,13 @@ import (
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/genfile"
 	"github.com/greatliontech/pb/internal/genrequest"
-	"github.com/greatliontech/pb/internal/modfiles"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/pluglocal"
 	"github.com/greatliontech/pb/internal/plugoci"
 	"github.com/greatliontech/pb/internal/plugrun"
-	"github.com/greatliontech/pb/internal/protocomp"
+	"github.com/greatliontech/pb/internal/proto/compile"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/rootpath"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
@@ -134,7 +134,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	compiled, err := protocomp.Compile(ctx, mods)
+	compiled, err := compile.Compile(ctx, mods)
 	if err != nil {
 		return err
 	}

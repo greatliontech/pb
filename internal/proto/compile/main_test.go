@@ -1,4 +1,4 @@
-package protoimport
+package compile
 
 import (
 	"testing"

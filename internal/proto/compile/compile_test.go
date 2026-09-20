@@ -1,4 +1,4 @@
-package protocomp
+package compile
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greatliontech/pb/internal/modfiles"
-	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/proto/importcheck"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"pgregory.net/rapid"
 )
 
@@ -127,14 +127,14 @@ func TestWellKnownSkipIsPerFile(t *testing.T) {
 	}
 }
 
-// An unsatisfied import is reported through protoimport's exhaustive
+// An unsatisfied import is reported through importcheck's exhaustive
 // report, before any compilation.
 func TestCompileUnsatisfiedImport(t *testing.T) {
 	mods := []modfiles.Module{
 		mod("example.com/a", "", true, map[string]string{"a.proto": "syntax = \"proto3\";\nimport \"missing.proto\";\nimport \"also/missing.proto\";\n"}),
 	}
 	_, err := Compile(ctx, mods)
-	var u *protoimport.UnsatisfiedError
+	var u *importcheck.UnsatisfiedError
 	if !errors.As(err, &u) || len(u.Unsatisfied) != 2 {
 		t.Fatalf("err = %v", err)
 	}

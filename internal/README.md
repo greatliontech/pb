@@ -15,7 +15,7 @@ while the tree does another.
 | module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `provenance/image`, `provenance/image/discover`, `provenance/image/evidence`, `provenance/trust` |
 | source | module-proxy.md, module-resolution.md (the path resolution half) | `source`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
-| proto | generation.md, the compile half | `modfiles`, `protocomp`, `protoimport` |
+| proto | generation.md (the compile half), module-resolution.md (the import satisfaction half) | `proto/modfiles`, `proto/compile`, `proto/importcheck` |
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `pluglocal`, `plugoci`, `plugrun`, `genfile`, `genrequest` |
 | driver | module-resolution.md | `resolve` |

@@ -1,4 +1,4 @@
-package protocomp
+package importcheck
 
 import (
 	"testing"

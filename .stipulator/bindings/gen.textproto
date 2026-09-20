@@ -76,9 +76,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/protocomp.Compile"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.Compile"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "b4006adf2871514cbe5009e6a296b13e8dfd79ed3dce595bab8b7a31056a1b3f"
+  shape_hash: "9b6121818f1435394e6bbd7bfa244b2d38129ee69379ac973c249268a27b8532"
 }
 
 bindings {
@@ -86,9 +86,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfiles.Load"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.Load"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "aa8b91a58fa5418e4a3119152124c638aad2fcc91f4c0e65bb84fce6769aa8c2"
+  shape_hash: "ec561a3877c3c0e67ebcedd9af87250eeacbf9cc4902bc9cbc69f31b5b254241"
 }
 
 bindings {
@@ -96,9 +96,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileResolvesAcrossModules"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileResolvesAcrossModules"
   role: BINDING_ROLE_TESTS
-  shape_hash: "88d045a662ac1158c122d3776042b987e35b4ccc33c9717238a383aa58fcc2ac"
+  shape_hash: "52bdd79cb42a74deebd2c5ce2aa4f30029d648760e88f0809e8e46649e602ae4"
 }
 
 bindings {
@@ -106,9 +106,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileAmbiguousProvider"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileAmbiguousProvider"
   role: BINDING_ROLE_TESTS
-  shape_hash: "ead7f7ef29a934d29cb2616a88df7bebf293cfdfc6b9b3b2b1a0c94cf7a3804a"
+  shape_hash: "21bca4027541e422f58d3b6eddcc80c8b1535f0af8bf3732d9dda7edf870230b"
 }
 
 bindings {
@@ -116,9 +116,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/protocomp.TestCompileOrderProperty"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileOrderProperty"
   role: BINDING_ROLE_TESTS
-  shape_hash: "42ae7aa3e6f4fe16ed5e7176042b3ef45bff6a65175ddd48828008210c3548b9"
+  shape_hash: "86ca7a541f8994f913743c5151ff7a6e15db087fb62a17cbe6be43beb3b05d9a"
 }
 
 bindings {
@@ -126,9 +126,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/protocomp.TestWellKnownNeverShadowed"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestWellKnownNeverShadowed"
   role: BINDING_ROLE_TESTS
-  shape_hash: "2281c5557cd9d35ad781b1fb333fbc84f5ac05e05b942ba5c48b55ea916cbed0"
+  shape_hash: "637f039443f6f028a1ebb006dee9cade8db4ed4fc1b5a63394d636c5fdb19248"
 }
 
 bindings {
@@ -136,9 +136,9 @@ bindings {
   content_hash: "82a4f5eb660e6be3237bbf543752894bb06fa62966ca500922aa16583def75ac"
   source_hash: "58178bab3c172ec0d849865693f71cdd31768c253832c4bf6517aeffb7a6f49d"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/modfiles.TestLoadOrderAndMembership"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
   role: BINDING_ROLE_TESTS
-  shape_hash: "5f09aaa25617bc4ec0450f8ab13bcfad09b525e2579b32fe4d8f6a796fb448d5"
+  shape_hash: "89ad4db4f2be0df3b31ee537d8afa33e87de72f4cbe84e9b63384987f800feb9"
 }
 
 bindings {

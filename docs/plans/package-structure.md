@@ -18,8 +18,9 @@ test beside it, chunk 1).
 - [x] 4. source: proxy, origin, direct, modfetch under internal/source
       as proxy, origin, direct, fetch, the HTTPS posture as the root
       package
-- [ ] 5. proto: modfiles, protocomp, protoimport under internal/proto
-      as files, compile, imports
+- [x] 5. proto: modfiles, protocomp, protoimport under internal/proto
+      as modfiles, compile, importcheck (files and imports being the
+      commonest locals in their importers)
 - [ ] 6. plugin: plugexec as the root vocabulary, pluglocal, plugoci,
       plugrun, genfile, genrequest under internal/plugin as local, oci,
       run, genfile, genrequest

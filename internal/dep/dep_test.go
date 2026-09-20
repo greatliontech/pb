@@ -13,7 +13,7 @@ import (
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
-	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
@@ -264,7 +264,7 @@ func TestTidyUnsatisfiedImportFails(t *testing.T) {
 	})
 	s := fx.session(t, ".")
 	err := Tidy(ctx, s)
-	var ue *protoimport.UnsatisfiedError
+	var ue *importcheck.UnsatisfiedError
 	if !errors.As(err, &ue) {
 		t.Fatalf("err = %v, want UnsatisfiedError", err)
 	}
@@ -1207,4 +1207,35 @@ func (u *stubUpdater) UpdatePlugin(_ context.Context, ref string) (lockfile.Plug
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 	}
 	return before, after, nil
+}
+
+// A file whose imports cannot be read fails tidy naming it by a path
+// the user can find — a workspace file by its place in the tree, an
+// external's by module, version and file — before any satisfaction
+// judgement.
+func TestTidyNamesAMalformedFile(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", ""),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"unterminated\n",
+	})
+	s := fx.session(t, ".")
+	err := Tidy(ctx, s)
+	if err == nil || !strings.HasPrefix(err.Error(), "a/x.proto: ") {
+		t.Fatalf("a malformed workspace file: %v", err)
+	}
+
+	fx = newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"m1.proto\";\n",
+	})
+	fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{
+		"pb.yaml":  ws("example.com/m1", ""),
+		"m1.proto": "syntax = \"proto3\";\nimport \"unterminated\n",
+	})
+	err = Tidy(ctx, fx.session(t, "."))
+	if err == nil || !strings.HasPrefix(err.Error(), "example.com/m1@v1.0.0: m1.proto: ") {
+		t.Fatalf("a malformed external file: %v", err)
+	}
 }

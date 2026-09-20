@@ -1,4 +1,4 @@
-// Package protoimport checks protobuf import satisfaction across a build
+// Package importcheck checks protobuf import satisfaction across a build
 // list (REQ-resolve-unsatisfied-imports): every import of every module's
 // files must be a well-known import — the toolchain's embedded
 // google/protobuf sources — or name a file some build-list module
@@ -12,7 +12,7 @@
 // (protocompile.WithStandardImports) was rejected because its content
 // follows the linked protobuf-go runtime version and drops the extension
 // declarations only source retains.
-package protoimport
+package importcheck
 
 import (
 	"bytes"
@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/wellknownimports"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // errNotEmbedded is the base resolver's constant answer, so the probe
@@ -82,6 +83,29 @@ func Imports(filename string, src []byte) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// Views projects a build's modules onto the checker's view: each
+// module's proto files with the imports each declares. A file whose
+// imports cannot be read fails with the label the caller gives it (a
+// path a user can find) wrapping the parse error; the files are read
+// in sorted order, so which of several malformed files is named is a
+// function of the file set alone. Compilation and tidy both check a
+// build this way; one projection keeps their views identical.
+func Views(mods []modfiles.Module, label func(m modfiles.Module, file string) string) ([]Module, error) {
+	views := make([]Module, 0, len(mods))
+	for _, m := range mods {
+		files := map[string][]string{}
+		for _, p := range m.Protos() {
+			imports, err := Imports(p, m.Files[p])
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", label(m, p), err)
+			}
+			files[p] = imports
+		}
+		views = append(views, Module{Path: m.Path, Files: files})
+	}
+	return views, nil
 }
 
 // Module is one build-list member's import-relevant view: its module

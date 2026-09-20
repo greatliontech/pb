@@ -8,8 +8,8 @@ import (
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/greatliontech/pb/internal/genfile"
-	"github.com/greatliontech/pb/internal/modfiles"
-	"github.com/greatliontech/pb/internal/protocomp"
+	"github.com/greatliontech/pb/internal/proto/compile"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -18,9 +18,9 @@ import (
 
 var ctx = context.Background()
 
-func compile(t testing.TB, mods []modfiles.Module) linker.Files {
+func compileMods(t testing.TB, mods []modfiles.Module) linker.Files {
 	t.Helper()
-	res, err := protocomp.Compile(ctx, mods)
+	res, err := compile.Compile(ctx, mods)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func mod(path, ver string, local bool, files map[string]string) modfiles.Module 
 // the dependency — the diamond makes deduplication observable in
 // proto_file), external m1 carrying custom FileOptions extensions.
 func fixture(t testing.TB) linker.Files {
-	return compile(t, []modfiles.Module{
+	return compileMods(t, []modfiles.Module{
 		mod("example.com/a", "", true, map[string]string{
 			"a/a.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/m1.proto\";\nimport \"google/protobuf/empty.proto\";\nmessage A { m1.M m = 1; google.protobuf.Empty e = 2; }\n",
 			"a/b.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/m1.proto\";\nmessage B { m1.M m = 1; }\n",

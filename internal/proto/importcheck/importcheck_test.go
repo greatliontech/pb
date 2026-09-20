@@ -1,4 +1,4 @@
-package protoimport
+package importcheck
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"pgregory.net/rapid"
 )
 
@@ -224,4 +225,41 @@ func TestCheckCompletenessProperty(t *testing.T) {
 			}
 		}
 	})
+}
+
+// Views projects a build's modules onto the checker's view: every
+// proto file with its imports, a malformed file failing with the
+// caller's label wrapping the parse error, in module order.
+func TestViewsProjectsEveryModule(t *testing.T) {
+	mods := []modfiles.Module{
+		{Path: "example.com/a", Files: map[string][]byte{"a/x.proto": []byte("syntax = \"proto3\";\nimport \"b/y.proto\";\n")}},
+		{Path: "example.com/b", Files: map[string][]byte{"b/y.proto": []byte("syntax = \"proto3\";\n")}},
+	}
+	views, err := Views(mods, func(m modfiles.Module, f string) string { return m.Path + "/" + f })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(views) != 2 || views[0].Path != "example.com/a" || views[1].Path != "example.com/b" {
+		t.Fatalf("views = %+v", views)
+	}
+	if got := views[0].Files; len(got) != 1 || len(got["a/x.proto"]) != 1 || got["a/x.proto"][0] != "b/y.proto" {
+		t.Fatalf("a's view = %+v", got)
+	}
+	if got := views[1].Files; len(got) != 1 || len(got["b/y.proto"]) != 0 {
+		t.Fatalf("b's view = %+v", got)
+	}
+	if err := Check(views); err != nil {
+		t.Fatalf("the projected views: %v", err)
+	}
+
+	// Two malformed files: the first in sorted order is the one named,
+	// whatever order the map yields them.
+	mods[1].Files["b/z.proto"] = []byte("syntax = \"proto3\";\nimport \"unterminated\n")
+	mods[1].Files["b/a.proto"] = []byte("syntax = \"proto3\";\nimport \"unterminated\n")
+	for range 8 {
+		_, err = Views(mods, func(m modfiles.Module, f string) string { return "label:" + m.Path + "/" + f })
+		if err == nil || !strings.HasPrefix(err.Error(), "label:example.com/b/b/a.proto: ") {
+			t.Fatalf("a malformed file: %v", err)
+		}
+	}
 }
