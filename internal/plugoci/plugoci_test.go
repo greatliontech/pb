@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,10 +22,9 @@ import (
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/imagesig"
 	"github.com/greatliontech/pb/internal/imagesig/evidence"
-	"github.com/greatliontech/pb/internal/imagesig/imagesigtest"
+	"github.com/greatliontech/pb/internal/testing/imagesigtest"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -124,7 +122,7 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
-	fixtures.serve(host, registry.New(registry.Logger(log.New(io.Discard, "", 0))))
+	fixtures.serve(host, imagesigtest.Handler(false))
 	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform(), v1.Platform{OS: "plan9", Architecture: "mips"})
 	return &fixture{host: host, digest: digest}

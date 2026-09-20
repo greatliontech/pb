@@ -11,12 +11,9 @@ import (
 	"testing/fstest"
 
 	"github.com/greatliontech/pb/internal/modfile"
-	"github.com/greatliontech/pb/internal/rapidtest"
 	"github.com/greatliontech/stipulator/stipulate/structural"
 	"pgregory.net/rapid"
 )
-
-func TestMain(m *testing.M) { rapidtest.Main(m) }
 
 func TestParse(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {

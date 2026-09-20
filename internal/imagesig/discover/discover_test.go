@@ -16,7 +16,7 @@ import (
 	"github.com/greatliontech/gitprov/sigstoretest"
 	"github.com/greatliontech/pb/internal/imagesig"
 	"github.com/greatliontech/pb/internal/imagesig/discover"
-	"github.com/greatliontech/pb/internal/imagesig/imagesigtest"
+	"github.com/greatliontech/pb/internal/testing/imagesigtest"
 )
 
 const (

@@ -9,10 +9,10 @@ import (
 	"testing/fstest"
 
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/modfetchtest"
-	"github.com/greatliontech/pb/internal/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/modfile"
 	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/workspace"
 	"pgregory.net/rapid"
 )

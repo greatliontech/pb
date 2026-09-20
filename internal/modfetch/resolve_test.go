@@ -11,11 +11,11 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/lockfile"
-	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/testing/gittest"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"pgregory.net/rapid"
 )
 

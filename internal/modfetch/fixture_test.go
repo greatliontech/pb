@@ -10,12 +10,12 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/greatliontech/pb/internal/lockfile"
-	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/origin"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"github.com/greatliontech/pb/internal/version"
 )
 
-// The shared client fixture lives in internal/modfetchtest; the local
+// The shared client fixture lives in internal/testing/modfetchtest; the local
 // wrapper assembles this package's Client over it, keeping the tests
 // reading naturally.
 type fixture struct {

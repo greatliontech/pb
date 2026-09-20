@@ -25,9 +25,9 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/greatliontech/pb/internal/archive"
 	"github.com/greatliontech/pb/internal/direct"
-	"github.com/greatliontech/pb/internal/gittest"
 	"github.com/greatliontech/pb/internal/origin"
 	"github.com/greatliontech/pb/internal/proxy"
+	"github.com/greatliontech/pb/internal/testing/gittest"
 )
 
 // ProxyHost and AltHost are the fixture's in-process proxy hosts: the

@@ -11,7 +11,7 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/modfetchtest"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 )
 
 // Client assembles the client under test over the fixture's transport,

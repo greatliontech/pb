@@ -13,9 +13,9 @@ import (
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/modfetch"
-	"github.com/greatliontech/pb/internal/modfetchtest"
-	"github.com/greatliontech/pb/internal/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/protoimport"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest/assemble"
 	"github.com/greatliontech/pb/internal/trust"
 	"github.com/greatliontech/pb/internal/version"
 )

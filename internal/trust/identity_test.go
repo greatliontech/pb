@@ -6,10 +6,7 @@ import (
 	"testing"
 
 	"github.com/greatliontech/glob"
-	"github.com/greatliontech/pb/internal/rapidtest"
 )
-
-func TestMain(m *testing.M) { rapidtest.Main(m) }
 
 func TestExplicitIdentity(t *testing.T) {
 	t.Run("happy: san glob passes through verbatim, issuer exact", func(t *testing.T) {

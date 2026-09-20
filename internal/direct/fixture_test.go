@@ -4,7 +4,7 @@ import (
 	"context"
 
 	git "github.com/go-git/go-git/v6"
-	"github.com/greatliontech/pb/internal/gittest"
+	"github.com/greatliontech/pb/internal/testing/gittest"
 )
 
 type failer = gittest.Failer

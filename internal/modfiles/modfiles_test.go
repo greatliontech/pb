@@ -9,8 +9,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/greatliontech/pb/internal/modfetchtest"
 	"github.com/greatliontech/pb/internal/mvs"
+	"github.com/greatliontech/pb/internal/testing/modfetchtest"
 	"github.com/greatliontech/pb/internal/version"
 	"github.com/greatliontech/pb/internal/workspace"
 )

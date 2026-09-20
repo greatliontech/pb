@@ -1,6 +1,7 @@
 # Runner mutation evidence is machine-local
 
-Lands: mutation-evidence plan chunk 2
+Lands: gomutant's observation bracket admits a runner's kernel inputs:
+a SandboxRunner.Run mutant classified other than unstable-oracle
 
 plugrun's runner suite executes a real sandbox per test — fresh
 namespaces, a pivoted read-only root, cgroup or rlimit bounds — so its

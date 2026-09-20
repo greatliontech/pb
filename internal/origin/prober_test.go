@@ -8,12 +8,12 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-git/v6/plumbing/client"
 	"github.com/go-git/go-git/v6/plumbing/transport"
-	"github.com/greatliontech/pb/internal/gittest"
+	"github.com/greatliontech/pb/internal/testing/gittest"
 )
 
 // The go-git wiring lists a real repository's references, hermetically:
 // the fixture is a plumbing-built bare repository in an in-memory
-// filesystem (see internal/gittest), listed over file:// through a
+// filesystem (see internal/testing/gittest), listed over file:// through a
 // loader rooted at that same filesystem.
 func TestGitProberListsFixtureRepo(t *testing.T) {
 	g := gittest.New(t)

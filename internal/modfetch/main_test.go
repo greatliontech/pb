@@ -3,9 +3,7 @@ package modfetch
 import (
 	"testing"
 
-	"github.com/greatliontech/pb/internal/rapidtest"
+	"github.com/greatliontech/pb/internal/testing/rapidtest"
 )
 
-func TestMain(m *testing.M) {
-	rapidtest.Main(m)
-}
+func TestMain(m *testing.M) { rapidtest.Main(m) }

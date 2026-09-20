@@ -1,4 +1,4 @@
-package resolve
+package archive
 
 import (
 	"testing"

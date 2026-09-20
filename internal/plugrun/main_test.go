@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greatliontech/pb/internal/testing/rapidtest"
 	"github.com/greatliontech/pb/internal/trust"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -18,9 +19,9 @@ var (
 )
 
 // TestMain builds the fake plugin once into a bare rootfs every runner
-// consumes, hands the platform's sandbox probe the run, and — under
-// the fake-daemon marker — is the docker command the contract tests
-// put on PATH.
+// consumes, pins the property oracles' seed (rapidtest), hands the
+// platform's sandbox probe the run, and — under the fake-daemon
+// marker — is the docker command the contract tests put on PATH.
 func TestMain(m *testing.M) {
 	if os.Getenv(fakeDockerEnv) != "" {
 		os.Exit(fakeDocker(os.Args[1:]))
@@ -37,6 +38,7 @@ func TestMain(m *testing.M) {
 	} else {
 		rootfsDir = dir
 	}
+	rapidtest.Pin()
 	code := setupSandbox(m)
 	os.RemoveAll(dir)
 	os.Exit(code)

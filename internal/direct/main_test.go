@@ -1,4 +1,4 @@
-package resolve
+package direct
 
 import (
 	"testing"

@@ -64,8 +64,23 @@ jobs:
       - run: GOOS=darwin go vet ./...
       # The runner suite runs once, below, with its live arms demanded;
       # running it here too would only double its exposure to the
-      # daemon's own losses.
-      - run: go test $(go list ./... | grep -v /internal/plugrun) -count=1 -timeout=30m
+      # daemon's own losses. The two unit legs share the one list.
+      - run: echo "UNIT_PACKAGES=$(go list ./... | grep -v /internal/plugrun | tr '\n' ' ')" >> "$GITHUB_ENV"
+      - run: go test -race $UNIT_PACKAGES -count=1 -timeout=30m
+      # The suites pin rapid's seed for oracle determinism, which fixes
+      # every property test to one trajectory. This leg restores the
+      # accumulating-coverage role: a per-run seed (the run id, so any
+      # failure is replayable and a re-run walks the same examples)
+      # explores fresh examples with every new run. The seed and the
+      # check count travel as rapid's environment defaults, which only
+      # a binary linking rapid reads, so a package without property
+      # tests is not handed a flag it does not define. The runner
+      # suite's properties vary the same way in its live leg below.
+      - name: Property tests, varying seed
+        run: go test $UNIT_PACKAGES -count=1 -timeout=30m
+        env:
+          RAPID_SEED: ${{ github.run_id }}
+          RAPID_CHECKS: "500"
       # The runner suite's live arms — the Strong row, the cgroups bound
       # accounting the sandbox places a run under only inside a delegated
       # cgroup subtree, and the docker runner against the daemon the
@@ -73,7 +88,7 @@ jobs:
       # the row or delegate, or whose daemon does not answer, fails this
       # leg instead of letting the arms skip.
       - name: Live runner arms under a delegated scope, against the daemon
-        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 go test ./internal/plugrun/ -count=1 -timeout=30m
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 RAPID_SEED=${{ github.run_id }} go test ./internal/plugrun/ -count=1 -timeout=30m
       # The spec corpus against the tree: every requirement's witnesses
       # executed, the live ones included — the runner suite's bound
       # witnesses run a second time here, the whole suite having run
