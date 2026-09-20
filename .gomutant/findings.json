@@ -26,6 +26,7 @@
     "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9wcm94eS90ZXN0ZGF0YS9yYXBpZC9UZXN0Q2hlY2tQYXR0ZXJuQ29uc3RydWN0ZWRWYWxpZGl0eVByb3BlcnR5IiwiZCI6ImM2NjI5ZGY2NWFkYmZkMGE0MjRhZTMxNWM5ZTM3MGExIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL3Byb3h5L3Rlc3RkYXRhL3JhcGlkL1Rlc3RDaGVja1BhdHRlcm5Tb3VuZG5lc3NQcm9wZXJ0eSIsImQiOiIwYzZiY2ZmZTkyZWRhZmFiNzFjZWE0ZmU3OWZiMWQ1NCJ9LHsiayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC9wcm94eS90ZXN0ZGF0YS9yYXBpZC9UZXN0RXNjYXBlUHJvcGVydHkiLCJkIjoiYzQzZTcyYzZkNmUxMjc4Y2QwMjVkZjExNjNjMzliYTMifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvcHJveHkvdGVzdGRhdGEvcmFwaWQvVGVzdEZhbGx0aHJvdWdoQ29uc3VsdGF0aW9uUHJlZml4UHJvcGVydHkiLCJkIjoiMDliNDZjZTc1MTc1MjBkOWQ2NDQ1N2M3YzUwMmYzZTQifV19",
     "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XSwicGF0aHMiOlt7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvcmVzb2x2ZS90ZXN0ZGF0YS9yYXBpZC9UZXN0R3JhcGhEZXRlcm1pbmlzdGljQWNyb3NzQ2FsbHMiLCJkIjoiY2Y1NTI2OTZmOTBhM2I5NTdlZjEyM2IyNzk0Mjc0NWQifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvcmVzb2x2ZS90ZXN0ZGF0YS9yYXBpZC9UZXN0U2VsZWN0aW9uSW5kZXBlbmRlbnRPZkxpc3RQcm9wZXJ0eSIsImQiOiI3YjYzMjdhZmQ4NGRlYmNjYjM5YjY0MDc5MWE5NjI5OCJ9XX0",
     "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9XX0",
+    "eyJ2IjoxLCJlbnYiOlt7Im4iOiJHT19HSVRfVVNFUl9BR0VOVF9FWFRSQSIsImQiOiJkM2RiOTFkNzI3ZjBkNmI3MTIyZDk3NmZhNjliODNiNSJ9LHsibiI6IlBBVEgiLCJkIjoiMzdkN2M1NTAzNTliOWE3ZjJiOGVkYTdjMzQ5NjYxN2IifV0sInBhdGhzIjpbeyJrIjoicmVsIiwicCI6ImludGVybmFsL21vZGZldGNoL3Rlc3RkYXRhL3JhcGlkL1Rlc3RDYWNoZVRyYW5zcGFyZW5jeVByb3BlcnR5IiwiZCI6Ijc4MTVhMTYwNzhkYzMyMDA3YmNiYmRlNzIyYTA3MjZkIiwibSI6dHJ1ZX0seyJrIjoicmVsIiwicCI6ImludGVybmFsL21vZGZldGNoL3Rlc3RkYXRhL3JhcGlkL1Rlc3RQaW5uZWRBcmNoaXZlVGFtcGVyUmVqZWN0ZWRQcm9wZXJ0eSIsImQiOiI3YmFiOGRiZDhhNDdlNTk2NjE4MGM2MWNjZDAxZDgyZCIsIm0iOnRydWV9LHsiayI6InJlbCIsInAiOiJpbnRlcm5hbC9wcm92ZW5hbmNlIiwiZCI6Ijk2NGNkOWI3NjU1MDcyODBmYTM1ZTEwMDQyOTNlMGQxIiwibSI6dHJ1ZX0seyJrIjoicmVsIiwicCI6ImludGVybmFsL3Byb3ZlbmFuY2UvdGVzdGRhdGEvcmFwaWQvVGVzdFBhcnNlRW52ZWxvcGVSb3VuZFRyaXBzQ2Fub25pY2FsV2lyZSIsImQiOiI1YjcyMTBkMGNjYTk2MjY4NmUwMjI4MGE5M2QzODk1OCIsIm0iOnRydWV9LHsiayI6InJlbCIsInAiOiJpbnRlcm5hbC9wcm92ZW5hbmNlL3Rlc3RkYXRhL3JhcGlkL1Rlc3RWZXJpZnlCaW5kaW5nRmFpbHNDbG9zZWRVbmRlckNvcnJ1cHRpb24iLCJkIjoiYzJmMjBhYmJmODdiNzk4ZTY1NDhiN2FkNTJjMDgyODciLCJtIjp0cnVlfV19",
     "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC90cnVzdC90ZXN0ZGF0YS9yYXBpZC9UZXN0RXZhbHVhdGVBbHdheXNQaWNrc1RoZUxvbmdlc3RNYXRjaCIsImQiOiJhZTA1MjI1MzM3NDNkOTVhZGMzY2Y3MDdlMDVjNjc4NiJ9XX0",
     "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC92ZXJzaW9uL3Rlc3RkYXRhL2Z1enovRnV6elBhcnNlIiwiZCI6IjcyNDkzNmRkZDc5NWQzNTJlNjJkY2VmYjVlYTQ3OTY2In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL3ZlcnNpb24vdGVzdGRhdGEvcmFwaWQvVGVzdENvbXBhcmVUb3RhbE9yZGVyUHJvcGVydHkiLCJkIjoiZWY5MTE4OGQyOTMzZTU4ZDYzM2I1MDk0N2M3ZmJjNmQifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvdmVyc2lvbi90ZXN0ZGF0YS9yYXBpZC9UZXN0R3JhbW1hckFncmVlc1dpdGhDYW5vbmljYWxTZW12ZXIiLCJkIjoiOWY2YWIyZTA1MTIzMTYwZjk4YzkxYmI0MDIyOWU2MmQifSx7ImsiOiJhYnMiLCJwIjoiL2hvbWUvbmlrb2xhcy9yZXBvcy9naXRodWIuY29tL2dyZWF0bGlvbnRlY2gvcGIvaW50ZXJuYWwvdmVyc2lvbi90ZXN0ZGF0YS9yYXBpZC9UZXN0T3JkZXJpbmdBZ3JlZXNXaXRoU2VtdmVyIiwiZCI6ImQ2Yzg0YTBhYzU1YzMzMGMwOTA1ZDMxNTQzNzY5NzE4In0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL3ZlcnNpb24vdGVzdGRhdGEvcmFwaWQvVGVzdFBzZXVkb1JvdW5kVHJpcFByb3BlcnR5IiwiZCI6IjI5MjI1ODNiNmJhZjNjNjgwN2Q3ZDJkZWEwNzQwNzJlIn0seyJrIjoiYWJzIiwicCI6Ii9ob21lL25pa29sYXMvcmVwb3MvZ2l0aHViLmNvbS9ncmVhdGxpb250ZWNoL3BiL2ludGVybmFsL3ZlcnNpb24vdGVzdGRhdGEvcmFwaWQvVGVzdFNvcnREZXRlcm1pbmlzbVByb3BlcnR5IiwiZCI6IjA2N2Y5ZjIwYmFiYmYyNGZkMGVmZjZmZGQwYzVlZmJhIn1dfQ",
     "eyJ2IjoxLCJwYXRocyI6W3siayI6ImFicyIsInAiOiIvaG9tZS9uaWtvbGFzL3JlcG9zL2dpdGh1Yi5jb20vZ3JlYXRsaW9udGVjaC9wYi9pbnRlcm5hbC93b3Jrc3BhY2UvdGVzdGRhdGEvcmFwaWQvVGVzdFdvcmtzcGFjZUxvY2Fsc05ldmVyRW50ZXJFeHRlcm5hbFNlbGVjdGlvbiIsImQiOiI0NjQzNzdmNmQ4ZDdkNzRhY2M5ZGM0ODZhYjQyMGVmYiJ9XX0"
@@ -20077,6 +20078,1392 @@
     },
     {
       "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/testing/provtest.Signer.SignedTag",
+        "maximalClosure": "537d1a43ce49611001ddf5da09c4c5b6",
+        "testVariantClosure": "e3b0c44298fc1c149afbf4c8996fb924",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/testing/provtest",
+        "observationSubjectSymbol": "Signer.SignedTag",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "ea641464059161acd66684170764706a",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestAcceptedEvidenceRecorded",
+        "maximalClosure": "1ea5c94a087b497c6764dd05ea6c4ab6",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestAcceptedEvidenceRecorded",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "6ec77e07f0a8f27d9f6a4d3284fd8ed3",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestCacheLayoutGolden",
+        "maximalClosure": "ad10c744cf0c940e01062bfbcf16aee4",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestCacheLayoutGolden",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "fa2c67279132c7878a330d1bbea38aaf",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestCachePutGet",
+        "maximalClosure": "8636764be222411a79bc7cfcdd93c399",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestCachePutGet",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "c5da6f24a6a055cd4a9bb3572aa60896",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestCacheStorageFaultsSurface",
+        "maximalClosure": "3f46841e2c6ac51a1b389087b2be8375",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestCacheStorageFaultsSurface",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "b50d9afcd0a22a5be61cd1f660890179",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestCacheTransparencyProperty",
+        "maximalClosure": "5c5b70b308613c98421c6bbd52b1dc7e",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestCacheTransparencyProperty",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "1ecf2a4884c3bf29a817e67564d1191c",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDefaultIdentityAcceptsOriginWorkflow",
+        "maximalClosure": "0dd581ade16c2afc02ede6de514b5e9a",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDefaultIdentityAcceptsOriginWorkflow",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d39e9d87cc60be8ddc5e67ee5f2b8bdf",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDefaultIdentityUnknownForge",
+        "maximalClosure": "7fb97e06b5bbaf27407903892bb77622",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDefaultIdentityUnknownForge",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "edbc73d1ee0e864539a920b68b82040b",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDirectDeclaredPinWithModfileAbsentAtOrigin",
+        "maximalClosure": "ec54ce3265f277bc63c1b6828ef91d6d",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDirectDeclaredPinWithModfileAbsentAtOrigin",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "a8e114c5261b94fb4aa9e278094989f3",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDirectPinnedSubtreeMissingModuleRoot",
+        "maximalClosure": "eb24285fdd613774c2423138733874ea",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDirectPinnedSubtreeMissingModuleRoot",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "950d950554fc176058a2278ec3be5504",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDirectSourceDownload",
+        "maximalClosure": "39366b2552acaf83a4213fa4463dcca1",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDirectSourceDownload",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "279e1d1982963959a3cd76c72611c60f",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDirectSourceFailureArms",
+        "maximalClosure": "21f83c4dd063f30ab62af11bd8026d6d",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDirectSourceFailureArms",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "dd869a83719da20b6e51e1ec766dc803",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDirectSourceServesArtifacts",
+        "maximalClosure": "495747eacc2a549b3cc2e770fa59c3ba",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDirectSourceServesArtifacts",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "33363c4a7216040709df9e46e12bc1c0",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadArms",
+        "maximalClosure": "88ec386187b551cf80cc1ba59efb4271",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadArms",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "05d4d8793cfaf27af1f4792762c8d254",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadConvictsBogusModfilePin",
+        "maximalClosure": "8d728dd41f564fe58e536e0af1466d7b",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadConvictsBogusModfilePin",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "0191e8c10ec29a8341054dd8e976e1fb",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadEntryFaultsAndClasses",
+        "maximalClosure": "fd2e9b0fe055e712ab108aab9e45dbd7",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadEntryFaultsAndClasses",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d4f01a10bb4c3def471d2f43781ea030",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadHealsCorruptCachedInfo",
+        "maximalClosure": "96be4cf719a0beeba874228048a3f09c",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadHealsCorruptCachedInfo",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "7be69a704a48147de6a98e5f4759808f",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadMaterializesArtifacts",
+        "maximalClosure": "46ea6f0ecf569e976d472fd528941920",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadMaterializesArtifacts",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "4f9b8aa0e816cb79f3fa19d312066b0f",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadModfileInconsistencyFails",
+        "maximalClosure": "864d693bda73d8e706f4f1436e652099",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadModfileInconsistencyFails",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "1b9da71e60de18e8394c4269bafcfdf8",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadModfileTransportFailureAborts",
+        "maximalClosure": "293ee712a055610dfb2a6b34847d05f2",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadModfileTransportFailureAborts",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "a5e7d6fc54ab983faa64c23b25574449",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadProvFailureClasses",
+        "maximalClosure": "2b9ea5dd6fcbc589128c64acbec6297a",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadProvFailureClasses",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "b4f7c0064ed5b02784d323aa2f63d7ad",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadRejectsMisaddressedInfo",
+        "maximalClosure": "710fe2883ef016f4a42abd560311f06b",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadRejectsMisaddressedInfo",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "f6cbc6147aca05286544b9c74f501c9e",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadRepairsPoisonedModEntry",
+        "maximalClosure": "e3146242a72efd1662d561dc2d378501",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadRepairsPoisonedModEntry",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "b85680e3d47f207a52b5f1de0aa1fd38",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadReverifiesEvidence",
+        "maximalClosure": "b6dc64a90343f9743b4194101d09bcde",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadReverifiesEvidence",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "2462b1b5e8d577af3e0c3ec1149d3dac",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestDownloadVanishedEvidenceFailsClosed",
+        "maximalClosure": "3f30f58800ceed2d066ccb969f9e23b7",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestDownloadVanishedEvidenceFailsClosed",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "c94c17f892fb1c7d1aa1ab5c17404eaa",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestEvidenceWithUnresolvableOriginFails",
+        "maximalClosure": "f48b5cb80888937be7831b84c657130f",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestEvidenceWithUnresolvableOriginFails",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "379940de67ef0256d1414a19c9e8df79",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIdentityMismatchLeavesNoState",
+        "maximalClosure": "bb64a064db241cffa2cc550be5c6817a",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestFirstUseIdentityMismatchLeavesNoState",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "25ec7d1ecca26110f99c8aa15ebf7b8f",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestFirstUseIgnoresCache",
+        "maximalClosure": "d7dec7cb6f9b80601aa65e8d7ac70288",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestFirstUseIgnoresCache",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "a6f87acd79c8b50e125b7893c453c4b3",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestFirstUseRecordsCompletePin",
+        "maximalClosure": "f3b3a878f6317d5b3f3f4f6c2340de83",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestFirstUseRecordsCompletePin",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "f06fa5d7676e166564d95b1d000b493e",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestFirstUseSynthesizesModule",
+        "maximalClosure": "3f8e99d78bc5ba722e5234586ba9ac7a",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestFirstUseSynthesizesModule",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "2fef87d2307287a082129f082cfd2cce",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestFirstUseUnparsableArchiveFails",
+        "maximalClosure": "5934c191fc97ce56095aa515b759a8d3",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestFirstUseUnparsableArchiveFails",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "0c23e60da31efa4aa9aa8a46c7b817c6",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestHandCraftedPinCorners",
+        "maximalClosure": "da206726285667dd49da540fc71f14fc",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestHandCraftedPinCorners",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "2668068426e35cba4c6ada10f391e6ee",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestMisboundEvidenceRejectedEvenWhenUnrequired",
+        "maximalClosure": "3d5efe13c3c159702b3c6a4fd0f4e952",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestMisboundEvidenceRejectedEvenWhenUnrequired",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "dfff156020043973a39982b433cb37be",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestNilOriginResolverGuard",
+        "maximalClosure": "0c9b0ef969eec22d2a74db658e00d4e8",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestNilOriginResolverGuard",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "e25750dc6768c3662ab871b56fd307c8",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestNoTransparencyTreatedAsAbsent",
+        "maximalClosure": "2a3b743524ed9b1a7188bfb755e11243",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestNoTransparencyTreatedAsAbsent",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "36f71eeb346ab992dbf0689d34bce57c",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestOriginResolutionMemoized",
+        "maximalClosure": "f1804b0e6c01e5c924479c2242a16183",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestOriginResolutionMemoized",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "755eb0bbb182acc7d96a11513be61523",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedArchiveTamperRejectedProperty",
+        "maximalClosure": "7f6710d590e11b3c95be6652fa7f3c2b",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedArchiveTamperRejectedProperty",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "2f2515f79b117e0544f4b7389ccb11e8",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedFetchFailureClasses",
+        "maximalClosure": "1e77f9d37a781bb83c1c40d980263ef3",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedFetchFailureClasses",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "5965cd206dab5c88e68e77002b935322",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedModfileFallsBackToArchive",
+        "maximalClosure": "89a07a663e7f5d6328068358efce465e",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedModfileFallsBackToArchive",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "45bb829d446d3d033ccbe7edde054f0d",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedModfileMismatchFailsClosed",
+        "maximalClosure": "2692641628f8bb7db9ed0185658eeaf6",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedModfileMismatchFailsClosed",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "588379e0ee3ca19b3094ee461d8520e4",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedPairVerifiesAcrossSources",
+        "maximalClosure": "72b2a4a83512c02c9bee508aeef65b69",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedPairVerifiesAcrossSources",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "616ffdb847c5532ce3f5bd368df61e42",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestPinnedSynthesizedRejectsArchiveWithModfile",
+        "maximalClosure": "6fabb6cad6021db0071bcb1bea874bca",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestPinnedSynthesizedRejectsArchiveWithModfile",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "9d1f3cf36812ac2d7a4cbbe8151bae82",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestProvenanceEvaluationErrorArms",
+        "maximalClosure": "8428eadb19804913cadab899c74996ea",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestProvenanceEvaluationErrorArms",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "9f3eb84398bddd3c49ddb8cb5ad39fe6",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestRepoFetchIsSnapshotConsistent",
+        "maximalClosure": "e9785aa98db189a66cb9e9270c3c5c1f",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestRepoFetchIsSnapshotConsistent",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d0bba1479bead4ba458496f798ab1a83",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestRequireProvenanceNoEvidenceFails",
+        "maximalClosure": "cc83a4fc4d87ec58c53963b72bb04f00",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestRequireProvenanceNoEvidenceFails",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "60b948ff0fc185c466f8f8e46a59b081",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestReverifyRequiresExactRecord",
+        "maximalClosure": "d195efa6ca228ee62fdfb1f1ab95b7ad",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestReverifyRequiresExactRecord",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "ba92d656343941ee0873dd18b636ae32",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestReverifySkipsNonReproducingEvidence",
+        "maximalClosure": "89cf429499b5a5b5c67cfdd20ad0fd10",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestReverifySkipsNonReproducingEvidence",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "4c598af6a14e04a8eef97e96901e0d89",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestSecondDownloadReusesCachedEnvelope",
+        "maximalClosure": "37ffb03e9bc987bc07fb84f21ce1daae",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestSecondDownloadReusesCachedEnvelope",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "33f66a5450b915c99dab4097d79af9d5",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestSelectiveCacheFaults",
+        "maximalClosure": "09d3026da40276ba46f4a6f92bfecf08",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestSelectiveCacheFaults",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "deb6888313b910d4905b214121679ba0",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestSourceFallthrough",
+        "maximalClosure": "959baa9e2cd7050f52dddb5d46c39c1f",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestSourceFallthrough",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "50d68046ddfb766d2f6ffe92769c6178",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestTwoOriginSnapshotsIndependent",
+        "maximalClosure": "86d84df6f0c45a41264bf7c45019a571",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestTwoOriginSnapshotsIndependent",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d4158904cff071484338573215cc6688",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestUnacceptedIdentityClassifiedAsUnsigned",
+        "maximalClosure": "4813414b9ed8e99cf844e2a37cb9eb4c",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestUnacceptedIdentityClassifiedAsUnsigned",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "38e2e8bef7da621ccd94818c0a68e692",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestUnknownArtifactKindRejected",
+        "maximalClosure": "2398e95030c8467f5c4bde7c8f27e3d0",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestUnknownArtifactKindRejected",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "aa3151e91c61f31d123447c7d74a5a5c",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestVersionsFailureArms",
+        "maximalClosure": "e879bc9911cb4656df5dd47ae7035b03",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestVersionsFailureArms",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "9ddee347b1b180f8bc2143632ba84e0b",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestVersionsFromOrigin",
+        "maximalClosure": "3772577112a47e67ff56940c10b34f63",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestVersionsFromOrigin",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "158172ffa2b571e42fb2c6d0fecc360a",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestVersionsFromProxy",
+        "maximalClosure": "caeea4f686dcc5d5cebab063a1f48963",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestVersionsFromProxy",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "a537abdef79e306e91e2c7077328aecd",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestVersionsSeamFailures",
+        "maximalClosure": "add833fd065571e3fefad992e6393b6e",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestVersionsSeamFailures",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "c1e427dd616d161f4d07d3fc0afb696c",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/modfetch.TestVersionsSubtreeDeletedAtHeadListsRepoTags",
+        "maximalClosure": "cee985adf5eb6a33ebf037ccc89a9788",
+        "testVariantClosure": "0feae72b92716c919b88358cd71b1c28",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/modfetch",
+        "observationSubjectSymbol": "TestVersionsSubtreeDeletedAtHeadListsRepoTags",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "947c835ae77f2d35a2d754d4a0c9be6c",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestDecodeCanonicalB64",
+        "maximalClosure": "bc5a1698227ff63799d4431e4778d564",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestDecodeCanonicalB64",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "8bce5dd7d744450978c1ec9dd397ac1a",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestParseEnvelope",
+        "maximalClosure": "1664cb99f3a2bf5998fd15fdcc2f4ef2",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestParseEnvelope",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d64f18148d7ff234d37882b6bdc800ed",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestParseEnvelopeRoundTripsCanonicalWire",
+        "maximalClosure": "46577e1b22a7f02456e450a1fede2bf5",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestParseEnvelopeRoundTripsCanonicalWire",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "d538fae641e8ace5f2028ee096a077c6",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestParseTagHeader",
+        "maximalClosure": "efa1eb47e3dc9d7eceb54467daf21e3e",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestParseTagHeader",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "9db601bb9dd191eb617314fed680dffd",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestProvenanceImportsCarryNoNetworkCapability",
+        "maximalClosure": "929d3dc6dba3aea4fa5449d93a2740b4",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestProvenanceImportsCarryNoNetworkCapability",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "e568c2ae5961f91025d545c5d2805b86",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestRecord",
+        "maximalClosure": "659deb1d0e256f1174b7e8e470bd31d9",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestRecord",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "ff8e33774ad5dd2785611fa9f3114e6e",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestVerify",
+        "maximalClosure": "7f6bef8ef7dd81e9c27728516466a681",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestVerify",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "0771d9c24df0a82a7f8ca08f378b4ec2",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
+        "symbol": "github.com/greatliontech/pb/internal/provenance.TestVerifyBindingFailsClosedUnderCorruption",
+        "maximalClosure": "f3a883ae09d4425ab8a0113b922dd163",
+        "testVariantClosure": "2ab57c9c97ed7538c6ab83dab19e42af",
+        "toolchain": "go1.27.0-X:nodwarf5 linux/amd64",
+        "buildConfig": "9cdc5563dd46587b4b3c9b27c1623e40",
+        "observationAssertion": "caller assertion",
+        "observationStrategy": "gofresh/observation-rta@40",
+        "observationSubjectPackage": "github.com/greatliontech/pb/internal/provenance",
+        "observationSubjectSymbol": "TestVerifyBindingFailsClosedUnderCorruption",
+        "observationObservable": false,
+        "observationReason": "startup effect: reaches crypto/rand.Int (entropy) (dischargeable by restructuring the subject away from the reach, or by the //gofresh:pure directive on the subject's declaration or the caller's purity assertion)",
+        "observationEvidence": "dcab2cfc3cd7baa094dcf31800518321",
+        "dynamicStateStrategy": "gofresh/dynamic-state@38",
+        "closureStrategy": "gofresh/closure@1 gofresh/canonical-member@2 gofresh/variant-parse@1",
+        "runtimeInputs": "",
+        "runtimeDigest": "9b86d0670fde5678df1ac0973c7f2173"
+      },
+      "runtimeInputs": 25
+    },
+    {
+      "evidence": {
         "symbol": "github.com/greatliontech/pb/internal/trust.DefaultIdentity",
         "maximalClosure": "39f40a34d1c6da53e04db42968036397",
         "testVariantClosure": "08d9dd1dac19279bde9dee972808dba0",
@@ -20092,7 +21479,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20111,7 +21498,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20130,7 +21517,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20149,7 +21536,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20168,7 +21555,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20187,7 +21574,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20206,7 +21593,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20225,7 +21612,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20244,7 +21631,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20263,7 +21650,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20282,7 +21669,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20301,7 +21688,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20320,7 +21707,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20339,7 +21726,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20358,7 +21745,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20377,7 +21764,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20396,7 +21783,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20415,7 +21802,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20434,7 +21821,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20453,7 +21840,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20472,7 +21859,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20491,7 +21878,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20510,7 +21897,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20529,7 +21916,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20548,7 +21935,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20567,7 +21954,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20586,7 +21973,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20605,7 +21992,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20624,7 +22011,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20643,7 +22030,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20662,7 +22049,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20681,7 +22068,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20700,7 +22087,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20719,7 +22106,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20738,7 +22125,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20757,7 +22144,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20776,7 +22163,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20795,7 +22182,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20814,7 +22201,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20833,7 +22220,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20852,7 +22239,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20871,7 +22258,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20890,7 +22277,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20909,7 +22296,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20928,7 +22315,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "05eca4865fd96b1abb49fbbced570600"
       },
-      "runtimeInputs": 25
+      "runtimeInputs": 26
     },
     {
       "evidence": {
@@ -20947,7 +22334,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -20966,7 +22353,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -20985,7 +22372,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21004,7 +22391,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21023,7 +22410,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21042,7 +22429,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21061,7 +22448,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21080,7 +22467,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21099,7 +22486,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21118,7 +22505,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21137,7 +22524,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21156,7 +22543,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21175,7 +22562,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21194,7 +22581,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21213,7 +22600,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21232,7 +22619,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21251,7 +22638,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21270,7 +22657,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21289,7 +22676,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21308,7 +22695,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21327,7 +22714,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21346,7 +22733,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21365,7 +22752,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21384,7 +22771,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21403,7 +22790,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21422,7 +22809,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21441,7 +22828,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21460,7 +22847,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21479,7 +22866,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21498,7 +22885,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21517,7 +22904,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21536,7 +22923,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21555,7 +22942,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21574,7 +22961,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21593,7 +22980,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21612,7 +22999,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21631,7 +23018,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21650,7 +23037,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21669,7 +23056,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21688,7 +23075,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21707,7 +23094,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21726,7 +23113,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21745,7 +23132,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21764,7 +23151,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21783,7 +23170,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "7da14a126621851dd296571f27dccedb"
       },
-      "runtimeInputs": 26
+      "runtimeInputs": 27
     },
     {
       "evidence": {
@@ -21802,7 +23189,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21821,7 +23208,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21840,7 +23227,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21859,7 +23246,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21878,7 +23265,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21897,7 +23284,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21916,7 +23303,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21935,7 +23322,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21954,7 +23341,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21973,7 +23360,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -21992,7 +23379,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22011,7 +23398,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22030,7 +23417,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22049,7 +23436,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22068,7 +23455,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22087,7 +23474,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22106,7 +23493,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22125,7 +23512,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22144,7 +23531,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22163,7 +23550,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22182,7 +23569,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22201,7 +23588,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22220,7 +23607,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -22239,7 +23626,7 @@
         "runtimeInputs": "",
         "runtimeDigest": "a017f0c615309ae6281d10c2629d84c6"
       },
-      "runtimeInputs": 27
+      "runtimeInputs": 28
     },
     {
       "evidence": {
@@ -30809,6 +32196,7 @@
         }
       ]
     },
+    {},
     {
       "declarations": [
         {
@@ -106342,6 +107730,152 @@
     },
     {
       "finding": {
+        "symbol": "github.com/greatliontech/pb/internal/testing/provtest.Signer.SignedTag",
+        "bodyHash": "0f100329044b1e7463957dab0d78de7b5531a703f22341f0941bd1c71d26477e",
+        "operatorSet": "go/12",
+        "budget": 0,
+        "targetEvidence": {
+          "symbol": "",
+          "maximalClosure": "",
+          "testVariantClosure": "",
+          "toolchain": "",
+          "buildConfig": "",
+          "observationAssertion": "",
+          "observationStrategy": "",
+          "observationSubjectPackage": "",
+          "observationSubjectSymbol": "",
+          "observationObservable": false,
+          "observationEvidence": "",
+          "runtimeInputs": "",
+          "runtimeDigest": ""
+        },
+        "oracleEvidence": null,
+        "oracleExplicit": false,
+        "oracleTimeout": "1m0s",
+        "oracleTimeoutDerived": true,
+        "oracleMemoryBytes": 4294967296,
+        "propertyRegime": "rapid:nofailfile,seed=1",
+        "commit": "674d98e6250a26137fe1835cfe40a573bd2e4890",
+        "dirty": false,
+        "run": "9fe14cc657c058be",
+        "candidateCount": 3,
+        "generated": 3,
+        "mutants": 2,
+        "killed": 1,
+        "discarded": 1,
+        "operators": [
+          {
+            "operator": "return: nil",
+            "generated": 1,
+            "discarded": 0,
+            "killed": 1,
+            "survived": 0
+          },
+          {
+            "operator": "statement: delete",
+            "generated": 2,
+            "discarded": 1,
+            "killed": 0,
+            "survived": 1
+          }
+        ],
+        "kills": [
+          {
+            "position": "provtest.go:62:9",
+            "operator": "return: nil",
+            "killer": "github.com/greatliontech/pb/internal/modfetch.TestDownloadReverifiesEvidence"
+          }
+        ],
+        "survivors": [
+          {
+            "position": "provtest.go:61:2",
+            "operator": "statement: delete",
+            "extent": "61:2-61:12",
+            "site": "f96d0e87477d5882",
+            "execution": "executed-and-passed"
+          }
+        ],
+        "attested": [
+          {
+            "position": "provtest.go:61:2",
+            "operator": "statement: delete",
+            "reason": "t.Helper() only moves a failure's reported line to the caller; the tag returned and every verdict a consumer draws are unchanged, so no test can observe its absence",
+            "site": "f96d0e87477d5882"
+          }
+        ]
+      },
+      "targetEvidence": 1047,
+      "oracleEvidence": [
+        1048,
+        1049,
+        1050,
+        1051,
+        1052,
+        1053,
+        1054,
+        1055,
+        1056,
+        1057,
+        1058,
+        1059,
+        1060,
+        1061,
+        1062,
+        1063,
+        1064,
+        1065,
+        1066,
+        1067,
+        1068,
+        1069,
+        1070,
+        1071,
+        1072,
+        1073,
+        1074,
+        1075,
+        1076,
+        1077,
+        1078,
+        1079,
+        1080,
+        1081,
+        1082,
+        1083,
+        1084,
+        1085,
+        1086,
+        1087,
+        1088,
+        1089,
+        1090,
+        1091,
+        1092,
+        1093,
+        1094,
+        1095,
+        1096,
+        1097,
+        1098,
+        1099,
+        1100,
+        1101,
+        1102,
+        1103,
+        1104,
+        1105,
+        1106,
+        1107,
+        1108,
+        1109,
+        1110,
+        1111,
+        1112
+      ],
+      "compartmentLedger": 40
+    },
+    {
+      "finding": {
         "symbol": "github.com/greatliontech/pb/internal/trust.DefaultIdentity",
         "bodyHash": "1ad8f95691bf91b5165a836ff391aeb73ef75c5eadd9ee6d481dbf8aca75315e",
         "operatorSet": "go/12",
@@ -106514,15 +108048,15 @@
           }
         ]
       },
-      "targetEvidence": 1047,
+      "targetEvidence": 1113,
       "oracleEvidence": [
-        1048,
-        1049,
-        1050,
-        1051,
-        1052
+        1114,
+        1115,
+        1116,
+        1117,
+        1118
       ],
-      "compartmentLedger": 40
+      "compartmentLedger": 41
     },
     {
       "finding": {
@@ -106666,20 +108200,20 @@
           }
         ]
       },
-      "targetEvidence": 1053,
+      "targetEvidence": 1119,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -106803,20 +108337,20 @@
           }
         ]
       },
-      "targetEvidence": 1064,
+      "targetEvidence": 1130,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -106940,20 +108474,20 @@
           }
         ]
       },
-      "targetEvidence": 1065,
+      "targetEvidence": 1131,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -107107,20 +108641,20 @@
           }
         ]
       },
-      "targetEvidence": 1066,
+      "targetEvidence": 1132,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -107254,15 +108788,15 @@
           }
         ]
       },
-      "targetEvidence": 1067,
+      "targetEvidence": 1133,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -107820,20 +109354,20 @@
           }
         ]
       },
-      "targetEvidence": 1073,
+      "targetEvidence": 1139,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -107876,15 +109410,15 @@
           }
         ]
       },
-      "targetEvidence": 1074,
+      "targetEvidence": 1140,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -107927,15 +109461,15 @@
           }
         ]
       },
-      "targetEvidence": 1075,
+      "targetEvidence": 1141,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -108322,15 +109856,15 @@
           }
         ]
       },
-      "targetEvidence": 1076,
+      "targetEvidence": 1142,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -108442,15 +109976,15 @@
           }
         ]
       },
-      "targetEvidence": 1077,
+      "targetEvidence": 1143,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -108669,20 +110203,20 @@
           }
         ]
       },
-      "targetEvidence": 1078,
+      "targetEvidence": 1144,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -108725,20 +110259,20 @@
           }
         ]
       },
-      "targetEvidence": 1079,
+      "targetEvidence": 1145,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -109264,20 +110798,20 @@
           }
         ]
       },
-      "targetEvidence": 1080,
+      "targetEvidence": 1146,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -110074,20 +111608,20 @@
           }
         ]
       },
-      "targetEvidence": 1081,
+      "targetEvidence": 1147,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -110419,15 +111953,15 @@
           }
         ]
       },
-      "targetEvidence": 1082,
+      "targetEvidence": 1148,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -110745,20 +112279,20 @@
           }
         ]
       },
-      "targetEvidence": 1083,
+      "targetEvidence": 1149,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -111191,20 +112725,20 @@
           }
         ]
       },
-      "targetEvidence": 1084,
+      "targetEvidence": 1150,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -111456,15 +112990,15 @@
           }
         ]
       },
-      "targetEvidence": 1085,
+      "targetEvidence": 1151,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -112074,20 +113608,20 @@
           }
         ]
       },
-      "targetEvidence": 1086,
+      "targetEvidence": 1152,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -112524,15 +114058,15 @@
           }
         ]
       },
-      "targetEvidence": 1087,
+      "targetEvidence": 1153,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -113037,20 +114571,20 @@
           }
         ]
       },
-      "targetEvidence": 1088,
+      "targetEvidence": 1154,
       "oracleEvidence": [
-        1054,
-        1055,
-        1056,
-        1057,
-        1058,
-        1059,
-        1060,
-        1061,
-        1062,
-        1063
+        1120,
+        1121,
+        1122,
+        1123,
+        1124,
+        1125,
+        1126,
+        1127,
+        1128,
+        1129
       ],
-      "compartmentLedger": 41
+      "compartmentLedger": 42
     },
     {
       "finding": {
@@ -113413,15 +114947,15 @@
           }
         ]
       },
-      "targetEvidence": 1089,
+      "targetEvidence": 1155,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -113697,15 +115231,15 @@
           }
         ]
       },
-      "targetEvidence": 1090,
+      "targetEvidence": 1156,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -113976,15 +115510,15 @@
           }
         ]
       },
-      "targetEvidence": 1091,
+      "targetEvidence": 1157,
       "oracleEvidence": [
-        1068,
-        1069,
-        1070,
-        1071,
-        1072
+        1134,
+        1135,
+        1136,
+        1137,
+        1138
       ],
-      "compartmentLedger": 42
+      "compartmentLedger": 43
     },
     {
       "finding": {
@@ -114218,23 +115752,23 @@
           }
         ]
       },
-      "targetEvidence": 1092,
+      "targetEvidence": 1158,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -114291,23 +115825,23 @@
           }
         ]
       },
-      "targetEvidence": 1106,
+      "targetEvidence": 1172,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -114650,23 +116184,23 @@
           }
         ]
       },
-      "targetEvidence": 1107,
+      "targetEvidence": 1173,
       "oracleEvidence": [
-        1108,
-        1109,
-        1110,
-        1111,
-        1112,
-        1113,
-        1114,
-        1115,
-        1116,
-        1117,
-        1118,
-        1119,
-        1120
+        1174,
+        1175,
+        1176,
+        1177,
+        1178,
+        1179,
+        1180,
+        1181,
+        1182,
+        1183,
+        1184,
+        1185,
+        1186
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -114819,23 +116353,23 @@
           }
         ]
       },
-      "targetEvidence": 1121,
+      "targetEvidence": 1187,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -115187,23 +116721,23 @@
           }
         ]
       },
-      "targetEvidence": 1122,
+      "targetEvidence": 1188,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -115596,23 +117130,23 @@
           }
         ]
       },
-      "targetEvidence": 1123,
+      "targetEvidence": 1189,
       "oracleEvidence": [
-        1108,
-        1109,
-        1110,
-        1111,
-        1112,
-        1113,
-        1114,
-        1115,
-        1116,
-        1117,
-        1118,
-        1119,
-        1120
+        1174,
+        1175,
+        1176,
+        1177,
+        1178,
+        1179,
+        1180,
+        1181,
+        1182,
+        1183,
+        1184,
+        1185,
+        1186
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -115669,23 +117203,23 @@
           }
         ]
       },
-      "targetEvidence": 1124,
+      "targetEvidence": 1190,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -115742,23 +117276,23 @@
           }
         ]
       },
-      "targetEvidence": 1125,
+      "targetEvidence": 1191,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -116377,23 +117911,23 @@
           }
         ]
       },
-      "targetEvidence": 1126,
+      "targetEvidence": 1192,
       "oracleEvidence": [
-        1108,
-        1109,
-        1110,
-        1111,
-        1112,
-        1113,
-        1114,
-        1115,
-        1116,
-        1117,
-        1118,
-        1119,
-        1120
+        1174,
+        1175,
+        1176,
+        1177,
+        1178,
+        1179,
+        1180,
+        1181,
+        1182,
+        1183,
+        1184,
+        1185,
+        1186
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -116450,23 +117984,23 @@
           }
         ]
       },
-      "targetEvidence": 1127,
+      "targetEvidence": 1193,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -116903,23 +118437,23 @@
           }
         ]
       },
-      "targetEvidence": 1128,
+      "targetEvidence": 1194,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -117520,23 +119054,23 @@
           }
         ]
       },
-      "targetEvidence": 1129,
+      "targetEvidence": 1195,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -117702,23 +119236,23 @@
           }
         ]
       },
-      "targetEvidence": 1130,
+      "targetEvidence": 1196,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -117862,23 +119396,23 @@
           }
         ]
       },
-      "targetEvidence": 1131,
+      "targetEvidence": 1197,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -118338,23 +119872,23 @@
           }
         ]
       },
-      "targetEvidence": 1132,
+      "targetEvidence": 1198,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -118506,23 +120040,23 @@
           }
         ]
       },
-      "targetEvidence": 1133,
+      "targetEvidence": 1199,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -118804,23 +120338,23 @@
           }
         ]
       },
-      "targetEvidence": 1134,
+      "targetEvidence": 1200,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -119163,23 +120697,23 @@
           }
         ]
       },
-      "targetEvidence": 1135,
+      "targetEvidence": 1201,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -119486,23 +121020,23 @@
           }
         ]
       },
-      "targetEvidence": 1136,
+      "targetEvidence": 1202,
       "oracleEvidence": [
-        1093,
-        1094,
-        1095,
-        1096,
-        1097,
-        1098,
-        1099,
-        1100,
-        1101,
-        1102,
-        1103,
-        1104,
-        1105
+        1159,
+        1160,
+        1161,
+        1162,
+        1163,
+        1164,
+        1165,
+        1166,
+        1167,
+        1168,
+        1169,
+        1170,
+        1171
       ],
-      "compartmentLedger": 43
+      "compartmentLedger": 44
     },
     {
       "finding": {
@@ -120029,16 +121563,16 @@
           }
         ]
       },
-      "targetEvidence": 1137,
+      "targetEvidence": 1203,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -120505,16 +122039,16 @@
           }
         ]
       },
-      "targetEvidence": 1144,
+      "targetEvidence": 1210,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -120974,18 +122508,18 @@
           }
         ]
       },
-      "targetEvidence": 1145,
+      "targetEvidence": 1211,
       "oracleEvidence": [
-        1146,
-        1147,
-        1148,
-        1149,
-        1150,
-        1151,
-        1152,
-        1153
+        1212,
+        1213,
+        1214,
+        1215,
+        1216,
+        1217,
+        1218,
+        1219
       ],
-      "compartmentLedger": 45
+      "compartmentLedger": 46
     },
     {
       "finding": {
@@ -121492,16 +123026,16 @@
           }
         ]
       },
-      "targetEvidence": 1154,
+      "targetEvidence": 1220,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -121699,16 +123233,16 @@
           }
         ]
       },
-      "targetEvidence": 1155,
+      "targetEvidence": 1221,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -122024,16 +123558,16 @@
           }
         ]
       },
-      "targetEvidence": 1156,
+      "targetEvidence": 1222,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -122349,16 +123883,16 @@
           }
         ]
       },
-      "targetEvidence": 1157,
+      "targetEvidence": 1223,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -122567,16 +124101,16 @@
           }
         ]
       },
-      "targetEvidence": 1158,
+      "targetEvidence": 1224,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -122966,18 +124500,18 @@
           }
         ]
       },
-      "targetEvidence": 1159,
+      "targetEvidence": 1225,
       "oracleEvidence": [
-        1146,
-        1147,
-        1148,
-        1149,
-        1150,
-        1151,
-        1152,
-        1153
+        1212,
+        1213,
+        1214,
+        1215,
+        1216,
+        1217,
+        1218,
+        1219
       ],
-      "compartmentLedger": 45
+      "compartmentLedger": 46
     },
     {
       "finding": {
@@ -123134,16 +124668,16 @@
           }
         ]
       },
-      "targetEvidence": 1160,
+      "targetEvidence": 1226,
       "oracleEvidence": [
-        1138,
-        1139,
-        1140,
-        1141,
-        1142,
-        1143
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209
       ],
-      "compartmentLedger": 44
+      "compartmentLedger": 45
     },
     {
       "finding": {
@@ -123461,12 +124995,12 @@
           }
         ]
       },
-      "targetEvidence": 1161,
+      "targetEvidence": 1227,
       "oracleEvidence": [
-        1162,
-        1163
+        1228,
+        1229
       ],
-      "compartmentLedger": 46
+      "compartmentLedger": 47
     }
   ],
   "coverageBounds": []
