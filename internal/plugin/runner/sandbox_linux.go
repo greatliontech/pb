@@ -53,7 +53,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	if err := CheckSpec(spec); err != nil {
 		return nil, err
 	}
-	if spec.Image != "" {
+	if spec.Reference != "" {
 		return nil, errors.New("runner: a daemon image runs on the docker runner only")
 	}
 	floor, err := isolationOf(spec.MinTier)

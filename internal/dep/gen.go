@@ -12,7 +12,6 @@ import (
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/plugin"
-	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/plugin/genrequest"
 	"github.com/greatliontech/pb/internal/plugin/runner"
@@ -30,7 +29,7 @@ import (
 // for; oci.Acquirer and local.Acquirer are the production
 // implementations, injected for the verb's own tests.
 type Acquirer interface {
-	Acquire(ctx context.Context, value string) (*acquire.Acquired, error)
+	Acquire(ctx context.Context, value string) (*plugin.Acquired, error)
 }
 
 // ImageAcquirer is the oci scheme's acquirer, which also honors an
@@ -40,7 +39,7 @@ type Acquirer interface {
 // verb reads them without a guard.
 type ImageAcquirer interface {
 	Acquirer
-	AcquireOverride(ctx context.Context, ref, source string) (*acquire.Acquired, error)
+	AcquireOverride(ctx context.Context, ref, source string) (*plugin.Acquired, error)
 }
 
 // LocalDeps are the local scheme's seams, present together or not at
@@ -137,7 +136,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	// runs, and the pins persist whatever follows: a first-use
 	// resolution is the record even when a later entry fails
 	// (REQ-plugin-digest-pin, REQ-lock-first-use).
-	plugins := make([]*acquire.Acquired, len(gf.Plugins))
+	plugins := make([]*plugin.Acquired, len(gf.Plugins))
 	var acqErr error
 	for i, entry := range gf.Plugins {
 		switch entry.Scheme {
@@ -150,7 +149,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				// A daemon-local image: the daemon's already, run by
 				// the docker runner as it is; the process is the
 				// image's own configuration, which the daemon applies.
-				plugins[i] = &acquire.Acquired{Image: &acquire.Image{Reference: strings.TrimPrefix(source, OverrideDaemonPrefix)}}
+				plugins[i] = &plugin.Acquired{Image: &plugin.Image{Reference: strings.TrimPrefix(source, OverrideDaemonPrefix)}}
 				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, plugins[i].Image.Reference)
 			case overridden:
 				plugins[i], acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
@@ -209,7 +208,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			// The admitted entry's platform is the daemon's to be
 			// told for a pulled image; an export already is that
 			// child.
-			spec.Rootfs, spec.Image, spec.Pull = img.Rootfs, img.Reference, img.Pull
+			spec.Rootfs, spec.Reference, spec.Pull = img.Rootfs, img.Reference, img.Pull
 			if spec.Pull {
 				spec.Platform = img.Platform
 			}

@@ -26,7 +26,6 @@ import (
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugin"
-	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/pb/internal/provenance/image/discover"
@@ -166,7 +165,7 @@ func (a *Acquirer) Close() error {
 // seam runs the same and the pin is recorded the same, but nothing
 // materializes: the acquisition yields the repository at the verified
 // digest for the daemon to pull (REQ-plugin-core-verifies).
-func (a *Acquirer) Acquire(ctx context.Context, ref string) (*acquire.Acquired, error) {
+func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, error) {
 	pin, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
 	target := ref
 	acq := &acquisition{declaredRef: ref}
@@ -191,8 +190,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*acquire.Acquired, 
 		if err != nil {
 			return err
 		}
-		pin = p
-		return a.lock.AddPlugin(pin)
+		return a.lock.AddPlugin(p)
 	}
 	if a.pull == PullDaemon {
 		// Resolution runs the seam and materializes nothing (ocifs
@@ -205,7 +203,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*acquire.Acquired, 
 		if err := record(); err != nil {
 			return nil, err
 		}
-		return &acquire.Acquired{Pin: pin, Image: &acquire.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Platform: acq.platform}}, nil
+		return &plugin.Acquired{Image: &plugin.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Platform: acq.platform}}, nil
 	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
@@ -225,7 +223,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*acquire.Acquired, 
 	if err != nil {
 		return nil, fmt.Errorf("oci: %s: %v", ref, err)
 	}
-	return &acquire.Acquired{Process: process, Pin: pin, Image: &acquire.Image{Rootfs: rootfs, Platform: acq.platform}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs, Platform: acq.platform}}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the

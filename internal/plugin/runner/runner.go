@@ -29,7 +29,7 @@ import (
 // unbounded resource.
 //
 // Scheme is the entry's identity scheme: an oci run has its world in
-// Rootfs — the image export — or in Image, which only the docker
+// Rootfs — the image export — or in Reference, which only the docker
 // runner consumes: a daemon-local image an override names
 // (REQ-plugin-override), or, with Pull set, the repository at the
 // digest pb verified for the daemon to pull
@@ -38,16 +38,19 @@ import (
 // environment, under the bounds alone (plugin-execution.md, "Local
 // binaries").
 type Spec struct {
-	Scheme string
-	Rootfs string
-	Image  string
-	// Pull marks Image as the registry's repository at a digest pb
+	Scheme    string
+	Rootfs    string
+	Reference string
+	// Pull marks Reference as the registry's repository at a digest pb
 	// verified, for the daemon to pull (REQ-plugin-core-verifies);
-	// unset, Image is a daemon-local image the daemon already holds.
+	// unset, Reference is a daemon-local image the daemon already holds.
 	Pull bool
 	// Platform is the manifest-list entry the seam admitted for a
 	// pulled image — os/arch, with its variant where stated — the one
 	// child the daemon is to pull and run; empty otherwise.
+	// The acquisition knows the admitted entry for an export too; the
+	// verb hands it on for a pulled image alone, so a spec never
+	// carries an acquisition's image facts whole.
 	Platform string
 	Process  plugin.Process
 	Stdin    []byte
@@ -129,7 +132,7 @@ func beforeStart(ctx context.Context, err error) error {
 // (REQ-plugin-sandboxed).
 const pluginHostname = "pb-plugin"
 
-// DaemonImages marks a runner that runs a daemon image (Spec.Image,
+// DaemonImages marks a runner that runs a daemon image (Spec.Reference,
 // daemon-local or pulled): the docker runner alone. A daemon-local
 // override, and the docker byte path, are refused before anything
 // runs unless the selected runner is one.
@@ -150,7 +153,7 @@ func CheckSpec(spec Spec) error {
 	if err := checkScheme(spec); err != nil {
 		return err
 	}
-	if len(spec.Process.Argv) == 0 && spec.Image == "" {
+	if len(spec.Process.Argv) == 0 && spec.Reference == "" {
 		return errors.New("runner: the plugin process has no argv")
 	}
 	return nil
@@ -163,11 +166,11 @@ func CheckSpec(spec Spec) error {
 func checkScheme(spec Spec) error {
 	switch spec.Scheme {
 	case plugin.SchemeOCI:
-		if (spec.Rootfs == "") == (spec.Image == "") {
+		if (spec.Rootfs == "") == (spec.Reference == "") {
 			return errors.New("runner: an oci run has exactly one of a rootfs and a daemon image")
 		}
-		if spec.Pull && !strings.Contains(spec.Image, "@") {
-			return fmt.Errorf("runner: the daemon pulls a verified digest, and %q names none", spec.Image)
+		if spec.Pull && !strings.Contains(spec.Reference, "@") {
+			return fmt.Errorf("runner: the daemon pulls a verified digest, and %q names none", spec.Reference)
 		}
 		if spec.Pull && spec.Platform == "" {
 			return errors.New("runner: the daemon pulls the admitted platform's child, and none is named")
@@ -176,7 +179,7 @@ func checkScheme(spec Spec) error {
 			return errors.New("runner: a platform is named for a pulled image alone")
 		}
 	case plugin.SchemeLocal:
-		if spec.Rootfs != "" || spec.Image != "" || spec.Pull {
+		if spec.Rootfs != "" || spec.Reference != "" || spec.Pull {
 			return errors.New("runner: a local run carries a world of its own")
 		}
 	default:

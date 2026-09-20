@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/greatliontech/pb/internal/plugin/acquire"
+	"github.com/greatliontech/pb/internal/plugin"
 )
 
 // reservedDomain is the domain the acquirer's in-process hosts are
@@ -113,7 +113,7 @@ func (t *inProcessTransport) RoundTrip(req *http.Request) (*http.Response, error
 // through the seam by digest, which runs the platform check and the trust
 // policy against the declared reference exactly as for any
 // acquisition (REQ-plugin-verify-before-run, REQ-plugin-core-verifies).
-func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*acquire.Acquired, error) {
+func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*plugin.Acquired, error) {
 	idx, release, err := loadOverride(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("oci: override %s for %s: %w", source, ref, err)
@@ -155,7 +155,7 @@ func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*ac
 	if err != nil {
 		return nil, fmt.Errorf("oci: override %s for %s: %v", source, ref, err)
 	}
-	return &acquire.Acquired{Process: process, Image: &acquire.Image{Rootfs: rootfs}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs}}, nil
 }
 
 // withPlatforms fills in, for every image the manifest list carries

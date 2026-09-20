@@ -167,9 +167,9 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 	if spec.Scheme == plugin.SchemeLocal {
 		return nil, errors.New("runner: a local plugin is a host binary; the docker runner runs images only")
 	}
-	if spec.Image != "" {
-		if _, err := name.ParseReference(spec.Image); err != nil || strings.HasPrefix(spec.Image, "-") {
-			return nil, fmt.Errorf("runner: %q does not name a daemon image", spec.Image)
+	if spec.Reference != "" {
+		if _, err := name.ParseReference(spec.Reference); err != nil || strings.HasPrefix(spec.Reference, "-") {
+			return nil, fmt.Errorf("runner: %q does not name a daemon image", spec.Reference)
 		}
 	}
 	if _, err := isolationOf(spec.MinTier); err != nil {
@@ -282,7 +282,7 @@ type prepared struct {
 // releases whatever they left. What the record says is judged by the
 // caller: a verdict is no daemon step.
 func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limits) (p prepared, err error) {
-	image := spec.Image
+	image := spec.Reference
 	// The platform named to the daemon: for a pulled image the very
 	// manifest-list entry the seam admitted, variant included, so
 	// the daemon pulls and runs that child and no other of the
@@ -330,7 +330,7 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 	for _, kv := range spec.Process.Env {
 		args = append(args, "--env", kv)
 	}
-	if spec.Image != "" {
+	if spec.Reference != "" {
 		// A daemon image runs under its own configuration: the daemon
 		// applies its entrypoint, command, environment and working
 		// directory — and is the daemon's by now: a daemon-local image

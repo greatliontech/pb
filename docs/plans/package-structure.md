@@ -32,6 +32,9 @@ test beside it, chunk 1).
 - [x] 8. One acquirer seam: a scheme-tagged Acquired in a subpackage
       of the plugin domain, one dep.Acquirer keyed by scheme
       (two-acquirer-shapes)
-- [ ] 9. The acquisition result on the domain root, the runner's spec
-      taking the image facts as that type
-      (acquisition-result-on-the-root); plan close-out
+- [x] 9. The acquisition result on the domain root without the pin
+      the lockfile records, the runner's reference named for what it
+      is; the runner's spec keeps its own image fields, the verb's
+      copy being the projection from the admitted entry to the
+      daemon's instruction (acquisition-result-on-the-root); plan
+      close-out

@@ -17,7 +17,7 @@ while the tree does another.
 | source | module-proxy.md, module-resolution.md (the path resolution half) | `source`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
 | proto | generation.md (the compile half), module-resolution.md (the import satisfaction half) | `proto/modfiles`, `proto/compile`, `proto/importcheck` |
 | user configuration | user-config.md | `userconfig` |
-| plugin | plugin-execution.md, generation.md | `plugin/acquire`, `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
+| plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
 | driver | module-resolution.md | `resolve` |
 | verbs | dep-verbs.md | `dep`, `cmd/pb` |
 

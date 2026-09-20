@@ -760,7 +760,7 @@ func TestRunReadsContextEnds(t *testing.T) {
 
 // The sandbox runner never runs a daemon-local image.
 func TestSandboxRefusesDaemonImage(t *testing.T) {
-	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: "plugins/q:dev", Process: plugin.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugin.TierStrong})
+	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Process: plugin.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "docker runner only") {
 		t.Fatalf("sandbox runner: %v", err)
 	}

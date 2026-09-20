@@ -20,7 +20,6 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugin"
-	"github.com/greatliontech/pb/internal/plugin/acquire"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
@@ -79,7 +78,7 @@ func (a *Acquirer) Resolve(value string) (string, error) {
 // and checked on every later one, naming both hashes on a mismatch;
 // a binary that moved with the same bytes is a non-event. A policy
 // disabling local pinning records and checks nothing.
-func (a *Acquirer) Acquire(ctx context.Context, value string) (*acquire.Acquired, error) {
+func (a *Acquirer) Acquire(ctx context.Context, value string) (*plugin.Acquired, error) {
 	path, err := a.Resolve(value)
 	if err != nil {
 		return nil, err
@@ -88,7 +87,7 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*acquire.Acquired
 	if err != nil {
 		return nil, fmt.Errorf("local: hashing %s: %w", path, err)
 	}
-	acq := &acquire.Acquired{Process: plugin.Process{Argv: []string{path}}}
+	acq := &plugin.Acquired{Process: plugin.Process{Argv: []string{path}}}
 	if a.Policy != nil && !a.Policy.Execution.LocalPinEnabled() {
 		return acq, nil
 	}
@@ -96,10 +95,10 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*acquire.Acquired
 	if platform == (plugin.Platform{}) {
 		platform = plugin.HostPlatform()
 	}
-	pin, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
+	_, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
 	switch {
 	case !ok:
-		pin = lockfile.PluginPin{Ref: value, Scheme: lockfile.SchemeLocal, Binary: map[string]string{platform.String(): hash}}
+		pin := lockfile.PluginPin{Ref: value, Scheme: lockfile.SchemeLocal, Binary: map[string]string{platform.String(): hash}}
 		if err := a.Lock.AddPlugin(pin); err != nil {
 			return nil, err
 		}
@@ -107,9 +106,7 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*acquire.Acquired
 		if err := a.Lock.SetPluginBinary(value, platform.String(), hash); err != nil {
 			return nil, err
 		}
-		pin, _ = a.Lock.Plugin(value, lockfile.SchemeLocal)
 	}
-	acq.Pin = pin
 	return acq, nil
 }
 

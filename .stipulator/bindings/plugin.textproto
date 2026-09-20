@@ -8,7 +8,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "e664ae53c453eda3c6b0bd75bb7c95b8a238e2d4361302efcbae83a9b125d07b"
+  shape_hash: "50bdc0d8af5b2742525c84d11cbba368c2059fe0fb55ca63a944db22c99d0bbe"
 }
 
 bindings {
@@ -208,7 +208,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "e664ae53c453eda3c6b0bd75bb7c95b8a238e2d4361302efcbae83a9b125d07b"
+  shape_hash: "50bdc0d8af5b2742525c84d11cbba368c2059fe0fb55ca63a944db22c99d0bbe"
 }
 
 bindings {
@@ -598,7 +598,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "34e68e200ca27268ed7d3252e78dd122759200ec41be0c8cbfca0bc260b72394"
+  shape_hash: "a9f5eb4d315327cf8a53397200745530be94f529ae8ec377cc702bd666d3e08a"
 }
 
 bindings {
@@ -648,7 +648,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.AcquireOverride"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ed1c6b0ed27de5447fef4fc032927dfc8a0a21067e75072535234b45f531b073"
+  shape_hash: "00c71ce84928e58560c6981f484aeb062bfe6da68094bb30d3142b4db464e8c5"
 }
 
 bindings {

@@ -126,6 +126,17 @@ func newFixture(t *testing.T) *fixture {
 	return &fixture{host: host, digest: digest}
 }
 
+// pinOf reads the pin an acquisition recorded from the acquirer's own
+// lockfile, the record every consumer reads.
+func pinOf(t *testing.T, a *Acquirer, ref string) lockfile.PluginPin {
+	t.Helper()
+	pin, ok := a.lock.Plugin(ref, lockfile.SchemeOCI)
+	if !ok {
+		t.Fatalf("no pin recorded for %s", ref)
+	}
+	return pin
+}
+
 func newAcquirer(t *testing.T, fx *fixture, lock *lockfile.File, policy *trust.Policy, root *gitprov.TrustedRoot) *Acquirer {
 	t.Helper()
 	return newAcquirerKeeping(t, fx, lock, policy, root, "")
@@ -168,8 +179,8 @@ func TestAcquireFirstUse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Pin.Digest != fx.digest || got.Pin.Scheme != lockfile.SchemeOCI || got.Pin.Provenance != (lockfile.Provenance{}) {
-		t.Fatalf("pin = %+v, want digest %s provenance none", got.Pin, fx.digest)
+	if pin := pinOf(t, a, fx.host+"/org/plugin:v1"); pin.Digest != fx.digest || pin.Scheme != lockfile.SchemeOCI || pin.Provenance != (lockfile.Provenance{}) {
+		t.Fatalf("pin = %+v, want digest %s provenance none", pin, fx.digest)
 	}
 	if len(got.Process.Argv) != 1 || got.Process.Argv[0] != "/plugin" || len(got.Process.Env) != 1 {
 		t.Fatalf("image config not surfaced: %+v", got)
@@ -200,7 +211,8 @@ func TestAcquirePinnedIgnoresMovedTag(t *testing.T) {
 	ref := fx.host + "/org/plugin:v1"
 	lock := &lockfile.File{}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	if _, err := a.Acquire(ctx, ref); err != nil {
+	first, err := a.Acquire(ctx, ref)
+	if err != nil {
 		t.Fatal(err)
 	}
 	// Move the tag to different content.
@@ -208,12 +220,21 @@ func TestAcquirePinnedIgnoresMovedTag(t *testing.T) {
 	if moved == fx.digest {
 		t.Fatal("fixture: tag did not move")
 	}
-	got, err := a.Acquire(ctx, ref)
+	// Over a cold store, so the pin and not the store's own memory of
+	// the tag holds the digest.
+	cold := newAcquirerAt(t, fx, lock, &trust.Policy{}, nil, t.TempDir(), "")
+	again, err := cold.Acquire(ctx, ref)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Pin.Digest != fx.digest {
-		t.Fatalf("pinned acquire served %s, want the pinned %s", got.Pin.Digest, fx.digest)
+	if pinOf(t, cold, ref).Digest != fx.digest {
+		t.Fatalf("pinned acquire served %s, want the pinned %s", pinOf(t, cold, ref).Digest, fx.digest)
+	}
+	// What materializes is the pinned image: the export is content-
+	// addressed, so the same child the first acquisition yielded, not
+	// the content the tag moved to.
+	if filepath.Base(again.Image.Rootfs) != filepath.Base(first.Image.Rootfs) {
+		t.Fatalf("the pinned acquisition materialized %s, the first %s", again.Image.Rootfs, first.Image.Rootfs)
 	}
 }
 
@@ -409,12 +430,8 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 
 			fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
 			signed := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-			got, err := signed.Acquire(ctx, ref)
-			if err != nil {
+			if _, err := signed.Acquire(ctx, ref); err != nil {
 				t.Fatal(err)
-			}
-			if got.Pin.Provenance != imageRecord(signerSAN) {
-				t.Fatalf("pin provenance = %+v", got.Pin.Provenance)
 			}
 			if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Provenance != imageRecord(signerSAN) {
 				t.Fatalf("recorded pin = %+v %v", pin, ok)
@@ -427,7 +444,7 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.After, accepted)
 			corruptPolicy := &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}
 			a3 := newAcquirer(t, corrupt.fixture, &lockfile.File{}, corruptPolicy, corrupt.sig.TrustedRoot())
-			if got, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+			if got, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err != nil || pinOf(t, a3, corrupt.host+"/org/plugin:v1").Provenance != imageRecord(signerSAN) {
 				t.Fatalf("rejected evidence past the accepted carrier: %+v %v", got, err)
 			}
 			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.Before, accepted)
@@ -454,26 +471,26 @@ func TestAcquireOpportunisticVerification(t *testing.T) {
 	tolerant := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, signerSAN)}}
 
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, tolerant, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("verified evidence not recorded under allow-unsigned: %+v %v", got, err)
 	}
 	noRule := newAcquirer(t, fx.fixture, &lockfile.File{}, &trust.Policy{}, fx.sig.TrustedRoot())
-	if got, err := noRule.Acquire(ctx, ref); err != nil || got.Pin.Provenance != (lockfile.Provenance{}) {
+	if got, err := noRule.Acquire(ctx, ref); err != nil || pinOf(t, noRule, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("a signed image with no identity rule: %+v %v", got, err)
 	}
 	otherRule := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/other/**")}}
 	other := newAcquirer(t, fx.fixture, &lockfile.File{}, otherRule, fx.sig.TrustedRoot())
-	if got, err := other.Acquire(ctx, ref); err != nil || got.Pin.Provenance != (lockfile.Provenance{}) {
+	if got, err := other.Acquire(ctx, ref); err != nil || pinOf(t, other, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("identity non-acceptance not tolerated as none: %+v %v", got, err)
 	}
 	noRoot := newAcquirer(t, fx.fixture, &lockfile.File{}, tolerant, nil)
-	if got, err := noRoot.Acquire(ctx, ref); err != nil || got.Pin.Provenance != (lockfile.Provenance{}) {
+	if got, err := noRoot.Acquire(ctx, ref); err != nil || pinOf(t, noRoot, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("no trusted root not tolerated as none: %+v %v", got, err)
 	}
 
 	bare := newSignedFixture(t, true)
 	a2 := newAcquirer(t, bare.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(bare.host+"/org", trust.AllowUnsigned, signerSAN)}}, bare.sig.TrustedRoot())
-	if got, err := a2.Acquire(ctx, bare.host+"/org/plugin:v1"); err != nil || got.Pin.Provenance != (lockfile.Provenance{}) {
+	if got, err := a2.Acquire(ctx, bare.host+"/org/plugin:v1"); err != nil || pinOf(t, a2, bare.host+"/org/plugin:v1").Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("absence not tolerated as none: %+v %v", got, err)
 	}
 
@@ -496,7 +513,7 @@ func TestAcquireIdentityRuleFlows(t *testing.T) {
 		rule(fx.host+"/org/plugin", trust.RequireProvenance, "https://github.com/acme/plugin/**"),
 	}}
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, policy, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("the longest-prefix rule's identity did not govern: %+v %v", got, err)
 	}
 	reversed := &trust.Policy{Plugins: []trust.Rule{
@@ -521,7 +538,7 @@ func TestAcquireLegacySignatureTag(t *testing.T) {
 	sigstoretest.RefuseNetwork(t)
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("the legacy tag's envelope: %+v %v", got, err)
 	}
 }
@@ -558,7 +575,7 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	lock := &lockfile.File{}
 	workDir := t.TempDir()
 	first := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := first.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := first.Acquire(ctx, ref); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("first use: %+v %v", got, err)
 	}
 	if entries, _ := os.ReadDir(filepath.Join(kept, "sha256")); len(entries) != 1 {
@@ -570,7 +587,7 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	// acquisition.
 	fx.unreachable(t)
 	offline := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := offline.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := offline.Acquire(ctx, ref); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("offline with kept evidence: %+v %v", got, err)
 	}
 	offline.Close()
@@ -625,7 +642,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	workDir := t.TempDir()
 	pinnedToSecond := &lockfile.File{}
 	second := newAcquirerAt(t, fx.fixture, pinnedToSecond, accepting(otherSAN), fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := second.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+	if got, err := second.Acquire(ctx, ref); err != nil || pinOf(t, second, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("the second signer: %+v %v", got, err)
 	}
 	second.Close()
@@ -647,7 +664,8 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 		t.Fatal(err)
 	}
 	if os.Geteuid() != 0 {
-		if got, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(otherSAN), fx.sig.TrustedRoot(), sealed).Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+		unwritable := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(otherSAN), fx.sig.TrustedRoot(), sealed)
+		if got, err := unwritable.Acquire(ctx, ref); err != nil || pinOf(t, unwritable, ref).Provenance != imageRecord(otherSAN) {
 			t.Fatalf("an unwritable evidence store changed the outcome: %+v %v", got, err)
 		}
 	}
@@ -657,7 +675,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	fx.unreachable(t)
 	broad := accepting("https://github.com/acme/plugin/**")
 	offline := newAcquirerAt(t, fx.fixture, pinnedToSecond, broad, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := offline.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(otherSAN) {
+	if got, err := offline.Acquire(ctx, ref); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("the pinned record over kept evidence offline: %+v %v", got, err)
 	}
 	offline.Close()
@@ -692,10 +710,10 @@ func TestUpdatePlugin(t *testing.T) {
 	if _, _, err := first.UpdatePlugin(ctx, ref); err == nil || !strings.Contains(err.Error(), "no pin to update") {
 		t.Fatalf("an unpinned reference updated: %v", err)
 	}
-	got, err := first.Acquire(ctx, ref)
-	if err != nil {
+	if _, err := first.Acquire(ctx, ref); err != nil {
 		t.Fatal(err)
 	}
+	firstPin := pinOf(t, first, ref)
 	first.Close()
 	oldDigest := fx.digest
 
@@ -706,7 +724,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// implicitly (REQ-plugin-digest-pin) — over a cold store, so the
 	// pin and not the cache holds it.
 	still := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), t.TempDir(), kept)
-	if again, err := still.Acquire(ctx, ref); err != nil || again.Pin.Digest != oldDigest {
+	if again, err := still.Acquire(ctx, ref); err != nil || pinOf(t, still, ref).Digest != oldDigest {
 		t.Fatalf("an acquisition re-resolved the tag: %+v %v", again, err)
 	}
 	still.Close()
@@ -715,7 +733,7 @@ func TestUpdatePlugin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(before, got.Pin) || after.Digest != fx.digest || after.Provenance != imageRecord(otherSAN) || after.Ref != ref || after.Scheme != lockfile.SchemeOCI {
+	if !reflect.DeepEqual(before, firstPin) || after.Digest != fx.digest || after.Provenance != imageRecord(otherSAN) || after.Ref != ref || after.Scheme != lockfile.SchemeOCI {
 		t.Fatalf("update = %+v -> %+v", before, after)
 	}
 	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || !reflect.DeepEqual(pin, after) {
@@ -732,7 +750,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// An acquisition at the moved pin runs the new image under its
 	// new record, the kept evidence reproducing it.
 	moved := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := moved.Acquire(ctx, ref); err != nil || got.Pin.Digest != fx.digest || got.Pin.Provenance != imageRecord(otherSAN) {
+	if got, err := moved.Acquire(ctx, ref); err != nil || pinOf(t, moved, ref).Digest != fx.digest || pinOf(t, moved, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("an acquisition at the moved pin: %+v %v", got, err)
 	}
 	moved.Close()
@@ -779,12 +797,12 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	lock := &lockfile.File{}
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, signerSAN)}}
 	first := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-	if got, err := first.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := first.Acquire(ctx, ref); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("first use: %+v %v", got, err)
 	}
 	// The same pin, the same image, the evidence the same: verified again.
 	again := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-	if got, err := again.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := again.Acquire(ctx, ref); err != nil || pinOf(t, again, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("re-acquisition: %+v %v", got, err)
 	}
 	// A second signature the policy also accepts, sorting before the
@@ -795,7 +813,7 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Before, recorded)
 	broad := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/acme/plugin/**")}}
 	both := newAcquirer(t, fx.fixture, lock, broad, fx.sig.TrustedRoot())
-	if got, err := both.Acquire(ctx, ref); err != nil || got.Pin.Provenance != imageRecord(signerSAN) {
+	if got, err := both.Acquire(ctx, ref); err != nil || pinOf(t, both, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("a second accepted signer displaced the record: %+v %v", got, err)
 	}
 	// A policy under which only the other signer is accepted leaves
@@ -874,6 +892,7 @@ func TestAcquireOverride(t *testing.T) {
 	}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
 	ref := fx.host + "/org/plugin:v1"
+	seeded, _ := lock.Plugin(ref, lockfile.SchemeOCI)
 	idx := indexFor(t, hostPlatform())
 	layoutDir := t.TempDir()
 	if _, err := layout.Write(layoutDir, idx); err != nil {
@@ -898,12 +917,14 @@ func TestAcquireOverride(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
-		if got.Process.Argv[0] != "/plugin" || got.Image.Rootfs == "" || got.Pin.Ref != "" || got.Pin.Digest != "" {
-			t.Fatalf("%s: %+v", source, got)
+		// An override materializes without pinning: the stale pin the
+		// lockfile holds for the reference is exactly as it was.
+		if pin, _ := a.lock.Plugin(ref, lockfile.SchemeOCI); got.Process.Argv[0] != "/plugin" || got.Image.Rootfs == "" || !reflect.DeepEqual(pin, seeded) {
+			t.Fatalf("%s: %+v (pin now %+v)", source, got, pin)
 		}
 	}
-	if pin, _ := lock.Plugin(ref, lockfile.SchemeOCI); pin.Digest != "sha256:"+strings.Repeat("0", 64) || len(lock.Plugins) != 1 {
-		t.Fatalf("the lockfile was touched: %+v", lock.Plugins)
+	if len(lock.Plugins) != 1 {
+		t.Fatalf("the lockfile gained a pin: %+v", lock.Plugins)
 	}
 	// The platform check holds: a layout for another platform only.
 	foreign := t.TempDir()
@@ -1347,7 +1368,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if got.Image.Reference != fx.host+"/org/plugin@"+fx.digest || !got.Image.Pull || got.Image.Rootfs != "" || len(got.Process.Argv) != 0 {
 		t.Fatalf("acquired %+v, want the repository at %s and nothing else", got, fx.digest)
 	}
-	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Digest != fx.digest || got.Pin.Digest != pin.Digest {
+	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Digest != fx.digest {
 		t.Fatalf("pin = %+v (%v), want %s", pin, ok, fx.digest)
 	}
 	// Nothing materialized: no layer content in the store's tiers, no
