@@ -3,7 +3,7 @@
 The fixture packages every suite builds on, one per domain, each named
 `<domain>test` after the Go convention for a test-only package
 (`net/http/httptest`), so a reader knows from the import that nothing
-here ships, which the layering test beside this file enforces:
+here ships, which the layering test at `internal/` enforces:
 
 - `gittest` — bare git repositories in memory at the plumbing level:
   blobs, trees, commits, tags in both object formats, refs, corrupt

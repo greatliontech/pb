@@ -1,0 +1,28 @@
+# Plan: the package structure by spec domain
+
+Spec: every spec under docs/specs names a domain; the layering is the
+domains' order, enforced in code (internal/README.md and the layering
+test beside it, chunk 1).
+
+- [x] 1. The layering invariant: internal/README.md names the domains
+      and their order; one layering test at internal/ proves every
+      import edge among pb's packages points down that order, over
+      today's packages, subsuming the test-support layering test; the
+      stale yamlshape mutation records pruned
+- [ ] 2. module: archive, modpath, version, modfile, mvs, workspace,
+      lockfile under internal/module, the path rule as the root
+      package; bindings and records retargeted
+- [ ] 3. provenance: the tag verifier as the root package, imagesig as
+      image with the evidence store folded in and discovery kept apart
+      for its no-network allowlist, trust beside them
+- [ ] 4. source: proxy, origin, direct, modfetch under internal/source
+      as proxy, origin, direct, fetch, the HTTPS posture as the root
+      package
+- [ ] 5. proto: modfiles, protocomp, protoimport under internal/proto
+      as files, compile, imports
+- [ ] 6. plugin: plugexec as the root vocabulary, pluglocal, plugoci,
+      plugrun, genfile, genrequest under internal/plugin as local, oci,
+      run, genfile, genrequest
+- [ ] 7. The driver and the verbs: resolve and dep against the final
+      layering, the command's assembly with them; the CI paths, the
+      issue cites, the README of internal/testing; plan close-out
