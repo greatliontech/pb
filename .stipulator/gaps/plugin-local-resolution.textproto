@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-plugin-local-resolution"
-reason: "The local identity scheme is not implemented: generation refuses non-oci entries with an explicit error, so no local binary ever executes"
-content_hash: "d353a03ea40df40e83a95bb632101e47931076673ae8e6a8c53c2e1b55829921"
-source_hash: "2e79521de74d4736baddfb492f7cd0b1d021f9a290c1fadd194351c6d2b97e1e"
-lands { manual { condition: "the local identity scheme is implemented" } }
