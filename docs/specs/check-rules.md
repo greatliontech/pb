@@ -41,20 +41,28 @@ exclusions, and the breaking-change comparison base.
 ## Rules
 
 **REQ-rules-file-schema** (wire): A rule file MUST contain `celEnv`, the
-integer CEL environment version its rules target, and `rules`, a list of
-entries `{id, kind, target, severity, tags, cel, message}` where `kind`
-is `lint` or `breaking`, `severity` is `error` or `warning`, and `tags`
-is an optional string list. No other keys exist.
+CEL environment version its rules target written as unquoted decimal
+digits with no sign and no leading zero, and `rules`, a list — possibly empty — of entries
+`{id, kind, target, severity, tags, cel, message}` where every value
+is read as the text written in any YAML scalar spelling, `id` and
+`message` and each entry of the optional list `tags` are one non-empty
+line of text — a spelling holding a line break refused, since an id is
+written in a suppression comment and a message on a finding line —
+`cel` is non-empty text, a block scalar included, `kind` is `lint` or
+`breaking`, `severity` is `error` or `warning`, `target` is a target,
+and ids are unique within the file. No other keys exist.
 
 **REQ-rules-file-discovery** (behavior): A ruleset's rule files MUST be
 every file named `*.rules.yaml` under the module root, at any depth,
-read in path order; a ruleset with none contributes no rules, and a
-file that fails REQ-rules-file-schema fails the check run naming the
-ruleset and the file.
+read in path order — the byte order of their module-relative paths; a ruleset
+with none contributes no rules, and a file that fails
+REQ-rules-file-schema fails the check run naming the ruleset and the
+file.
 
 **REQ-rules-env-versioned** (invariant): The engine MUST refuse a rule
 file whose `celEnv` names an environment version it does not provide —
-never evaluating a rule against a different environment than it targets.
+a number beyond any it could provide included — never evaluating a
+rule against a different environment than it targets.
 
 **REQ-rules-bounded** (invariant): Rule evaluation MUST be bounded: CEL
 programs run with a cost limit — each library function charged at least

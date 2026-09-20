@@ -116,3 +116,60 @@ func TestDoc(t *testing.T) {
 		}
 	})
 }
+
+// The scalar readers: a string in any spelling is its written text, a
+// block's line breaks kept; a typed scalar is its source token, never
+// the parser's reading; a line is a scalar holding no line break;
+// nothing else is any of them.
+func TestScalarReaders(t *testing.T) {
+	value := func(src string) ast.Node {
+		t.Helper()
+		return parseBody(t, "k: "+src+"\n").(*ast.MappingNode).Values[0].Value
+	}
+	cases := []struct {
+		src            string
+		str, scl, line string
+		isStr, isScl   bool
+		isLine         bool
+	}{
+		{"plain", "plain", "plain", "plain", true, true, true},
+		{`"quoted"`, "quoted", "quoted", "quoted", true, true, true},
+		{"'single'", "single", "single", "single", true, true, true},
+		{`"true"`, "true", "true", "true", true, true, true},
+		{"|\n  literal\n  block", "literal\nblock\n", "literal\nblock\n", "", true, true, false},
+		{">-\n  folded\n  block", "folded block", "folded block", "folded block", true, true, true},
+		{">\n  folded", "folded\n", "folded\n", "", true, true, false},
+		{`"a\nb"`, "a\nb", "a\nb", "", true, true, false},
+		{`"a\rb"`, "a\rb", "a\rb", "", true, true, false},
+		{"007", "", "007", "007", false, true, true},
+		{"1.50", "", "1.50", "1.50", false, true, true},
+		{"True", "", "True", "True", false, true, true},
+		{".inf", "", ".inf", ".inf", false, true, true},
+		{".nan", "", ".nan", ".nan", false, true, true},
+		{"~", "", "", "", false, false, false},
+		{"null", "", "", "", false, false, false},
+		{"[a]", "", "", "", false, false, false},
+		{"{a: b}", "", "", "", false, false, false},
+	}
+	for _, c := range cases {
+		n := value(c.src)
+		if s, ok := String(n); ok != c.isStr || s != c.str {
+			t.Errorf("String(%q) = %q, %v", c.src, s, ok)
+		}
+		if s, ok := Scalar(n); ok != c.isScl || s != c.scl {
+			t.Errorf("Scalar(%q) = %q, %v", c.src, s, ok)
+		}
+		if s, ok := Line(n); ok != c.isLine || s != c.line {
+			t.Errorf("Line(%q) = %q, %v", c.src, s, ok)
+		}
+	}
+	// An empty value is a null, not an empty string.
+	if _, ok := Scalar(value("")); ok {
+		t.Error("an absent value read as a scalar")
+	}
+	// Keys are their spellings.
+	m := parseBody(t, "a: 1\n\"b c\": 2\n").(*ast.MappingNode)
+	if Key(m.Values[0].Key) != "a" || Key(m.Values[1].Key) != "b c" {
+		t.Errorf("keys = %q, %q", Key(m.Values[0].Key), Key(m.Values[1].Key))
+	}
+}

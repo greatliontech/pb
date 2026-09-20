@@ -68,7 +68,7 @@ plugins:
 	}{
 		"unknown top-level key":  {"defaults: allow-unsigned\n", `unknown key "defaults"`},
 		"bad default mode":       {"default: never\n", `unknown mode "never"`},
-		"default not a string":   {"default: [a]\n", "default must be a string"},
+		"default not a string":   {"default: [a]\n", "default must be one line of text"},
 		"modules not a list":     {"modules: yes\n", "modules must be a list"},
 		"rule not a mapping":     {"modules:\n  - prefix\n", "modules[0] must be a mapping"},
 		"unknown rule key":       {"modules:\n  - scope: x\n", `unknown key "scope"`},
@@ -85,8 +85,12 @@ plugins:
 		"more than one document":      {"a: 1\n---\nb: 2\n", "exactly one YAML document"},
 		"top level not a mapping":     {"- a\n", "top level must be a mapping"},
 		"plugins not a list":          {"plugins: yes\n", "plugins must be a list"},
-		"rule prefix not a string":    {"modules:\n  - prefix: [a]\n", "prefix must be a string"},
-		"identity value not a string": {"modules:\n  - identity:\n      san: [a]\n", "identity.san must be a string"},
+		"rule prefix not a string":    {"modules:\n  - prefix: [a]\n", "prefix must be one line of text"},
+		"rule prefix literal block":   {"modules:\n  - prefix: |\n      github.com/a\n", "prefix must be one line of text"},
+		"limit not a line":            {"execution:\n  limits:\n    memory: [512]\n", "execution.limits.memory must be one line of text"},
+		"unknown limit not a line":    {"execution:\n  limits:\n    disk: [1Gi]\n", `execution.limits: unknown key "disk"`},
+		"identity san literal block":  {"modules:\n  - identity:\n      san: |\n        a\n", "identity.san must be one line of text"},
+		"identity value not a string": {"modules:\n  - identity:\n      san: [a]\n", "identity.san must be one line of text"},
 	}
 	for name, c := range invalid {
 		t.Run("invalid: "+name, func(t *testing.T) {
@@ -447,5 +451,24 @@ func TestEffectiveLimits(t *testing.T) {
 	partial := (&Execution{Limits: Limits{Pids: 9}}).EffectiveLimits()
 	if partial.Pids != 9 || partial.Memory != DefaultMemoryBytes || partial.Timeout != DefaultTimeout || partial.CPU <= 0 {
 		t.Fatalf("partial limits = %+v", partial)
+	}
+}
+
+// A policy value is one line of text in any YAML scalar spelling: a
+// folded block that folds to a line, a quoted string, a typed spelling
+// read as the text written (module-file.md REQ-modfile-acceptance's
+// family rule; provenance.md REQ-prov-trust-schema).
+func TestParseTakesEveryLineSpelling(t *testing.T) {
+	in := "default: 'allow-unsigned'\nmodules:\n  - prefix: >-\n      github.com/\n      acme\n    require: \"require-provenance\"\n    identity:\n      san: >-\n        https://x/*\n      issuer: 1\n"
+	p, err := Parse([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Default != AllowUnsigned || len(p.Modules) != 1 {
+		t.Fatalf("policy = %+v", p)
+	}
+	r := p.Modules[0]
+	if r.Prefix != "github.com/ acme" || r.Require != RequireProvenance || r.Identity == nil || r.Identity.SAN != "https://x/*" || r.Identity.Issuer != "1" {
+		t.Fatalf("rule = %+v identity = %+v", r, r.Identity)
 	}
 }

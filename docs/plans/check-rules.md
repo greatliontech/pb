@@ -7,14 +7,15 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
       bindings and library, rule-file discovery, rulesets as declared
       dependencies with tidy keeping them, the base materialized, the
       two verbs
-- [ ] 2. Rule files: `*.rules.yaml` parsed and validated, the
+- [x] 2. Rule files: `*.rules.yaml` parsed and validated, the
       environment version refused where unprovided
 - [ ] 3. Environment 1: cel-go over descriptor protos, the bindings
       and the library, bounded evaluation, the segmentation rule
 - [ ] 4. Lint evaluation: entities bound per target, verdicts located
       through source info, no defaults, suppression comments
 - [ ] 5. The lint file: rulesets, selection, severities, path
-      ignores; rulesets read from the build, tidy keeping them
+      ignores; rulesets read from the build and a bad rule file named
+      with its ruleset, tidy keeping them
 - [ ] 6. Breaking: the pairing, oneofs and extensions included; the
       base's three forms materialized and compiled
 - [ ] 7. The verbs: `pb lint` and `pb breaking` with the command's

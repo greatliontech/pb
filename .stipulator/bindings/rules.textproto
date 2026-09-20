@@ -1,0 +1,102 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-rules-file-schema"
+  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
+  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "632c14be974542383b2fb8fbdbbbc5c6e5b44113b029ebd116d5f1f4fc0e99d2"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-schema"
+  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
+  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRuleFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7ac625771ef4304c2ec528e950d8d79404014b3b004913d80e58ea29b4f49bfe"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-schema"
+  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
+  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRefusesSchemaDepartures"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "03a34ca95416f4805861e61acc8dfd4bd37c960018c66db1bd9378d030ef9a8d"
+}
+
+bindings {
+  requirement_id: "REQ-rules-env-versioned"
+  content_hash: "723e5a3deabaaea7ebad15736490459c7fd4061b0fe4c2c0c060a8510a3de3a3"
+  source_hash: "00f7b9cd955607759c5920bd7a94870241ccaddd5b50379810628e96e40d8b92"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "632c14be974542383b2fb8fbdbbbc5c6e5b44113b029ebd116d5f1f4fc0e99d2"
+}
+
+bindings {
+  requirement_id: "REQ-rules-env-versioned"
+  content_hash: "723e5a3deabaaea7ebad15736490459c7fd4061b0fe4c2c0c060a8510a3de3a3"
+  source_hash: "00f7b9cd955607759c5920bd7a94870241ccaddd5b50379810628e96e40d8b92"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check.ProvidesEnvironment"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8c58d5df0e4e6094a0166d1eafcf52c1d1336f258331f480069eb1be59d4ad10"
+}
+
+bindings {
+  requirement_id: "REQ-rules-env-versioned"
+  content_hash: "723e5a3deabaaea7ebad15736490459c7fd4061b0fe4c2c0c060a8510a3de3a3"
+  source_hash: "00f7b9cd955607759c5920bd7a94870241ccaddd5b50379810628e96e40d8b92"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRefusesUnprovidedEnvironment"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b975a779c9125b38edde7f9e146b4d649a7bafacec6efb1a79e6a90e4a795106"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-discovery"
+  content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+  source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.Discover"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "1fd5abb568fe76cd6d638f9afc01d201e1de66c819aaaae8c87e3c36ba32110e"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-discovery"
+  content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+  source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestDiscover"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "91d2cfa73bc6e6ff213115f7f6638011f755bd86b9920484220e3897421933ff"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-schema"
+  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
+  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseTakesEveryScalarSpelling"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a48ba7abb7f82cd46dd29f9aff9f6af7a7f5f99efccc3f96bf3442d6f5408eeb"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-schema"
+  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
+  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/contractfile.TestScalarReaders"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "34cf9b51dc35e46e4cf3993ed162ec1e8682b17a629accb72cf93a712333fa05"
+}

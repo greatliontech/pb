@@ -184,7 +184,7 @@ func Parse(data []byte) (*Policy, error) {
 	}
 	p := &Policy{}
 	for _, kv := range mapping.Values {
-		key := keyString(kv.Key)
+		key := contractfile.Key(kv.Key)
 		switch key {
 		case "default":
 			m, err := parseMode(kv.Value, "default")
@@ -217,21 +217,14 @@ func Parse(data []byte) (*Policy, error) {
 	return p, nil
 }
 
-func keyString(n ast.Node) string {
-	if s, ok := n.(*ast.StringNode); ok {
-		return s.Value
-	}
-	return n.String()
-}
-
 func parseMode(n ast.Node, field string) (Mode, error) {
-	s, ok := n.(*ast.StringNode)
+	s, ok := contractfile.Line(n)
 	if !ok {
-		return "", fmt.Errorf("%w: %s must be a string", ErrInvalid, field)
+		return "", fmt.Errorf("%w: %s must be one line of text", ErrInvalid, field)
 	}
-	m := Mode(s.Value)
+	m := Mode(s)
 	if m != AllowUnsigned && m != RequireProvenance {
-		return "", fmt.Errorf("%w: %s: unknown mode %q", ErrInvalid, field, s.Value)
+		return "", fmt.Errorf("%w: %s: unknown mode %q", ErrInvalid, field, s)
 	}
 	return m, nil
 }
@@ -250,14 +243,14 @@ func parseRules(n ast.Node, field string) ([]Rule, error) {
 		}
 		var r Rule
 		for _, kv := range rm.Values {
-			key := keyString(kv.Key)
+			key := contractfile.Key(kv.Key)
 			switch key {
 			case "prefix":
-				s, ok := kv.Value.(*ast.StringNode)
+				s, ok := contractfile.Line(kv.Value)
 				if !ok {
-					return nil, fmt.Errorf("%w: %s[%d].prefix must be a string", ErrInvalid, field, i)
+					return nil, fmt.Errorf("%w: %s[%d].prefix must be one line of text", ErrInvalid, field, i)
 				}
-				r.Prefix = s.Value
+				r.Prefix = s
 			case "require":
 				m, err := parseMode(kv.Value, fmt.Sprintf("%s[%d].require", field, i))
 				if err != nil {
@@ -293,14 +286,14 @@ func parseExecution(n ast.Node) (*Execution, error) {
 	}
 	e := &Execution{}
 	for _, kv := range m.Values {
-		key := keyString(kv.Key)
+		key := contractfile.Key(kv.Key)
 		switch key {
 		case "min-tier":
-			s, ok := kv.Value.(*ast.StringNode)
-			if !ok || !plugin.ValidTier(s.Value) {
+			s, ok := contractfile.Line(kv.Value)
+			if !ok || !plugin.ValidTier(s) {
 				return nil, fmt.Errorf("%w: execution.min-tier must be one of Strong, OS, Minimal, None", ErrInvalid)
 			}
-			e.MinTier = s.Value
+			e.MinTier = s
 		case "schemes":
 			seq, ok := kv.Value.(*ast.SequenceNode)
 			if !ok {
@@ -308,14 +301,14 @@ func parseExecution(n ast.Node) (*Execution, error) {
 			}
 			schemes := make([]string, 0, len(seq.Values))
 			for _, sn := range seq.Values {
-				s, ok := sn.(*ast.StringNode)
-				if !ok || !plugin.ValidScheme(s.Value) {
+				s, ok := contractfile.Line(sn)
+				if !ok || !plugin.ValidScheme(s) {
 					return nil, fmt.Errorf("%w: execution.schemes entries are oci or local", ErrInvalid)
 				}
-				if slices.Contains(schemes, s.Value) {
-					return nil, fmt.Errorf("%w: execution.schemes lists %q twice", ErrInvalid, s.Value)
+				if slices.Contains(schemes, s) {
+					return nil, fmt.Errorf("%w: execution.schemes lists %q twice", ErrInvalid, s)
 				}
-				schemes = append(schemes, s.Value)
+				schemes = append(schemes, s)
 			}
 			e.Schemes = schemes
 		case "local-pin":
@@ -362,17 +355,17 @@ func parseLimits(n ast.Node) (*Limits, error) {
 	}
 	l := &Limits{}
 	for _, kv := range m.Values {
-		key := keyString(kv.Key)
+		key := contractfile.Key(kv.Key)
+		switch key {
+		case "memory", "cpu", "pids", "timeout":
+		default:
+			return nil, fmt.Errorf("%w: execution.limits: unknown key %q", ErrInvalid, key)
+		}
 		// Every limit value is a scalar spelling validated by its own
-		// grammar; typed YAML interpretations (ints, floats) are read
-		// back from their source text so the grammar governs, not the
-		// parser's coercion. String nodes contribute their value, not
-		// their possibly-quoted rendering.
-		var val string
-		if s, ok := kv.Value.(*ast.StringNode); ok {
-			val = s.Value
-		} else {
-			val = strings.TrimSpace(kv.Value.String())
+		// grammar — the text written, never the parser's coercion.
+		val, ok := contractfile.Line(kv.Value)
+		if !ok {
+			return nil, fmt.Errorf("%w: execution.limits.%s must be one line of text", ErrInvalid, key)
 		}
 		var err error
 		switch key {
@@ -384,8 +377,6 @@ func parseLimits(n ast.Node) (*Limits, error) {
 			l.Pids, err = parsePositiveInt(val)
 		case "timeout":
 			l.Timeout, err = parseTimeout(val)
-		default:
-			return nil, fmt.Errorf("%w: execution.limits: unknown key %q", ErrInvalid, key)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("%w: execution.limits.%s: %v", ErrInvalid, key, err)
@@ -504,16 +495,16 @@ func parseIdentity(n ast.Node, field string) (*IdentityRule, error) {
 	}
 	id := &IdentityRule{}
 	for _, kv := range m.Values {
-		key := keyString(kv.Key)
-		s, ok := kv.Value.(*ast.StringNode)
+		key := contractfile.Key(kv.Key)
+		s, ok := contractfile.Line(kv.Value)
 		if !ok {
-			return nil, fmt.Errorf("%w: %s.%s must be a string", ErrInvalid, field, key)
+			return nil, fmt.Errorf("%w: %s.%s must be one line of text", ErrInvalid, field, key)
 		}
 		switch key {
 		case "san":
-			id.SAN = s.Value
+			id.SAN = s
 		case "issuer":
-			id.Issuer = s.Value
+			id.Issuer = s
 		default:
 			return nil, fmt.Errorf("%w: %s: unknown key %q", ErrInvalid, field, key)
 		}

@@ -58,9 +58,11 @@ overrides:
 }
 
 // Numeric-, boolean-, and float-looking scalars are recorded as the
-// text the author wrote, never the parser's typed reading.
+// text the author wrote, never the parser's typed reading; a block
+// scalar is a scalar too, its value the block's text with the
+// newline the block ends in.
 func TestScalarSpellingsPreserved(t *testing.T) {
-	in := "plugins:\n  - ref: localhost:5000/p:0x1f\n    out: gen\n    opt: 007\noverrides:\n  - files: a.proto\n    option: opt\n    value: 1.0\n  - files: b.proto\n    option: opt\n    value: True\n"
+	in := "plugins:\n  - ref: localhost:5000/p:0x1f\n    out: gen\n    opt: 007\n  - ref: localhost:5000/q:v1\n    out: gen2\n    opt: |\n      paths=source_relative,\n      module=x\noverrides:\n  - files: a.proto\n    option: opt\n    value: 1.0\n  - files: b.proto\n    option: opt\n    value: True\n  - files: c.proto\n    option: opt\n    value: >-\n      folded\n      value\n  - files: d.proto\n    option: opt\n    value: |\n      two\n      lines\n"
 	f, err := Parse([]byte(in))
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +70,10 @@ func TestScalarSpellingsPreserved(t *testing.T) {
 	if f.Plugins[0].Ref != "localhost:5000/p:0x1f" || f.Plugins[0].Opt != "007" {
 		t.Errorf("plugin spellings altered: %+v", f.Plugins[0])
 	}
-	if f.Overrides[0].Value != "1.0" || f.Overrides[1].Value != "True" {
+	if f.Plugins[1].Opt != "paths=source_relative,\nmodule=x\n" {
+		t.Errorf("block scalar opt = %q", f.Plugins[1].Opt)
+	}
+	if f.Overrides[0].Value != "1.0" || f.Overrides[1].Value != "True" || f.Overrides[2].Value != "folded value" || f.Overrides[3].Value != "two\nlines\n" {
 		t.Errorf("override spellings altered: %+v", f.Overrides)
 	}
 }
@@ -86,9 +91,13 @@ func TestParseRejections(t *testing.T) {
 		{"no scheme", "plugins:\n  - out: gen\n", "exactly one of ref or local, found 0"},
 		{"two schemes", "plugins:\n  - ref: ghcr.io/o/p:v1\n    local: protoc-gen-p\n    out: gen\n", "exactly one of ref or local, found 2"},
 		{"no out", "plugins:\n  - ref: ghcr.io/o/p:v1\n", "has no out"},
-		{"ref not scalar", "plugins:\n  - ref: [a]\n    out: gen\n", "ref must be a string"},
-		{"out not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: {a: b}\n", "out must be a string"},
-		{"opt not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    opt: [x]\n", "opt must be a string"},
+		{"ref not scalar", "plugins:\n  - ref: [a]\n    out: gen\n", "ref must be one line of text"},
+		{"ref block", "plugins:\n  - ref: |\n      ghcr.io/o/p:v1\n    out: gen\n", "ref must be one line of text"},
+		{"local block", "plugins:\n  - local: |\n      bin/gen\n    out: gen\n", "local must be one line of text"},
+		{"out not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: {a: b}\n", "out must be one line of text"},
+		{"out block", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: |\n      gen\n", "out must be one line of text"},
+		{"out broken", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: \"gen\\nx\"\n", "out must be one line of text"},
+		{"opt not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    opt: [x]\n", "opt must be a scalar"},
 		{"ref digest", "plugins:\n  - ref: ghcr.io/o/p@sha256:abc\n    out: gen\n", "carries a digest"},
 		{"ref no registry", "plugins:\n  - ref: protoc-gen-go:v1\n    out: gen\n", "has no registry"},
 		{"ref short registry", "plugins:\n  - ref: library/p:v1\n    out: gen\n", "does not name itself unambiguously"},
@@ -134,7 +143,10 @@ func TestParseRejections(t *testing.T) {
 		{"override unknown key", ok + "overrides:\n  - files: a\n    option: o\n    value: v\n    extra: 1\n", `unknown key "extra"`},
 		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "has no value"},
 		{"override missing files", ok + "overrides:\n  - option: o\n    value: v\n", "has no files"},
-		{"override non-scalar", ok + "overrides:\n  - files: [a]\n    option: o\n    value: v\n", "files must be a string"},
+		{"override non-scalar", ok + "overrides:\n  - files: [a]\n    option: o\n    value: v\n", "files must be one line of text"},
+		{"override files block", ok + "overrides:\n  - files: |\n      a\n    option: o\n    value: v\n", "files must be one line of text"},
+		{"override option block", ok + "overrides:\n  - files: a\n    option: |\n      o\n    value: v\n", "option must be one line of text"},
+		{"override value list", ok + "overrides:\n  - files: a\n    option: o\n    value: [v]\n", "value must be a scalar"},
 		{"override bad glob", ok + "overrides:\n  - files: \"a[\"\n    option: o\n    value: v\n", "files:"},
 		{"override bad option", ok + "overrides:\n  - files: a\n    option: 1go\n    value: v\n", "not a protobuf option name"},
 		{"override empty option component", ok + "overrides:\n  - files: a\n    option: a..b\n    value: v\n", "not a protobuf option name"},

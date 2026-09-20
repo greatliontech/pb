@@ -18,6 +18,7 @@ while the tree does another.
 | proto | generation.md (the compile half), module-resolution.md (the import satisfaction half) | `proto/modfiles`, `proto/compile`, `proto/importcheck` |
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
+| check | check-rules.md | `check`, `check/rules` |
 | driver | module-resolution.md | `resolve` |
 | verbs | dep-verbs.md | `dep`, `cmd/pb` |
 
@@ -26,7 +27,7 @@ level: none imports another, in either direction. The plugin
 vocabulary sits above module because the lockfile and the trust
 policy spell its schemes and tiers; user configuration sits just
 above plugin because the runner is its one reader. A package name is
-under `internal/` unless it names a command. check-rules.md has no
-packages yet; its domain enters the table between plugin and the
-driver with its first package. Test support lives under `testing/`
-(its own README) and is imported from test files only.
+under `internal/` unless it names a command. The check domain sits
+between plugin and the driver: it judges the compiled build and
+reaches nothing below it in the table. Test support lives under
+`testing/` (its own README) and is imported from test files only.

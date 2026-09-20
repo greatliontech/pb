@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-rules-file-schema"
-reason: "the check domain is specced and not yet built"
-content_hash: "67b37758721bc0821c55d8f5b8cbf39e6f883332edc866b0fd876bc5be7c501f"
-source_hash: "92c9555d293e06975c01fd791247459bc2c1c8e00eb4c5bffb376786569232a4"
-lands { manual { condition: "the rule-file parser is built" } }

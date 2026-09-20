@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-rules-file-discovery"
-reason: "the check domain is specced and not yet built"
-content_hash: "e731f94134190c36da2f717915775fb0e6d6a3015c04889dc15b2770bba2921a"
-source_hash: "ec589e461272b108528f1b3a9b4a0c2cc968436178ff1665e6ae5812058e4849"
-lands { manual { condition: "the rule-file parser is built" } }
+reason: "the discovery reads and parses the files; the failing file is named with its ruleset where the lint file names rulesets"
+content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+lands { manual { condition: "the lint file is built" } }

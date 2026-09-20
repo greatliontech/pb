@@ -38,7 +38,10 @@ no `@digest` appears — the lockfile pins the digest. An `out` value is a
 clean relative path written with forward slashes, never absolute and
 never escaping the resolution root through `..`. Every scalar is
 recorded with its written spelling — a value that looks numeric or
-boolean is still the text the author wrote. Runner selection, trust
+boolean is still the text the author wrote; `ref`, `local`, `out`,
+`files` and `option` are one line of text, a spelling holding a line
+break refused, while `opt` and `value` are text as written, a block
+scalar included. Runner selection, trust
 posture, and resource limits are not generation configuration and
 have no keys here (`plugin-execution.md`, `provenance.md`).
 

@@ -20,6 +20,7 @@ package contractfile
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
@@ -91,4 +92,55 @@ func Check(node ast.Node) error {
 		}
 	}
 	return nil
+}
+
+// Key is a mapping key's spelling. Check admits string keys alone, so
+// every key a parser built on Doc sees is a string node; the fallback
+// spells any other node for a parser checking a sub-document it
+// obtained another way.
+func Key(n ast.Node) string {
+	if s, ok := n.(*ast.StringNode); ok {
+		return s.Value
+	}
+	return n.String()
+}
+
+// String is a YAML string in any of its spellings — plain, quoted, or
+// a block scalar — as written, a block's line breaks kept; any other
+// node is not a string.
+func String(n ast.Node) (string, bool) {
+	switch v := n.(type) {
+	case *ast.StringNode:
+		return v.Value, true
+	case *ast.LiteralNode:
+		return v.Value.Value, true
+	}
+	return "", false
+}
+
+// Scalar is a scalar node's written spelling: a string's value, or the
+// source token of a number, boolean, infinity or NaN — the text the
+// author wrote, never the parser's typed reading. A non-scalar
+// (mapping, sequence, null) is not a spelling.
+func Scalar(n ast.Node) (string, bool) {
+	if s, ok := String(n); ok {
+		return s, true
+	}
+	switch n.(type) {
+	case *ast.IntegerNode, *ast.FloatNode, *ast.BoolNode, *ast.InfinityNode, *ast.NanNode:
+		return n.GetToken().Value, true
+	}
+	return "", false
+}
+
+// Line is a scalar spelling that is one line of text — a name, a path,
+// a reference, a message — in any spelling, a folded block included,
+// whose text holds no line break. A literal block, or a block ending
+// in its newline, is text and not a line.
+func Line(n ast.Node) (string, bool) {
+	s, ok := Scalar(n)
+	if !ok || strings.ContainsAny(s, "\n\r") {
+		return "", false
+	}
+	return s, true
 }

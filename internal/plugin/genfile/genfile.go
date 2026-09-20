@@ -61,7 +61,7 @@ func Parse(data []byte) (*File, error) {
 	f := &File{}
 	seenPlugins := false
 	for _, kv := range mapping.Values {
-		key := keyString(kv.Key)
+		key := contractfile.Key(kv.Key)
 		switch key {
 		case "plugins":
 			seenPlugins = true
@@ -86,26 +86,6 @@ func Parse(data []byte) (*File, error) {
 	return f, nil
 }
 
-func keyString(n ast.Node) string {
-	if s, ok := n.(*ast.StringNode); ok {
-		return s.Value
-	}
-	return n.String()
-}
-
-// scalarText returns a scalar node's written spelling: the unquoted
-// value of a string node, the source token of any other scalar. A
-// non-scalar (mapping, sequence, null) is not a spelling.
-func scalarText(n ast.Node) (string, bool) {
-	switch v := n.(type) {
-	case *ast.StringNode:
-		return v.Value, true
-	case *ast.IntegerNode, *ast.FloatNode, *ast.BoolNode, *ast.InfinityNode, *ast.NanNode:
-		return v.GetToken().Value, true
-	}
-	return "", false
-}
-
 func parsePlugins(n ast.Node) ([]Plugin, error) {
 	seq, ok := n.(*ast.SequenceNode)
 	if !ok {
@@ -124,13 +104,18 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 		schemes := 0
 		hasOut := false
 		for _, kv := range em.Values {
-			key := keyString(kv.Key)
-			text, isScalar := scalarText(kv.Value)
+			key := contractfile.Key(kv.Key)
+			// A reference and a path are one line; the parameter string
+			// is text as written.
+			text, isScalar := contractfile.Line(kv.Value)
+			if key == "opt" {
+				text, isScalar = contractfile.Scalar(kv.Value)
+			}
 			switch key {
 			case "ref", "local":
 				schemes++
 				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].%s must be a string", ErrInvalid, i, key)
+					return nil, fmt.Errorf("%w: plugins[%d].%s must be one line of text", ErrInvalid, i, key)
 				}
 				p.Ref = text
 				p.Scheme = plugin.SchemeOCI
@@ -139,13 +124,13 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 				}
 			case "out":
 				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].out must be a string", ErrInvalid, i)
+					return nil, fmt.Errorf("%w: plugins[%d].out must be one line of text", ErrInvalid, i)
 				}
 				hasOut = true
 				p.Out = text
 			case "opt":
 				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].opt must be a string", ErrInvalid, i)
+					return nil, fmt.Errorf("%w: plugins[%d].opt must be a scalar", ErrInvalid, i)
 				}
 				p.Opt = text
 			default:
@@ -403,15 +388,23 @@ func parseOverrides(n ast.Node) ([]Override, error) {
 		var o Override
 		seen := map[string]bool{}
 		for _, kv := range em.Values {
-			key := keyString(kv.Key)
-			text, isScalar := scalarText(kv.Value)
+			key := contractfile.Key(kv.Key)
+			// A glob and an option name are one line; the value is text
+			// as written.
+			text, isScalar := contractfile.Line(kv.Value)
+			if key == "value" {
+				text, isScalar = contractfile.Scalar(kv.Value)
+			}
 			switch key {
 			case "files", "option", "value":
 			default:
 				return nil, fmt.Errorf("%w: overrides[%d]: unknown key %q", ErrInvalid, i, key)
 			}
 			if !isScalar {
-				return nil, fmt.Errorf("%w: overrides[%d].%s must be a string", ErrInvalid, i, key)
+				if key == "value" {
+					return nil, fmt.Errorf("%w: overrides[%d].value must be a scalar", ErrInvalid, i)
+				}
+				return nil, fmt.Errorf("%w: overrides[%d].%s must be one line of text", ErrInvalid, i, key)
 			}
 			seen[key] = true
 			switch key {
