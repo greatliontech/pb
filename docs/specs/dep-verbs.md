@@ -74,6 +74,13 @@ fails tidy when no declared version exists to keep. Tidy removes
 lockfile pins for (module path, version) pairs outside the tidied
 requirement graph, and is idempotent: a second run changes nothing.
 
+**REQ-dep-tidy-rulesets** (behavior): Tidy MUST keep, at the selected
+version, each declaration of a module the lint file's `rulesets`
+names (`check-rules.md`) as if a proto import of the declaring
+workspace module used it — never adding a ruleset declaration — and
+fail naming the ruleset when no workspace module declares it and it is
+no workspace module.
+
 **REQ-dep-download** (behavior): `download` MUST fetch, verify, and pin
 the artifacts of every non-local build-list module into the module
 cache — archive, module file (when the module declares one), info, and

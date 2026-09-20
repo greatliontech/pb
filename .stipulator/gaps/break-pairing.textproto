@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-break-pairing"
-reason: "The breaking-change checker is not yet built"
-content_hash: "781e8eb6ba0f59be4ecd0433465de17ff451f5028e8a0b19c08128378f18363d"
-source_hash: "bb327de8c453a5c73ff41a7f8ced3b6ea7b4b451111300362053a772e9346742"
-lands { manual { condition: "the breaking-change checker is built" } }
+reason: "the check domain is specced and not yet built"
+content_hash: "0515929d49a27099d171ca25aa33bde0045f980994b26340c31a959e738a5c02"
+source_hash: "803ab17918b90bb7c2e33c1c5d7404a7edfb5b52c326926f84f208854160ab6b"
+lands { manual { condition: "breaking alignment and the base are built" } }

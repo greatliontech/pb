@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-lint-selection"
+reason: "the check domain is specced and not yet built"
+content_hash: "b23dbc73ea1164d8dba7af0d4d753c7d038aed91dbf476a50a6149ec3879bbda"
+source_hash: "c91baff57425c9d17e3544319a8f893c573b7133057692796f2d48ecad4ba201"
+lands { manual { condition: "the lint file is built" } }

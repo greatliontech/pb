@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-lint-suppression"
-reason: "The lint subsystem is not yet built"
-content_hash: "c3c82950021ea28e8f2f64da7dbe17b7c0d3bdea0f623b91343ae5f11b4067a5"
-source_hash: "9a2450d15fd1b2bf63eea331a93e28a7da1d51d8c7dc1cc12a0ed09e7838c943"
-lands { manual { condition: "the lint subsystem is built" } }
+reason: "the check domain is specced and not yet built"
+content_hash: "8f3d691aa907c11cf7114f1e1ff3dc49e29e5c3bde1f8ca9537e8cb436f2ce6b"
+source_hash: "9d2d1e439c88a4335791b6afb68eba0465c7783901d7931c109d726012faa489"
+lands { manual { condition: "lint evaluation is built" } }

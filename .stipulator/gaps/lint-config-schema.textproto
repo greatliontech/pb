@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-lint-config-schema"
-reason: "The lint subsystem is not yet built"
-content_hash: "d55dbdd2c6cac95520ba2c7efbd54c7e99b78f3245ac96b3ed77e9b9bb9e3003"
-source_hash: "60d91e88b9af9bf5ce6bf7a79abefdaf7fa2e734b536750e7935a2564f900ac4"
-lands { manual { condition: "the lint subsystem is built" } }
+reason: "the check domain is specced and not yet built"
+content_hash: "a9b4c6504572c819082a4110950b76f71d85002b3dc2010ae347dca1c4d68df7"
+source_hash: "d2c9e0876c8247a646c9af516c4ec58f29eba788b507f20167f4c70022e82a66"
+lands { manual { condition: "the lint file is built" } }

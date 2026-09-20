@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-env1-lookup-scope"
+reason: "the check domain is specced and not yet built"
+content_hash: "459cb8eac60fc5443443684ff65bcd3f6cf6b56eda59f625603eb97b19458481"
+source_hash: "48851e4aa771ad3da3c5505c6f1150d3a781b0c3d5b0da2b8812a9ddcbe3c479"
+lands { manual { condition: "environment 1 is built" } }

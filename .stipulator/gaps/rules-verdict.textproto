@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-rules-verdict"
-reason: "The rules engine is not yet built"
-content_hash: "bfe3aef064cc497656da52c2a3a2728124c44a3ffedc62153168694bb27d3b84"
-source_hash: "39b2063f220d97432e7d24e772a2fdbd1f8f47286f36b9d6d03282ed84fd4336"
-lands { manual { condition: "the rules engine is built" } }
+reason: "the check domain is specced and not yet built"
+content_hash: "3902e1382c15de6e598f0c9d9e849cfa5cf09f8b211a354faecace04b77103c1"
+source_hash: "462fa85c0613ff4c5d74909cabad9e642dc97882a6fea01b434d97c654bda6a5"
+lands { manual { condition: "lint evaluation is built" } }

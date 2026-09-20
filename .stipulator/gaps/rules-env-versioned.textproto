@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-rules-env-versioned"
-reason: "The rules engine is not yet built"
+reason: "the check domain is specced and not yet built"
 content_hash: "db625341a60bc5bb54e9cb296d29cc1f3f3a492bb4ba4246695c5926afea677f"
 source_hash: "1996fe46a6ed07187aea796eadfeffeec5c07705cf39a5980bc6f33b923867fb"
-lands { manual { condition: "the rules engine is built" } }
+lands { manual { condition: "the rule-file parser is built" } }

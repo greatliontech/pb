@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-check-breaking-verb"
+reason: "the check domain is specced and not yet built"
+content_hash: "4e05872f30044731a4b2421393d02237ae69e095f8d9ec0ebdfee39988d4f2e2"
+source_hash: "97079f9806308ec36ade75d95e1a6228f6b9e5bab968a294db5881d16e33428f"
+lands { manual { condition: "the check verbs are built" } }
