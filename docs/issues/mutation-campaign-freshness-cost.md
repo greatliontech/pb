@@ -31,3 +31,12 @@ session's memory guard, and a fifth, capped at 6 GiB with another
 campaign resident, died in gofresh's package-graph load. The
 oracle attributes; the record is unbanked for the same class of
 cost.
+
+On gomutant 9881159 the campaigns reach measurement: a one-target
+delta measured in ten minutes at 9.5 GiB peak, and a 73-target delta
+over three commits banked its first target at seventeen minutes and
+seven by a 25-minute cap, pacing at about two hours for the run at
+7.8 GiB peak. The stall is gone; the cost remains the document's,
+the first quarter hour of every run spent before any mutant, so a
+chunk's close-out campaign is an hours-class background run on this
+host.
