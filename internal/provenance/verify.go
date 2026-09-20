@@ -110,7 +110,7 @@ func Record(ev Evidence, vi *gitprov.VerifiedIdentity) (lockfile.Provenance, err
 		return lockfile.Provenance{}, fmt.Errorf("provenance: hash tag: %w", err)
 	}
 	return lockfile.Provenance{
-		Type:         "git-signed-tag",
+		Type:         lockfile.ProvenanceGitSignedTag,
 		ObjectFormat: string(ev.Format),
 		Object:       hex.EncodeToString(h),
 		SAN:          vi.Subject,

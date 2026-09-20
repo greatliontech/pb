@@ -155,11 +155,12 @@ func acquirerConfig(settings *userconfig.Settings, runner plugrun.Runner, s *dep
 	}
 	os_, arch := runner.Platform()
 	return plugoci.Config{
-		WorkDir:  filepath.Join(base, "pb", "plugins"),
-		Lock:     s.Lock,
-		Policy:   s.Client.Policy,
-		Platform: plugoci.Platform{OS: os_, Arch: arch},
-		Pull:     pull,
+		WorkDir:     filepath.Join(base, "pb", "plugins"),
+		Lock:        s.Lock,
+		Policy:      s.Client.Policy,
+		TrustedRoot: s.Client.TrustedRoot,
+		Platform:    plugoci.Platform{OS: os_, Arch: arch},
+		Pull:        pull,
 	}, nil
 }
 

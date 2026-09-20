@@ -41,12 +41,24 @@ var ErrPinMismatch = errors.New("lockfile pin mismatch")
 // (REQ-lock-no-silent-downgrade).
 var ErrProvenanceDowngrade = errors.New("provenance downgrade")
 
+// The evidence types a provenance record names
+// (REQ-lock-provenance-record).
+const (
+	// ProvenanceGitSignedTag is a signed git tag over the module's
+	// commit: the record carries the signed object.
+	ProvenanceGitSignedTag = "git-signed-tag"
+	// ProvenanceImageSignature is a sigstore signature over the
+	// plugin image's digest: the record carries the identity alone,
+	// the entry's digest being what was signed.
+	ProvenanceImageSignature = "image-signature"
+)
+
 // Provenance is a lockfile provenance record (REQ-lock-provenance-record).
 // The zero value is the literal `none`.
 type Provenance struct {
-	Type         string // "git-signed-tag"
-	ObjectFormat string // "sha1" or "sha256"
-	Object       string // hex git hash of the signed object
+	Type         string // ProvenanceGitSignedTag or ProvenanceImageSignature
+	ObjectFormat string // git-signed-tag: "sha1" or "sha256"
+	Object       string // git-signed-tag: hex git hash of the signed object
 	SAN          string
 	Issuer       string
 }
@@ -142,24 +154,36 @@ func checkHashRef(prefix, d string) error {
 	return nil
 }
 
-func checkProvenance(p Provenance) error {
+// checkProvenance validates a record against the evidence type its
+// entry kind admits (REQ-lock-provenance-record).
+func checkProvenance(p Provenance, admitted string) error {
 	if p == (Provenance{}) {
 		return nil
 	}
-	if p.Type != "git-signed-tag" {
+	if p.Type != ProvenanceGitSignedTag && p.Type != ProvenanceImageSignature {
 		return fmt.Errorf("unknown provenance type %q", p.Type)
 	}
-	var hexLen int
-	switch p.ObjectFormat {
-	case "sha1":
-		hexLen = 40
-	case "sha256":
-		hexLen = 64
-	default:
-		return fmt.Errorf("unknown object format %q", p.ObjectFormat)
+	if p.Type != admitted {
+		return fmt.Errorf("provenance type %q is not this entry's (%s)", p.Type, admitted)
 	}
-	if !hexOK(p.Object, hexLen) {
-		return fmt.Errorf("object %q is not %d lowercase hex digits", p.Object, hexLen)
+	switch p.Type {
+	case ProvenanceGitSignedTag:
+		var hexLen int
+		switch p.ObjectFormat {
+		case "sha1":
+			hexLen = 40
+		case "sha256":
+			hexLen = 64
+		default:
+			return fmt.Errorf("unknown object format %q", p.ObjectFormat)
+		}
+		if !hexOK(p.Object, hexLen) {
+			return fmt.Errorf("object %q is not %d lowercase hex digits", p.Object, hexLen)
+		}
+	case ProvenanceImageSignature:
+		if p.ObjectFormat != "" || p.Object != "" {
+			return fmt.Errorf("an %s record names no signed object", ProvenanceImageSignature)
+		}
 	}
 	if p.SAN == "" || p.Issuer == "" {
 		return errors.New("identity needs both san and issuer")
@@ -193,7 +217,7 @@ func checkModulePin(m ModulePin) error {
 			return fmt.Errorf("modfile: %v", err)
 		}
 	}
-	if err := checkProvenance(m.Provenance); err != nil {
+	if err := checkProvenance(m.Provenance, ProvenanceGitSignedTag); err != nil {
 		return fmt.Errorf("module %q: %v", m.Path, err)
 	}
 	return nil
@@ -234,7 +258,7 @@ func checkPluginPin(p PluginPin) error {
 		if err := checkHashRef("sha256:", p.Digest); err != nil {
 			return fmt.Errorf("plugin %q: %v", p.Ref, err)
 		}
-		if err := checkProvenance(p.Provenance); err != nil {
+		if err := checkProvenance(p.Provenance, ProvenanceImageSignature); err != nil {
 			return fmt.Errorf("plugin %q: %v", p.Ref, err)
 		}
 	case SchemeLocal:
@@ -357,8 +381,10 @@ func writeProvenance(b *strings.Builder, indent string, p Provenance) {
 	}
 	fmt.Fprintf(b, "%sprovenance:\n", indent)
 	fmt.Fprintf(b, "%s  type: %s\n", indent, p.Type)
-	fmt.Fprintf(b, "%s  objectFormat: %s\n", indent, p.ObjectFormat)
-	fmt.Fprintf(b, "%s  object: %s\n", indent, p.Object)
+	if p.Type == ProvenanceGitSignedTag {
+		fmt.Fprintf(b, "%s  objectFormat: %s\n", indent, p.ObjectFormat)
+		fmt.Fprintf(b, "%s  object: %s\n", indent, p.Object)
+	}
 	fmt.Fprintf(b, "%s  identity:\n", indent)
 	fmt.Fprintf(b, "%s    san: %s\n", indent, p.SAN)
 	fmt.Fprintf(b, "%s    issuer: %s\n", indent, p.Issuer)

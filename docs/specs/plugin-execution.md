@@ -303,7 +303,10 @@ no such entry is an error — and SOURCE is a directory holding an OCI
 layout, a file holding an OCI layout archive or a docker-save tarball,
 or `docker://IMAGE` naming a daemon-local image; a layout or archive
 passes the platform check and trust-policy evaluation like any
-acquisition (`REQ-plugin-verify-before-run`), while a daemon-local
+acquisition (`REQ-plugin-verify-before-run`) — its evidence sought
+where it was staged, which holds none, so under `require-provenance`
+an override is refused as unsigned, the `plugin-overrides` key
+admitting overrides and the posture judging them — while a daemon-local
 image is the daemon's content, never acquired by pb and never
 evaluated by it — the permission that admits overrides admits that;
 the `docker` runner's record check holds the boundary and the bounds,

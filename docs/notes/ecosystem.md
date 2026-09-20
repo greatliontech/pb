@@ -15,7 +15,7 @@ and go stale fast — verify against the repos before relying on them.
 | `../projfs-go` | Windows: ProjFS binding — the rootfs-projection equivalent. Most proven of the three FS repos (extensive test surface, spec'd callback contract). Requires the ProjFS optional Windows feature enabled. |
 | `../fskit-go` | macOS: FSKit binding. Portable core done; Tier-2 open question — whether a *third-party* signed appex actually gets dispatched. macOS 15.4+, signed/notarized appex, user enablement: real distribution friction. |
 | `../container` | Mechanism-level, Linux-only container runtime (full create path, exec-into-running, OCI compliance tracker). **Not pb's path**: pb's native runner ran on it briefly and now runs on sandbox, and container is out of pb's dependency graph; its create path and sandbox's mechanism layer are replica twins under a shared kernel-rule obligation. |
-| `../ociplug` | gRPC-over-unix-socket plugin system (stdio handshake, mTLS, manifest permissions). **Not in pb's path**: pb plugins speak the stdio protoc protocol. ociplug consumes ocifs and container like pb does; its `internal/verify` (sigstore-go, cosign discovery) is the cosign verifier that plugs into ocifs's seam for consumers who want it — pb never depends on it. |
+| `../ociplug` | gRPC-over-unix-socket plugin system (stdio handshake, mTLS, manifest permissions). **Not in pb's path**: pb plugins speak the stdio protoc protocol. ociplug consumes ocifs and container like pb does; its `internal/verify` (sigstore-go, cosign discovery) is a cosign verifier for consumers who want it — pb never depends on it: pb finds a plugin image's signatures itself (`internal/imagesig`) and judges them through gitprov's image verifier. |
 | `../pbr` | Today: a buf-compatible registry (workaround for BSR restrictions). Settled future roles: implements the pb proxy protocol, serves as the BSR protocol bridge (repacking BSR-only modules into canonical archives) so pb itself never learns anything about BSR, and its hosted instance at **pbr.dev** is the recommended opt-in public proxy (deliberately not a default; see the dependency-management note for the revisit trigger). See [dependency-management.md](./dependency-management.md). Execution owned by that repo. |
 
 ## Platform trajectory
@@ -56,8 +56,8 @@ lack `/dev/fuse`, and export needs no mount at all.
   2026-08) — it is a gRPC-over-unix-socket plugin system
   (go-plugin-shaped, mTLS handshake), the wrong protocol for pb's
   stdin/stdout protoc plugins. It stays an ocifs FUSE-mount consumer,
-  and its `internal/verify` (cosign/sigstore-go) is the extraction
-  candidate for a standalone verifier module that plugs ocifs's
-  verification seam — pb uses neither (gitprov machinery instead).
+  and its `internal/verify` (cosign/sigstore-go) is a verifier for
+  ocifs's seam that pb uses no part of: pb's own discovery and
+  gitprov's image verifier fill pb's seam.
 
 [protocompile]: https://github.com/bufbuild/protocompile

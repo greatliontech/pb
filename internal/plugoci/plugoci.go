@@ -19,37 +19,29 @@ import (
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/ocifs"
 	"github.com/greatliontech/pb/internal/genfile"
+	"github.com/greatliontech/pb/internal/imagesig"
+	"github.com/greatliontech/pb/internal/imagesig/discover"
 	"github.com/greatliontech/pb/internal/lockfile"
 	"github.com/greatliontech/pb/internal/plugexec"
 	"github.com/greatliontech/pb/internal/trust"
 )
 
-// ErrNoImageVerifier marks a require-provenance acquisition with no
-// image-signature verifier available: the requirement fails closed
-// (docs/issues/image-signature-verifier-home.md tracks the verifier).
-var ErrNoImageVerifier = errors.New("plugoci: trust policy requires provenance but no image-signature verifier is available")
-
-// Evidence-classification sentinels an ImageVerifier wraps so the
-// policy arms can tell tolerable absence from tampering — the module
-// pipeline's three-way classification at the plugin surface: absence
-// and identity non-acceptance are tolerable under allow-unsigned;
-// anything else is rejected evidence and aborts even there.
+// The two reasons no evidence is judged for an image
+// (provenance.md REQ-prov-plugin-identity), tolerable under
+// allow-unsigned like absence: no identity rule governs the
+// reference, so no signer could be accepted; no trusted root is
+// configured to verify against.
 var (
-	ErrNoEvidence          = errors.New("plugoci: no provenance evidence found")
-	ErrIdentityNotAccepted = errors.New("plugoci: evidence identity not accepted by policy")
+	ErrNoIdentityRule = errors.New("plugoci: no identity rule names an accepted signer for the plugin")
+	ErrNoTrustedRoot  = errors.New("plugoci: no trusted root is configured to verify plugin signatures against")
 )
-
-// ImageVerifier verifies a plugin image's provenance evidence offline
-// against pb's trusted root: a sigstore signature over the
-// manifest-list digest (provenance.md REQ-prov-plugin-signature).
-type ImageVerifier interface {
-	VerifyImage(ctx context.Context, reference, digest string, identity *trust.IdentityRule) (lockfile.Provenance, error)
-}
 
 // Platform is the host platform an acquisition enforces
 // (REQ-plugin-platform-strict).
@@ -64,13 +56,14 @@ func HostPlatform() Platform {
 }
 
 // Config assembles an Acquirer. WorkDir roots the image store;
-// Verifier may be nil — require-provenance then fails closed; a zero
-// Platform means the host's.
+// TrustedRoot is the root plugin signatures verify against, nil
+// leaving every image unsigned (require-provenance then fails
+// closed); a zero Platform means the host's.
 type Config struct {
 	WorkDir     string
 	Lock        *lockfile.File
 	Policy      *trust.Policy
-	Verifier    ImageVerifier
+	TrustedRoot *gitprov.TrustedRoot
 	Platform    Platform
 	Credentials map[string]authn.AuthConfig
 	// Transport carries every round trip to a registry outside this
@@ -101,7 +94,7 @@ type Acquirer struct {
 	transport *inProcessTransport // the staging in this process, then Config.Transport
 	lock      *lockfile.File
 	policy    *trust.Policy
-	verifier  ImageVerifier
+	root      *gitprov.TrustedRoot
 	platform  Platform
 	pull      PullMode
 
@@ -111,11 +104,12 @@ type Acquirer struct {
 
 // acquisition carries one Acquire call's seam contract and results.
 type acquisition struct {
-	declaredRef  string // the reference as declared in generation config
-	pinnedDigest string // "" on first use
-	platform     string // the admitted manifest-list entry's platform, as a daemon spells it
-	resolved     string
-	provenance   lockfile.Provenance
+	declaredRef      string // the reference as declared in generation config
+	pinnedDigest     string // "" on first use
+	pinnedProvenance lockfile.Provenance
+	platform         string // the admitted manifest-list entry's platform, as a daemon spells it
+	resolved         string
+	provenance       lockfile.Provenance
 }
 
 // New constructs the acquirer and its verifying store.
@@ -130,7 +124,7 @@ func New(cfg Config) (*Acquirer, error) {
 	a := &Acquirer{
 		lock:     cfg.Lock,
 		policy:   cfg.Policy,
-		verifier: cfg.Verifier,
+		root:     cfg.TrustedRoot,
 		platform: platform,
 		pull:     cfg.Pull,
 		pending:  map[string]*acquisition{},
@@ -204,6 +198,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*Acquired, error) {
 	if pinned {
 		target = atDigest(ref, pin.Digest)
 		acq.pinnedDigest = pin.Digest
+		acq.pinnedProvenance = pin.Provenance
 	}
 	if err := a.enter(target, acq); err != nil {
 		return nil, err
@@ -299,9 +294,11 @@ func (a *Acquirer) leave(target string) {
 // requires a platform entry for the host (REQ-plugin-platform-strict —
 // an artifact that is not a manifest list is refused the same way),
 // and evaluates the trust policy (REQ-plugin-verify-before-run):
+// the image's signature evidence is judged on every acquisition,
 // unsigned images pass only under allow-unsigned and are recorded as
-// provenance none (REQ-prov-unsigned-recorded); require-provenance
-// fails closed without a verifier.
+// provenance none (REQ-prov-unsigned-recorded), and a pinned image
+// whose record the evidence no longer bears fails
+// (REQ-lock-no-silent-downgrade).
 func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error {
 	a.mu.Lock()
 	acq := a.pending[id.Reference]
@@ -318,36 +315,84 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 		return err
 	}
 	acq.platform = platform
+	// Evidence is always judged — the module pipeline's semantics:
+	// what verifies is recorded even under allow-unsigned, and none
+	// is recorded only when nothing was accepted for a tolerable
+	// reason. Rejected evidence aborts under either posture.
 	decision := a.policy.EvaluatePlugin(acq.declaredRef)
-	if a.verifier == nil {
-		if decision.Require {
-			return fmt.Errorf("%w (plugin %s)", ErrNoImageVerifier, acq.declaredRef)
+	var accept func(lockfile.Provenance) bool
+	if acq.pinnedDigest != "" {
+		// A pinned image's record must still hold: among the carriers
+		// the policy accepts, the one reproducing it is the one taken
+		// (REQ-lock-no-silent-downgrade). The record-not-reproduced arm
+		// below re-derives this very check on the declined record to
+		// name what changed, so the two must stay one predicate.
+		accept = func(rec lockfile.Provenance) bool {
+			return lockfile.CheckProvenanceTransition(acq.pinnedProvenance, rec) == nil
 		}
-		acq.resolved = digest
-		acq.provenance = lockfile.Provenance{}
-		return nil
 	}
-	// A verifier is always consulted when present — the module
-	// pipeline's semantics: what verifies is recorded even under
-	// allow-unsigned, and none is recorded only when nothing was
-	// accepted for a tolerable reason (absence, identity
-	// non-acceptance). Rejected evidence aborts under either posture.
-	prov, err := a.verifier.VerifyImage(ctx, acq.declaredRef, digest, decision.Identity)
+	prov, err := a.evidence(ctx, id.Reference, digest, decision, accept)
 	switch {
 	case err == nil:
-		acq.resolved = digest
-		acq.provenance = prov
-		return nil
-	case errors.Is(err, ErrNoEvidence) || errors.Is(err, ErrIdentityNotAccepted):
+	case errors.Is(err, imagesig.ErrRecordNotReproduced):
+		return fmt.Errorf("plugoci: %s: %w", acq.declaredRef, lockfile.CheckProvenanceTransition(acq.pinnedProvenance, prov))
+	case tolerable(err):
 		if decision.Require {
-			return err
+			return fmt.Errorf("plugoci: plugin %s requires provenance: %w", acq.declaredRef, err)
 		}
-		acq.resolved = digest
-		acq.provenance = lockfile.Provenance{}
-		return nil
+		prov = lockfile.Provenance{}
 	default:
 		return err
 	}
+	if acq.pinnedDigest != "" {
+		if err := lockfile.CheckProvenanceTransition(acq.pinnedProvenance, prov); err != nil {
+			return fmt.Errorf("plugoci: %s: %w", acq.declaredRef, err)
+		}
+	}
+	acq.resolved = digest
+	acq.provenance = prov
+	return nil
+}
+
+// tolerable reports a judgement that accepted nothing for a reason
+// allow-unsigned tolerates (REQ-prov-plugin-classification,
+// REQ-prov-plugin-identity): absence, a signer the policy refuses, no
+// identity rule, no trusted root.
+func tolerable(err error) bool {
+	return errors.Is(err, imagesig.ErrNoEvidence) || errors.Is(err, imagesig.ErrIdentityNotAccepted) ||
+		errors.Is(err, ErrNoIdentityRule) || errors.Is(err, ErrNoTrustedRoot)
+}
+
+// evidence finds and judges the signature evidence for digest at the
+// repository the image was fetched from — the resolved reference's,
+// so an override's evidence is sought where the override was staged
+// — against the identity rule governing the declared reference,
+// each carrier fetched as it is judged (REQ-prov-plugin-carriers,
+// REQ-prov-plugin-classification); accept is the caller's further
+// acceptance of a verified record, nil for every one. With no
+// identity rule or no trusted root nothing is fetched: no evidence
+// could be accepted (REQ-prov-plugin-identity).
+func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decision trust.Decision, accept func(lockfile.Provenance) bool) (lockfile.Provenance, error) {
+	if decision.Identity == nil {
+		return lockfile.Provenance{}, ErrNoIdentityRule
+	}
+	if a.root == nil {
+		return lockfile.Provenance{}, ErrNoTrustedRoot
+	}
+	id, err := trust.ExplicitIdentity(*decision.Identity)
+	if err != nil {
+		return lockfile.Provenance{}, err
+	}
+	ref, err := name.ParseReference(reference)
+	if err != nil {
+		return lockfile.Provenance{}, fmt.Errorf("plugoci: %w", err)
+	}
+	h, err := v1.NewHash(digest)
+	if err != nil {
+		return lockfile.Provenance{}, fmt.Errorf("plugoci: %w", err)
+	}
+	carriers := discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain()))
+	return imagesig.Judge(ctx, digest, carriers, id, a.root, accept)
 }
 
 // checkPlatforms admits the one manifest-list entry for the host —

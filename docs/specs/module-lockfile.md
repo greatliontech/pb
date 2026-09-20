@@ -38,11 +38,17 @@ digest, present when the module's archive has been fetched), `modfile`
 and `provenance` (the provenance record). No other keys exist.
 
 **REQ-lock-provenance-record** (wire): A provenance record other than
-`none` MUST carry: `type`, the evidence type (`git-signed-tag`);
-`objectFormat` (`sha1` or `sha256`); `object`, the hex git hash of the
-signed object; and `identity`, with `san` and `issuer` strings naming the
-verified Fulcio identity. No other evidence types are defined by this
-document; new types extend this record with their own fields.
+`none` MUST carry `type`, the evidence type, then the type's own
+fields, then `identity`, with `san` and `issuer` strings naming the
+verified Fulcio identity. A `git-signed-tag` record carries
+`objectFormat` (`sha1` or `sha256`) and `object`, the hex git hash of
+the signed object. An `image-signature` record — a sigstore signature
+over the plugin entry's digest (`provenance.md`) — carries no field of
+its own: the entry's `digest` is what was signed. A `git-signed-tag`
+record belongs to a module entry and an `image-signature` record to a
+plugin entry; a record of the other type under an entry, and a record
+naming a type's field under another type, are invalid. No other
+evidence types are defined by this document.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the plugin identity as written in generation configuration, without

@@ -231,6 +231,34 @@ func TestVerifyModule(t *testing.T) {
 	}
 }
 
+// An image-signature record on a plugin pin encodes as its type and
+// identity alone and parses back to the same record
+// (REQ-lock-provenance-record, REQ-lock-plugin-entry).
+func TestImageSignatureRecordRoundTrips(t *testing.T) {
+	rec := Provenance{Type: ProvenanceImageSignature, SAN: "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v1", Issuer: "https://token.actions.githubusercontent.com"}
+	f := &File{Plugins: []PluginPin{{Ref: "ghcr.io/acme/plugin:v1", Scheme: SchemeOCI, Digest: "sha256:" + strings.Repeat("55", 32), Provenance: rec}}}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "version: 1\nmodules:\nplugins:\n  - ref: ghcr.io/acme/plugin:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("55", 32) + "\n    provenance:\n      type: image-signature\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
+	if string(out) != want {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
+	}
+	back, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pin, ok := back.Plugin("ghcr.io/acme/plugin:v1", SchemeOCI); !ok || pin.Provenance != rec {
+		t.Fatalf("parsed back %+v %v", pin, ok)
+	}
+	// A git field written under the type is refused on read as well.
+	bad := strings.Replace(string(out), "      identity:", "      object: "+strings.Repeat("ab", 20)+"\n      identity:", 1)
+	if _, err := Parse([]byte(bad)); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("an image record carrying an object parsed: %v", err)
+	}
+}
+
 func TestProvenanceTransition(t *testing.T) {
 	none := Provenance{}
 	if err := CheckProvenanceTransition(none, goldenProv); err != nil {
@@ -324,7 +352,11 @@ func TestFixedPointProperty(t *testing.T) {
 				}
 				f.Plugins = append(f.Plugins, PluginPin{Ref: plain("lref", printable), Scheme: SchemeLocal, Binary: binary})
 			} else {
-				f.Plugins = append(f.Plugins, PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")})
+				pin := PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")}
+				if rapid.Bool().Draw(t, "hasImageProv") {
+					pin.Provenance = Provenance{Type: ProvenanceImageSignature, SAN: plain("psan", printable), Issuer: plain("pissuer", printable)}
+				}
+				f.Plugins = append(f.Plugins, pin)
 			}
 		}
 		out1, err := Encode(&f)
@@ -804,11 +836,37 @@ func TestMutationResidue(t *testing.T) {
 		t.Fatalf("update touched the wrong version: v1=%s v2=%s", v1.Digest, v2.Digest)
 	}
 
-	// Plugin pin with an invalid provenance record.
-	bad := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64,
-		Provenance: Provenance{Type: "pgp", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}}}}
-	if _, err := Encode(bad); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "unknown provenance type") {
-		t.Fatalf("plugin bad provenance: %v", err)
+	// Plugin pin with an invalid provenance record: an unknown type, and
+	// a module's type, which is not a plugin entry's
+	// (REQ-lock-provenance-record).
+	for _, tc := range []struct {
+		p   Provenance
+		msg string
+	}{
+		{Provenance{Type: "pgp", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}, "unknown provenance type"},
+		{Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}, "is not this entry's"},
+	} {
+		bad := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64, Provenance: tc.p}}}
+		if _, err := Encode(bad); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
+			t.Fatalf("plugin bad provenance %q: %v", tc.p.Type, err)
+		}
+	}
+	// A module pin admits no image record.
+	imageOnModule := &File{Modules: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Provenance: Provenance{Type: ProvenanceImageSignature, SAN: "x", Issuer: "y"}}}}
+	if _, err := Encode(imageOnModule); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "is not this entry's") {
+		t.Fatalf("image record on a module: %v", err)
+	}
+
+	// An image-signature record names no signed object
+	// (REQ-lock-provenance-record): a git field under it is invalid.
+	for _, p := range []Provenance{
+		{Type: ProvenanceImageSignature, ObjectFormat: "sha1", SAN: "x", Issuer: "y"},
+		{Type: ProvenanceImageSignature, Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"},
+	} {
+		mf := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64, Provenance: p}}}
+		if _, err := Encode(mf); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "names no signed object") {
+			t.Fatalf("image record with a git field: %v", err)
+		}
 	}
 
 	// Identity with exactly one empty half.
@@ -819,6 +877,15 @@ func TestMutationResidue(t *testing.T) {
 		mf := &File{Modules: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Provenance: p}}}
 		if _, err := Encode(mf); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "san and issuer") {
 			t.Fatalf("half-empty identity: %v", err)
+		}
+	}
+	for _, p := range []Provenance{
+		{Type: ProvenanceImageSignature, SAN: "", Issuer: "y"},
+		{Type: ProvenanceImageSignature, SAN: "x", Issuer: ""},
+	} {
+		pf := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64, Provenance: p}}}
+		if _, err := Encode(pf); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "san and issuer") {
+			t.Fatalf("half-empty image identity: %v", err)
 		}
 	}
 
@@ -964,18 +1031,20 @@ func TestEncodeSchemeFieldMismatch(t *testing.T) {
 	}
 }
 
-// An oci pin's provenance record survives the parse into the pin.
+// An oci pin's provenance record — an image-signature record, the
+// one a plugin entry admits — survives the parse into the pin.
 func TestPluginProvenanceRecordParsed(t *testing.T) {
+	want := Provenance{Type: ProvenanceImageSignature, SAN: goldenProv.SAN, Issuer: goldenProv.Issuer}
 	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n" +
 		"plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n" +
-		"    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n" +
+		"    provenance:\n      type: image-signature\n" +
 		"      identity:\n        san: " + goldenProv.SAN + "\n        issuer: " + goldenProv.Issuer + "\n"
 	f, err := Parse([]byte(in))
 	if err != nil {
 		t.Fatal(err)
 	}
 	p, ok := f.Plugin("ghcr.io/a/b:v1", SchemeOCI)
-	if !ok || p.Provenance != goldenProv {
+	if !ok || p.Provenance != want {
 		t.Fatalf("plugin provenance lost: %+v", p.Provenance)
 	}
 }

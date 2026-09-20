@@ -104,7 +104,52 @@ provenance `none` in the lockfile — tolerated, never invisible.
 ## Plugin images
 
 **REQ-prov-plugin-signature** (behavior): Plugin image evidence MUST be a
-sigstore signature over the image's manifest-list digest, verified
-against the trusted root with the verified identity matched by the trust
-policy's `plugins` rules; verification precedes any execution of the
-image.
+sigstore signature over the image's manifest-list digest — a sigstore
+bundle or a simple-signing envelope, cosign's two carriers, exactly as
+`gitprov` defines and verifies them — verified offline against the
+trusted root with the verified identity matched by the trust policy's
+`plugins` rules; verification precedes any execution of the image.
+
+**REQ-prov-plugin-carriers** (wire): Evidence for an image MUST be
+fetched from the repository the image was fetched from, at the digest
+being verified, from three places, in this order: the manifest's referrers
+whose artifact type is the sigstore bundle media type and whose
+`dev.sigstore.bundle.predicateType` annotation names cosign's sign
+predicate, each carrying the bundle as its one layer; the manifest's
+referrers whose artifact type is cosign's legacy signature
+configuration media type, each layer of the simple-signing media type
+an envelope with cosign's layer annotations; and the manifest under
+cosign's `<algorithm>-<hex>.sig` tag, its layers envelopes the same
+way. The manifest's referrers are those the registry's referrers API
+lists or, where the registry has no such API, those the referrers
+fallback tag `<algorithm>-<hex>` lists. Referrers are taken in digest
+order, layers in manifest order, and each carrier is fetched as it is
+judged, nothing past the accepted one, so the carrier recorded is a
+function of the repository's content. A referrer with any other
+artifact type or predicate, a layer of any other media type, an
+absent tag, and an empty referrers list are not evidence; a carrier
+that is not cosign's shape — a bundle referrer with other than one
+layer, a carrier over 4 MiB — is rejected evidence; a registry error
+fetching a carrier fails the acquisition.
+
+**REQ-prov-plugin-classification** (behavior): Carriers MUST be judged
+in discovery order until one is accepted, which is recorded. A carrier
+without the material a signed time comes from is unverifiable and
+treated as absent; a carrier whose verified identity the policy does
+not accept is a non-acceptance; a carrier failing verification any
+other way is rejected evidence and fails the acquisition under either
+posture. With no carrier accepted, the image is unsigned — recorded
+`none` under `allow-unsigned` (REQ-prov-unsigned-recorded), a failure
+under `require-provenance` naming the reason. For a pinned image the
+recorded provenance must still hold (REQ-lock-no-silent-downgrade): a
+carrier the policy accepts whose record is not the pin's is passed
+over while a later one may reproduce it, and with none reproducing it
+the acquisition fails as a record the evidence no longer bears, under
+either posture.
+
+**REQ-prov-plugin-identity** (behavior): A plugin image has no default
+identity: no offline-verifiable correspondence binds a repository to
+a signer, as REQ-prov-origin-consistency requires of a designation, so
+evidence MUST be accepted only through an explicit identity rule. With no
+identity rule governing the reference, or no trusted root configured,
+no evidence is judged and the image is unsigned as above.

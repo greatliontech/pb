@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-plugin-override"
 reason: "Plugin overrides are not implemented: the generation verb accepts no override flag, so no substitution path exists"
-content_hash: "c2a7360803b92731ac7e5c445488119e6a5b9d88f9b70e41b4dabfb92f0cc771"
-source_hash: "cb608170fb036d543868b10abe092feb102b870d1386d706372cfae4460d5f30"
+content_hash: "5c3454f5ef1ae1a8ff70b177e4371cbceb5a6c698ac112ecdaf5d54b8647409b"
+source_hash: "f48b020d82401ef9cc7b3de5d8afd3053de5c0b8238b5879020d84b888ec2c48"
 lands { manual { condition: "invocation-scoped plugin overrides are implemented" } }
