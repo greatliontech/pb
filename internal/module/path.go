@@ -20,6 +20,12 @@ import (
 // invalidates an archive's file set (REQ-archive-nested-module).
 const ModuleFileName = "pb.yaml"
 
+// RuleFileSuffix names a rule file: every file so named under a
+// module's root, at any depth, is one of the module's rule files
+// (check-rules.md REQ-rules-file-discovery); the module loader
+// carries them beside the protobuf files.
+const RuleFileSuffix = ".rules.yaml"
+
 // ErrInvalidPath is wrapped by every module-path rejection.
 var ErrInvalidPath = errors.New("invalid module path")
 

@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"testing/fstest"
 
 	"github.com/greatliontech/pb/internal/check"
 	"pgregory.net/rapid"
@@ -200,36 +199,24 @@ func TestParseRefusesUnprovidedEnvironment(t *testing.T) {
 	}
 }
 
-// Discovery reads every *.rules.yaml file under the root at any depth
-// in the byte order of the paths and nothing else — not a directory
-// so named — a ruleset without one yielding none,
-// a file that fails the schema failing the discovery naming it
-// (REQ-rules-file-discovery).
+// Discovery parses the module's rule files in the byte order of the
+// paths, a ruleset without one yielding none, a file that fails the
+// schema failing the discovery naming it (REQ-rules-file-discovery);
+// the module loader names the files.
 func TestDiscover(t *testing.T) {
-	fsys := fstest.MapFS{
-		"mod/z.rules.yaml":        {Data: []byte("celEnv: 1\nrules: []\n")},
-		"mod/a/b/c.rules.yaml":    {Data: []byte(good)},
-		"mod/a-b.rules.yaml":      {Data: []byte("celEnv: 1\nrules: []\n")},
-		"mod/a.rules.yaml":        {Data: []byte("celEnv: 1\nrules: []\n")},
-		"mod/a/notes.yaml":        {Data: []byte("celEnv: 1\nrules: []\n")},
-		"mod/a/rules.yaml":        {Data: []byte("not a rule file at all")},
-		"mod/x.proto":             {Data: []byte("syntax = \"proto3\";")},
-		"other/q.rules.yaml":      {Data: []byte("celEnv: 1\nrules: []\n")},
-		"empty/README.md":         {Data: []byte("no rules here")},
-		"bad/one.rules.yaml":      {Data: []byte("celEnv: 1\n")},
-		"bad/two.rules.yaml":      {Data: []byte(good)},
-		"unprovided/e.rules.yaml": {Data: []byte("celEnv: 7\nrules: []\n")},
-		// A directory named like a rule file is a directory.
-		"mod/dir.rules.yaml/inner.txt": {Data: []byte("not read")},
+	files := map[string][]byte{
+		"z.rules.yaml":     []byte("celEnv: 1\nrules: []\n"),
+		"a/b/c.rules.yaml": []byte(good),
+		"a-b.rules.yaml":   []byte("celEnv: 1\nrules: []\n"),
+		"a.rules.yaml":     []byte("celEnv: 1\nrules: []\n"),
 	}
-	got, err := Discover(fsys, "mod")
+	got, err := Discover(files)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Byte order of the paths: '-' before '.' before '/', so the
-	// files under a/ come after both a-b and a — where a per-directory
-	// walk would have placed them by its own order.
-	want := []string{"mod/a-b.rules.yaml", "mod/a.rules.yaml", "mod/a/b/c.rules.yaml", "mod/z.rules.yaml"}
+	// files under a/ come after both a-b and a.
+	want := []string{"a-b.rules.yaml", "a.rules.yaml", "a/b/c.rules.yaml", "z.rules.yaml"}
 	if len(got) != len(want) {
 		t.Fatalf("discovered %+v", got)
 	}
@@ -241,16 +228,13 @@ func TestDiscover(t *testing.T) {
 	if len(got[2].File.Rules) != 2 {
 		t.Fatalf("discovered %+v", got)
 	}
-	if got, err := Discover(fsys, "empty"); err != nil || len(got) != 0 {
-		t.Fatalf("a ruleset without rule files: %+v %v", got, err)
-	}
-	if _, err := Discover(fsys, "bad"); err == nil || !strings.HasPrefix(err.Error(), "bad/one.rules.yaml: ") || !errors.Is(err, ErrInvalid) {
+	if _, err := Discover(map[string][]byte{"one.rules.yaml": []byte("celEnv: 1\n"), "two.rules.yaml": []byte(good)}); err == nil || !strings.HasPrefix(err.Error(), "one.rules.yaml: ") || !errors.Is(err, ErrInvalid) {
 		t.Fatalf("a bad file: %v", err)
 	}
-	if _, err := Discover(fsys, "unprovided"); err == nil || !errors.Is(err, ErrEnvironment) || !strings.HasPrefix(err.Error(), "unprovided/e.rules.yaml: ") {
+	if _, err := Discover(map[string][]byte{"e.rules.yaml": []byte("celEnv: 7\nrules: []\n")}); err == nil || !errors.Is(err, ErrEnvironment) || !strings.HasPrefix(err.Error(), "e.rules.yaml: ") {
 		t.Fatalf("an unprovided environment: %v", err)
 	}
-	if _, err := Discover(fsys, "missing"); err == nil {
-		t.Fatal("a missing root discovered")
+	if got, err := Discover(nil); err != nil || len(got) != 0 {
+		t.Fatalf("no files: %+v %v", got, err)
 	}
 }

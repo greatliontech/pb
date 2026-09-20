@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -39,29 +40,34 @@ func ws(module, deps string) string {
 // files (REQ-gen-compile's file-set clauses).
 func TestLoadOrderAndMembership(t *testing.T) {
 	fsys := fstest.MapFS{
-		"pb.work":              {Data: []byte("use:\n  - b\n  - a\n")},
-		"a/pb.yaml":            {Data: []byte(ws("example.com/a", "  example.com/m1: v1.0.0\n"))},
-		"a/x.proto":            {Data: []byte("syntax = \"proto3\";\n")},
-		"a/sub/y.proto":        {Data: []byte("syntax = \"proto3\";\n")},
-		"a/README.md":          {Data: []byte("not proto")},
-		"a/nested/pb.yaml":     {Data: []byte(ws("example.com/a/nested", ""))},
-		"a/nested/z.proto":     {Data: []byte("syntax = \"proto3\";\n")},
-		"b/pb.yaml":            {Data: []byte(ws("example.com/b", ""))},
-		"b/deep/dir/w.proto":   {Data: []byte("syntax = \"proto3\";\n")},
-		"b/deep/dir/notes.txt": {Data: []byte("x")},
+		"pb.work":               {Data: []byte("use:\n  - b\n  - a\n")},
+		"a/pb.yaml":             {Data: []byte(ws("example.com/a", "  example.com/m1: v1.0.0\n"))},
+		"a/x.proto":             {Data: []byte("syntax = \"proto3\";\n")},
+		"a/sub/y.proto":         {Data: []byte("syntax = \"proto3\";\n")},
+		"a/README.md":           {Data: []byte("not proto")},
+		"a/naming.rules.yaml":   {Data: []byte("celEnv: 1\nrules: []\n")},
+		"a/sub/x.rules.yaml":    {Data: []byte("celEnv: 1\nrules: []\n")},
+		"a/nested/n.rules.yaml": {Data: []byte("a nested module's")},
+		"a/nested/pb.yaml":      {Data: []byte(ws("example.com/a/nested", ""))},
+		"a/nested/z.proto":      {Data: []byte("syntax = \"proto3\";\n")},
+		"b/pb.yaml":             {Data: []byte(ws("example.com/b", ""))},
+		"b/deep/dir/w.proto":    {Data: []byte("syntax = \"proto3\";\n")},
+		"b/deep/dir/notes.txt":  {Data: []byte("x")},
 		// A directory whose name ends .proto is a directory: walked
 		// through, never read as a file.
-		"b/odd.proto/inner.txt": {Data: []byte("x")},
+		"b/odd.proto/inner.txt":      {Data: []byte("x")},
+		"a/dir.rules.yaml/inner.txt": {Data: []byte("x")},
 	}
 	root, err := workspace.LoadFor(fsys, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
 	zip, _ := fetchtest.ModuleZip(t, map[string]string{
-		"pb.yaml":   ws("example.com/m1", ""),
-		"m1.proto":  "syntax = \"proto3\";\n",
-		"LICENSE":   "x",
-		"d/e.proto": "syntax = \"proto3\";\n",
+		"pb.yaml":        ws("example.com/m1", ""),
+		"m1.proto":       "syntax = \"proto3\";\n",
+		"LICENSE":        "x",
+		"d/e.proto":      "syntax = \"proto3\";\n",
+		"std.rules.yaml": "celEnv: 1\nrules: []\n",
 	})
 	var asked []string
 	mods, err := Load(ctx, fsys, root, []mvs.Requirement{{Path: "example.com/m1", Version: ver(t, "v1.0.0")}},
@@ -91,6 +97,17 @@ func TestLoadOrderAndMembership(t *testing.T) {
 	}
 	if !mods[0].Local || !mods[1].Local || mods[2].Local {
 		t.Fatal("Local flags wrong")
+	}
+	// Rule files ride beside the protos, module-relative, a nested
+	// module's excluded, an archive's included.
+	if got := slices.Sorted(maps.Keys(mods[1].Rules)); !slices.Equal(got, []string{"naming.rules.yaml", "sub/x.rules.yaml"}) {
+		t.Fatalf("a's rule files = %v", got)
+	}
+	if got := slices.Sorted(maps.Keys(mods[2].Rules)); !slices.Equal(got, []string{"std.rules.yaml"}) {
+		t.Fatalf("m1's rule files = %v", got)
+	}
+	if len(mods[0].Rules) != 0 {
+		t.Fatalf("b's rule files = %v", mods[0].Rules)
 	}
 }
 

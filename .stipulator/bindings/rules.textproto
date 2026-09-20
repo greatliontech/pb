@@ -68,7 +68,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.Discover"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "1fd5abb568fe76cd6d638f9afc01d201e1de66c819aaaae8c87e3c36ba32110e"
+  shape_hash: "518acd1733d0305bd459ee6af18a06e5613dca0e75415fe790c6aa82fa71566a"
 }
 
 bindings {
@@ -239,4 +239,34 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/check/lint.TestRunRefusals"
   role: BINDING_ROLE_TESTS
   shape_hash: "3fc15bad57bb4c5a56bad005f597e4afc21df937a41cea987f577136a151f5b3"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-discovery"
+  content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+  source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.Load"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ec561a3877c3c0e67ebcedd9af87250eeacbf9cc4902bc9cbc69f31b5b254241"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-discovery"
+  content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+  source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestRulesets"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f37774bdb51fe0645808d7220a3497274cfaf429197d4572f44c80f8e152a343"
+}
+
+bindings {
+  requirement_id: "REQ-rules-file-discovery"
+  content_hash: "9ca097fc7fc1f0dca85a09f53228967634dc1dd32030af2d81dd272c21be2eb8"
+  source_hash: "d480a3536dd03180b222d1a1da02e348227b4e5fe01a2fe6a8d4320a3ddb7837"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.TestLoadOrderAndMembership"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "89ad4db4f2be0df3b31ee537d8afa33e87de72f4cbe84e9b63384987f800feb9"
 }

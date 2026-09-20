@@ -11,21 +11,15 @@ package rules
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/contractfile"
 )
-
-// Suffix names a rule file: every file so named under a ruleset's
-// module root is one (REQ-rules-file-discovery).
-const Suffix = ".rules.yaml"
 
 // ErrInvalid is wrapped by every schema rejection.
 var ErrInvalid = errors.New("invalid rule file")
@@ -219,34 +213,21 @@ type Located struct {
 	File *File
 }
 
-// Discover reads every rule file under root in fsys — every file named
-// with Suffix at any depth, in path order, the byte order of the full
-// paths — and parses each; a file that fails to parse fails the
-// discovery naming it (REQ-rules-file-discovery). A ruleset with none
-// yields no files.
-func Discover(fsys fs.FS, root string) ([]Located, error) {
-	var paths []string
-	err := fs.WalkDir(fsys, root, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() && strings.HasSuffix(p, Suffix) {
-			paths = append(paths, p)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
+// Discover parses a ruleset's rule files — the module loader's map of
+// every file named with module.RuleFileSuffix under the module root,
+// at any depth, by module-relative path — in path order, the byte
+// order of the paths; a file that fails to parse fails the discovery
+// naming it (REQ-rules-file-discovery). A ruleset with none yields no
+// files.
+func Discover(files map[string][]byte) ([]Located, error) {
+	paths := make([]string, 0, len(files))
+	for p := range files {
+		paths = append(paths, p)
 	}
-	// The walk orders per directory; the contract orders by path.
 	sort.Strings(paths)
 	out := make([]Located, 0, len(paths))
 	for _, p := range paths {
-		data, err := fs.ReadFile(fsys, p)
-		if err != nil {
-			return nil, err
-		}
-		f, err := Parse(data)
+		f, err := Parse(files[p])
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", p, err)
 		}

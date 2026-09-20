@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-dep-tidy-rulesets"
-reason: "the check domain is specced and not yet built"
-content_hash: "031f6992b7eab2049eda092fa91b1630e9371daa9ad7b134e0e987fb7ae3ea7f"
-source_hash: "62fe80f2df0fc6530e5c7a1324f1969263a13feca27f2527f66fc8f94226ffb4"
-lands { manual { condition: "the lint file is built" } }

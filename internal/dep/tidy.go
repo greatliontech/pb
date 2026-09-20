@@ -2,10 +2,13 @@ package dep
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"path"
 	"slices"
 
+	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
@@ -29,14 +32,21 @@ const tidyRounds = 10
 // directly-imported build-list modules gain declarations, an import
 // satisfied by nothing fails per REQ-resolve-unsatisfied-imports (tidy
 // never invents a dependency), workspace-local imports keep their
-// existing declared version (and fail when none exists to keep), and
-// pins for pairs outside the tidied graph are removed. Idempotent: a
+// existing declared version (and fail when none exists to keep), a
+// ruleset the lint file names is kept where a workspace module
+// declares it as if an import used it and fails where none does
+// (REQ-dep-tidy-rulesets), and pins for pairs outside the tidied
+// graph are removed. Idempotent: a
 // second run changes nothing. Module-file rewrites are per-file
 // atomic, not transactional: a failed round may leave some files
 // rewritten; rerunning after fixing the cause converges.
 func Tidy(ctx context.Context, s *Session) error {
+	rulesets, err := s.rulesets()
+	if err != nil {
+		return err
+	}
 	for round := 0; round < tidyRounds; round++ {
-		changed, err := tidyOnce(ctx, s)
+		changed, err := tidyOnce(ctx, s, rulesets)
 		if err != nil {
 			return err
 		}
@@ -47,7 +57,7 @@ func Tidy(ctx context.Context, s *Session) error {
 	return fmt.Errorf("dep tidy: no fixpoint after %d rounds", tidyRounds)
 }
 
-func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
+func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool, err error) {
 	list, _, err := s.Driver.BuildList(ctx)
 	if err != nil {
 		return false, err
@@ -130,6 +140,19 @@ func tidyOnce(ctx context.Context, s *Session) (changed bool, err error) {
 				want[p] = selected[p]
 			}
 		}
+		// A ruleset this module declares stays as if an import used it
+		// (REQ-dep-tidy-rulesets): an external at the selected version,
+		// a workspace module at its declared version.
+		for _, r := range rulesets {
+			v, declared := m.File.Deps[r]
+			if !declared {
+				continue
+			}
+			if _, isLocal := s.Root.IsLocal(r); !isLocal {
+				v = selected[r]
+			}
+			want[r] = v
+		}
 		if depsEqual(m.File.Deps, want) {
 			continue
 		}
@@ -176,4 +199,29 @@ func depsEqual(a, b map[string]string) bool {
 		}
 	}
 	return true
+}
+
+// rulesets reads the lint file's rulesets, none where the file is
+// absent, and refuses one that no workspace module declares and that
+// is no workspace module — tidy never adds a declaration
+// (REQ-dep-tidy-rulesets).
+func (s *Session) rulesets() ([]string, error) {
+	p := path.Join(s.Root.Dir, lintfile.FileName)
+	b, err := fs.ReadFile(iofs.New(s.WS), p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	lf, err := lintfile.Parse(b)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", p, err)
+	}
+	for _, r := range lf.Rulesets {
+		if !lintfile.Declared(s.Root, r) {
+			return nil, fmt.Errorf("dep tidy: ruleset %s is no workspace module and no workspace module declares it — tidy never adds a declaration; add the dependency to the module that uses the ruleset", r)
+		}
+	}
+	return lf.Rulesets, nil
 }

@@ -251,7 +251,11 @@ the form and the cause; nothing degrades to an empty base.
 optional: `rulesets`, a list of module paths to import rules from;
 `enable` and `exclude`, lists of rule ids or tags; `severity`, a map
 from rule id to override; `ignore`, a list of `{paths, rules}` entries
-excluding rule ids under path globs; and `breaking`, a mapping whose
+excluding rule ids under path globs — `paths` one or more globs over
+module-relative proto paths (the component semantics `provenance.md`
+REQ-prov-trust-schema defines), `rules` optional and non-empty when
+present, absent meaning every rule, a finding without a path never
+ignored; and `breaking`, a mapping whose
 `base` is a mapping with exactly one of `ref` (a git reference),
 `version` (a tagged version) and `pinned` (`true`; any other value is
 a schema violation). No other keys exist at any level.

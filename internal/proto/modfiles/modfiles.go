@@ -32,6 +32,7 @@ type Module struct {
 	Local   bool
 	Dir     string // workspace module: its directory relative to the root; "" for externals
 	Files   map[string][]byte
+	Rules   map[string][]byte // the module's rule files (module.RuleFileSuffix), by the same paths
 }
 
 // Protos returns the module's file paths in sorted order.
@@ -45,11 +46,11 @@ func (m Module) Protos() []string {
 func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Module, error) {
 	var out []Module
 	for _, m := range root.Modules {
-		files, err := workspaceFiles(fsys, path.Join(root.Dir, m.Dir))
+		files, rules, err := workspaceFiles(fsys, path.Join(root.Dir, m.Dir))
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir, Files: files})
+		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir, Files: files, Rules: rules})
 	}
 	for _, r := range list {
 		b, err := zip(ctx, r.Path, r.Version)
@@ -60,23 +61,26 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		if err != nil {
 			return nil, fmt.Errorf("%s@%s: %w", r.Path, r.Version, err)
 		}
-		files := map[string][]byte{}
+		files, rules := map[string][]byte{}, map[string][]byte{}
 		for p, content := range all {
-			if strings.HasSuffix(p, ".proto") {
+			switch {
+			case strings.HasSuffix(p, ".proto"):
 				files[p] = content
+			case strings.HasSuffix(p, module.RuleFileSuffix):
+				rules[p] = content
 			}
 		}
-		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files})
+		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files, Rules: rules})
 	}
 	return out, nil
 }
 
 // workspaceFiles walks a workspace module's directory for protobuf
-// files, module-root-relative — the include root of a workspace module
-// is its own directory. A nested module's files belong to the nested
-// module and are skipped.
-func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, error) {
-	files := map[string][]byte{}
+// files and rule files, module-root-relative — the include root of a
+// workspace module is its own directory. A nested module's files
+// belong to the nested module and are skipped.
+func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, map[string][]byte, error) {
+	files, rules := map[string][]byte{}, map[string][]byte{}
 	err := fs.WalkDir(fsys, base, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -89,18 +93,23 @@ func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, error) {
 			}
 			return nil
 		}
-		if !strings.HasSuffix(p, ".proto") {
+		into := files
+		switch {
+		case strings.HasSuffix(p, ".proto"):
+		case strings.HasSuffix(p, module.RuleFileSuffix):
+			into = rules
+		default:
 			return nil
 		}
 		b, err := fs.ReadFile(fsys, p)
 		if err != nil {
 			return err
 		}
-		files[strings.TrimPrefix(p, base+"/")] = b
+		into[strings.TrimPrefix(p, base+"/")] = b
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return files, nil
+	return files, rules, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
+	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/proto/importcheck"
@@ -1237,5 +1238,72 @@ func TestTidyNamesAMalformedFile(t *testing.T) {
 	err = Tidy(ctx, fx.session(t, "."))
 	if err == nil || !strings.HasPrefix(err.Error(), "example.com/m1@v1.0.0: m1.proto: ") {
 		t.Fatalf("a malformed external file: %v", err)
+	}
+}
+
+// Tidy keeps a declared ruleset the lint file names though no import
+// uses it — an external at the selected version, a workspace module
+// at its declared version; a workspace-module ruleset no module
+// declares needs no declaration; an external one that no workspace
+// module declares fails naming it, the module file untouched
+// (REQ-dep-tidy-rulesets).
+func TestTidyKeepsRulesets(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":       "use:\n  - a\n  - b\n  - lib\n",
+		"pb.lint.yaml":  "rulesets:\n  - example.com/rules\n  - example.com/lib\n",
+		"a/pb.yaml":     ws("example.com/a", "  example.com/rules: v1.0.0\n  example.com/unused: v1.0.0\n  example.com/lib: v0.1.0\n"),
+		"b/pb.yaml":     ws("example.com/b", "  example.com/rules: v1.1.0\n"),
+		"b/y.proto":     "syntax = \"proto3\";\n",
+		"a/x.proto":     "syntax = \"proto3\";\n",
+		"lib/pb.yaml":   ws("example.com/lib", ""),
+		"lib/lib.proto": "syntax = \"proto3\";\n",
+	})
+	for _, v := range []string{"v1.0.0", "v1.1.0"} {
+		fx.serve(t, "example.com/rules", v, map[string]string{
+			"pb.yaml":           ws("example.com/rules", ""),
+			"naming.rules.yaml": "celEnv: 1\nrules: []\n",
+		})
+	}
+	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/unused", ""),
+	})
+	s := fx.session(t, ".")
+	if err := Tidy(ctx, s); err != nil {
+		t.Fatalf("Tidy: %v", err)
+	}
+	// The external ruleset moves to the selected version, b's v1.1.0;
+	// the workspace-module ruleset keeps its declared version.
+	if got, want := fx.read(t, "a/pb.yaml"), "module: example.com/a\ndeps:\n  example.com/lib: v0.1.0\n  example.com/rules: v1.1.0\n"; got != want {
+		t.Fatalf("tidied a/pb.yaml = %q, want %q", got, want)
+	}
+	if got := fx.read(t, "b/pb.yaml"); got != ws("example.com/b", "  example.com/rules: v1.1.0\n") {
+		t.Fatalf("b changed: %q", got)
+	}
+	// Undeclared: refused, nothing rewritten.
+	fx = newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\n",
+		"pb.lint.yaml": "rulesets:\n  - example.com/rules\n",
+		"a/pb.yaml":    ws("example.com/a", "  example.com/unused: v1.0.0\n"),
+		"a/x.proto":    "syntax = \"proto3\";\n",
+	})
+	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/unused", "")})
+	s = fx.session(t, ".")
+	err := Tidy(ctx, s)
+	if err == nil || !strings.Contains(err.Error(), "ruleset example.com/rules is no workspace module and no workspace module declares it") {
+		t.Fatalf("undeclared ruleset: %v", err)
+	}
+	if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/unused: v1.0.0\n") {
+		t.Fatalf("failed tidy rewrote the module file: %q", got)
+	}
+	// A malformed lint file is named.
+	fx = newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\n",
+		"pb.lint.yaml": "rulesets: 1\n",
+		"a/pb.yaml":    ws("example.com/a", ""),
+		"a/x.proto":    "syntax = \"proto3\";\n",
+	})
+	s = fx.session(t, ".")
+	if err := Tidy(ctx, s); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
+		t.Fatalf("malformed lint file: %v", err)
 	}
 }
