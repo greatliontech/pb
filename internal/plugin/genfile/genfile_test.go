@@ -81,8 +81,8 @@ func TestScalarSpellingsPreserved(t *testing.T) {
 func TestParseRejections(t *testing.T) {
 	ok := "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n"
 	cases := []struct{ name, in, msg string }{
-		{"empty", "", "missing plugins key"},
-		{"no plugins", "overrides: []\n", "missing plugins key"},
+		{"empty", "", "missing plugins"},
+		{"no plugins", "overrides: []\n", "missing plugins"},
 		{"unknown top key", ok + "runner: docker\n", `unknown key "runner"`},
 		{"plugins not list", "plugins: {}\n", "must be a list"},
 		{"plugins empty", "plugins: []\n", "must not be empty"},
@@ -141,8 +141,8 @@ func TestParseRejections(t *testing.T) {
 		{"overrides not list", ok + "overrides: {}\n", "overrides must be a list"},
 		{"override not mapping", ok + "overrides:\n  - x\n", "must be a mapping"},
 		{"override unknown key", ok + "overrides:\n  - files: a\n    option: o\n    value: v\n    extra: 1\n", `unknown key "extra"`},
-		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "has no value"},
-		{"override missing files", ok + "overrides:\n  - option: o\n    value: v\n", "has no files"},
+		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "overrides[0]: missing value"},
+		{"override missing files", ok + "overrides:\n  - option: o\n    value: v\n", "overrides[0]: missing files"},
 		{"override non-scalar", ok + "overrides:\n  - files: [a]\n    option: o\n    value: v\n", "files must be one line of text"},
 		{"override files block", ok + "overrides:\n  - files: |\n      a\n    option: o\n    value: v\n", "files must be one line of text"},
 		{"override option block", ok + "overrides:\n  - files: a\n    option: |\n      o\n    value: v\n", "option must be one line of text"},

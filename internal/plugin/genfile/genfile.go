@@ -49,107 +49,91 @@ type File struct {
 	Overrides []Override
 }
 
-// Parse decodes and validates generation-file bytes (REQ-gen-schema).
+// Parse decodes and validates a generate file (REQ-gen-schema): the
+// document a mapping of plugins, required, and overrides.
 func Parse(data []byte) (*File, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
 	if mapping == nil {
-		return nil, fmt.Errorf("%w: missing plugins key", ErrInvalid)
+		return nil, fmt.Errorf("%w: missing plugins", ErrInvalid)
 	}
 	f := &File{}
-	seenPlugins := false
-	for _, kv := range mapping.Values {
-		key := contractfile.Key(kv.Key)
-		switch key {
-		case "plugins":
-			seenPlugins = true
-			plugins, err := parsePlugins(kv.Value)
-			if err != nil {
-				return nil, err
-			}
+	err = contractfile.Mapping(mapping, "", ErrInvalid,
+		contractfile.Field{Name: "plugins", Required: true, Read: func(n ast.Node) error {
+			plugins, err := parsePlugins(n)
 			f.Plugins = plugins
-		case "overrides":
-			overrides, err := parseOverrides(kv.Value)
-			if err != nil {
-				return nil, err
-			}
+			return err
+		}},
+		contractfile.Field{Name: "overrides", Read: func(n ast.Node) error {
+			overrides, err := parseOverrides(n)
 			f.Overrides = overrides
-		default:
-			return nil, fmt.Errorf("%w: unknown key %q", ErrInvalid, key)
-		}
-	}
-	if !seenPlugins {
-		return nil, fmt.Errorf("%w: missing plugins key", ErrInvalid)
+			return err
+		}},
+	)
+	if err != nil {
+		return nil, err
 	}
 	return f, nil
 }
 
+// parsePlugins reads the plugins list: each entry a mapping carrying
+// exactly one of ref or local, out, and optionally opt — a reference
+// and a path one line of text, the parameter string text as written.
 func parsePlugins(n ast.Node) ([]Plugin, error) {
-	seq, ok := n.(*ast.SequenceNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: plugins must be a list", ErrInvalid)
-	}
-	if len(seq.Values) == 0 {
-		return nil, fmt.Errorf("%w: plugins must not be empty", ErrInvalid)
-	}
-	plugins := make([]Plugin, 0, len(seq.Values))
-	for i, en := range seq.Values {
-		em, ok := en.(*ast.MappingNode)
-		if !ok {
-			return nil, fmt.Errorf("%w: plugins[%d] must be a mapping", ErrInvalid, i)
-		}
+	plugins := []Plugin{}
+	err := contractfile.Sequence(n, "plugins", ErrInvalid, func(i int, en ast.Node) error {
+		where := fmt.Sprintf("plugins[%d]", i)
 		var p Plugin
 		schemes := 0
 		hasOut := false
-		for _, kv := range em.Values {
-			key := contractfile.Key(kv.Key)
-			// A reference and a path are one line; the parameter string
-			// is text as written.
-			text, isScalar := contractfile.Line(kv.Value)
-			if key == "opt" {
-				text, isScalar = contractfile.Scalar(kv.Value)
-			}
-			switch key {
-			case "ref", "local":
-				schemes++
-				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].%s must be one line of text", ErrInvalid, i, key)
+		line := func(name string, set func(string)) contractfile.Field {
+			return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+				text, ok := contractfile.Line(n)
+				if !ok {
+					return fmt.Errorf("%w: %s.%s must be one line of text", ErrInvalid, where, name)
 				}
-				p.Ref = text
-				p.Scheme = plugin.SchemeOCI
-				if key == "local" {
-					p.Scheme = plugin.SchemeLocal
-				}
-			case "out":
-				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].out must be one line of text", ErrInvalid, i)
-				}
-				hasOut = true
-				p.Out = text
-			case "opt":
-				if !isScalar {
-					return nil, fmt.Errorf("%w: plugins[%d].opt must be a scalar", ErrInvalid, i)
+				set(text)
+				return nil
+			}}
+		}
+		err := contractfile.Mapping(en, where, ErrInvalid,
+			line("ref", func(s string) { schemes++; p.Ref, p.Scheme = s, plugin.SchemeOCI }),
+			line("local", func(s string) { schemes++; p.Ref, p.Scheme = s, plugin.SchemeLocal }),
+			line("out", func(s string) { hasOut = true; p.Out = s }),
+			contractfile.Field{Name: "opt", Read: func(n ast.Node) error {
+				text, ok := contractfile.Scalar(n)
+				if !ok {
+					return fmt.Errorf("%w: %s.opt must be a scalar", ErrInvalid, where)
 				}
 				p.Opt = text
-			default:
-				return nil, fmt.Errorf("%w: plugins[%d]: unknown key %q (entries carry ref or local, out, and optional opt)", ErrInvalid, i, key)
-			}
+				return nil
+			}},
+		)
+		if err != nil {
+			return err
 		}
 		if schemes != 1 {
-			return nil, fmt.Errorf("%w: plugins[%d] must carry exactly one of ref or local, found %d", ErrInvalid, i, schemes)
+			return fmt.Errorf("%w: %s must carry exactly one of ref or local, found %d", ErrInvalid, where, schemes)
 		}
 		if !hasOut {
-			return nil, fmt.Errorf("%w: plugins[%d] has no out", ErrInvalid, i)
+			return fmt.Errorf("%w: %s has no out", ErrInvalid, where)
 		}
 		if err := checkIdentity(p); err != nil {
-			return nil, fmt.Errorf("%w: plugins[%d]: %v", ErrInvalid, i, err)
+			return fmt.Errorf("%w: %s: %v", ErrInvalid, where, err)
 		}
 		if err := checkOut(p.Out); err != nil {
-			return nil, fmt.Errorf("%w: plugins[%d].out: %v", ErrInvalid, i, err)
+			return fmt.Errorf("%w: %s.out: %v", ErrInvalid, where, err)
 		}
 		plugins = append(plugins, p)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(plugins) == 0 {
+		return nil, fmt.Errorf("%w: plugins must not be empty", ErrInvalid)
 	}
 	return plugins, nil
 }
@@ -374,60 +358,50 @@ func checkOut(s string) error {
 	return rootpath.Check(s, "the resolution root")
 }
 
+// parseOverrides reads the overrides list: each entry files, option
+// and value, all required — a glob and an option name one line of
+// text, the value text as written.
 func parseOverrides(n ast.Node) ([]Override, error) {
-	seq, ok := n.(*ast.SequenceNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: overrides must be a list", ErrInvalid)
-	}
-	overrides := make([]Override, 0, len(seq.Values))
-	for i, en := range seq.Values {
-		em, ok := en.(*ast.MappingNode)
-		if !ok {
-			return nil, fmt.Errorf("%w: overrides[%d] must be a mapping", ErrInvalid, i)
-		}
+	overrides := []Override{}
+	err := contractfile.Sequence(n, "overrides", ErrInvalid, func(i int, en ast.Node) error {
+		where := fmt.Sprintf("overrides[%d]", i)
 		var o Override
-		seen := map[string]bool{}
-		for _, kv := range em.Values {
-			key := contractfile.Key(kv.Key)
-			// A glob and an option name are one line; the value is text
-			// as written.
-			text, isScalar := contractfile.Line(kv.Value)
-			if key == "value" {
-				text, isScalar = contractfile.Scalar(kv.Value)
-			}
-			switch key {
-			case "files", "option", "value":
-			default:
-				return nil, fmt.Errorf("%w: overrides[%d]: unknown key %q", ErrInvalid, i, key)
-			}
-			if !isScalar {
-				if key == "value" {
-					return nil, fmt.Errorf("%w: overrides[%d].value must be a scalar", ErrInvalid, i)
+		line := func(name string, into *string) contractfile.Field {
+			return contractfile.Field{Name: name, Required: true, Read: func(n ast.Node) error {
+				text, ok := contractfile.Line(n)
+				if !ok {
+					return fmt.Errorf("%w: %s.%s must be one line of text", ErrInvalid, where, name)
 				}
-				return nil, fmt.Errorf("%w: overrides[%d].%s must be one line of text", ErrInvalid, i, key)
-			}
-			seen[key] = true
-			switch key {
-			case "files":
-				o.Files = text
-			case "option":
-				o.Option = text
-			case "value":
-				o.Value = text
-			}
+				*into = text
+				return nil
+			}}
 		}
-		for _, required := range []string{"files", "option", "value"} {
-			if !seen[required] {
-				return nil, fmt.Errorf("%w: overrides[%d] has no %s", ErrInvalid, i, required)
-			}
+		err := contractfile.Mapping(en, where, ErrInvalid,
+			line("files", &o.Files),
+			line("option", &o.Option),
+			contractfile.Field{Name: "value", Required: true, Read: func(n ast.Node) error {
+				text, ok := contractfile.Scalar(n)
+				if !ok {
+					return fmt.Errorf("%w: %s.value must be a scalar", ErrInvalid, where)
+				}
+				o.Value = text
+				return nil
+			}},
+		)
+		if err != nil {
+			return err
 		}
 		if _, err := glob.Compile(o.Files); err != nil {
-			return nil, fmt.Errorf("%w: overrides[%d].files: %v", ErrInvalid, i, err)
+			return fmt.Errorf("%w: %s.files: %v", ErrInvalid, where, err)
 		}
 		if err := checkOptionName(o.Option); err != nil {
-			return nil, fmt.Errorf("%w: overrides[%d].option: %v", ErrInvalid, i, err)
+			return fmt.Errorf("%w: %s.option: %v", ErrInvalid, where, err)
 		}
 		overrides = append(overrides, o)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return overrides, nil
 }

@@ -100,28 +100,20 @@ func Parse(data []byte) (*File, error) {
 // checkMappingShape enforces the schema at the AST level: keys are exactly
 // module (+ deps), and deps — when present — is a non-empty mapping (a
 // null or empty value is "present without dependencies", which the schema
-// excludes). It runs after the admissibility check, so every key is a string node
-// and comparisons see the unquoted key value.
+// excludes). The values themselves are the strict decode's to read.
 func checkMappingShape(mapping *ast.MappingNode) error {
-	for _, kv := range mapping.Values {
-		key, ok := kv.Key.(*ast.StringNode)
-		if !ok {
-			return fmt.Errorf("%w: unknown key %q", ErrInvalid, kv.Key.String())
-		}
-		switch key.Value {
-		case "module":
-		case "deps":
+	return contractfile.Mapping(mapping, "", ErrInvalid,
+		contractfile.Field{Name: "module"},
+		contractfile.Field{Name: "deps", Read: func(n ast.Node) error {
 			// Null, sequence, and scalar values all fail the mapping
 			// assertion; an empty mapping decodes to a non-nil empty map
 			// that validate rejects with the same message.
-			if _, ok := kv.Value.(*ast.MappingNode); !ok {
+			if _, ok := n.(*ast.MappingNode); !ok {
 				return fmt.Errorf("%w: deps must be a non-empty mapping", ErrInvalid)
 			}
-		default:
-			return fmt.Errorf("%w: unknown key %q", ErrInvalid, key.Value)
-		}
-	}
-	return nil
+			return nil
+		}},
+	)
 }
 
 // validate checks a File's content against the schema; Parse accepts and

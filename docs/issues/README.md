@@ -6,7 +6,6 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
-| [contract-file-parser-skeleton](contract-file-parser-skeleton.md) | five contract-file parsers repeat one mapping-walker skeleton (known keys, indexed messages, seen map, required sweep); one walker at contractfile with a key table collapses them | the lint file is built: the check-rules plan's lint-file chunk |
 | [pinned-key-provenance](pinned-key-provenance.md) | the pinned-key trust tier is specced and not built: gitprov's OpenPGP and SSH arms against caller-pinned keys, then pb's keyring, rules, evaluation and lockfile record | the check-rules plan closed out |
 | [image-facts-as-a-sum](image-facts-as-a-sum.md) | an image's rootfs-or-reference union is checked by the runner's spec check; a sum shape would make it unrepresentable at the producers | a third world beyond an export and a daemon reference reaches plugin.Image or runner.Spec |
 | [mutation-record-ledger-names-old-packages](mutation-record-ledger-names-old-packages.md) | the mutation record's ledger and candidate positions keep the pre-move package names, which no retarget rewrites; the relation between a historic record and its re-measurement under the new name is lost to a reader | gomutant's retarget issue resolved with its ledger arm |

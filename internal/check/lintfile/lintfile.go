@@ -90,37 +90,38 @@ func Parse(data []byte) (*File, error) {
 	if m == nil { // an empty file: every part absent
 		return f, nil
 	}
-	for _, kv := range m.Values {
-		key := contractfile.Key(kv.Key)
-		switch key {
-		case "rulesets":
-			paths, err := stringList(kv.Value, key)
+	list := func(name string, into *[]string) contractfile.Field {
+		return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+			l, err := contractfile.Strings(n, name, ErrInvalid)
+			*into = l
+			return err
+		}}
+	}
+	err = contractfile.Mapping(m, "", ErrInvalid,
+		contractfile.Field{Name: "rulesets", Read: func(n ast.Node) error {
+			paths, err := contractfile.Strings(n, "rulesets", ErrInvalid)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			seen := map[string]bool{}
 			for _, p := range paths {
 				if err := module.ValidatePath(p); err != nil {
-					return nil, fmt.Errorf("%w: rulesets: %v", ErrInvalid, err)
+					return fmt.Errorf("%w: rulesets: %v", ErrInvalid, err)
 				}
 				if seen[p] {
-					return nil, fmt.Errorf("%w: rulesets: %s listed twice", ErrInvalid, p)
+					return fmt.Errorf("%w: rulesets: %s listed twice", ErrInvalid, p)
 				}
 				seen[p] = true
 			}
 			f.Rulesets = paths
-		case "enable":
-			if f.Enable, err = stringList(kv.Value, key); err != nil {
-				return nil, err
-			}
-		case "exclude":
-			if f.Exclude, err = stringList(kv.Value, key); err != nil {
-				return nil, err
-			}
-		case "severity":
-			sm, ok := kv.Value.(*ast.MappingNode)
+			return nil
+		}},
+		list("enable", &f.Enable),
+		list("exclude", &f.Exclude),
+		contractfile.Field{Name: "severity", Read: func(n ast.Node) error {
+			sm, ok := n.(*ast.MappingNode)
 			if !ok {
-				return nil, fmt.Errorf("%w: severity must be a mapping from rule id to severity", ErrInvalid)
+				return fmt.Errorf("%w: severity must be a mapping from rule id to severity", ErrInvalid)
 			}
 			f.Severity = map[string]check.Severity{}
 			for _, skv := range sm.Values {
@@ -128,142 +129,124 @@ func Parse(data []byte) (*File, error) {
 				text, ok := contractfile.Line(skv.Value)
 				sv, valid := check.ParseSeverity(text)
 				if !ok || !valid {
-					return nil, fmt.Errorf("%w: severity.%s must be %s or %s", ErrInvalid, id, check.SeverityError, check.SeverityWarning)
+					return fmt.Errorf("%w: severity.%s must be %s or %s", ErrInvalid, id, check.SeverityError, check.SeverityWarning)
 				}
 				f.Severity[id] = sv
 			}
-		case "ignore":
-			if f.Ignore, err = parseIgnores(kv.Value); err != nil {
-				return nil, err
-			}
-		case "breaking":
-			if f.Breaking, err = parseBreaking(kv.Value); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, fmt.Errorf("%w: unknown key %q", ErrInvalid, key)
-		}
+			return nil
+		}},
+		contractfile.Field{Name: "ignore", Read: func(n ast.Node) error {
+			igs, err := parseIgnores(n)
+			f.Ignore = igs
+			return err
+		}},
+		contractfile.Field{Name: "breaking", Read: func(n ast.Node) error {
+			b, err := parseBreaking(n)
+			f.Breaking = b
+			return err
+		}},
+	)
+	if err != nil {
+		return nil, err
 	}
 	return f, nil
 }
 
-// stringList reads a list of non-empty lines of text.
-func stringList(n ast.Node, key string) ([]string, error) {
-	seq, ok := n.(*ast.SequenceNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: %s must be a list", ErrInvalid, key)
-	}
-	out := make([]string, 0, len(seq.Values))
-	for _, v := range seq.Values {
-		text, ok := contractfile.Line(v)
-		if !ok || text == "" {
-			return nil, fmt.Errorf("%w: %s entries must be non-empty strings", ErrInvalid, key)
-		}
-		out = append(out, text)
-	}
-	return out, nil
-}
-
 func parseIgnores(n ast.Node) ([]Ignore, error) {
-	seq, ok := n.(*ast.SequenceNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: ignore must be a list", ErrInvalid)
-	}
-	out := make([]Ignore, 0, len(seq.Values))
-	for i, en := range seq.Values {
-		em, ok := en.(*ast.MappingNode)
-		if !ok {
-			return nil, fmt.Errorf("%w: ignore[%d] must be a mapping", ErrInvalid, i)
-		}
+	out := []Ignore{}
+	err := contractfile.Sequence(n, "ignore", ErrInvalid, func(i int, en ast.Node) error {
+		where := fmt.Sprintf("ignore[%d]", i)
 		var ig Ignore
-		for _, kv := range em.Values {
-			key := contractfile.Key(kv.Key)
-			switch key {
-			case "paths", "rules":
-			default:
-				return nil, fmt.Errorf("%w: ignore[%d]: unknown key %q", ErrInvalid, i, key)
-			}
-			list, err := stringList(kv.Value, fmt.Sprintf("ignore[%d].%s", i, key))
-			if err != nil {
-				return nil, err
-			}
-			if len(list) == 0 {
-				hint := ""
-				if key == "rules" {
-					hint = " (omit rules to ignore every rule)"
-				}
-				return nil, fmt.Errorf("%w: ignore[%d].%s must not be empty%s", ErrInvalid, i, key, hint)
-			}
-			if key == "rules" {
-				ig.Rules = list
-				continue
-			}
-			for _, p := range list {
-				g, err := glob.Compile(p)
+		list := func(name string, set func([]string) error) contractfile.Field {
+			return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+				l, err := contractfile.Strings(n, where+"."+name, ErrInvalid)
 				if err != nil {
-					return nil, fmt.Errorf("%w: ignore[%d].paths: %q: %v", ErrInvalid, i, p, err)
+					return err
 				}
-				ig.Paths = append(ig.Paths, g)
-			}
+				if len(l) == 0 {
+					hint := ""
+					if name == "rules" {
+						hint = " (omit rules to ignore every rule)"
+					}
+					return fmt.Errorf("%w: %s.%s must not be empty%s", ErrInvalid, where, name, hint)
+				}
+				return set(l)
+			}}
+		}
+		err := contractfile.Mapping(en, where, ErrInvalid,
+			list("paths", func(ps []string) error {
+				for _, p := range ps {
+					g, err := glob.Compile(p)
+					if err != nil {
+						return fmt.Errorf("%w: %s.paths: %q: %v", ErrInvalid, where, p, err)
+					}
+					ig.Paths = append(ig.Paths, g)
+				}
+				return nil
+			}),
+			list("rules", func(rs []string) error { ig.Rules = rs; return nil }),
+		)
+		if err != nil {
+			return err
 		}
 		if len(ig.Paths) == 0 {
-			return nil, fmt.Errorf("%w: ignore[%d] has no paths", ErrInvalid, i)
+			return fmt.Errorf("%w: %s has no paths", ErrInvalid, where)
 		}
 		out = append(out, ig)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }
 
 func parseBreaking(n ast.Node) (*Breaking, error) {
-	m, ok := n.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: breaking must be a mapping", ErrInvalid)
-	}
 	b := &Breaking{}
-	haveBase := false
-	for _, kv := range m.Values {
-		key := contractfile.Key(kv.Key)
-		if key != "base" {
-			return nil, fmt.Errorf("%w: breaking: unknown key %q", ErrInvalid, key)
-		}
-		bm, ok := kv.Value.(*ast.MappingNode)
-		if !ok {
-			return nil, fmt.Errorf("%w: breaking.base must be a mapping", ErrInvalid)
-		}
-		forms := 0
-		for _, bkv := range bm.Values {
-			bkey := contractfile.Key(bkv.Key)
-			switch bkey {
-			case "ref", "version":
-				text, ok := contractfile.Line(bkv.Value)
-				if !ok || text == "" {
-					return nil, fmt.Errorf("%w: breaking.base.%s must be a non-empty string", ErrInvalid, bkey)
-				}
-				if bkey == "version" {
-					if _, err := version.Parse(text); err != nil {
-						return nil, fmt.Errorf("%w: breaking.base.version: %v", ErrInvalid, err)
+	err := contractfile.Mapping(n, "breaking", ErrInvalid,
+		contractfile.Field{Name: "base", Required: true, Read: func(n ast.Node) error {
+			forms := 0
+			value := func(form BaseForm) contractfile.Field {
+				return contractfile.Field{Name: string(form), Read: func(n ast.Node) error {
+					forms++
+					text, ok := contractfile.Line(n)
+					if !ok || text == "" {
+						return fmt.Errorf("%w: breaking.base.%s must be a non-empty string", ErrInvalid, form)
 					}
-				}
-				b.Base = Base{Form: BaseForm(bkey), Value: text}
-			case "pinned":
-				// The one spelling: the unquoted word true.
-				tok := bkv.Value.GetToken()
-				if _, isBool := bkv.Value.(*ast.BoolNode); !isBool || tok.Value != "true" {
-					return nil, fmt.Errorf("%w: breaking.base.pinned must be true", ErrInvalid)
-				}
-				b.Base = Base{Form: BasePinned}
-			default:
-				return nil, fmt.Errorf("%w: breaking.base: unknown key %q", ErrInvalid, bkey)
+					if form == BaseVersion {
+						if _, err := version.Parse(text); err != nil {
+							return fmt.Errorf("%w: breaking.base.version: %v", ErrInvalid, err)
+						}
+					}
+					b.Base = Base{Form: form, Value: text}
+					return nil
+				}}
 			}
-			forms++
-		}
-		if forms != 1 {
-			return nil, fmt.Errorf("%w: breaking.base must hold exactly one of ref, version, pinned", ErrInvalid)
-		}
-		haveBase = true
-	}
-	if !haveBase {
-		return nil, fmt.Errorf("%w: breaking has no base", ErrInvalid)
+			err := contractfile.Mapping(n, "breaking.base", ErrInvalid,
+				value(BaseRef),
+				value(BaseVersion),
+				contractfile.Field{Name: string(BasePinned), Read: func(n ast.Node) error {
+					forms++
+					// The one spelling: the unquoted word true.
+					tok := n.GetToken()
+					if _, isBool := n.(*ast.BoolNode); !isBool || tok.Value != "true" {
+						return fmt.Errorf("%w: breaking.base.pinned must be true", ErrInvalid)
+					}
+					b.Base = Base{Form: BasePinned}
+					return nil
+				}},
+			)
+			if err != nil {
+				return err
+			}
+			if forms != 1 {
+				return fmt.Errorf("%w: breaking.base must hold exactly one of ref, version, pinned", ErrInvalid)
+			}
+			return nil
+		}},
+	)
+	if err != nil {
+		return nil, err
 	}
 	return b, nil
 }

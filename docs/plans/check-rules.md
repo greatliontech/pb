@@ -13,7 +13,7 @@ docs/specs/dep-verbs.md (REQ-dep-tidy-rulesets).
       and the library, bounded evaluation, the segmentation rule
 - [x] 4. Lint evaluation: entities bound per target, verdicts located
       through source info, no defaults, suppression comments
-- [ ] 5. The lint file: rulesets, selection, severities, path
+- [x] 5. The lint file: rulesets, selection, severities, path
       ignores; rulesets read from the build and a bad rule file named
       with its ruleset, tidy keeping them
 - [ ] 6. Breaking: the pairing, oneofs and extensions included; the

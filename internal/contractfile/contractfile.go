@@ -1,7 +1,8 @@
 // Package contractfile is the one home of pb's strict YAML
-// contract-file surface (pb.yaml, pb.lock, pb.trust.yaml): the shared
-// document prologue every contract-file parser opens with, and the
-// node-admissibility rule it enforces.
+// contract-file surface (pb.yaml, pb.lock, pb.trust.yaml, pb.gen.yaml,
+// pb.lint.yaml, the rule files): the shared document prologue every
+// contract-file parser opens with, the node-admissibility rule it
+// enforces, the scalar readers, and the mapping walk.
 //
 // Admissibility rejects merge keys, anchors, aliases, and tags
 // anywhere in the document: their resolution is parser-defined — YAML
@@ -13,8 +14,17 @@
 // defeats strict-mode unknown-field detection in decoders.
 //
 // Doc runs the admissibility check before any interpretation, so a
-// parser built on it cannot forget the guard; schema walking stays with
-// each format, whose shapes are its own contract.
+// parser built on it cannot forget the guard; each format's schema —
+// its keys, its values' grammars, its cross-field rules — stays its
+// own contract.
+//
+// Mapping, Sequence and Strings hold the walk every schema shares —
+// the generate file, the trust policy, the module file, the rule
+// files, the lint file: a field table declares a mapping's keys, an
+// unknown key is refused before any value is read, and a missing key
+// is named the same way everywhere. The lockfile and the user
+// configuration keep their own readers — a strict typed decode, and
+// string scalars alone by their spec — with the same guarantees.
 package contractfile
 
 import (
@@ -143,4 +153,106 @@ func Line(n ast.Node) (string, bool) {
 		return "", false
 	}
 	return s, true
+}
+
+// Field is one key of a contract-file mapping: its name, whether the
+// mapping must carry it, and the reader of its value — none for a key
+// whose presence is all the walk judges.
+type Field struct {
+	Name     string
+	Required bool
+	Read     func(ast.Node) error
+}
+
+// Mapping walks a mapping against its fields — the one skeleton every
+// contract-file parser shares: the node must be a mapping; a key that
+// is no field is refused before any value is read, the refusal
+// listing the fields; each field's value is handed to its reader; a
+// required field absent is refused, the missing named in field order.
+// where names the mapping in messages ("plugins[0]", "breaking.base";
+// empty for a document's top level) and sentinel wraps every refusal.
+// The YAML parser refuses a duplicate key, so each field reads at
+// most once.
+func Mapping(n ast.Node, where string, sentinel error, fields ...Field) error {
+	m, ok := n.(*ast.MappingNode)
+	if !ok {
+		return fmt.Errorf("%w: %smust be a mapping", sentinel, prefix(where, " "))
+	}
+	byName := make(map[string]int, len(fields))
+	for i, f := range fields {
+		byName[f.Name] = i
+	}
+	seen := make([]bool, len(fields))
+	for _, kv := range m.Values {
+		key := Key(kv.Key)
+		i, known := byName[key]
+		if !known {
+			return fmt.Errorf("%w: %sunknown key %q (keys: %s)", sentinel, prefix(where, ": "), key, names(fields))
+		}
+		seen[i] = true
+		if read := fields[i].Read; read != nil {
+			if err := read(kv.Value); err != nil {
+				return err
+			}
+		}
+	}
+	var missing []string
+	for i, f := range fields {
+		if f.Required && !seen[i] {
+			missing = append(missing, f.Name)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%w: %smissing %s", sentinel, prefix(where, ": "), strings.Join(missing, " and "))
+	}
+	return nil
+}
+
+// Sequence walks a list: the node must be a sequence, each item
+// visited with its index for messages.
+func Sequence(n ast.Node, where string, sentinel error, each func(i int, item ast.Node) error) error {
+	seq, ok := n.(*ast.SequenceNode)
+	if !ok {
+		return fmt.Errorf("%w: %smust be a list", sentinel, prefix(where, " "))
+	}
+	for i, item := range seq.Values {
+		if err := each(i, item); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Strings reads a list of non-empty lines of text.
+func Strings(n ast.Node, where string, sentinel error) ([]string, error) {
+	seq, ok := n.(*ast.SequenceNode)
+	if !ok {
+		return nil, fmt.Errorf("%w: %smust be a list", sentinel, prefix(where, " "))
+	}
+	out := make([]string, 0, len(seq.Values))
+	for _, v := range seq.Values {
+		text, ok := Line(v)
+		if !ok || text == "" {
+			return nil, fmt.Errorf("%w: %smust hold non-empty lines of text", sentinel, prefix(where, " "))
+		}
+		out = append(out, text)
+	}
+	return out, nil
+}
+
+// names spells the fields' names for a refusal.
+func names(fields []Field) string {
+	out := make([]string, len(fields))
+	for i, f := range fields {
+		out[i] = f.Name
+	}
+	return strings.Join(out, ", ")
+}
+
+// prefix is where followed by sep, or nothing for an empty where.
+func prefix(where, sep string) string {
+	if where == "" {
+		return ""
+	}
+	return where + sep
 }

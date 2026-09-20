@@ -173,3 +173,84 @@ func TestScalarReaders(t *testing.T) {
 		t.Errorf("keys = %q, %q", Key(m.Values[0].Key), Key(m.Values[1].Key))
 	}
 }
+
+// The mapping walker: a non-mapping refused; an unknown key refused
+// before any value is read; each field's value handed to its reader,
+// a reader's error returned as is; required fields missing named in
+// field order; the message prefixed by where, or unprefixed at a
+// document's top level. Sequence and Strings likewise.
+func TestWalkers(t *testing.T) {
+	sentinel := errors.New("bad")
+	var got []string
+	fields := []Field{
+		{Name: "a", Required: true, Read: func(n ast.Node) error { s, _ := Line(n); got = append(got, "a="+s); return nil }},
+		{Name: "b", Read: func(n ast.Node) error { return errors.New("b refused") }},
+		{Name: "c", Required: true, Read: func(n ast.Node) error { got = append(got, "c"); return nil }},
+	}
+	cases := []struct{ src, where, want string }{
+		{"a: 1\nc: 2\n", "", ""},
+		{"c: 2\na: 1\n", "x", ""},
+		{"a: 1\n", "", "bad: missing c"},
+		{"{}\n", "x", "bad: x: missing a and c"},
+		{"a: 1\nc: 2\nd: 3\n", "", `bad: unknown key "d" (keys: a, b, c)`},
+		{"a: 1\nc: 2\nd: 3\n", "x[0]", `bad: x[0]: unknown key "d" (keys: a, b, c)`},
+		{"a: 1\nb: 2\nc: 3\n", "", "b refused"},
+		{"- 1\n", "x", "bad: x must be a mapping"},
+		{"- 1\n", "", "bad: must be a mapping"},
+		// The unknown key is refused before its value or a later
+		// field is read.
+		{"d: 3\nb: 1\n", "", `bad: unknown key "d" (keys: a, b, c)`},
+	}
+	for _, c := range cases {
+		got = nil
+		err := Mapping(parseBody(t, c.src), c.where, sentinel, fields...)
+		msg := ""
+		if err != nil {
+			msg = err.Error()
+		}
+		if msg != c.want {
+			t.Errorf("%q: %q, want %q", c.src, msg, c.want)
+		}
+		if err != nil && !errors.Is(err, sentinel) && msg != "b refused" {
+			t.Errorf("%q: not the sentinel", c.src)
+		}
+	}
+	got = nil
+	if err := Mapping(parseBody(t, "a: 1\nc: 2\n"), "", sentinel, fields...); err != nil || strings.Join(got, ",") != "a=1,c" {
+		t.Errorf("readers: %q %v", got, err)
+	}
+	// A field without a reader is judged by presence alone.
+	if err := Mapping(parseBody(t, "k: [1, 2]\n"), "", sentinel, Field{Name: "k", Required: true}); err != nil {
+		t.Errorf("presence-only field: %v", err)
+	}
+	if err := Mapping(parseBody(t, "{}\n"), "", sentinel, Field{Name: "k", Required: true}); err == nil || err.Error() != "bad: missing k" {
+		t.Errorf("presence-only field missing: %v", err)
+	}
+	var idx []int
+	if err := Sequence(parseBody(t, "- x\n- y\n"), "s", sentinel, func(i int, n ast.Node) error { idx = append(idx, i); return nil }); err != nil || len(idx) != 2 || idx[1] != 1 {
+		t.Errorf("sequence: %v %v", idx, err)
+	}
+	if err := Sequence(parseBody(t, "k: v\n"), "s", sentinel, nil); err == nil || err.Error() != "bad: s must be a list" || !errors.Is(err, sentinel) {
+		t.Errorf("non-list: %v", err)
+	}
+	if err := Sequence(parseBody(t, "k: v\n"), "", sentinel, nil); err == nil || err.Error() != "bad: must be a list" {
+		t.Errorf("non-list, no where: %v", err)
+	}
+	if _, err := Strings(parseBody(t, "k: v\n"), "", sentinel); err == nil || err.Error() != "bad: must be a list" {
+		t.Errorf("strings, no where: %v", err)
+	}
+	if err := Sequence(parseBody(t, "- x\n"), "s", sentinel, func(int, ast.Node) error { return errors.New("item") }); err == nil || err.Error() != "item" {
+		t.Errorf("item error: %v", err)
+	}
+	if ss, err := Strings(parseBody(t, "- x\n- \"y z\"\n- 7\n"), "l", sentinel); err != nil || strings.Join(ss, ",") != "x,y z,7" {
+		t.Errorf("strings: %q %v", ss, err)
+	}
+	for _, src := range []string{"x\n", "- \"\"\n", "- [a]\n", "- ~\n", "- |\n  a\n  b\n"} {
+		if _, err := Strings(parseBody(t, src), "l", sentinel); err == nil || !errors.Is(err, sentinel) {
+			t.Errorf("%q admitted: %v", src, err)
+		}
+	}
+	if ss, err := Strings(parseBody(t, "[]\n"), "l", sentinel); err != nil || ss == nil || len(ss) != 0 {
+		t.Errorf("empty list: %v %v", ss, err)
+	}
+}

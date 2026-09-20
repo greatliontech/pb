@@ -168,51 +168,47 @@ type Policy struct {
 // ErrInvalid marks a trust policy violating the schema.
 var ErrInvalid = errors.New("invalid trust policy")
 
-// Parse decodes and validates a trust policy file
-// (REQ-prov-trust-schema): top-level default/modules/plugins, each
-// optional; rules of shape {prefix, require, identity: {san, issuer}};
-// no unknown keys anywhere.
+// Parse decodes and validates a trust policy (REQ-prov-trust-schema,
+// REQ-prov-exec-policy): the document a mapping of default, modules,
+// plugins and execution, each optional; an empty document the empty
+// policy.
 func Parse(data []byte) (*Policy, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
+	p := &Policy{}
 	if mapping == nil {
 		// An empty or fully commented-out policy file is the empty
 		// policy.
-		return &Policy{}, nil
+		return p, nil
 	}
-	p := &Policy{}
-	for _, kv := range mapping.Values {
-		key := contractfile.Key(kv.Key)
-		switch key {
-		case "default":
-			m, err := parseMode(kv.Value, "default")
-			if err != nil {
-				return nil, err
-			}
+	rules := func(field string, into *[]Rule) contractfile.Field {
+		return contractfile.Field{Name: field, Read: func(n ast.Node) error {
+			rs, err := parseRules(n, field)
+			*into = rs
+			return err
+		}}
+	}
+	err = contractfile.Mapping(mapping, "", ErrInvalid,
+		contractfile.Field{Name: "default", Read: func(n ast.Node) error {
+			m, err := parseMode(n, "default")
 			p.Default = m
-		case "modules":
-			rules, err := parseRules(kv.Value, "modules")
+			return err
+		}},
+		rules("modules", &p.Modules),
+		rules("plugins", &p.Plugins),
+		contractfile.Field{Name: "execution", Read: func(n ast.Node) error {
+			exec, err := parseExecution(n)
 			if err != nil {
-				return nil, err
-			}
-			p.Modules = rules
-		case "plugins":
-			rules, err := parseRules(kv.Value, "plugins")
-			if err != nil {
-				return nil, err
-			}
-			p.Plugins = rules
-		case "execution":
-			exec, err := parseExecution(kv.Value)
-			if err != nil {
-				return nil, err
+				return err
 			}
 			p.Execution = *exec
-		default:
-			return nil, fmt.Errorf("%w: unknown key %q", ErrInvalid, key)
-		}
+			return nil
+		}},
+	)
+	if err != nil {
+		return nil, err
 	}
 	return p, nil
 }
@@ -229,109 +225,101 @@ func parseMode(n ast.Node, field string) (Mode, error) {
 	return m, nil
 }
 
+// parseRules reads a rules list: each entry prefix, require and
+// identity, prefixes unique within the list.
 func parseRules(n ast.Node, field string) ([]Rule, error) {
-	seq, ok := n.(*ast.SequenceNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: %s must be a list", ErrInvalid, field)
-	}
 	seen := map[string]bool{}
-	rules := make([]Rule, 0, len(seq.Values))
-	for i, rn := range seq.Values {
-		rm, ok := rn.(*ast.MappingNode)
-		if !ok {
-			return nil, fmt.Errorf("%w: %s[%d] must be a mapping", ErrInvalid, field, i)
-		}
+	rules := []Rule{}
+	err := contractfile.Sequence(n, field, ErrInvalid, func(i int, rn ast.Node) error {
+		where := fmt.Sprintf("%s[%d]", field, i)
 		var r Rule
-		for _, kv := range rm.Values {
-			key := contractfile.Key(kv.Key)
-			switch key {
-			case "prefix":
-				s, ok := contractfile.Line(kv.Value)
+		err := contractfile.Mapping(rn, where, ErrInvalid,
+			contractfile.Field{Name: "prefix", Read: func(n ast.Node) error {
+				s, ok := contractfile.Line(n)
 				if !ok {
-					return nil, fmt.Errorf("%w: %s[%d].prefix must be one line of text", ErrInvalid, field, i)
+					return fmt.Errorf("%w: %s.prefix must be one line of text", ErrInvalid, where)
 				}
 				r.Prefix = s
-			case "require":
-				m, err := parseMode(kv.Value, fmt.Sprintf("%s[%d].require", field, i))
-				if err != nil {
-					return nil, err
-				}
+				return nil
+			}},
+			contractfile.Field{Name: "require", Read: func(n ast.Node) error {
+				m, err := parseMode(n, where+".require")
 				r.Require = m
-			case "identity":
-				id, err := parseIdentity(kv.Value, fmt.Sprintf("%s[%d].identity", field, i))
-				if err != nil {
-					return nil, err
-				}
+				return err
+			}},
+			contractfile.Field{Name: "identity", Read: func(n ast.Node) error {
+				id, err := parseIdentity(n, where+".identity")
 				r.Identity = id
-			default:
-				return nil, fmt.Errorf("%w: %s[%d]: unknown key %q", ErrInvalid, field, i, key)
-			}
+				return err
+			}},
+		)
+		if err != nil {
+			return err
 		}
 		// A duplicate prefix would make "the longest matching rule"
 		// ambiguous; the conflict is unrepresentable rather than
 		// tie-broken.
 		if seen[r.Prefix] {
-			return nil, fmt.Errorf("%w: %s[%d]: duplicate prefix %q", ErrInvalid, field, i, r.Prefix)
+			return fmt.Errorf("%w: %s: duplicate prefix %q", ErrInvalid, where, r.Prefix)
 		}
 		seen[r.Prefix] = true
 		rules = append(rules, r)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return rules, nil
 }
 
+// parseExecution reads the execution block (REQ-prov-exec-policy).
 func parseExecution(n ast.Node) (*Execution, error) {
-	m, ok := n.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: execution must be a mapping", ErrInvalid)
-	}
 	e := &Execution{}
-	for _, kv := range m.Values {
-		key := contractfile.Key(kv.Key)
-		switch key {
-		case "min-tier":
-			s, ok := contractfile.Line(kv.Value)
+	boolean := func(name string, into **bool) contractfile.Field {
+		return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+			b, err := parseBool(n, "execution."+name)
+			*into = b
+			return err
+		}}
+	}
+	err := contractfile.Mapping(n, "execution", ErrInvalid,
+		contractfile.Field{Name: "min-tier", Read: func(n ast.Node) error {
+			s, ok := contractfile.Line(n)
 			if !ok || !plugin.ValidTier(s) {
-				return nil, fmt.Errorf("%w: execution.min-tier must be one of Strong, OS, Minimal, None", ErrInvalid)
+				return fmt.Errorf("%w: execution.min-tier must be one of Strong, OS, Minimal, None", ErrInvalid)
 			}
 			e.MinTier = s
-		case "schemes":
-			seq, ok := kv.Value.(*ast.SequenceNode)
-			if !ok {
-				return nil, fmt.Errorf("%w: execution.schemes must be a list", ErrInvalid)
-			}
-			schemes := make([]string, 0, len(seq.Values))
-			for _, sn := range seq.Values {
+			return nil
+		}},
+		contractfile.Field{Name: "schemes", Read: func(n ast.Node) error {
+			schemes := []string{}
+			err := contractfile.Sequence(n, "execution.schemes", ErrInvalid, func(_ int, sn ast.Node) error {
 				s, ok := contractfile.Line(sn)
 				if !ok || !plugin.ValidScheme(s) {
-					return nil, fmt.Errorf("%w: execution.schemes entries are oci or local", ErrInvalid)
+					return fmt.Errorf("%w: execution.schemes entries are oci or local", ErrInvalid)
 				}
 				if slices.Contains(schemes, s) {
-					return nil, fmt.Errorf("%w: execution.schemes lists %q twice", ErrInvalid, s)
+					return fmt.Errorf("%w: execution.schemes lists %q twice", ErrInvalid, s)
 				}
 				schemes = append(schemes, s)
-			}
+				return nil
+			})
 			e.Schemes = schemes
-		case "local-pin":
-			b, err := parseBool(kv.Value, "execution.local-pin")
+			return err
+		}},
+		boolean("local-pin", &e.LocalPin),
+		boolean("plugin-overrides", &e.PluginOverrides),
+		contractfile.Field{Name: "limits", Read: func(n ast.Node) error {
+			limits, err := parseLimits(n)
 			if err != nil {
-				return nil, err
-			}
-			e.LocalPin = b
-		case "plugin-overrides":
-			b, err := parseBool(kv.Value, "execution.plugin-overrides")
-			if err != nil {
-				return nil, err
-			}
-			e.PluginOverrides = b
-		case "limits":
-			limits, err := parseLimits(kv.Value)
-			if err != nil {
-				return nil, err
+				return err
 			}
 			e.Limits = *limits
-		default:
-			return nil, fmt.Errorf("%w: execution: unknown key %q", ErrInvalid, key)
-		}
+			return nil
+		}},
+	)
+	if err != nil {
+		return nil, err
 	}
 	return e, nil
 }
@@ -348,39 +336,31 @@ func parseBool(n ast.Node, field string) (*bool, error) {
 	return &v, nil
 }
 
+// parseLimits reads the resource limits: every value a scalar
+// spelling validated by its own grammar — the text written, never the
+// parser's coercion.
 func parseLimits(n ast.Node) (*Limits, error) {
-	m, ok := n.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: execution.limits must be a mapping", ErrInvalid)
-	}
 	l := &Limits{}
-	for _, kv := range m.Values {
-		key := contractfile.Key(kv.Key)
-		switch key {
-		case "memory", "cpu", "pids", "timeout":
-		default:
-			return nil, fmt.Errorf("%w: execution.limits: unknown key %q", ErrInvalid, key)
-		}
-		// Every limit value is a scalar spelling validated by its own
-		// grammar — the text written, never the parser's coercion.
-		val, ok := contractfile.Line(kv.Value)
-		if !ok {
-			return nil, fmt.Errorf("%w: execution.limits.%s must be one line of text", ErrInvalid, key)
-		}
-		var err error
-		switch key {
-		case "memory":
-			l.Memory, err = parseMemory(val)
-		case "cpu":
-			l.CPU, err = parseCPU(val)
-		case "pids":
-			l.Pids, err = parsePositiveInt(val)
-		case "timeout":
-			l.Timeout, err = parseTimeout(val)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("%w: execution.limits.%s: %v", ErrInvalid, key, err)
-		}
+	limit := func(name string, set func(string) error) contractfile.Field {
+		return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+			val, ok := contractfile.Line(n)
+			if !ok {
+				return fmt.Errorf("%w: execution.limits.%s must be one line of text", ErrInvalid, name)
+			}
+			if err := set(val); err != nil {
+				return fmt.Errorf("%w: execution.limits.%s: %v", ErrInvalid, name, err)
+			}
+			return nil
+		}}
+	}
+	err := contractfile.Mapping(n, "execution.limits", ErrInvalid,
+		limit("memory", func(v string) (err error) { l.Memory, err = parseMemory(v); return }),
+		limit("cpu", func(v string) (err error) { l.CPU, err = parseCPU(v); return }),
+		limit("pids", func(v string) (err error) { l.Pids, err = parsePositiveInt(v); return }),
+		limit("timeout", func(v string) (err error) { l.Timeout, err = parseTimeout(v); return }),
+	)
+	if err != nil {
+		return nil, err
 	}
 	return l, nil
 }
@@ -488,29 +468,22 @@ func parseTimeout(s string) (time.Duration, error) {
 	return time.Duration(v * float64(unit)), nil
 }
 
+// parseIdentity reads an identity rule: san and issuer, both
+// required, each one line of text.
 func parseIdentity(n ast.Node, field string) (*IdentityRule, error) {
-	m, ok := n.(*ast.MappingNode)
-	if !ok {
-		return nil, fmt.Errorf("%w: %s must be a mapping", ErrInvalid, field)
-	}
 	id := &IdentityRule{}
-	for _, kv := range m.Values {
-		key := contractfile.Key(kv.Key)
-		s, ok := contractfile.Line(kv.Value)
-		if !ok {
-			return nil, fmt.Errorf("%w: %s.%s must be one line of text", ErrInvalid, field, key)
-		}
-		switch key {
-		case "san":
-			id.SAN = s
-		case "issuer":
-			id.Issuer = s
-		default:
-			return nil, fmt.Errorf("%w: %s: unknown key %q", ErrInvalid, field, key)
-		}
+	line := func(name string, into *string) contractfile.Field {
+		return contractfile.Field{Name: name, Required: true, Read: func(n ast.Node) error {
+			s, ok := contractfile.Line(n)
+			if !ok || s == "" {
+				return fmt.Errorf("%w: %s.%s must be one non-empty line of text", ErrInvalid, field, name)
+			}
+			*into = s
+			return nil
+		}}
 	}
-	if id.SAN == "" || id.Issuer == "" {
-		return nil, fmt.Errorf("%w: %s: san and issuer are both required", ErrInvalid, field)
+	if err := contractfile.Mapping(n, field, ErrInvalid, line("san", &id.SAN), line("issuer", &id.Issuer)); err != nil {
+		return nil, err
 	}
 	return id, nil
 }

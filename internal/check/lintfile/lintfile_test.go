@@ -61,7 +61,7 @@ func TestParse(t *testing.T) {
 	cases := map[string]struct{ in, want string }{
 		"unknown key":        {"rules: []\n", `unknown key "rules"`},
 		"rulesets not list":  {"rulesets: example.com/x\n", "rulesets must be a list"},
-		"ruleset empty":      {"rulesets: [\"\"]\n", "entries must be non-empty strings"},
+		"ruleset empty":      {"rulesets: [\"\"]\n", "rulesets must hold non-empty lines of text"},
 		"ruleset bad path":   {"rulesets: [\"not a path\"]\n", "rulesets:"},
 		"ruleset twice":      {"rulesets: [example.com/x, example.com/x]\n", "listed twice"},
 		"enable not list":    {"enable: X\n", "enable must be a list"},
@@ -76,7 +76,7 @@ func TestParse(t *testing.T) {
 		"base bad version":   {"breaking:\n  base:\n    version: nonsense\n", "breaking.base.version:"},
 		"ignore bad glob":    {"ignore:\n  - paths: [\"[\"]\n", "ignore[0].paths:"},
 		"breaking not map":   {"breaking: main\n", "breaking must be a mapping"},
-		"breaking no base":   {"breaking: {}\n", "breaking has no base"},
+		"breaking no base":   {"breaking: {}\n", "breaking: missing base"},
 		"breaking unknown":   {"breaking:\n  base: {ref: main}\n  other: 1\n", `breaking: unknown key "other"`},
 		"base two forms":     {"breaking:\n  base:\n    ref: main\n    version: v1.0.0\n", "exactly one of ref, version, pinned"},
 		"base none":          {"breaking:\n  base: {}\n", "exactly one of ref, version, pinned"},
