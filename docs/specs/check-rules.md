@@ -267,9 +267,15 @@ more than one.
 materialized as a module and compiled by the same compiler as the
 checked schema before pairing — its files in place of the module
 under check's, the build's other modules resolving its imports: a
-git reference from the git repository the workspace root lies in, at
-that reference, at the module's directory relative to that
-repository's root as it lies now, a nested module's directory — one
+git reference from the git repository the workspace root lies in —
+the root or its nearest ancestor holding a `.git` entry, the
+filesystem's root searched last, the search never entering a
+directory `GIT_CEILING_DIRECTORIES` names, the variable read as git
+reads it: absolute entries alone, the filesystem's root among the
+dropped, each naming the directory it resolves to until an empty
+entry, after which an entry names its spelling alone — at that
+reference, at the module's directory relative to
+that repository's root as it lies now, a nested module's directory — one
 holding a module file at that reference — excluded as the working
 tree's walk excludes one; a tagged version and the pinned
 version as the module's own path at that version, acquired, verified

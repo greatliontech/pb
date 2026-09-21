@@ -15,25 +15,10 @@ import (
 	"testing"
 
 	"github.com/greatliontech/pb/internal/module"
+	"github.com/greatliontech/pb/internal/testing/scratchtest"
 
 	"pgregory.net/rapid"
 )
-
-// localTempDir is t.TempDir rooted inside the module so mutation-test
-// oracles observe no external directory surface.
-func localTempDir(tb testing.TB) string {
-	tb.Helper()
-	root := filepath.Join("testdata", "scratch")
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		tb.Fatal(err)
-	}
-	dir, err := os.MkdirTemp(root, "x")
-	if err != nil {
-		tb.Fatal(err)
-	}
-	tb.Cleanup(func() { os.RemoveAll(dir) })
-	return dir
-}
 
 type nopWriteCloser struct{ io.Writer }
 
@@ -342,7 +327,7 @@ func TestZipHostilePaths(t *testing.T) {
 // Extraction materializes content with no execute bit and no world-writable
 // mode, regardless of the manifest mode (REQ-archive-no-exec-materialization).
 func TestExtractNoExec(t *testing.T) {
-	dir := localTempDir(t)
+	dir := scratchtest.Dir(t)
 	data, digest := writeZip(t, sampleFiles())
 	if err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), digest); err != nil {
 		t.Fatalf("ExtractZip: %v", err)
@@ -379,7 +364,7 @@ func TestExtractNoExec(t *testing.T) {
 
 // Extraction refuses a zip that fails verification: nothing is written.
 func TestExtractRefusesBadDigest(t *testing.T) {
-	dir := localTempDir(t)
+	dir := scratchtest.Dir(t)
 	data, _ := writeZip(t, sampleFiles())
 	err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), "pb1:0000000000000000000000000000000000000000000000000000000000000000")
 	if !errors.Is(err, ErrDigestMismatch) {
@@ -430,7 +415,7 @@ func FuzzVerifyZip(f *testing.F) {
 // Property: extraction of any generated file set materializes every file
 // non-executable and non-world-writable, whatever the manifest modes say.
 func TestExtractNoExecProperty(t *testing.T) {
-	root := localTempDir(t)
+	root := scratchtest.Dir(t)
 	seq := 0
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(1, 8).Draw(t, "n")
@@ -705,7 +690,7 @@ func TestWriteMemberVerifiesBytes(t *testing.T) {
 			m = f
 		}
 	}
-	dir := localTempDir(t)
+	dir := scratchtest.Dir(t)
 	good := file("pb.yaml", false, "module: example.com/m\n")
 
 	if err := writeMember(filepath.Join(dir, "ok"), m, good); err != nil {

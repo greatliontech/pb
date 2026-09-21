@@ -22,6 +22,7 @@ import (
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/provenance/trust"
+	"github.com/greatliontech/pb/internal/testing/scratchtest"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 	"pgregory.net/rapid"
@@ -461,28 +462,42 @@ func TestGenWriteRealFS(t *testing.T) {
 // below the output directory is refused before anything is written
 // (REQ-gen-out-containment): the written name is contained, the
 // resolved path would not be. In-memory and real filesystems both,
-// and both symlink forms: the real-filesystem half is rooted at "/"
-// with the workspace under a temp dir, exactly as the CLI roots its
-// working tree, where billy's own bound still refuses an absolute
-// symlink target but follows a relative one — the form repositories
-// commit — so the relative row is the one only pb's guard can refuse.
+// and both symlink forms: the real-filesystem halves root a bound
+// filesystem at a scratch directory inside the module, the workspace
+// and the escape's target side by side beneath it, so the oracle
+// reads no directory outside the tree. billy's bound re-roots an
+// absolute symlink target at the filesystem's root, so that row is
+// refused by pb's guard alone and its target stays unreachable
+// either way; a relative target — the form repositories commit — is
+// the one billy would follow, so that row is the one only pb's
+// guard refuses.
 func TestGenSymlinkEscapeRefused(t *testing.T) {
+	type fixture struct {
+		fs      billy.Filesystem
+		root    string // the workspace within fs
+		base    string // the host path fs is rooted at
+		outside string // the escape's target, a host path
+	}
 	type half struct {
-		fs       func(t *testing.T) (billy.Filesystem, string)
+		fs       func(t *testing.T) fixture
 		relative bool
 	}
+	onHost := func(t *testing.T) fixture {
+		dir := scratchtest.Dir(t)
+		outside := filepath.Join(dir, "outside")
+		if err := os.MkdirAll(outside, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		return fixture{osfs.New(dir), "ws", dir, outside}
+	}
 	for name, h := range map[string]half{
-		"memfs": {func(t *testing.T) (billy.Filesystem, string) { return memfs.New(), "" }, false},
-		"osfs absolute": {func(t *testing.T) (billy.Filesystem, string) {
-			return osfs.New("/"), strings.TrimPrefix(t.TempDir(), "/")
-		}, false},
-		"osfs relative": {func(t *testing.T) (billy.Filesystem, string) {
-			return osfs.New("/"), strings.TrimPrefix(t.TempDir(), "/")
-		}, true},
+		"memfs":         {func(t *testing.T) fixture { return fixture{memfs.New(), "", "", scratchtest.Dir(t)} }, false},
+		"osfs absolute": {onHost, false},
+		"osfs relative": {onHost, true},
 	} {
 		t.Run(name, func(t *testing.T) {
-			outside := t.TempDir()
-			fs, root := h.fs(t)
+			host := h.fs(t)
+			fs, root, outside := host.fs, host.root, host.outside
 			at := func(p string) string { return pathpkg.Join(root, p) }
 			fx := newDepOn(t, fs, map[string]string{
 				at("pb.work"):     "use:\n  - a\n",
@@ -495,7 +510,7 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			}
 			target := outside
 			if h.relative {
-				rel, err := filepath.Rel("/"+at("gen"), outside)
+				rel, err := filepath.Rel(filepath.Join(host.base, at("gen")), outside)
 				if err != nil {
 					t.Fatal(err)
 				}
