@@ -10,7 +10,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
 - [x] 2. The buf configuration read: buf.yaml v1 and v2, buf.work.yaml,
       buf.gen.yaml v1 and v2, buf.lock v1 and v2, each under its own
       version, every unmodeled key an unmapped fact
-- [ ] 3. Modules and the workspace: the module path from `--module` or
+- [x] 3. Modules and the workspace: the module path from `--module` or
       the repository's origin, a module file per module, the
       workspace file for several
 - [ ] 4. Dependencies: the dependency table's ten entries, each
