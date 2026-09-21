@@ -74,27 +74,66 @@ func Parse(data []byte) (*File, error) {
 		if !ok {
 			return nil, fmt.Errorf("%w: use must be a list", ErrInvalid)
 		}
-		seen := map[string]bool{}
+		entries := make([]string, len(seq.Values))
 		for i, n := range seq.Values {
 			s, ok := n.(*ast.StringNode)
 			if !ok {
 				return nil, fmt.Errorf("%w: use[%d] must be a string", ErrInvalid, i)
 			}
-			dir, err := cleanUseDir(s.Value)
-			if err != nil {
-				return nil, fmt.Errorf("%w: use[%d]: %v", ErrInvalid, i, err)
-			}
-			if seen[dir] {
-				return nil, fmt.Errorf("%w: use[%d]: duplicate directory %q", ErrInvalid, i, dir)
-			}
-			seen[dir] = true
-			f.Use = append(f.Use, dir)
+			entries[i] = s.Value
 		}
+		dirs, err := cleanUse(entries)
+		if err != nil {
+			return nil, err
+		}
+		f.Use = dirs
 	}
 	if len(f.Use) == 0 {
 		return nil, fmt.Errorf("%w: missing use key", ErrInvalid)
 	}
 	return f, nil
+}
+
+// Encode renders the file canonically (REQ-work-emission): UTF-8, LF,
+// two-space indent, the use entries cleaned and sorted in raw-byte
+// order. The file is validated first — Encode never emits what Parse
+// rejects.
+func Encode(f *File) ([]byte, error) {
+	if f == nil || len(f.Use) == 0 {
+		return nil, fmt.Errorf("%w: missing use key", ErrInvalid)
+	}
+	dirs, err := cleanUse(f.Use)
+	if err != nil {
+		return nil, err
+	}
+	slices.Sort(dirs)
+	var b strings.Builder
+	b.WriteString("use:\n")
+	for _, d := range dirs {
+		b.WriteString("  - ")
+		b.WriteString(d)
+		b.WriteByte('\n')
+	}
+	return []byte(b.String()), nil
+}
+
+// cleanUse validates the use entries as one list: each cleaned, no
+// two the same directory.
+func cleanUse(entries []string) ([]string, error) {
+	dirs := make([]string, 0, len(entries))
+	seen := map[string]bool{}
+	for i, s := range entries {
+		dir, err := cleanUseDir(s)
+		if err != nil {
+			return nil, fmt.Errorf("%w: use[%d]: %v", ErrInvalid, i, err)
+		}
+		if seen[dir] {
+			return nil, fmt.Errorf("%w: use[%d]: duplicate directory %q", ErrInvalid, i, dir)
+		}
+		seen[dir] = true
+		dirs = append(dirs, dir)
+	}
+	return dirs, nil
 }
 
 // cleanUseDir validates a use entry: a relative, root-contained

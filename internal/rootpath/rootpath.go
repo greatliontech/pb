@@ -11,6 +11,9 @@
 // caller's or the validator's: Check demands the written spelling,
 // Clean normalizes first. Both hold the same invariant: an accepted
 // value joined under its root resolves strictly inside that root.
+// Contains judges two accepted, cleaned directories against each
+// other — whether one lies within the other — the containment a
+// module tree forbids between module roots.
 package rootpath
 
 import (
@@ -66,4 +69,11 @@ func escapes(s, c, root string) error {
 		return fmt.Errorf("%q escapes %s", s, root)
 	}
 	return nil
+}
+
+// Contains reports whether one cleaned root-relative directory lies
+// within another: "." holds every other, a directory those beneath
+// it, and none itself.
+func Contains(outer, inner string) bool {
+	return outer != inner && (outer == "." || strings.HasPrefix(inner, outer+"/"))
 }

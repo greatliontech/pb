@@ -103,3 +103,20 @@ func TestContainmentProperty(t *testing.T) {
 		}
 	})
 }
+
+// Contains: the root holds every other directory, a directory those
+// beneath it, none itself, and a sibling with a shared prefix none.
+func TestContains(t *testing.T) {
+	for _, c := range []struct {
+		outer, inner string
+		want         bool
+	}{
+		{".", "a", true}, {".", "a/b", true}, {".", ".", false},
+		{"a", "a/b", true}, {"a", "a/b/c", true}, {"a", "a", false},
+		{"a", "ab", false}, {"a/b", "a", false}, {"a", ".", false},
+	} {
+		if got := Contains(c.outer, c.inner); got != c.want {
+			t.Errorf("Contains(%q, %q) = %v", c.outer, c.inner, got)
+		}
+	}
+}

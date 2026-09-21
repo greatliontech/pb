@@ -560,3 +560,25 @@ func TestLoadForArms(t *testing.T) {
 		}
 	})
 }
+
+// Encode emits the canonical file (REQ-work-emission): entries
+// cleaned and sorted, and never what Parse rejects.
+func TestEncode(t *testing.T) {
+	got, err := Encode(&File{Use: []string{"./b/c", "a", "."}})
+	if err != nil || string(got) != "use:\n  - .\n  - a\n  - b/c\n" {
+		t.Fatalf("Encode = %q, %v", got, err)
+	}
+	if f, err := Parse(got); err != nil || strings.Join(f.Use, ",") != ".,a,b/c" {
+		t.Fatalf("round trip: %+v %v", f, err)
+	}
+	for name, f := range map[string]*File{
+		"nil":       nil,
+		"empty":     {},
+		"escapes":   {Use: []string{"../x"}},
+		"duplicate": {Use: []string{"a", "./a"}},
+	} {
+		if _, err := Encode(f); err == nil || !errors.Is(err, ErrInvalid) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

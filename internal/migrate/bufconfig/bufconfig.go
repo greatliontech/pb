@@ -19,6 +19,15 @@ import (
 	"github.com/goccy/go-yaml/token"
 
 	"github.com/greatliontech/pb/internal/contractfile"
+	"github.com/greatliontech/pb/internal/rootpath"
+)
+
+// The names of buf's configuration files at a directory.
+const (
+	FileName     = "buf.yaml"
+	WorkFileName = "buf.work.yaml"
+	GenFileName  = "buf.gen.yaml"
+	LockFileName = "buf.lock"
 )
 
 // ErrInvalid is wrapped by every refusal: a file that is no YAML
@@ -152,7 +161,7 @@ type Lock struct {
 
 // ParseFile reads a buf.yaml.
 func ParseFile(data []byte) (*File, error) {
-	r, m, err := open(data, "buf.yaml", "v1", "v2")
+	r, m, err := open(data, FileName, "v1", "v2")
 	if err != nil {
 		return nil, r.named(err)
 	}
@@ -194,6 +203,13 @@ func ParseFile(data []byte) (*File, error) {
 				if err != nil {
 					return err
 				}
+				// What buf refuses: a module name declared twice; the
+				// directories are judged together below.
+				for _, prior := range f.Modules {
+					if mod.Name != "" && prior.Name == mod.Name {
+						return fmt.Errorf("%w: %s: module name %q declared twice", ErrInvalid, where, mod.Name)
+					}
+				}
 				f.Modules = append(f.Modules, mod)
 				return nil
 			})
@@ -206,13 +222,31 @@ func ParseFile(data []byte) (*File, error) {
 			f.Modules = []Module{{Path: "."}}
 		}
 	}
+	if r.version == "v2" {
+		dirs := make([]string, len(f.Modules))
+		for i, m := range f.Modules {
+			dirs[i] = m.Path
+		}
+		if err := directories(dirs, "module directory", "seen more than once", "the configuration's directory", false); err != nil {
+			return nil, r.named(err)
+		}
+	}
+	// A dependency declared twice, its :ref aside, as buf keys them.
+	seen := map[string]bool{}
+	for _, d := range f.Deps {
+		name, _, _ := strings.Cut(d, ":")
+		if seen[name] {
+			return nil, r.named(fmt.Errorf("%w: dependency %q declared twice", ErrInvalid, name))
+		}
+		seen[name] = true
+	}
 	f.Unmodeled = r.unmodeled
 	return f, nil
 }
 
 // ParseWork reads a buf.work.yaml.
 func ParseWork(data []byte) (*Work, error) {
-	r, m, err := open(data, "buf.work.yaml", "v1")
+	r, m, err := open(data, WorkFileName, "v1")
 	if err != nil {
 		return nil, r.named(err)
 	}
@@ -224,13 +258,55 @@ func ParseWork(data []byte) (*Work, error) {
 	if err != nil {
 		return nil, r.named(err)
 	}
+	// What buf refuses of the directories: none; one listed twice; the
+	// directory itself; one containing another.
+	if len(w.Directories) == 0 {
+		return nil, r.named(fmt.Errorf("%w: directories is empty", ErrInvalid))
+	}
+	if err := directories(w.Directories, "directory", "is listed more than once", "the workspace directory", true); err != nil {
+		return nil, r.named(err)
+	}
 	w.Unmodeled = r.unmodeled
 	return w, nil
 }
 
+// directories refuses what buf refuses of a list of directories under
+// a root, in buf's words for the noun and the duplicate phrase given:
+// an entry escaping the root, one listed twice (after cleaning) and,
+// where nesting is refused, the root itself and an entry containing
+// another. The entries stay as spelled: the reader keeps buf's file as
+// buf wrote it, its consumers cleaning.
+func directories(entries []string, noun, twice, root string, nesting bool) error {
+	spelled := map[string]string{}
+	for _, d := range entries {
+		c, err := rootpath.Clean(d, root)
+		if err != nil {
+			return fmt.Errorf("%w: %s %q: %v", ErrInvalid, noun, d, err)
+		}
+		if _, dup := spelled[c]; dup {
+			return fmt.Errorf("%w: %s %q %s", ErrInvalid, noun, d, twice)
+		}
+		if nesting {
+			if c == "." {
+				return fmt.Errorf("%w: %s %q is the workspace directory itself", ErrInvalid, noun, d)
+			}
+			for other, prior := range spelled {
+				if rootpath.Contains(other, c) {
+					return fmt.Errorf("%w: %s %q contains %s %q", ErrInvalid, noun, prior, noun, d)
+				}
+				if rootpath.Contains(c, other) {
+					return fmt.Errorf("%w: %s %q contains %s %q", ErrInvalid, noun, d, noun, prior)
+				}
+			}
+		}
+		spelled[c] = d
+	}
+	return nil
+}
+
 // ParseGen reads a buf.gen.yaml.
 func ParseGen(data []byte) (*Gen, error) {
-	r, m, err := open(data, "buf.gen.yaml", "v1", "v2")
+	r, m, err := open(data, GenFileName, "v1", "v2")
 	if err != nil {
 		return nil, r.named(err)
 	}
@@ -261,7 +337,7 @@ func ParseGen(data []byte) (*Gen, error) {
 
 // ParseLock reads a buf.lock.
 func ParseLock(data []byte) (*Lock, error) {
-	r, m, err := open(data, "buf.lock", "v1", "v2")
+	r, m, err := open(data, LockFileName, "v1", "v2")
 	if err != nil {
 		return nil, r.named(err)
 	}

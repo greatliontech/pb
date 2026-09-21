@@ -20,6 +20,15 @@ func join(u []Unmodeled) string {
 // modules with their own sections, or one at the directory when none
 // is named; every key the reader does not model is passed over by
 // path, never refused (the buf configuration term, REQ-migrate-verb).
+// Two unnamed v2 modules are the ordinary configuration, no name to
+// collide on.
+func TestParseFileUnnamedModules(t *testing.T) {
+	f, err := ParseFile([]byte("version: v2\nmodules:\n  - path: a\n  - path: b\n"))
+	if err != nil || len(f.Modules) != 2 {
+		t.Fatalf("two unnamed modules: %+v %v", f, err)
+	}
+}
+
 func TestParseFile(t *testing.T) {
 	v1 := `version: v1
 name: buf.build/acme/petapis
@@ -102,6 +111,9 @@ plugins:
 	for name, c := range map[string]struct{ in, want string }{
 		"no version":       {"name: x\n", "buf.yaml: no version"},
 		"named file":       {"version: v1\ndeps: x\n", "buf.yaml: deps must be a list"},
+		"dir twice":        {"version: v2\nmodules:\n  - path: a\n  - path: ./a\n", `module directory "./a" seen more than once`},
+		"name twice":       {"version: v2\nmodules:\n  - path: a\n    name: buf.build/x/y\n  - path: b\n    name: buf.build/x/y\n", `module name "buf.build/x/y" declared twice`},
+		"dep twice":        {"version: v1\ndeps: [buf.build/x/y:aaa, buf.build/x/y:bbb]\n", `dependency "buf.build/x/y" declared twice`},
 		"named nested":     {"version: v2\nmodules:\n  - name: x\n", "buf.yaml: modules[0]: missing path"},
 		"v1beta1":          {"version: v1beta1\n", `version "v1beta1" is none of v1, v2`},
 		"empty":            {"", "empty document"},
@@ -125,6 +137,18 @@ func TestParseWorkAndLock(t *testing.T) {
 	}
 	if _, err := ParseWork([]byte("version: v2\ndirectories: []\n")); err == nil || !strings.Contains(err.Error(), `version "v2" is none of v1`) {
 		t.Fatalf("work v2: %v", err)
+	}
+	for name, c := range map[string]struct{ in, want string }{
+		"empty":     {"version: v1\ndirectories: []\n", "directories is empty"},
+		"twice":     {"version: v1\ndirectories: [a, ./a]\n", `directory "./a" is listed more than once`},
+		"itself":    {"version: v1\ndirectories: [a, .]\n", `directory "." is the workspace directory itself`},
+		"contains":  {"version: v1\ndirectories: [a/b, a]\n", `directory "a" contains directory "a/b"`},
+		"contained": {"version: v1\ndirectories: [a, a/b]\n", `directory "a" contains directory "a/b"`},
+		"escapes":   {"version: v1\ndirectories: [../a]\n", `directory "../a"`},
+	} {
+		if _, err := ParseWork([]byte(c.in)); err == nil || !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("work %s: %v", name, err)
+		}
 	}
 	if _, err := ParseWork([]byte("version: v1\n")); err == nil || !strings.Contains(err.Error(), "missing directories") {
 		t.Fatalf("work without directories: %v", err)

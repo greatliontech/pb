@@ -49,22 +49,20 @@ since a migration runs once.
 
 **REQ-migrate-verb** (behavior): `pb migrate` MUST run at a directory
 holding a buf configuration — a `buf.yaml`, or a `buf.work.yaml`
-naming directories that hold one — taking `--module <path>`, the
-migrated module's path or, for several modules, the workspace's, and
-any replacements, and write pb's files beside it:
-the workspace file where the configuration names several modules,
-a module file at each module's root, the lint file where buf's
-`lint` or `breaking` sections carry anything, the generation file
-where a `buf.gen.yaml` lies at the directory; then run `pb dep tidy`
-over the result, so the written workspace is tidy and its lockfile
-pinned. It fails, writing nothing, where any pb file it would write
-already exists, where the directory holds no buf configuration, or
-where a buf file does not parse under its own version — a key the
-verb does not model is no parse failure but an unmapped fact naming
-it; and it fails after writing, the files kept, where tidy fails,
-naming tidy's cause.
-It deletes no buf file: the buf configuration stays as it was, the
-user's to remove.
+naming directories — taking `--module <path>`, the pb path of the
+directory the configuration lies at (REQ-migrate-modules), and any
+replacements, and write pb's files beside it: the workspace file where
+the configuration names several modules, a module file at each
+module's root, the lint file where buf's `lint` or `breaking` sections
+carry anything, the generation file where a `buf.gen.yaml` lies at the
+directory; then run `pb dep tidy` over the result, so the written
+workspace is tidy and its lockfile pinned. It fails, writing nothing,
+where any pb file it would write already exists, where the directory
+holds no buf configuration, or where a buf file does not parse under
+its own version — a key the verb does not model is no parse failure
+but an unmapped fact naming it; and it fails after writing, the files
+kept, where tidy fails, naming tidy's cause. It deletes no buf file:
+the buf configuration stays as it was, the user's to remove.
 
 **REQ-migrate-report** (behavior): The verb MUST print the migration
 report — every replacement it applied among the facts — and exit 0
@@ -77,22 +75,45 @@ finish it.
 
 **REQ-migrate-modules** (behavior): Each module buf's configuration
 declares MUST become a module file at that module's root declaring the
-module's pb path: the path `--module` gives for a single module, or,
-for several, the path it gives for the workspace joined with the
-module's directory relative to it; absent the flag, the git origin of
-the repository the directory lies in — found as `check-rules.md`
+module's pb path: the pb path of the configuration's directory joined
+with the module's directory relative to it, cleaned, the directory
+itself joining nothing. The configuration's path is what `--module`
+gives or, absent the flag, the git origin of the repository the
+directory lies in — found as `check-rules.md`
 REQ-break-base-materialized finds it — spelled as a module path
-(`module-resolution.md` REQ-resolve-path-syntax), joined with the
-directory's path within the repository — a directory in no repository
-with no path given fails naming the flag. buf's `name` for the module
-(a BSR name) is reported, never used as the path: a BSR name is no
-place pb fetches from. A `v2` configuration's `modules` and a `v1`
-workspace's `directories` become the workspace file's `use` entries,
-each module's directory as written, relative to the configuration's
-directory; a lone `v1` module writes no workspace file. buf's
+(`module-resolution.md` REQ-resolve-path-syntax) and joined with the
+directory's path within the repository. The spelling: the `origin`
+remote's first URL, its host in lower case and its path, the scheme,
+the user, a leading or trailing slash and a trailing `.git` dropped,
+`https://github.com/o/r.git`, `ssh://git@github.com/o/r` and git's
+`git@github.com:o/r.git` each spelling `github.com/o/r`; a URL with a
+port, a query or a fragment, or one spelling no module path, spells
+none. A directory in no repository, a repository with no `origin`, or
+a URL spelling none, each with no path given, fails naming the flag.
+buf's `name` for the module (a BSR name) is reported, never used as
+the path: a BSR name is no place pb fetches from. A `v2`
+configuration's `modules` and a `v1` workspace's `directories` become
+the workspace file's `use` entries, each module's directory cleaned as
+`workspace.md` REQ-work-emission has it; a lone module writes no
+workspace file. A module whose directory contains another's fails the
+verb naming both: the verb authors no module file the archive refuses,
+and a module file beneath a module's root makes that module
+unpublishable (`module-archive.md` REQ-archive-nested-module),
+whatever a hand-written workspace may declare (`workspace.md`, the
+workspace module term). A `v1` workspace's directories each carry
+their own `buf.yaml`, the module's name, dependencies and sections
+read from it, a directory holding none a module under buf's default
+`v1` configuration with nothing to report; a directory whose
+`buf.yaml` is not `v1` does not parse, as buf refuses it. buf's
 `excludes` and `includes` under a module, and `v1`'s `build.excludes`,
 are unmapped facts: a pb module's file set is every regular file under
-its root (`module-archive.md` REQ-archive-file-set).
+its root (`module-archive.md` REQ-archive-file-set). A `buf.yaml` or
+`buf.work.yaml` buf itself refuses — a module directory, module name,
+dependency (its `:ref` aside) or workspace directory listed twice, a
+workspace directory that is the configuration's own or contains
+another — does not parse under its version. A `buf.work.yaml` beside a
+`v2` `buf.yaml` is two workspaces at once, which buf refuses: the verb
+fails naming both files.
 
 ## Dependencies
 

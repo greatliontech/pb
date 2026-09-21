@@ -11,12 +11,22 @@ workspace file above a directory governs it; a workspace directory used
 by an outer workspace is an ordinary member there, and resolves as its
 own workspace only from within.
 
-**workspace module** (term): A module whose root directory is listed in
-the workspace file's `use` list.
+**workspace module** (term): A module whose root directory is listed
+in the workspace file's `use` list. A workspace module may lie within
+another: each resolves locally as a member
+(REQ-work-local-resolution), and the outer, holding a module file
+beneath its root, is never publishable (`module-archive.md`
+REQ-archive-nested-module) — a working arrangement, not a published
+one.
 
 **REQ-work-schema** (wire): The workspace file MUST contain exactly the
 top-level key `use`: a list of relative directory paths, each the module
 root of a declared module.
+
+**REQ-work-emission** (behavior): Tooling that writes a workspace file
+MUST emit it canonically: UTF-8, LF line endings, two-space
+indentation, `use` first and alone, its entries cleaned and sorted in
+raw-byte order, so two writers of one workspace produce one file.
 
 **REQ-work-local-resolution** (invariant): A requirement on a workspace
 module's path MUST resolve to its local working copy, at whatever state
