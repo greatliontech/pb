@@ -13,7 +13,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
 - [x] 3. Modules and the workspace: the module path from `--module` or
       the repository's origin, a module file per module, the
       workspace file for several
-- [ ] 4. Dependencies: the dependency table's ten entries, each
+- [x] 4. Dependencies: the dependency table's ten entries, each
       layout-verified, and `--dep`; declarations written for the tidy
       to version
 - [ ] 5. Lint and breaking: the lint file over the buf-rules ruleset,
