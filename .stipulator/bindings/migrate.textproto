@@ -310,3 +310,43 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "68c9650f3f131893cf78761ebfd889d0659635e3a3bc9b28a6abdc549e9672df"
 }
+
+bindings {
+  requirement_id: "REQ-migrate-gen"
+  content_hash: "7a358796a84945dce6e294fe4031a69a78bdcee5b5c386055e69a01ea42f4e96"
+  source_hash: "3ef2f23fd12f56935bbe403424dbfbe6fd91a5299c684b8fd62467d62f92d475"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.Gen"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "f73c33e65ffeb4cbb803f32dbbfa2b9f3b51320b90e7f2f0db6487b408a30c2a"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-gen"
+  content_hash: "7a358796a84945dce6e294fe4031a69a78bdcee5b5c386055e69a01ea42f4e96"
+  source_hash: "3ef2f23fd12f56935bbe403424dbfbe6fd91a5299c684b8fd62467d62f92d475"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestGen"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7a7126863fc774e5aca69f266b3d84367b5db53e7159c51514ee0e87c36dfa56"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-gen"
+  content_hash: "7a358796a84945dce6e294fe4031a69a78bdcee5b5c386055e69a01ea42f4e96"
+  source_hash: "3ef2f23fd12f56935bbe403424dbfbe6fd91a5299c684b8fd62467d62f92d475"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestPluginTableMatchesSpec"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a90381c163674e37e1e351e1317f78c0e8ea3c67bd1d7918728a53bd51cebe3d"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-gen"
+  content_hash: "7a358796a84945dce6e294fe4031a69a78bdcee5b5c386055e69a01ea42f4e96"
+  source_hash: "3ef2f23fd12f56935bbe403424dbfbe6fd91a5299c684b8fd62467d62f92d475"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestPluginImages"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d11cf85f8fbd4f1347c02beaec4910729594cd79c7e05a782f6be54f5490508a"
+}

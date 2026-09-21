@@ -161,7 +161,7 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 		if err := checkIdentity(p); err != nil {
 			return fmt.Errorf("%w: %s: %v", ErrInvalid, where, err)
 		}
-		if err := checkOut(p.Out); err != nil {
+		if err := CheckOut(p.Out); err != nil {
 			return fmt.Errorf("%w: %s.out: %v", ErrInvalid, where, err)
 		}
 		plugins = append(plugins, p)
@@ -385,11 +385,11 @@ func checkLocal(s string) error {
 	return nil
 }
 
-// checkOut accepts a clean relative forward-slash path that never
-// escapes the resolution root: the written-spelling rule of
-// committed configuration (backslashes are never separators) over the
-// shared containment judgment.
-func checkOut(s string) error {
+// CheckOut validates an output directory (REQ-gen-schema): a clean
+// relative forward-slash path that never escapes the resolution root
+// — the written-spelling rule of committed configuration (backslashes
+// are never separators) over the shared containment judgment.
+func CheckOut(s string) error {
 	if strings.ContainsRune(s, '\\') {
 		return errors.New("paths are written with forward slashes")
 	}

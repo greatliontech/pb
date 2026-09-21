@@ -120,26 +120,16 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	// in would name it as if it counted.
 	declared := map[string]bool{Ruleset: true} // the ruleset's version may be pinned by its own path
 	for _, e := range entries {
-		name, _, _ := strings.Cut(e.name, ":")
+		name, _ := bsrSplit(e.name)
 		declared[name] = true
 	}
 	if r, ok := repl.Deps[Ruleset]; ok && r.Path != Ruleset {
 		return nil, fmt.Errorf("--dep %s=%s: the lint file imports the ruleset %s; a replacement keyed by it names a version alone", Ruleset, r.Path, Ruleset)
 	}
-	names := make([]string, 0, len(repl.Deps))
-	for name := range repl.Deps {
-		names = append(names, name)
+	if err := unusedReplacements("dep", repl.Deps, declared, "the configuration declares no such dependency"); err != nil {
+		return nil, err
 	}
-	sort.Strings(names)
-	var unused []string
-	for _, name := range names {
-		if !declared[name] {
-			unused = append(unused, name)
-		}
-	}
-	if len(unused) > 0 {
-		return nil, fmt.Errorf("--dep %s: the configuration declares no such dependency", strings.Join(unused, ", --dep "))
-	}
+	names := sortedKeys(repl.Deps)
 	// A module path is declared at one version: a replacement's version
 	// applies to every name reaching its path, two at odds refused.
 	versions := map[string]string{} // module path -> the version declared
@@ -159,7 +149,7 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	}
 	var facts []Fact
 	for _, e := range entries {
-		name, _, _ := strings.Cut(e.name, ":")
+		name, _ := bsrSplit(e.name)
 		path, from := "", "the dependency table"
 		if r, ok := repl.Deps[name]; ok {
 			path, from = r.Path, "--dep"

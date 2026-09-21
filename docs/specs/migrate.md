@@ -262,44 +262,79 @@ generation file: each plugin entry naming a BSR plugin (`remote` in
 `remote/owner/plugin` with a `:version` or none) looked up among the
 replacements and then in the plugin table, a name either holds
 becoming a `ref` entry at the reference given for that name and
-version, a name neither holds an unmapped fact naming the plugin; a
+version — the replacement's as given; the table's repository tagged
+with the version named where the table lists it, or with the highest
+listed where none is named, a mapped fact naming the choice — a name
+neither holds, or a version the table does not list, an unmapped
+fact naming the plugin and the flag's form; a
 `local` entry naming one executable becoming a `local` entry, one
 naming a command with arguments an unmapped fact — a `v1` entry's
 `path` its command, and its bare `plugin` or `name` the executable
 `protoc-gen-<name>`, as buf ran them; a `protoc_builtin` entry — in
 `v1`, a name among protoc's builtins or any entry with `protoc_path` —
-an unmapped fact, pb running no protoc; `out` as written; `opt`, a
-string or a list, joined with commas as buf hands it to the plugin.
-`strategy`, `revision`, `protoc_path`, `include_imports`,
-`include_wkt`, `types`, `exclude_types` and `inputs` are unmapped
-facts naming the key: pb generates over the workspace's own files
-under one strategy (`generation.md`). An entry buf itself refuses does
+an unmapped fact, pb running no protoc; `out` as written where it is
+a clean relative path within the resolution root (`generation.md`
+REQ-gen-schema), the entry an unmapped fact naming it where not, as
+buf accepts what pb writes nowhere; `opt`, a string or a list, joined
+with commas as buf hands it to the plugin. `strategy`, `revision`,
+`protoc_path`, `include_imports`, `include_wkt`, `inputs` — `v2`'s
+`types` and `exclude_types` lying within it — and `v1`'s `types` are
+unmapped facts naming the key: pb generates over the workspace's own
+files under one strategy (`generation.md`). An entry buf itself refuses does
 not parse under its version: no naming form, two, or an empty one; no
 `out`; a `v1` `name` spelled as a reference; a key its form takes no
 meaning from — `strategy` or `protoc_path` beside a remote plugin and,
 in `v1`, `path` there; in `v2`, `revision` or `protoc_path` beside a
 local plugin and `revision` beside a builtin. buf's `managed` mode
 becomes `overrides` where an entry is declarative — a `file_option`
-with a `value` and, in `v2`, a `path` or `module` scope, over the
-files that scope names; in `v1`, a boolean option, the `override` map
-of option to file to value, and `optimize_for`'s default for every
-file and its override per module — and an unmapped fact where it is
-buf's own heuristic: `enabled` with no explicit override, a
-`field_option`, a `disable` entry, or a form pb would have to compute
-a value from — a prefix or suffix (`go_package_prefix`,
-`java_package_prefix`, `java_package_suffix`), `v1`'s per-package
-forms of default, except and override (`objc_class_prefix`,
-`csharp_namespace`, `ruby_package`) and `optimize_for`'s `except`. A
+with a `value` over every file or, in `v2`, over the files a `path`
+scope names: buf matches the path against a file's path relative to
+its module, the file's own or a dependency's alike, so the glob is
+the path and everything under it, over module-relative paths as
+pb's globs are (`generation.md` REQ-gen-schema); in `v1`, a boolean
+option, the `override` map of option to file to value, the file's
+path read the same way, and the `default` of `optimize_for`,
+`objc_class_prefix` and `swift_prefix` for every file — and an unmapped
+fact where it is
+buf's own heuristic or names a module, which a module-relative glob
+cannot: `enabled` with no explicit override, a `field_option`, a
+`disable` entry, a `module` scope, a form's `except` and its override
+per module, or a form pb would have to compute a value from — a
+prefix or suffix (`go_package_prefix`, `java_package_prefix`,
+`java_package_suffix`, `csharp_namespace_prefix`,
+`php_metadata_namespace_suffix`, `ruby_package_suffix`) and `v1`'s
+per-package forms (`java_package_prefix`, `go_package_prefix`,
+`csharp_namespace`, `ruby_package`). `managed` with `enabled` false
+is read for nothing, a mapped fact saying so, as buf reads it. Where
+no plugin entry maps, no generation file is written and the managed
+mode is read for nothing, an unmapped fact for each. A
 `v2` override naming no option or both, an option buf does not know,
 no `value`, or scoping a `file_option` to a `field`, a `disable` entry
 naming nothing, both options, an option buf does not know, or a
 `file_option` with a `field`, and a `v1` `override` map keyed by an
 option buf does not know, are buf's own refusals and do not parse.
 `v1`'s alpha `remote` plugin key is one the verb does not model, an
-unmapped fact naming it. The plugin table's entries in pb's first
-release of the verb are the plugins greatliontech's fork of buf's
-plugin repository builds; a plugin an author publishes under their own
-registry enters the table by a pull request naming the reference.
+unmapped fact naming it. The plugin table names, for each entry, the
+image repository and the versions built, each version the image's
+tag:
+
+| BSR name | image repository | versions |
+|---|---|---|
+| `buf.build/grpc/csharp` | `ghcr.io/greatliontech/pbr-plugins/grpc/csharp` | `v1.68.2` |
+| `buf.build/grpc/go` | `ghcr.io/greatliontech/pbr-plugins/grpc/go` | `v1.4.0` `v1.5.1` |
+| `buf.build/grpc/web` | `ghcr.io/greatliontech/pbr-plugins/grpc/web` | `v1.4.2` |
+| `buf.build/protocolbuffers/csharp` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/csharp` | `v29.2` |
+| `buf.build/protocolbuffers/go` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go` | `v1.34.2` `v1.35.2` |
+| `buf.build/protocolbuffers/js` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/js` | `v3.21.2` |
+
+The table's entries in pb's first release of the verb are the
+plugins greatliontech's fork of buf's plugin repository builds — each
+of buf's plugin images rebuilt from buf's own build and published
+under the repository above at its version; an entry enters the table
+with every image verified reachable, the image test the migrate
+package carries (TestPluginImages) run against the registry at entry.
+A plugin an author publishes under their own registry enters the
+table by a pull request naming the reference.
 
 ## What the verb never does
 

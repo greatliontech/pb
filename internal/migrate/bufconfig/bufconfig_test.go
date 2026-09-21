@@ -413,3 +413,47 @@ plugins:
 		}
 	}
 }
+
+// v1's alpha remote plugin, `remote` alone: no form pb runs, the
+// entry read for its out and opt and the key passed over (as
+// REQ-migrate-gen has it); with a form beside it, buf's refusal.
+func TestParseGenAlphaRemote(t *testing.T) {
+	g, err := ParseGen([]byte("version: v1\nplugins:\n  - remote: buf.build/protocolbuffers/plugins/go:v1.28.1-1\n    out: gen/go\n    opt: paths=source_relative\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := g.Plugins[0]
+	if p.Remote != "" || p.Local != nil || p.ProtocBuiltin != "" || p.Out != "gen/go" || p.Opt != "paths=source_relative" || join(p.Unmodeled) != "plugins[0].remote" {
+		t.Fatalf("alpha remote: %+v", p)
+	}
+	if _, err := ParseGen([]byte("version: v1\nplugins:\n  - remote: buf.build/protocolbuffers/plugins/go:v1.28.1-1\n")); err == nil {
+		t.Fatal("an alpha remote without out parsed")
+	}
+	if _, err := ParseGen([]byte("version: v1\nplugins:\n  - remote: buf.build/protocolbuffers/plugins/go:v1.28.1-1\n    out: gen\n    strategy: all\n")); err == nil || !strings.Contains(err.Error(), "a remote plugin takes no strategy") {
+		t.Fatalf("an alpha remote with a key buf refuses: %v", err)
+	}
+	// A v2 remote is a plugin reference: an empty version, or a name
+	// of two parts, does not parse.
+	for _, remote := range []string{"buf.build/acme/x:", "buf.build/x:v1", "buf.build/acme/x:latest", "buf.build/acme/x:1.2.3", "buf.build/acme/x:abc123", "buf.build/acme/pl:ugin:v1.0.0", "buf.build/acme/x/y:v1"} {
+		if _, err := ParseGen([]byte("version: v2\nplugins:\n  - remote: \"" + remote + "\"\n    out: gen\n")); err == nil || !strings.Contains(err.Error(), "is no plugin reference") {
+			t.Errorf("%s: %v", remote, err)
+		}
+	}
+	// What buf parses: a version buf's semver takes, a remote with a
+	// port, an identity with no version.
+	for _, remote := range []string{"buf.build/acme/x:v1.0.0", "buf.build/acme/x:v29.2", "bsr.example.com:8443/acme/plugin:v1.0.0", "bsr.example.com:8443/acme/plugin", "buf.build/acme/x"} {
+		if _, err := ParseGen([]byte("version: v2\nplugins:\n  - remote: " + remote + "\n    out: gen\n")); err != nil {
+			t.Errorf("%s: %v", remote, err)
+		}
+	}
+	// swift_prefix is a file option buf knows, a v1 form with a
+	// default and a v2 file_option.
+	g, err = ParseGen([]byte("version: v1\nmanaged:\n  enabled: true\n  swift_prefix:\n    default: SWF\nplugins:\n  - name: go\n    out: gen\n"))
+	if err != nil || len(g.Managed.Forms) != 1 || g.Managed.Forms[0].Option != "swift_prefix" || g.Managed.Forms[0].Default != "SWF" {
+		t.Fatalf("v1 swift_prefix: %+v %v", g.Managed, err)
+	}
+	g, err = ParseGen([]byte("version: v2\nmanaged:\n  enabled: true\n  override:\n    - file_option: swift_prefix\n      value: SWF\nplugins:\n  - local: gen\n    out: gen\n"))
+	if err != nil || len(g.Managed.Overrides) != 1 || g.Managed.Overrides[0].FileOption != "swift_prefix" {
+		t.Fatalf("v2 swift_prefix: %+v %v", g.Managed, err)
+	}
+}

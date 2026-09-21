@@ -38,7 +38,7 @@ func TestGrammarEdges(t *testing.T) {
 			ok:  []string{"a", "z", "A", "Z", "_", "a0", "a9", "a_b", "a.b", "a.b.c", "(a)", "(a.b)", "(a.b).c", "(a.b).c.d"},
 			bad: []string{"", "9a", "a-b", "a`", "a{", "a[", "a@", "a/", "a:", "(", ")", "(a", "a)", "(a)b", "(a)bc", "(a..b)", "()", "a.", ".a", "a..b", "(a.b).", "a.9", "a./", "a.(b)", "(a).(b)"},
 		}},
-		"out": {checkOut, tc{
+		"out": {CheckOut, tc{
 			ok:  []string{"a", "a/b", "..a", "a..", ".", "gen/go", "..."},
 			bad: []string{"", "/", "/a", "..", "../a", "../..", "a/", "./a", "a//b", "a\\b", "a/./b", "a/../b"},
 		}},

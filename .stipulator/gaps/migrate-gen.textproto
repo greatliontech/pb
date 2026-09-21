@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-migrate-gen"
 reason: "the migrate verb is specced ahead of its plan, docs/plans/migrate.md, whose chunks 2 to 7 build it"
-content_hash: "7615d239842061b742aeda0dbadaa9acb229cd7590d4747d9924b08f25dc3e66"
-source_hash: "67682beb41ee54a81b9eb4ec95a7c1708b2c8b942ecf8378839271a44602d6f0"
+content_hash: "7a358796a84945dce6e294fe4031a69a78bdcee5b5c386055e69a01ea42f4e96"
+source_hash: "3ef2f23fd12f56935bbe403424dbfbe6fd91a5299c684b8fd62467d62f92d475"
 lands { manual { condition: "the migrate plan's chunk landing the requirement binds it" } }

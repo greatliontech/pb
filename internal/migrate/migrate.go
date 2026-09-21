@@ -19,6 +19,7 @@ import (
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/workspace"
+	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/rootpath"
 )
 
@@ -140,6 +141,7 @@ type Layout struct {
 	Modules   map[string]*modfile.File
 	Workspace *workspace.File
 	Lint      *lintfile.File // set by Rules
+	Gen       *genfile.File  // set by Gen; nil where no plugin mapped
 	// CommentIgnores, set by Rules, says per module directory whether
 	// buf honored its suppression comments, which the verb rewrites
 	// where it did (REQ-migrate-comments).

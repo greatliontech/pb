@@ -13,6 +13,8 @@ package bufconfig
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/mod/semver"
+	"slices"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -543,6 +545,32 @@ func (r *reader) section(n ast.Node, where string, into **Section, options []str
 // own list.
 var protocBuiltins = map[string]bool{"cpp": true, "csharp": true, "java": true, "js": true, "objc": true, "php": true, "python": true, "pyi": true, "ruby": true, "kotlin": true, "rust": true}
 
+// isRemoteReference reports whether s is a plugin reference or
+// identity as buf's v2 reader parses one: the version, where a colon
+// follows the last slash, the text after it, a valid semver as buf's
+// versions are (v29.2 among them); the name before it, or the whole
+// where no colon does, `remote/owner/plugin`, three non-empty parts,
+// the remote a host with a port or none.
+func isRemoteReference(s string) bool {
+	name := s
+	if colon := strings.LastIndexByte(s, ':'); colon > strings.LastIndexByte(s, '/') {
+		name = s[:colon]
+		if !semver.IsValid(s[colon+1:]) {
+			return false
+		}
+	}
+	parts := strings.Split(name, "/")
+	if len(parts) != 3 {
+		return false
+	}
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			return false
+		}
+	}
+	return !strings.Contains(parts[2], ":")
+}
+
 // isPluginReference reports whether s is spelled as buf's plugin
 // reference or identity — `remote/owner/plugin`, three non-empty
 // parts, a `:version` after or none — buf's own test of whether a v1
@@ -574,7 +602,7 @@ var (
 		scalar, defined bool
 	}{
 		{"java_package_prefix", true, true}, {"optimize_for", true, true},
-		{"go_package_prefix", false, true}, {"objc_class_prefix", false, true},
+		{"go_package_prefix", false, true}, {"objc_class_prefix", false, true}, {"swift_prefix", false, true},
 		{"csharp_namespace", false, false}, {"ruby_package", false, false},
 	}
 )
@@ -583,7 +611,7 @@ var (
 // mode knows, read in any case and kept in lower case as buf reads
 // them; another is buf's own refusal.
 var (
-	fileOptions  = set("java_package", "java_package_prefix", "java_package_suffix", "java_outer_classname", "java_multiple_files", "java_string_check_utf8", "optimize_for", "go_package", "go_package_prefix", "cc_enable_arenas", "objc_class_prefix", "csharp_namespace", "csharp_namespace_prefix", "php_namespace", "php_metadata_namespace", "php_metadata_namespace_suffix", "ruby_package", "ruby_package_suffix")
+	fileOptions  = set("java_package", "java_package_prefix", "java_package_suffix", "java_outer_classname", "java_multiple_files", "java_string_check_utf8", "optimize_for", "go_package", "go_package_prefix", "cc_enable_arenas", "objc_class_prefix", "csharp_namespace", "csharp_namespace_prefix", "php_namespace", "php_metadata_namespace", "php_metadata_namespace_suffix", "ruby_package", "ruby_package_suffix", "swift_prefix")
 	fieldOptions = set("jstype")
 )
 
@@ -713,12 +741,36 @@ func (r *reader) plugin(n ast.Node, where string) (Plugin, error) {
 	if err := r.walk(n, where, fields...); err != nil {
 		return p, err
 	}
+	if forms == 0 && r.version == "v1" && slices.Contains(r.unmodeled[before:], Unmodeled(where+".remote")) {
+		// v1's alpha remote plugin, run by the BSR: a form pb does
+		// not model, the entry read for its out and opt and the key
+		// passed over for the report; the keys buf refuses beside a
+		// remote plugin refused here too.
+		for _, k := range takesNo["v1 remote"] {
+			if present[k] {
+				return p, fmt.Errorf("%w: %s: a remote plugin takes no %s", ErrInvalid, where, k)
+			}
+		}
+		if p.Out == "" {
+			return p, fmt.Errorf("%w: %s has no out", ErrInvalid, where)
+		}
+		p.Opt = strings.Join(opts, ",")
+		p.Unmodeled = append([]Unmodeled(nil), r.unmodeled[before:]...)
+		r.unmodeled = r.unmodeled[:before]
+		return p, nil
+	}
 	if forms != 1 {
 		return p, fmt.Errorf("%w: %s names %d plugin forms, one expected", ErrInvalid, where, forms)
 	}
 	var form string
 	switch {
 	case r.version == "v2" && p.Remote != "":
+		// A v2 remote is a plugin reference or identity, as buf parses
+		// it: the version after the last colon a semver, the name
+		// before it three parts.
+		if !isRemoteReference(p.Remote) {
+			return p, fmt.Errorf("%w: %s.remote %q is no plugin reference", ErrInvalid, where, p.Remote)
+		}
 		form = "remote"
 	case r.version == "v2" && p.Local != nil:
 		form = "local"

@@ -21,7 +21,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       sections as `modules` entries, ignores by path, the
       rule-shaping options unmapped; the suppression comments
       rewritten in place
-- [ ] 6. Generation: the plugin table over the forked plugin images
+- [x] 6. Generation: the plugin table over the forked plugin images
       and `--plugin`, local plugins, the declarative half of managed
       mode as overrides, the rest unmapped
 - [ ] 7. The verb: assembly, every unmodeled key of every buf file read
