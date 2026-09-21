@@ -118,10 +118,13 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	// A replacement the configuration never names is refused first: a
 	// stale flag is the likelier fault, and a conflict it takes part
 	// in would name it as if it counted.
-	declared := map[string]bool{}
+	declared := map[string]bool{Ruleset: true} // the ruleset's version may be pinned by its own path
 	for _, e := range entries {
 		name, _, _ := strings.Cut(e.name, ":")
 		declared[name] = true
+	}
+	if r, ok := repl.Deps[Ruleset]; ok && r.Path != Ruleset {
+		return nil, fmt.Errorf("--dep %s=%s: the lint file imports the ruleset %s; a replacement keyed by it names a version alone", Ruleset, r.Path, Ruleset)
 	}
 	names := make([]string, 0, len(repl.Deps))
 	for name := range repl.Deps {
@@ -187,6 +190,31 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 			f.Deps[path] = v
 		}
 		facts = append(facts, mapped(e.from+" "+e.name, path+"@"+v+" ("+from+")"))
+	}
+	// The ruleset the lint file imports, declared by every module
+	// (REQ-migrate-rules) at the version pinned or discovered.
+	rulesetSource := "the lint file's rulesets " + Ruleset
+	v, ok := versions[Ruleset]
+	if !ok {
+		latest, err := d.Latest(ctx, Ruleset)
+		if err != nil {
+			facts = append(facts, unmapped(rulesetSource, "no version discovered ("+oneLine(err.Error())+"): pass --dep "+Ruleset+"="+Ruleset+"@<version>"))
+		} else {
+			v, ok = latest.String(), true
+		}
+	}
+	if ok {
+		for _, f := range l.Modules {
+			if f.Deps == nil {
+				f.Deps = map[string]string{}
+			}
+			f.Deps[Ruleset] = v
+		}
+		from := "discovered"
+		if pinned[Ruleset] != "" {
+			from = "--dep"
+		}
+		facts = append(facts, mapped(rulesetSource, Ruleset+"@"+v+" ("+from+"; the ruleset, declared by every module)"))
 	}
 	if lock != nil {
 		for i, dep := range lock.Deps {

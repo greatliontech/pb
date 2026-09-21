@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.ParseFile"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.ParseWork"
   role: BINDING_ROLE_IMPLEMENTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.ParseGen"
   role: BINDING_ROLE_IMPLEMENTS
@@ -33,8 +33,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.ParseLock"
   role: BINDING_ROLE_IMPLEMENTS
@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.TestParseFile"
   role: BINDING_ROLE_TESTS
@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.TestParseWorkAndLock"
   role: BINDING_ROLE_TESTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-migrate-verb"
-  content_hash: "2f510584b1b10cd6990e0fcc954c6fb12b1b3c29e7f47fe6e02d4ef4bd4a1de3"
-  source_hash: "cd8205dc8c78c12c968cdc1ccf84c67f30401b82e56bde150101fe61172a05b7"
+  content_hash: "abbdffccdab77375d731ae92a7cdc0e863352e1ee35a088d1297c7ce558c5a9a"
+  source_hash: "4b6616c4bff4e043645d7ef707c9690257f35edc752a6b61b024dca91c06e9e7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/migrate/bufconfig.TestParseGen"
   role: BINDING_ROLE_TESTS
@@ -239,4 +239,74 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestLatest"
   role: BINDING_ROLE_TESTS
   shape_hash: "194f71bfbf624743c731a12e31f0fc8b04115284941a8126d9be69c96aedcb14"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-rules"
+  content_hash: "7700820fec8c57d79619b8a6facb07f9f5ed476df087a6656d056ce9f396c2d5"
+  source_hash: "dfd968d8bd1caf199fcd41aadc0a924da9ffb4cd270da26ef3a246366fa0f111"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.Rules"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a0bcee346d105ef5c4b017d68e1d90dc251b9145c51ae01dedaa7c374a39f27e"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-rules"
+  content_hash: "7700820fec8c57d79619b8a6facb07f9f5ed476df087a6656d056ce9f396c2d5"
+  source_hash: "dfd968d8bd1caf199fcd41aadc0a924da9ffb4cd270da26ef3a246366fa0f111"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestRules"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1f40cf89bba43d1edf1e69409a062b41015b51e1219bd7ff2b700abb77e3aa20"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-rules"
+  content_hash: "7700820fec8c57d79619b8a6facb07f9f5ed476df087a6656d056ce9f396c2d5"
+  source_hash: "dfd968d8bd1caf199fcd41aadc0a924da9ffb4cd270da26ef3a246366fa0f111"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestRulesetTable"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "877d8f089201096eccd6696f3b72b19f552e0ddbe68c3cc85aff48030e559a16"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-rule-options"
+  content_hash: "897e03fdc851ba198762891b7b86e6bb3b6becbba39b14b071741a2a8de0d853"
+  source_hash: "466dffe57479f29dc5dc728a677cc04b1a466ba21347e937d1557e3c6e93a792"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.optionFacts"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "cce6181b478538a341a5671fa389bd8f611966570ff42a2562e3d289b429e9cf"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-rule-options"
+  content_hash: "897e03fdc851ba198762891b7b86e6bb3b6becbba39b14b071741a2a8de0d853"
+  source_hash: "466dffe57479f29dc5dc728a677cc04b1a466ba21347e937d1557e3c6e93a792"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestRules"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1f40cf89bba43d1edf1e69409a062b41015b51e1219bd7ff2b700abb77e3aa20"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-comments"
+  content_hash: "8b760495185cee89f323509e6a667b7cbd5159ae21fd18a5871eac2e36858ccc"
+  source_hash: "0085935f8c7e5b8b05ad64934dbd8397cc5e6ce6de91ccd2f15352c03a81de8e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.RewriteComments"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2ffd3cfd1b6d81f43c05fca63ef83b1f452d59f84f47230e9864f2e4387cd1fb"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-comments"
+  content_hash: "8b760495185cee89f323509e6a667b7cbd5159ae21fd18a5871eac2e36858ccc"
+  source_hash: "0085935f8c7e5b8b05ad64934dbd8397cc5e6ce6de91ccd2f15352c03a81de8e"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestRewriteComments"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "68c9650f3f131893cf78761ebfd889d0659635e3a3bc9b28a6abdc549e9672df"
 }

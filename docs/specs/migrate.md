@@ -55,9 +55,10 @@ naming directories — taking `--module <path>`, the pb path of the
 directory the configuration lies at (REQ-migrate-modules), and any
 replacements, and write pb's files beside it: the workspace file where
 the configuration names several modules, a module file at each
-module's root, the lint file where buf's `lint` or `breaking` sections
-carry anything, the generation file where a `buf.gen.yaml` lies at the
-directory; then run `pb dep tidy` over the result, so the written
+module's root, the lint file always — buf checks every module under a
+selection, explicit or its default, and the file spells the one buf
+applied (REQ-migrate-rules) — the generation file where a
+`buf.gen.yaml` lies at the directory; then run `pb dep tidy` over the result, so the written
 workspace is tidy and its lockfile pinned. It fails, writing nothing,
 where any pb file it would write already exists, where the directory
 holds no buf configuration, or where a buf file does not parse under
@@ -162,44 +163,96 @@ there, so no layout pb can name compiles as a set.
 sections MUST become one lint file importing the ruleset
 `github.com/greatliontech/buf-rules` — declared as a dependency of
 every module the configuration declares, tidy keeping it
-(`dep-verbs.md` REQ-dep-tidy-rulesets) — with: `use` of either
-section joined into `enable`, each entry a buf category or rule id
-spelled as the ruleset's qualified tag or rule name, `DEFAULT` read
-as `STANDARD`; `except` of either section joined into `exclude` the
-same way; each `ignore` path, a file or a directory, an `ignore`
-entry over the glob `<path>` or `<path>/**` naming no rule; each
-`ignore_only` entry an `ignore` entry over its paths naming its rule.
-A buf id neither section's category nor the ruleset declares —
-`PROTOVALIDATE`, `FILE_SAME_PHP_GENERIC_SERVICES` — is an unmapped
-fact naming it. A `v2` configuration's top-level sections become the
-lint file's root selection and a module's own sections its entry in
-the lint file's `modules` map (`check-rules.md`
-REQ-lint-config-schema), `enable`, `exclude` and `severity` per
-module; `ignore` and
-`ignore_only` of a module join the root's ignores as written, their
-paths module-relative as pb's finding paths are.
+(`dep-verbs.md` REQ-dep-tidy-rulesets) — spelling the selection buf
+applies to each module: `use` of either section joined into
+`enable`, each entry a buf category or rule id spelled as the
+ruleset's qualified tag or rule name, `DEFAULT` read as `STANDARD`,
+and a section absent or its `use` empty buf's default for the kind —
+`DEFAULT` for `v1` lint, `STANDARD` for `v2`, `FILE` for breaking — a
+mapped fact naming it; `except` of either section joined into
+`exclude` the same way; each `ignore` path, a file or a directory, an
+`ignore` entry over the glob `<path>/**`, which matches the path and
+everything under it, module-relative, naming no rule and the
+section's kind, as buf's ignore excludes that kind alone; each
+`ignore_only` entry an `ignore` entry over its paths naming its rule,
+or every rule a category tags — reaching what the lint file's
+location rule places under its paths (`check-rules.md`
+REQ-rules-finding-location): a `set` rule's finding, having no path
+under the root selection, or a `set` or `package` rule's, located at
+a module's directory under its entry, is reached by an `ignore_only`
+over the module's directory alone, and one over any other path
+naming such a rule is an unmapped fact naming it; an `ignore` path equal to a module's
+directory, which buf reads as disabling the kind for that module, no
+rule of the kind enabled for it, a mapped fact saying so — a module
+every kind is disabled for enabling nothing, its `enable` spelled
+`[]` — and such a path under `ignore_only` every file of the module
+for the rule. A buf id neither section's category nor the
+ruleset declares — `PROTOVALIDATE`, `FILE_SAME_PHP_GENERIC_SERVICES`,
+a deprecated `v1` category — is an unmapped fact naming it. The lint
+file's root selection is what buf applies to a module declaring no
+section of its own: a `v1` or `v2` file's top-level sections, buf's
+defaults for a `v1` workspace's directories; where the configuration
+declares several modules, a module whose own sections — a `v2`
+module's, a `v1` directory's file's — or the top-level ignores lying
+within it give it a selection or ignores of its own has an entry in
+the lint file's `modules` map (`check-rules.md` REQ-lint-config-schema)
+carrying its whole selection of both kinds and its ignores, and a
+module whose selection is the root's with no ignores has none; a lone
+module's selection and ignores are the root's. A `v2` file's paths
+are relative to the file, a module's own section's required within
+the module — one outside does not parse, as buf refuses it — and the
+top-level section's assigned to the module holding each, one in no
+module an unmapped fact, as buf skips it; a `v1` file's paths are
+relative to its module.
 
 **REQ-migrate-rule-options** (behavior): buf's rule-shaping options
 MUST be unmapped facts where set to anything but their default —
-`enum_zero_value_suffix`, `service_suffix`,
-`rpc_allow_same_request_response`,
+`enum_zero_value_suffix` (`_UNSPECIFIED`), `service_suffix`
+(`Service`), `rpc_allow_same_request_response`,
 `rpc_allow_google_protobuf_empty_requests`,
 `rpc_allow_google_protobuf_empty_responses`,
-`ignore_unstable_packages`, `disable_builtin` and buf's own check
-plugins — each naming the option and the rule it would have
-reshaped: a pb rule has no parameters, so an option's meaning lives
-in a rule of one's own, which the report says. `disallow_comment_ignores`
-and `v1`'s `allow_comment_ignores` are unmapped naming the pb comment
-form, `pb:ignore`, which is always honored.
+`ignore_unstable_packages` (each `false`) and buf's own check
+plugins — each naming the option and the rule it
+would have reshaped: a pb rule has no parameters, so an option's
+meaning lives in a rule of one's own, which the report says; a key
+spelled at its default is no fact. `disallow_comment_ignores` and
+`v1`'s `allow_comment_ignores` are mapped facts deciding whether a
+module's suppression comments are rewritten (REQ-migrate-comments),
+`v1`'s absent switch, under which buf honored none, a fact all the
+same.
 
-**REQ-migrate-comments** (behavior): Every buf suppression comment in
-a checked file — `// buf:lint:ignore <ID>` and
-`// buf:breaking:ignore <ID>`, on the flagged line or the line before
-as buf reads them — MUST be rewritten in place to `// pb:ignore <ID>`,
-any trailing text kept as the reason, the file otherwise byte-for-byte
-as it was; the rewrite is reported per file with its count. A bare id
-suffices, the migrated lint file importing one ruleset
-(`check-rules.md` REQ-lint-suppression).
+**REQ-migrate-comments** (behavior): buf's suppression comments MUST
+be rewritten in place as buf read them. buf honors
+`buf:lint:ignore <ID>` on any line of the comment block leading an
+element — the comment-only lines directly above it, block comments
+among them, each line's text trimmed — for a module whose lint
+section honors comment ignores (`v1` with `allow_comment_ignores`
+true, `v2` without `disallow_comment_ignores` true), and no other
+directive: none for breaking, none trailing a line of code, none
+parted from the element by a blank line. In a checked file of such a
+module, each `//` comment on a leading block's line whose text opens
+with `buf:lint:ignore` and an id is rewritten to `// pb:ignore <ID>`,
+the id and any trailing text kept, the file otherwise byte-for-byte
+as it was, and the rewrite is reported per file with its count; a
+rewritten directive on a line pb does not read — any but the last of
+its block, a block inside a declaration continued from the line
+before or leading a statement declaring no entity but the file's —
+an `option`, `reserved`, `extensions`, `import`, `package`, `syntax`
+or `edition` — or a `file` rule's anywhere but the block
+leading the file's first line of code, pb reading the line
+immediately before the flagged one alone, a finding's line being its
+declaration's first and a file's its first lexical element's
+(`check-rules.md` REQ-lint-suppression, REQ-rules-finding-location)
+— a rewritten
+directive naming a rule whose finding carries no position, a
+`package` or `set` rule, which no comment suppresses, and a directive
+in a block comment, which pb reads not, are each an unmapped fact
+naming the file and the line; every other directive is left as it
+was, buf having honored none — one parted from its id by anything
+but one space among them, as buf reads the form. A module whose lint section honors none keeps
+its comments as they are, a mapped fact saying so
+(REQ-migrate-rule-options). A bare id suffices, the migrated lint
+file importing one ruleset.
 
 ## Generation
 

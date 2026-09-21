@@ -327,12 +327,14 @@ the form and the cause; nothing degrades to an empty base.
 optional: `rulesets`, a list of module paths to import rules from;
 `enable` and `exclude`, lists of rule names, ids or tags; `severity`,
 a map from rule name or id to override; `ignore`, a list of `{paths,
-rules}` entries excluding rules under path globs — `paths` one or more
-globs over module-relative proto paths (the component semantics
-`provenance.md` REQ-prov-trust-schema defines), `rules` optional and
-non-empty when present, absent meaning every rule, a finding without a
-path never ignored and one located at a module's directory matched by
-a glob matching the directory itself; and `breaking`, a mapping whose
+rules, kind}` entries excluding rules under path globs — `paths` one
+or more globs over module-relative proto paths (the component
+semantics `provenance.md` REQ-prov-trust-schema defines), `rules`
+optional and non-empty when present, absent meaning every rule, `kind`
+optional, `lint` or `breaking`, the entry excluding findings of that
+kind alone and of either kind where absent, a finding without a path
+never ignored and one located at a module's directory matched by a
+glob matching the directory itself; and `breaking`, a mapping whose
 `base` is a mapping with exactly one of `ref` (a git reference),
 `version` (a tagged version) and `pinned` (`true`; any other value is
 a schema violation); and `modules`, a map from a workspace module's
@@ -372,7 +374,8 @@ save `enable`, whose empty list means what its absence does not and
 is spelled `[]`; `rulesets` in the order given, `enable` and `exclude`
 sorted in raw-byte order, `severity` by key in raw-byte order,
 `ignore` entries by their `paths` sorted in raw-byte order, then by
-their `rules` so sorted, `pinned` as `true`, `modules` by directory
+their `rules` so sorted, then by `kind`, each entry's keys in the
+order `paths`, `rules`, `kind`, `pinned` as `true`, `modules` by directory
 in raw-byte order with each entry in the same form and `{}` where it
 holds nothing, a file holding nothing `{}`; a scalar plain where the
 lint file's reader reads its plain spelling back as exactly that text

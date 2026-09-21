@@ -52,6 +52,7 @@ func (s *Session) LintFile() (*lintfile.File, error) {
 // across the groups that evaluate, and the compiled schema's
 // environment set.
 type checkRun struct {
+	kind   check.Kind
 	lint   *lintfile.File
 	sel    lintfile.Selection
 	mods   []modfiles.Module
@@ -104,7 +105,7 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	run := &checkRun{lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), group: map[string]*checkGroup{}}
+	run := &checkRun{kind: kind, lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), group: map[string]*checkGroup{}}
 	// The root's selection governs every module without an entry,
 	// as one group; a module with an entry is a group of its own,
 	// located at its directory.
@@ -154,16 +155,17 @@ func (g *checkGroup) evaluates() bool { return len(g.checked) != 0 && len(g.rule
 // without a position — a set rule's, or a package rule's — at the
 // module's directory (REQ-rules-finding-location); less those the
 // root's ignores exclude and, under a module's own selection, the
-// module's (REQ-lint-selection). The group is the finding's module:
+// module's, an entry naming a kind excluding the run's kind alone
+// (REQ-lint-selection). The group is the finding's module:
 // its files are the ones the group checks, on either side of a
 // breaking run.
-func (g *checkGroup) admit(sel lintfile.Selection, findings []check.Finding) []check.Finding {
+func (g *checkGroup) admit(sel lintfile.Selection, kind check.Kind, findings []check.Finding) []check.Finding {
 	kept := findings[:0:0]
 	for _, f := range findings {
 		if g.dir != "" && f.Line == 0 {
 			f.Path = g.dir
 		}
-		if sel.Ignored(g.dir, f.Path, f.Rule) {
+		if sel.Ignored(g.dir, f.Path, f.Rule, kind) {
 			continue
 		}
 		kept = append(kept, f)
@@ -234,7 +236,7 @@ func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("lint: %w", err)
 		}
-		findings = append(findings, g.admit(run.sel, report.Findings)...)
+		findings = append(findings, g.admit(run.sel, run.kind, report.Findings)...)
 	}
 	return run.report(findings, out)
 }
@@ -307,7 +309,7 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		if err != nil {
 			return fmt.Errorf("breaking: %s: %w", m.Path, err)
 		}
-		findings = append(findings, run.group[m.Dir].admit(run.sel, report.Findings)...)
+		findings = append(findings, run.group[m.Dir].admit(run.sel, run.kind, report.Findings)...)
 	}
 	return run.report(findings, out)
 }

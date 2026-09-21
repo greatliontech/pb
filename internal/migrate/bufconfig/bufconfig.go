@@ -385,11 +385,11 @@ func ParseLock(data []byte) (*Lock, error) {
 var (
 	lintOptions = map[string][]string{
 		"v1": {"enum_zero_value_suffix", "rpc_allow_same_request_response", "rpc_allow_google_protobuf_empty_requests", "rpc_allow_google_protobuf_empty_responses", "service_suffix", "allow_comment_ignores"},
-		"v2": {"enum_zero_value_suffix", "rpc_allow_same_request_response", "rpc_allow_google_protobuf_empty_requests", "rpc_allow_google_protobuf_empty_responses", "service_suffix", "disallow_comment_ignores", "disable_builtin"},
+		"v2": {"enum_zero_value_suffix", "rpc_allow_same_request_response", "rpc_allow_google_protobuf_empty_requests", "rpc_allow_google_protobuf_empty_responses", "service_suffix", "disallow_comment_ignores"},
 	}
 	breakingOptions = map[string][]string{
 		"v1": {"ignore_unstable_packages"},
-		"v2": {"ignore_unstable_packages", "disable_builtin"},
+		"v2": {"ignore_unstable_packages"},
 	}
 )
 

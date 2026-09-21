@@ -378,5 +378,5 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.checkGroup.admit"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "72a8219273cd3bfb3a9518f683f151164e55b12d377a6ff5a654f4a51c19cb99"
+  shape_hash: "7fcc058c06271f4448bc8d68d8be6a647ee95d79cb443272055c4447e2d57a16"
 }

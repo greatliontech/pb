@@ -16,7 +16,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
 - [x] 4. Dependencies: the dependency table's ten entries, each
       layout-verified, and `--dep`; declarations written for the tidy
       to version
-- [ ] 5. Lint and breaking: the lint file over the buf-rules ruleset,
+- [x] 5. Lint and breaking: the lint file over the buf-rules ruleset,
       categories and ids as qualified tags and names, per-module
       sections as `modules` entries, ignores by path, the
       rule-shaping options unmapped; the suppression comments
@@ -24,8 +24,10 @@ workspace.md, check-rules.md (the lint file), generation.md.
 - [ ] 6. Generation: the plugin table over the forked plugin images
       and `--plugin`, local plugins, the declarative half of managed
       mode as overrides, the rest unmapped
-- [ ] 7. The verb: assembly, the tidy that ends it, the report and its
-      exit status, `pb migrate` registered
+- [ ] 7. The verb: assembly, every unmodeled key of every buf file read
+      an unmapped fact, the comments rewritten over the checked files,
+      the tidy that ends it, the report and its exit status,
+      `pb migrate` registered
 - [ ] 8. The direct construction fetches what its proof needs — refs for
       a listing, a tag's or a commit's tree at depth one, and for a
       pseudo-version the history that decides its base per

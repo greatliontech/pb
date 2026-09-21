@@ -76,6 +76,7 @@ type ModuleSelection struct {
 type Ignore struct {
 	Paths []*glob.Pattern
 	Rules []string
+	Kind  check.Kind // the kind whose findings alone the entry excludes; "" for either
 }
 
 // Breaking is the breaking-change configuration.
@@ -236,6 +237,14 @@ func parseIgnores(n ast.Node, key string) ([]Ignore, error) {
 				return nil
 			}),
 			list("rules", func(rs []string) error { ig.Rules = rs; return nil }),
+			contractfile.Field{Name: "kind", Read: func(n ast.Node) error {
+				v, ok := contractfile.String(n)
+				if !ok || (check.Kind(v) != check.KindLint && check.Kind(v) != check.KindBreaking) {
+					return fmt.Errorf("%w: %s.kind must be lint or breaking", ErrInvalid, where)
+				}
+				ig.Kind = check.Kind(v)
+				return nil
+			}},
 		)
 		if err != nil {
 			return err
@@ -377,22 +386,23 @@ func (s Selection) RulesFor(dir string) []rules.Rule {
 	return s.Rules
 }
 
-// Ignored reports whether a finding of the named rule at the path —
-// a module-relative proto path, or the workspace-relative directory
-// a module's own selection locates a set or package finding at,
-// which a glob matches as the directory itself — of the module at
-// dir is excluded by an ignore entry, the root's or that module's
-// own: a path matching one of its globs, and the rule among its
-// rules or the entry naming none (REQ-lint-config-schema's ignore,
-// REQ-lint-selection). A finding without a path is never ignored
-// here.
-func (s Selection) Ignored(dir, path, name string) bool {
+// Ignored reports whether a finding of the named rule, of the kind,
+// at the path — a module-relative file path, or a module's directory
+// for a finding located there — is excluded: by the root's ignores,
+// which reach every module, or by the module's own, at its directory,
+// which reach its files alone; an entry naming rules excludes those
+// alone, one naming a kind that kind's findings alone (REQ-lint-config-schema,
+// REQ-lint-selection). A finding without a path is never ignored.
+func (s Selection) Ignored(dir, path, name string, kind check.Kind) bool {
 	if path == "" {
 		return false
 	}
 	for _, list := range [][]Ignore{s.ignore, s.ignores[dir]} {
 		for _, ig := range list {
 			if ig.Rules != nil && !contains(ig.Rules, name) {
+				continue
+			}
+			if ig.Kind != "" && ig.Kind != kind {
 				continue
 			}
 			for _, g := range ig.Paths {
@@ -490,7 +500,7 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 func (n names) ignores(list []Ignore, where string) ([]Ignore, error) {
 	var out []Ignore
 	for _, ig := range list {
-		canonical := Ignore{Paths: ig.Paths}
+		canonical := Ignore{Paths: ig.Paths, Kind: ig.Kind}
 		if ig.Rules != nil {
 			canonical.Rules = []string{}
 			for _, spelling := range ig.Rules {
@@ -687,6 +697,9 @@ func Encode(f *File) ([]byte, error) {
 				b.WriteString(indent + "      - " + contractfile.Spell(p) + "\n")
 			}
 			list(indent+"    ", "rules", ig.rules, false)
+			if ig.kind != "" {
+				b.WriteString(indent + "    kind: " + string(ig.kind) + "\n")
+			}
 		}
 	}
 	list("", "rulesets", orNil(f.Rulesets), false)
@@ -742,16 +755,19 @@ func orNil(l []string) []string {
 }
 
 // ignoreForm is an ignore entry as the rendering orders it: the
-// paths' spellings sorted, the rules sorted, nil rules kept nil.
+// paths' spellings sorted, the rules sorted, nil rules kept nil, the
+// kind as given.
 type ignoreForm struct {
 	paths, rules []string
+	kind         check.Kind
 }
 
 // ignoreForms is the entries in canonical order: each by its sorted
-// paths, then its sorted rules.
+// paths, then its sorted rules, then its kind.
 func ignoreForms(igs []Ignore) []ignoreForm {
 	out := make([]ignoreForm, len(igs))
 	for i, ig := range igs {
+		out[i].kind = ig.Kind
 		for _, g := range ig.Paths {
 			out[i].paths = append(out[i].paths, g.String())
 		}
@@ -763,7 +779,7 @@ func ignoreForms(igs []Ignore) []ignoreForm {
 		}
 	}
 	slices.SortFunc(out, func(a, b ignoreForm) int {
-		return cmp.Or(slices.Compare(a.paths, b.paths), slices.Compare(a.rules, b.rules))
+		return cmp.Or(slices.Compare(a.paths, b.paths), slices.Compare(a.rules, b.rules), cmp.Compare(a.kind, b.kind))
 	})
 	return out
 }

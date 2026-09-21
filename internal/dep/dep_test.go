@@ -1376,6 +1376,13 @@ func TestLint(t *testing.T) {
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("per module: %v %q", err, out.String())
 	}
+	// An ignore naming a kind excludes that kind's findings alone: the
+	// breaking ignore over a.proto leaves its lint finding standing.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [naming]\nignore:\n  - paths: [a.proto, \"vendor/**\"]\n    kind: breaking\n  - paths: [\"vendor/**\"]\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "a.proto:5:3: error example.com/house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("an ignore of the other kind: %v %q", err, out.String())
+	}
 	// A module's own ignore excludes its files' findings alone: a's
 	// entry ignores a.proto, and b's finding under the root stands.
 	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    ignore:\n      - paths: [a.proto, \"vendor/**\"]\n")

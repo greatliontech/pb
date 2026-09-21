@@ -13,6 +13,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/gitdir"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/module"
@@ -138,39 +139,43 @@ type Source struct {
 type Layout struct {
 	Modules   map[string]*modfile.File
 	Workspace *workspace.File
-	Facts     []Fact
+	Lint      *lintfile.File // set by Rules
+	// CommentIgnores, set by Rules, says per module directory whether
+	// buf honored its suppression comments, which the verb rewrites
+	// where it did (REQ-migrate-comments).
+	CommentIgnores map[string]bool
+	Facts          []Fact
 }
 
-// Modules lays out the modules a buf configuration declares
-// (REQ-migrate-modules): a v2 buf.yaml's modules, a v1 buf.yaml's one
-// module at ".", or a buf.work.yaml's directories, each with its own
-// buf.yaml. The path given — the flag's, or the origin's (OriginPath)
-// — is the configuration directory's; each module's path is that
-// joined with its directory, the directory itself joining nothing.
-// buf's module name is reported, never used; excludes and includes
-// are unmapped facts. A directory declared twice, one escaping the
-// configuration's, one containing another's, a workspace member
-// whose buf.yaml is not v1, or a path no module may bear fails.
-func Modules(src *Source, modulePath string) (*Layout, error) {
+// declared is one module a buf configuration declares, as the steps
+// read it: its directory cleaned and as buf's file spells it, buf's
+// module, the file's version, the key that declared it and the file
+// whose keys the module's facts cite, the directory's own buf.yaml
+// for a v1 workspace (nil where it has none).
+type declared struct {
+	dir     string
+	spelled string
+	mod     *bufconfig.Module
+	version string
+	from    string
+	in      string
+	file    *bufconfig.File
+}
+
+// declarations reads the modules a configuration declares, in the
+// order declared: a buf.work.yaml's directories, each with its own
+// buf.yaml or under buf's default v1 configuration; a v2 buf.yaml's
+// modules; a v1 buf.yaml's one module at ".". A v2 file beside a
+// workspace file is two workspaces at once, which buf refuses; a
+// workspace directory whose buf.yaml is not v1 does not parse, as
+// buf refuses it. A directory declared twice, or one containing
+// another's, fails naming both.
+func declarations(src *Source) ([]declared, error) {
 	if src == nil || (src.File == nil && src.Work == nil) {
 		return nil, fmt.Errorf("no buf configuration read")
 	}
 	if src.Work != nil && src.File != nil && src.File.Version == "v2" {
 		return nil, fmt.Errorf("a v2 %s beside a %s: two workspaces at once, which buf refuses", bufconfig.FileName, bufconfig.WorkFileName)
-	}
-	if modulePath == "" {
-		return nil, ErrNoModulePath
-	}
-	if err := module.ValidatePath(modulePath); err != nil {
-		return nil, err
-	}
-	type declared struct {
-		dir     string // cleaned
-		spelled string // as buf's file spells it, for the report
-		mod     *bufconfig.Module
-		version string
-		from    string // the key that declared it, for the report
-		in      string // the file whose keys the module's facts cite
 	}
 	var decls []declared
 	clean := func(spelled, from string) (string, error) {
@@ -188,13 +193,14 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 				return nil, err
 			}
 			mod := &bufconfig.Module{Path: "."} // buf's default v1 configuration
-			if member := src.Members[dir]; member != nil {
+			member := src.Members[dir]
+			if member != nil {
 				if member.Version != "v1" || len(member.Modules) != 1 {
 					return nil, fmt.Errorf("%s: %s is not a v1 %s, as a workspace directory's must be", from, path.Join(dir, bufconfig.FileName), bufconfig.FileName)
 				}
 				mod = &member.Modules[0]
 			}
-			decls = append(decls, declared{dir: dir, spelled: d, mod: mod, version: "v1", from: from, in: path.Join(dir, bufconfig.FileName)})
+			decls = append(decls, declared{dir: dir, spelled: d, mod: mod, version: "v1", from: from, in: path.Join(dir, bufconfig.FileName), file: member})
 		}
 	} else {
 		for i := range src.File.Modules {
@@ -207,28 +213,55 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 			if err != nil {
 				return nil, err
 			}
-			decls = append(decls, declared{dir: dir, spelled: m.Path, mod: m, version: src.File.Version, from: from, in: from})
+			decls = append(decls, declared{dir: dir, spelled: m.Path, mod: m, version: src.File.Version, from: from, in: from, file: src.File})
 		}
+	}
+	// A File is a value any caller may build, and a map keyed by
+	// directory would merge two declarations of one directory in
+	// silence; a module within another the archive refuses.
+	spelled := map[string]string{} // cleaned dir -> the key that declared it
+	for _, d := range decls {
+		if prior, dup := spelled[d.dir]; dup {
+			return nil, fmt.Errorf("%s: a module at %q is declared twice, first by %s", d.from, d.dir, prior)
+		}
+		for other, prior := range spelled {
+			if rootpath.Contains(other, d.dir) || rootpath.Contains(d.dir, other) {
+				return nil, fmt.Errorf("%s: module %q lies within module %q (%s): the migration writes no module file the archive would refuse, the outer module never publishable with one beneath it", d.from, d.dir, other, prior)
+			}
+		}
+		spelled[d.dir] = d.from
+	}
+	return decls, nil
+}
+
+// Modules lays out the modules a buf configuration declares
+// (REQ-migrate-modules): a v2 buf.yaml's modules, a v1 buf.yaml's one
+// module at ".", or a buf.work.yaml's directories, each with its own
+// buf.yaml. The path given — the flag's, or the origin's (OriginPath)
+// — is the configuration directory's; each module's path is that
+// joined with its directory, the directory itself joining nothing.
+// buf's module name is reported, never used; excludes and includes
+// are unmapped facts. A directory declared twice, one escaping the
+// configuration's, one containing another's, a workspace member
+// whose buf.yaml is not v1, or a path no module may bear fails.
+func Modules(src *Source, modulePath string) (*Layout, error) {
+	decls, err := declarations(src)
+	if err != nil {
+		return nil, err
+	}
+	if modulePath == "" {
+		return nil, ErrNoModulePath
+	}
+	if err := module.ValidatePath(modulePath); err != nil {
+		return nil, err
 	}
 	l := &Layout{Modules: map[string]*modfile.File{}}
 	several := len(decls) > 1
 	if several {
 		l.Workspace = &workspace.File{}
 	}
-	spelled := map[string]string{} // cleaned dir -> the key that declared it
 	for _, d := range decls {
 		dir := d.dir
-		// A File is a value any caller may build, and the map would
-		// merge two declarations of one directory in silence.
-		if prior, dup := spelled[dir]; dup {
-			return nil, fmt.Errorf("%s: a module at %q is declared twice, first by %s", d.from, dir, prior)
-		}
-		for other, prior := range spelled {
-			if rootpath.Contains(other, dir) || rootpath.Contains(dir, other) {
-				return nil, fmt.Errorf("%s: module %q lies within module %q (%s): the migration writes no module file the archive would refuse, the outer module never publishable with one beneath it", d.from, dir, other, prior)
-			}
-		}
-		spelled[dir] = d.from
 		mp := modulePath
 		if dir != "." {
 			mp = modulePath + "/" + dir

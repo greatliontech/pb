@@ -27,6 +27,8 @@ ignore:
   - paths: ["vendor/**", "legacy/*.proto"]
     rules: [ENUM_NAMES]
   - paths: ["gen/**"]
+  - paths: ["wire/**"]
+    kind: breaking
 modules:
   legacy/api:
     enable: [HOUSE_ONE]
@@ -56,7 +58,7 @@ func TestParse(t *testing.T) {
 	if legacy, fresh := f.Modules["legacy/api"], f.Modules["fresh"]; len(f.Modules) != 3 || f.Modules["."].Enable != nil || strings.Join(legacy.Enable, ",") != "HOUSE_ONE" || legacy.Severity["HOUSE_ONE"] != check.SeverityWarning || fresh.Enable != nil || fresh.Exclude != nil || fresh.Severity != nil {
 		t.Fatalf("modules = %+v", f.Modules)
 	}
-	if f.Severity["ENUM_NAMES"] != check.SeverityWarning || len(f.Ignore) != 2 || len(f.Ignore[0].Paths) != 2 || f.Ignore[1].Rules != nil || f.Breaking == nil || f.Breaking.Base != (Base{Form: BaseRef, Value: "main"}) || f.Breaking.Base.String() != "ref main" {
+	if f.Severity["ENUM_NAMES"] != check.SeverityWarning || len(f.Ignore) != 3 || len(f.Ignore[0].Paths) != 2 || f.Ignore[1].Rules != nil || f.Ignore[1].Kind != "" || f.Ignore[2].Kind != check.KindBreaking || f.Breaking == nil || f.Breaking.Base != (Base{Form: BaseRef, Value: "main"}) || f.Breaking.Base.String() != "ref main" {
 		t.Fatalf("file = %+v", f)
 	}
 	empty, err := Parse([]byte(""))
@@ -87,6 +89,7 @@ func TestParse(t *testing.T) {
 		"ignore no paths":    {"ignore:\n  - rules: [X]\n", "ignore[0] has no paths"},
 		"ignore paths empty": {"ignore:\n  - paths: []\n", "ignore[0].paths must not be empty"},
 		"ignore rules empty": {"ignore:\n  - paths: [a]\n    rules: []\n", "ignore[0].rules must not be empty"},
+		"ignore kind":        {"ignore:\n  - paths: [a]\n    kind: both\n", "ignore[0].kind must be lint or breaking"},
 		"base bad version":   {"breaking:\n  base:\n    version: nonsense\n", "breaking.base.version:"},
 		"ignore bad glob":    {"ignore:\n  - paths: [\"[\"]\n", "ignore[0].paths:"},
 		"modules not a map":  {"modules: [a]\n", "modules must be a mapping"},
@@ -157,7 +160,7 @@ func TestIgnored(t *testing.T) {
 		default:
 			name = "example.com/std:" + name
 		}
-		if got := sel.Ignored(c.dir, c.path, name); got != c.want {
+		if got := sel.Ignored(c.dir, c.path, name, check.KindLint); got != c.want {
 			t.Errorf("Ignored(%q, %q, %s) = %v", c.dir, c.path, name, got)
 		}
 	}
@@ -171,8 +174,13 @@ func TestIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if all.Ignored("", "", "ANY") || !all.Ignored("", "x.proto", "ANY") {
+	if all.Ignored("", "", "ANY", check.KindLint) || !all.Ignored("", "x.proto", "ANY", check.KindLint) {
 		t.Error("the path-less finding under **")
+	}
+	// An entry naming a kind excludes that kind's findings alone; one
+	// naming none either kind's.
+	if !sel.Ignored("", "wire/x.proto", "example.com/std:ENUM_NAMES", check.KindBreaking) || sel.Ignored("", "wire/x.proto", "example.com/std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "gen/x.proto", "example.com/std:NO_DELETE", check.KindBreaking) {
+		t.Fatal("the kind of an ignore entry")
 	}
 }
 
@@ -207,6 +215,9 @@ ignore:
       - vendor/**
     rules:
       - ENUM_NAMES
+  - paths:
+      - wire/**
+    kind: breaking
 breaking:
   base:
     ref: main
@@ -396,7 +407,7 @@ func TestSelect(t *testing.T) {
 	if err != nil || names(sel.Rules) != "example.com/std:ENUM_NAMES:error example.com/dup:FIELD_NAMES:warning" {
 		t.Fatalf("qualified: %s %v", names(sel.Rules), err)
 	}
-	if !sel.Ignored("", "x/a.proto", "example.com/std:ENUM_NAMES") || !sel.Ignored("", "x/a.proto", "example.com/std:FIELD_NAMES") || sel.Ignored("", "x/a.proto", "example.com/dup:FIELD_NAMES") {
+	if !sel.Ignored("", "x/a.proto", "example.com/std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "x/a.proto", "example.com/std:FIELD_NAMES", check.KindLint) || sel.Ignored("", "x/a.proto", "example.com/dup:FIELD_NAMES", check.KindLint) {
 		t.Fatal("ignore matches by canonical name")
 	}
 	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "example.com/std:FIELD_NAMES ENUM_NAMES" {

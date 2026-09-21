@@ -99,6 +99,7 @@ func TestDeps(t *testing.T) {
 	d := &fakeDiscovery{latest: map[string]string{
 		otelPath:                  "v0.0.0-20240102030405-abcdefabcdef",
 		"github.com/acme/private": "v1.4.0",
+		Ruleset:                   "v0.1.0",
 	}}
 	facts, err := Deps(context.Background(), d, src, lock, repl, l)
 	if err != nil {
@@ -108,6 +109,7 @@ func TestDeps(t *testing.T) {
 		otelPath:                  "v0.0.0-20240102030405-abcdefabcdef",
 		"github.com/acme/private": "v1.4.0",
 		"github.com/acme/pinned":  "v2.1.0",
+		Ruleset:                   "v0.1.0",
 	}
 	for dir, f := range l.Modules {
 		if len(f.Deps) != len(wantDeps) {
@@ -123,8 +125,8 @@ func TestDeps(t *testing.T) {
 		}
 	}
 	// Discovered once per path — the alias shares otel's path — and
-	// never for a pinned replacement.
-	if strings.Join(d.asked, ",") != otelPath+",github.com/acme/private,github.com/acme/unreachable" {
+	// never for a pinned replacement; the ruleset last.
+	if strings.Join(d.asked, ",") != otelPath+",github.com/acme/private,github.com/acme/unreachable,"+Ruleset {
 		t.Fatalf("asked %v", d.asked)
 	}
 	want := "buf.yaml deps[0] " + otel + ":abc123 -> " + otelPath + "@v0.0.0-20240102030405-abcdefabcdef (the dependency table)\n" +
@@ -133,6 +135,7 @@ func TestDeps(t *testing.T) {
 		"buf.yaml deps[3] buf.build/acme/alias -> " + otelPath + "@v0.0.0-20240102030405-abcdefabcdef (--dep)\n" +
 		"buf.yaml deps[4] buf.build/nobody/knows !! no entry in the dependency table: pass --dep buf.build/nobody/knows=<module path>\n" +
 		"buf.yaml deps[5] buf.build/acme/unreachable !! no version discovered for github.com/acme/unreachable (no origin answers for github.com/acme/unreachable): pass --dep buf.build/acme/unreachable=github.com/acme/unreachable@<version>\n" +
+		"the lint file's rulesets " + Ruleset + " -> " + Ruleset + "@v0.1.0 (discovered; the ruleset, declared by every module)\n" +
 		"buf.lock deps[0] " + otel + " abc123 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"
 	if got := factsOf(facts); got != want {
 		t.Fatalf("facts:\n%s", got)
@@ -147,13 +150,22 @@ func TestDeps(t *testing.T) {
 	if err := pins.Replace("dep", "buf.build/acme/pin="+otelPath+"@v9.0.0"); err != nil {
 		t.Fatal(err)
 	}
-	d2 := &fakeDiscovery{latest: map[string]string{otelPath: "v1.0.0"}}
+	// The ruleset's version pinned by its own path, discovery never
+	// asked; a replacement keyed by it naming another path is refused.
+	if err := pins.Replace("dep", Ruleset+"="+Ruleset+"@v0.2.0"); err != nil {
+		t.Fatal(err)
+	}
+	d2 := &fakeDiscovery{latest: map[string]string{otelPath: "v1.0.0", Ruleset: "v0.1.0"}}
 	facts2, err := Deps(context.Background(), d2, src2, nil, pins, l2)
-	if err != nil || len(d2.asked) != 0 || l2.Modules["."].Deps[otelPath] != "v9.0.0" {
+	if err != nil || len(d2.asked) != 0 || l2.Modules["."].Deps[otelPath] != "v9.0.0" || l2.Modules["."].Deps[Ruleset] != "v0.2.0" {
 		t.Fatalf("a pin over a discovered name: %v asked %v deps %v", err, d2.asked, l2.Modules["."].Deps)
 	}
-	if got := factsOf(facts2); got != "buf.yaml deps[0] "+otel+" -> "+otelPath+"@v9.0.0 (the dependency table, at --dep buf.build/acme/pin's version)\nbuf.yaml deps[1] buf.build/acme/pin -> "+otelPath+"@v9.0.0 (--dep)" {
+	if got := factsOf(facts2); got != "buf.yaml deps[0] "+otel+" -> "+otelPath+"@v9.0.0 (the dependency table, at --dep buf.build/acme/pin's version)\nbuf.yaml deps[1] buf.build/acme/pin -> "+otelPath+"@v9.0.0 (--dep)\nthe lint file's rulesets "+Ruleset+" -> "+Ruleset+"@v0.2.0 (--dep; the ruleset, declared by every module)" {
 		t.Fatalf("pinned facts:\n%s", got)
+	}
+	pins.Deps[Ruleset] = Dep{Path: "github.com/acme/fork", Version: "v1.0.0"}
+	if _, err := Deps(context.Background(), d2, src2, nil, pins, l2); err == nil || !strings.Contains(err.Error(), "a replacement keyed by it names a version alone") {
+		t.Fatalf("the ruleset replaced: %v", err)
 	}
 	// Many pins on one path agreeing are fine; one at odds is refused
 	// naming the first in name order and itself, whatever the map's
@@ -167,10 +179,13 @@ func TestDeps(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// The ruleset's discovery failing is an unmapped fact naming the
+	// flag that pins it, the buf dependencies unaffected.
 	dA := &fakeDiscovery{}
-	if facts, err := Deps(context.Background(), dA, srcA, nil, many, lA); err != nil || len(dA.asked) != 0 || len(facts) != 10 || lA.Modules["."].Deps[otelPath] != "v9.0.0" {
+	if facts, err := Deps(context.Background(), dA, srcA, nil, many, lA); err != nil || strings.Join(dA.asked, ",") != Ruleset || len(facts) != 11 || lA.Modules["."].Deps[otelPath] != "v9.0.0" || facts[10].Mapped || !strings.Contains(facts[10].Text, "pass --dep "+Ruleset+"="+Ruleset+"@<version>") {
 		t.Fatalf("ten pins agreeing: %v asked %v facts %d", err, dA.asked, len(facts))
 	}
+	dA.asked = nil
 	many.Deps["buf.build/acme/p9"] = Dep{Path: otelPath, Version: "v8.0.0"}
 	if _, err := Deps(context.Background(), dA, srcA, nil, many, lA); err == nil || err.Error() != "--dep buf.build/acme/p0 and --dep buf.build/acme/p9 pin "+otelPath+" at v9.0.0 and v8.0.0: a module path is declared at one version" {
 		t.Fatalf("a pin at odds: %v", err)
@@ -186,7 +201,7 @@ func TestDeps(t *testing.T) {
 	src3 := &Source{File: cfg3}
 	l3, _ := Modules(src3, "github.com/acme/one")
 	facts3, err := Deps(context.Background(), &multiLineDiscovery{}, src3, nil, Replacements{}, l3)
-	if err != nil || len(facts3) != 1 || strings.Contains(facts3[0].Text, "\n") || !strings.Contains(facts3[0].Text, "(ERROR: Repository not found.): pass --dep") {
+	if err != nil || len(facts3) != 2 || strings.Contains(facts3[0].Text, "\n") || !strings.Contains(facts3[0].Text, "(ERROR: Repository not found.): pass --dep") || strings.Contains(facts3[1].Text, "\n") {
 		t.Fatalf("a multi-line discovery error: %v %+v", err, facts3)
 	}
 
@@ -210,17 +225,17 @@ func TestDeps(t *testing.T) {
 		src.Members[dir] = f
 	}
 	l, _ = Modules(src, "github.com/acme/mono")
-	d = &fakeDiscovery{latest: map[string]string{otelPath: "v1.3.2"}}
+	d = &fakeDiscovery{latest: map[string]string{otelPath: "v1.3.2", Ruleset: "v0.1.0"}}
 	facts, err = Deps(context.Background(), d, src, nil, Replacements{}, l)
-	if err != nil || len(d.asked) != 1 || len(facts) != len(dirs) {
+	if err != nil || len(d.asked) != 2 || len(facts) != len(dirs)+1 {
 		t.Fatalf("workspace deps: %v asked %v facts %d", err, d.asked, len(facts))
 	}
 	for _, dir := range dirs {
-		if l.Modules[dir].Deps[otelPath] != "v1.3.2" || len(l.Modules[dir].Deps) != 1 {
+		if l.Modules[dir].Deps[otelPath] != "v1.3.2" || l.Modules[dir].Deps[Ruleset] != "v0.1.0" || len(l.Modules[dir].Deps) != 2 {
 			t.Fatalf("%s: %v", dir, l.Modules[dir].Deps)
 		}
 	}
-	for i, f := range facts {
+	for i, f := range facts[:len(dirs)] {
 		if want := "abcdefgh"[i : i+1]; !strings.HasPrefix(f.Source, want+"/buf.yaml deps[0] ") {
 			t.Fatalf("fact %d out of member order: %s", i, f.Source)
 		}
