@@ -1,5 +1,8 @@
 # The fixture corpus
 
+Published as the ruleset `github.com/greatliontech/buf-rules`, whose
+files are copied from here at each of its tagged releases.
+
 buf's lint and breaking catalogs rewritten as pb rule files under
 `buf/lint` and `buf/breaking`, tagged with buf's categories, and two
 schemas built to trip every rule: `lint/` for the lint rules and
