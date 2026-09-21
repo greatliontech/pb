@@ -655,6 +655,35 @@ func TestChargedFunctions(t *testing.T) {
 	}
 }
 
+// The extension libraries stand at their pinned versions
+// (REQ-env1-library): strings at 5 or later, where format's
+// floating-point precision is bounded at 100; lists at 3, where
+// flatten's estimated cost grows with the depth asked for, as the
+// versioned estimator charges, not with the literal's own depth as
+// the unversioned one does.
+func TestExtensionLibraryVersions(t *testing.T) {
+	env, set := lintEnv(t)
+	file := map[string]any{"file": fixtureProtos(set).a}
+	holds(t, env, check.TargetFile, `'%.3f'.format([1.0]) == '1.000'`, file)
+	if v, err := verdict(t, env, check.KindLint, check.TargetFile, `'%.101f'.format([1.0]) != ''`, file); err == nil {
+		t.Errorf("a precision past strings version 5's bound evaluated to %v", v)
+	}
+	estimate := func(expr string) uint64 {
+		ast, iss := env.base.Compile(expr)
+		if iss.Err() != nil {
+			t.Fatal(iss.Err())
+		}
+		c, err := env.base.EstimateCost(ast, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c.Max
+	}
+	if shallow, deep := estimate(`[[1], [2], [3]].flatten(1)`), estimate(`[[1], [2], [3]].flatten(5)`); shallow >= deep {
+		t.Errorf("flatten(1) estimated %d, flatten(5) %d: lists is not at version 3", shallow, deep)
+	}
+}
+
 // inFile counts a file's declarations, itself included, from the
 // descriptor: the oracle for what a walk over it costs.
 func inFile(fd protoreflect.FileDescriptor) int {

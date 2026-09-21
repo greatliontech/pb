@@ -12,8 +12,10 @@ standard features are, and in proto2 and proto3 implied by the
 Environment 1's `features(entity)` resolves the message's own fields
 and no extension (check-rules.md REQ-env1-library), so the catalog's
 two rules read the legacy options alone and an editions file setting
-the language features passes them. Environment 1 is unreleased and
-may still gain the function.
+the language features passes them. Resolving extensions is the
+meaning REQ-env1-library gives `features` once amended, the code's
+lag a gap under environment 1, not a change to a meaning an
+expression can already observe.
 
 The fork. One: `features` resolves extensions too, spelled by their
 extension name as `options` spells a custom option

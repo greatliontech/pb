@@ -242,8 +242,14 @@ func New(newSide, oldSide *Set) (*Env, error) {
 	e.limit = costLimit(size)
 	opts := []cel.EnvOption{
 		cel.Types(&descriptorpb.FileDescriptorProto{}),
-		ext.Strings(),
-		ext.Lists(),
+		// The extension libraries at the versions REQ-env1-library
+		// names. Lists stops at 3, the last version the library
+		// defines: its cost estimators for flatten, distinct and sort
+		// are the versioned ones, and a number above 3 would select
+		// cel-go's unversioned estimators, which a later cel-go may
+		// change under environment 1.
+		ext.Strings(ext.StringsVersion(5)),
+		ext.Lists(ext.ListsVersion(3)),
 	}
 	e.charged = map[string]bool{}
 	for _, f := range e.library() {

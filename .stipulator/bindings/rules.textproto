@@ -290,3 +290,33 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "78070323934f635c89d04e538f3e0154e8e53b643b8eb6100f5bfb03f009b424"
 }
+
+bindings {
+  requirement_id: "REQ-rules-compile"
+  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
+  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.Env.Compile"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b8db95295642d5c27b946276578e152d79d64f79e15be160551ef314d1373385"
+}
+
+bindings {
+  requirement_id: "REQ-rules-compile"
+  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
+  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.TestRunRefusals"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "985b791d458627adc6b60de858cdba70d69bc63685f4a9966807bce5be436431"
+}
+
+bindings {
+  requirement_id: "REQ-rules-compile"
+  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
+  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestEvalVerdicts"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d8593f6dba6ce6a37a8449f2d59702e990319fe7063afdb8eee0d4ad404840b7"
+}

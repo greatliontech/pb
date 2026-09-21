@@ -16,13 +16,22 @@ ordinary module machinery — resolution, pinning, provenance.
 **rule file** (term): A YAML file within a ruleset declaring rules and
 the CEL environment version they target.
 
-**CEL environment** (term): The versioned contract a rule evaluates in:
-the bound variables, the descriptor types, and pb's standard library of
-CEL functions (navigation, naming, comments, source info). Identified by
-an integer version. An environment freezes at the pb release that
-first ships it: from then on additions bump the version; until then
-the environment may still gain functions under its number, there
-being no rule file in the world that targets it.
+**CEL environment** (term): The contract a rule evaluates in: the
+bound variables, the descriptor types, pb's library of CEL functions
+(navigation, naming, comments, source info) and the CEL extension
+libraries the environment's section names, each at the version named
+there. Identified by an integer, its version, which names a meaning:
+under one number the environment only grows — a function, an
+overload or an extension library may be added when the addition
+leaves every expression that compiled before evaluating as it did,
+an expression whose argument type is known only at evaluation
+included, where a new overload can answer a call that had no overload
+to answer it; a rule naming a function the engine lacks fails at
+compile time with the function's name (REQ-rules-compile). A change
+to what an expression means, a removal, an addition that does not
+leave every earlier expression as it was, or an extension library
+moved to a version under which an expression that compiled before
+evaluates differently, is the next number.
 
 **target** (term): The entity kind a rule binds: `file`, `package`,
 `message`, `field`, `oneof`, `enum`, `enum-value`, `service`, `method`,
@@ -54,6 +63,13 @@ written in a suppression comment and a message on a finding line —
 `cel` is non-empty text, a block scalar included, `kind` is `lint` or
 `breaking`, `severity` is `error` or `warning`, `target` is a target,
 and ids are unique within the file. No other keys exist.
+
+**REQ-rules-compile** (behavior): A rule whose expression does not
+compile under the environment it targets — an unknown function or
+variable, a type error, a kind or target the environment refuses, or
+a result that is not `bool` — MUST fail the check run, naming the
+rule's id and the compiler's cause, an unknown function or variable
+named in it.
 
 **REQ-rules-file-discovery** (behavior): A ruleset's rule files MUST be
 every file named `*.rules.yaml` under the module root, at any depth,
@@ -95,15 +111,11 @@ a position; for a `set` rule, no location.
 
 ## CEL environment 1
 
-The first environment, unreleased. Every rule file targeting it
-evaluates over these bindings and this library and nothing else; once
-a pb release ships it, a rule that needs more is the reason for
-environment 2, never for an addition under this number.
-INV-env1-library-names: the library's names are the ones this
-section lists; enforced by `env1.TestChargedFunctions`. The freeze
-itself is the rule this section states, an addition after the
-release being a spec amendment no test can tell from a declared
-one.
+The first environment. Every rule file targeting it evaluates over
+these bindings and this library alone, an addition under this number
+being an edit to this section and to the code in one change.
+INV-env1-library-names: pb's function names are the ones this
+section lists; enforced by `env1.TestChargedFunctions`.
 
 **word segmentation** (term): The split of a name into words the
 naming functions share. Every character that is neither a letter nor
@@ -159,8 +171,10 @@ breaking rule each binding in two forms in place of the one — `old` and
 `oldFiles` and `newFiles` for `set` — the absent side `null`.
 
 **REQ-env1-library** (wire): Environment 1 MUST provide CEL's standard
-functions, the `strings` and `lists` extension libraries, and exactly
-these functions of pb's, each pure and each accepting `null` where a
+functions, cel-go's `strings` extension library at its version 5 and
+`lists` at its version 3, the last that library defines, a number
+above it selecting cel-go's unversioned behavior, and exactly these
+functions of pb's, each pure and each accepting `null` where a
 descriptor is named by returning `null`: `comments(entity)`, a map
 with `leading` and `trailing` strings and `detached` a list of
 strings; `parent(entity)`, the enclosing declaration — the message for
