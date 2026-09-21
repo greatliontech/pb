@@ -447,7 +447,18 @@ func (r *DockerRunner) oomEvent(ctx context.Context, container string, rec docke
 // and no security option relaxing anything, under a runtime the
 // daemon names as its own or a stronger one. Anything less is not a
 // tier this runner runs under — the daemon did not deliver what pb
-// asked.
+// asked. The record is the daemon's own account, read and never
+// audited (REQ-plugin-reported-tier): the native runner trusts the
+// kernel's answers to its own calls the same way, and a daemon whose
+// account is false is the substrate the user chose being broken, as
+// a kernel's would be. Two facts of moby's account: it records the
+// AppArmor profile from a probe of securityfs while applying the
+// profile only where its host check also passes (the parser present,
+// the kernel's parameter on, the daemon itself not contained), so a
+// contained daemon records a profile it never loads; and it records
+// "unconfined" only for a privileged container or one given a
+// security option, both refused here on their own, so the
+// unconfined rule serves a daemon other than moby.
 func deriveTier(rec dockerRecord, daemonSeccomp string) (string, error) {
 	hc := rec.HostConfig
 	var lacks []string

@@ -231,8 +231,11 @@ mask admits being the runtime's and the daemon's confinement's own —
 the process's confinement is the daemon's default profile enforced
 where the daemon names AppArmor, the container type where it names
 SELinux and none, the kernel reporting none or `unconfined`, where it
-names neither, and the native runner's world is the image's alone, no
-confinement reported, as the running plugin sees them; enforced by
+names neither — all as the running plugin sees them on a daemon whose
+account of itself is true (`REQ-plugin-reported-tier`: pb audits no
+daemon at a run; the invariant holds the list complete against a
+conforming one) — and the native runner's world is the image's alone,
+no confinement reported, as the running plugin sees it; enforced by
 `TestDockerDeviations` against a live daemon and the native runner.
 
 **REQ-plugin-resource-bounds** (behavior): Every plugin process — every
@@ -280,14 +283,20 @@ the network or to restrict the world to the export
 a lowering that cannot help.
 
 A daemon that records the container unconfined by AppArmor is no
-`Strong` daemon: the tier is derived from the container's record as
-the daemon inspects it, the daemon's own account of the confinement it
-applied and not a verified one, `apparmor unconfined` among what the
-record may lack.
+`Strong` daemon: `apparmor unconfined` is among what the record may
+lack, the record being the daemon's own account
+(`REQ-plugin-reported-tier`).
 
-**REQ-plugin-reported-tier** (invariant): The tier enforced against the
-requirement MUST be the tier the sandbox reports for the actual run —
-never an assumed or configured value.
+**REQ-plugin-reported-tier** (invariant): The tier enforced against
+the requirement MUST be the tier the sandbox reports for the actual
+run — never an assumed or configured value. A runner's report is the
+substrate's own account of what it applied — the kernel's answers to
+the native runner's calls; for the `docker` runner the daemon's record
+of the container and of itself, the profile it names for its
+containers among the latter — and pb audits neither substrate: it
+requests the isolation the policy needs, confirms the request was
+honored as the substrate reports it, and refuses where the report says
+less.
 
 **REQ-plugin-runner-independence** (invariant): Generated output MUST be
 a pure function of the pinned plugin content and the
