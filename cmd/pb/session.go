@@ -40,15 +40,36 @@ func openSession() (*userconfig.Settings, *dep.Session, error) {
 // fetch-verify client, and the root's module files, lockfile, and
 // trust policy.
 func loadSession(settings *userconfig.Settings) (*dep.Session, error) {
-	ws, dir, err := workingTree()
-	if err != nil {
-		return nil, err
-	}
-	client, err := assembleClient(settings)
+	ws, dir, client, err := assembleTree(settings)
 	if err != nil {
 		return nil, err
 	}
 	return dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
+}
+
+// openTree is the working tree, the working directory within it and
+// the fetch-verify client under the machine's settings, with no
+// resolution root loaded: what a verb that writes the root needs.
+func openTree() (billy.Filesystem, string, *fetch.Client, error) {
+	settings, err := userconfig.Load()
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return assembleTree(settings)
+}
+
+// assembleTree is the working tree, the working directory within it
+// and the fetch-verify client under the settings given.
+func assembleTree(settings *userconfig.Settings) (billy.Filesystem, string, *fetch.Client, error) {
+	ws, dir, err := workingTree()
+	if err != nil {
+		return nil, "", nil, err
+	}
+	client, err := assembleClient(settings)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return ws, dir, client, nil
 }
 
 // rootOSPath is the resolution root's path on the host: the session's

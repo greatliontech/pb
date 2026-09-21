@@ -137,6 +137,7 @@ modules:
 	}
 
 	// A lone v2 module at the directory: one file, no workspace; one
+	// below it a workspace of one, the directory staying the root; one
 	// below it: its path joined, no workspace.
 	cfg, err = bufconfig.ParseFile([]byte("version: v2\nmodules:\n  - path: .\n"))
 	if err != nil {
@@ -149,7 +150,7 @@ modules:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if l, err := Modules(&Source{File: cfg}, "github.com/acme/one"); err != nil || len(l.Modules) != 1 || l.Workspace != nil || l.Modules["proto"].Module != "github.com/acme/one/proto" {
+	if l, err := Modules(&Source{File: cfg}, "github.com/acme/one"); err != nil || len(l.Modules) != 1 || l.Workspace == nil || strings.Join(l.Workspace.Use, ",") != "proto" || l.Modules["proto"].Module != "github.com/acme/one/proto" {
 		t.Fatalf("lone v2 below the directory: %+v %v", l, err)
 	}
 	if _, err := Modules(nil, "github.com/acme/one"); err == nil {

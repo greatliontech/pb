@@ -53,7 +53,7 @@ func TestRewriteComments(t *testing.T) {
 		"two spaces":           {"// buf:lint:ignore  X\nm\n", "// buf:lint:ignore  X\nm\n", "0/[]/[]/[]/1"},
 		"tab before id":        {"// buf:lint:ignore\tX\nm\n", "// buf:lint:ignore\tX\nm\n", "0/[]/[]/[]/1"},
 		"package rule":         {"// buf:lint:ignore PACKAGE_SAME_DIRECTORY\npackage a;\n", "// pb:ignore PACKAGE_SAME_DIRECTORY\npackage a;\n", "1/[]/[]/[1]/0"},
-		"set rule stacked":     {"// buf:lint:ignore PACKAGE_NO_IMPORT_CYCLE\n// buf:lint:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "// pb:ignore PACKAGE_NO_IMPORT_CYCLE\n// pb:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "2/[1]/[]/[1]/0"},
+		"set rule stacked":     {"// buf:lint:ignore PACKAGE_NO_IMPORT_CYCLE\n// buf:lint:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "// pb:ignore PACKAGE_NO_IMPORT_CYCLE\n// pb:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "2/[]/[]/[1]/0"},
 		"continued":            {"rpc Foo(Req)\n  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME\n  returns (Res);\n", "rpc Foo(Req)\n  // pb:ignore RPC_RESPONSE_STANDARD_NAME\n  returns (Res);\n", "1/[2]/[]/[]/0"},
 		"after a body":         {"message M {\n  // buf:lint:ignore A\n  string f = 1; // note\n  // buf:lint:ignore B\n  string g = 2;\n}\n", "message M {\n  // pb:ignore A\n  string f = 1; // note\n  // pb:ignore B\n  string g = 2;\n}\n", "2/[]/[]/[]/0"},
 	} {

@@ -6,6 +6,7 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
+| [migrate-no-heuristic-witness](migrate-no-heuristic-witness.md) | the verb's no-heuristic invariant holds by the steps' shape and lacks the property witness stipulator admits: every emitted scalar drawn from the input's tokens, the tables, the ruleset or discovery | the migrate plan's chunk 11 |
 | [direct-clone-in-memory](direct-clone-in-memory.md) | the direct construction clones an origin's whole history into memory where a listing needs refs, a version its tree, and a pseudo-version the history that decides its base; fetching by need into a bare repository kept in the module cache | the migrate plan's chunk 8 |
 | [dependency-table-symlinks](dependency-table-symlinks.md) | protovalidate's and protoc-gen-validate's BSR module roots hold symbolic links, which a module's file set will carry as git's own entries rather than refuse | the migrate plan's chunk 9 |
 | [dependency-table-unverified](dependency-table-unverified.md) | five dependency table entries reach googleapis, whose whole-history clone ends the process before a version is discovered, so they are out of the table until fetching is need-driven and each verifies | the migrate plan's chunk 8 for googleapis, grpc-gateway and grpc, its chunk 9 for envoy and xds, each entry restored as TestDependencyLayouts verifies it |

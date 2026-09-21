@@ -136,7 +136,8 @@ type Source struct {
 // file for each module, keyed by the module's directory relative to
 // the configuration's, cleaned, "." for a module at the directory
 // itself; the workspace file where the configuration declares several
-// modules, nil for one; and the facts.
+// modules or one below the directory, nil for one at the directory
+// itself; and the facts.
 type Layout struct {
 	Modules   map[string]*modfile.File
 	Workspace *workspace.File
@@ -258,8 +259,12 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 		return nil, err
 	}
 	l := &Layout{Modules: map[string]*modfile.File{}}
-	several := len(decls) > 1
-	if several {
+	// A workspace file where the configuration names several modules,
+	// or one below the directory: the directory stays the resolution
+	// root the lint and generation files and the output directories
+	// are relative to.
+	workspaced := len(decls) > 1 || decls[0].dir != "."
+	if workspaced {
 		l.Workspace = &workspace.File{}
 	}
 	for _, d := range decls {
@@ -272,7 +277,7 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 			}
 		}
 		l.Modules[dir] = &modfile.File{Module: mp}
-		if several {
+		if workspaced {
 			l.Workspace.Use = append(l.Workspace.Use, dir)
 		}
 		l.Facts = append(l.Facts, mapped(d.from+" "+d.spelled, path.Join(dir, module.ModuleFileName)+" module: "+mp))

@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/migrate"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ func main() {
 // status, spoken for by the findings it printed (check-rules.md
 // REQ-check-exit-status).
 func failure(err error) string {
-	if errors.Is(err, dep.ErrFindings) {
+	if errors.Is(err, dep.ErrFindings) || errors.Is(err, migrate.ErrUnmapped) {
 		return ""
 	}
 	return "pb: " + err.Error()
@@ -44,5 +45,6 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(generateCmd())
 	root.AddCommand(lintCmd())
 	root.AddCommand(breakingCmd())
+	root.AddCommand(migrateCmd())
 	return root
 }

@@ -132,18 +132,18 @@ func RewriteComments(src []byte) Rewrite {
 			r.Rewritten++
 			displaced := k != j-1 || continued
 			switch {
+			case positionless(id):
+				// Unplaced, whatever the line: no line carries its
+				// finding, so its place is no matter.
+				r.Unplaced = append(r.Unplaced, k+1)
+				displaced = false
 			case fileRule(id):
 				displaced = displaced || !first
-			case positionless(id):
-				// Reported unplaced: no line carries its finding.
 			default:
 				displaced = displaced || nothing
 			}
 			if displaced {
 				r.Displaced = append(r.Displaced, k+1)
-			}
-			if positionless(id) {
-				r.Unplaced = append(r.Unplaced, k+1)
 			}
 			at := l.comment + 2 + lead
 			out.Write(src[prev:at])

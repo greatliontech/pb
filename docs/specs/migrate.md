@@ -59,20 +59,29 @@ module's root, the lint file always — buf checks every module under a
 selection, explicit or its default, and the file spells the one buf
 applied (REQ-migrate-rules) — the generation file where a
 `buf.gen.yaml` lies at the directory; then run `pb dep tidy` over the result, so the written
-workspace is tidy and its lockfile pinned. It fails, writing nothing,
-where any pb file it would write already exists, where the directory
+workspace is tidy and its lockfile pinned, the configuration's
+directory the resolution root. It fails, writing nothing,
+where any pb file it would write already exists — the lockfile the
+tidy writes at the configuration's directory among them, and one in
+a module's directory below, which no workspace admits — where the directory
 holds no buf configuration, or where a buf file does not parse under
 its own version — a key the verb does not model is no parse failure
 but an unmapped fact naming it; and it fails after writing, the files
-kept, where tidy fails, naming tidy's cause. It deletes no buf file:
-the buf configuration stays as it was, the user's to remove.
+kept and the report printed, where the comments' rewriting or the
+tidy fails, naming the cause. It deletes no buf file: the buf
+configuration stays as it was, the user's to remove.
 
 **REQ-migrate-report** (behavior): The verb MUST print the migration
-report — every replacement it applied among the facts — and exit 0
-when every fact mapped, 1 when any fact went unmapped, the files
-written in either case, so a script can tell a complete migration
-from one needing a hand and a second run with replacements can
-finish it.
+report — every replacement it applied among the facts — on standard
+output, one line per fact: a mapped fact as `<buf key> -> <pb form>`,
+an unmapped one as `<buf key> !! <reason>`, a file written as
+`<path> -> written`, the lockfile the tidy wrote last, the facts in
+the order of the steps (modules, dependencies, rules, generation, the
+keys no step models, the files written, the comments rewritten); and
+exit 0 when every fact mapped,
+1 when any fact went unmapped, the files written in either case, so a
+script can tell a complete migration from one needing a hand and a
+second run with replacements can finish it.
 
 ## Modules and the workspace
 
@@ -97,8 +106,11 @@ buf's `name` for the module (a BSR name) is reported, never used as
 the path: a BSR name is no place pb fetches from. A `v2`
 configuration's `modules` and a `v1` workspace's `directories` become
 the workspace file's `use` entries, each module's directory cleaned as
-`workspace.md` REQ-work-emission has it; a lone module writes no
-workspace file. A module whose directory contains another's fails the
+`workspace.md` REQ-work-emission has it; a lone module at the
+directory itself writes no workspace file, and one below it a
+workspace of one, the configuration's directory staying the
+resolution root the lint and generation files and the output
+directories are relative to, as they are to buf's. A module whose directory contains another's fails the
 verb naming both: the verb authors no module file the archive refuses,
 and a module file beneath a module's root makes that module
 unpublishable (`module-archive.md` REQ-archive-nested-module),
@@ -229,8 +241,10 @@ among them, each line's text trimmed — for a module whose lint
 section honors comment ignores (`v1` with `allow_comment_ignores`
 true, `v2` without `disallow_comment_ignores` true), and no other
 directive: none for breaking, none trailing a line of code, none
-parted from the element by a blank line. In a checked file of such a
-module, each `//` comment on a leading block's line whose text opens
+parted from the element by a blank line. In every regular proto file
+under the root of such a module — the module's file set being every
+regular file, a symbolic link carried as one and never followed —
+each `//` comment on a leading block's line whose text opens
 with `buf:lint:ignore` and an id is rewritten to `// pb:ignore <ID>`,
 the id and any trailing text kept, the file otherwise byte-for-byte
 as it was, and the rewrite is reported per file with its count; a
@@ -245,9 +259,10 @@ declaration's first and a file's its first lexical element's
 (`check-rules.md` REQ-lint-suppression, REQ-rules-finding-location)
 — a rewritten
 directive naming a rule whose finding carries no position, a
-`package` or `set` rule, which no comment suppresses, and a directive
-in a block comment, which pb reads not, are each an unmapped fact
-naming the file and the line; every other directive is left as it
+`package` or `set` rule, which no comment suppresses wherever it
+stands, and a directive in a block comment, which pb reads not, are
+each an unmapped fact naming the file and the line, one fact per
+directive; every other directive is left as it
 was, buf having honored none — one parted from its id by anything
 but one space among them, as buf reads the form. A module whose lint section honors none keeps
 its comments as they are, a mapped fact saying so
