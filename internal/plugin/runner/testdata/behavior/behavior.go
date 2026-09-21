@@ -48,17 +48,19 @@ var (
 	Writes = []string{"/dev/probe", "/proc/interrupts", "/proc/probe", "/probe"}
 )
 
-// Escape makes a path safe inside the probe's comma- and
-// colon-separated report: the two separators become octal escapes,
-// as mountinfo already spells space, tab, newline and backslash.
+// Escape makes a value safe inside the probe's space-, comma- and
+// colon-separated report: the three separators become octal escapes,
+// as mountinfo spells space, tab, newline and backslash.
 func Escape(p string) string {
 	p = strings.ReplaceAll(p, `\`, `\134`)
 	p = strings.ReplaceAll(p, ":", `\072`)
-	return strings.ReplaceAll(p, ",", `\054`)
+	p = strings.ReplaceAll(p, ",", `\054`)
+	return strings.ReplaceAll(p, " ", `\040`)
 }
 
-// Unescape reverses Escape.
+// Unescape reverses Escape, mountinfo's own space escape with it.
 func Unescape(p string) string {
+	p = strings.ReplaceAll(p, `\040`, " ")
 	p = strings.ReplaceAll(p, `\054`, ",")
 	p = strings.ReplaceAll(p, `\072`, ":")
 	return strings.ReplaceAll(p, `\134`, `\`)

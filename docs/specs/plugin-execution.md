@@ -175,51 +175,65 @@ re-resolved binary with identical content is a non-event.
 
 **REQ-plugin-sandboxed** (behavior): An `oci` plugin MUST run as a
 single process execed into a freshly created isolated environment: its
-root filesystem is the image's, read-only; it has no network access; its
-only communication channels are standard input, standard output, and
-standard error. The `docker` runner's known deviations, which pb cannot
-switch off through the daemon's API, are these classes and no others:
-the runtime filesystems an OCI runtime mounts over the image's root —
-`/proc`, `/sys` and `/dev`, with everything the runtime places beneath
-them (its masks, `/dev/pts`, `/dev/mqueue`, a writable `/dev/shm`,
-`/dev` itself writable) — the daemon's three name files `/etc/hosts`,
-`/etc/hostname` and `/etc/resolv.conf` bound over the image's, and the
-variables the daemon injects into a container created, as pb creates
-every one, without a terminal: `PATH` where the image states none,
-`HOSTNAME`, `HOME`; and a daemon image — a daemon-local override, or the
+root filesystem is the image's, read-only; it has no network access;
+its only communication channels are standard input, standard output,
+and standard error. The `docker` runner's known deviations, which pb
+cannot switch off through the daemon's API, are these classes and no
+others: the runtime filesystems an OCI runtime mounts over the image's
+root — `/proc`, `/sys` and `/dev`, with everything the runtime places
+beneath them (its masks, `/dev/pts`, `/dev/mqueue`, a writable
+`/dev/shm`, `/dev` itself writable) — the daemon's three name files
+`/etc/hosts`, `/etc/hostname` and `/etc/resolv.conf` bound over the
+image's, and the variables the daemon injects into a container
+created, as pb creates every one, without a terminal: `PATH` where the
+image states none, `HOSTNAME`, `HOME`; the daemon's confinement of the
+process — under a daemon naming AppArmor among its security options,
+its built-in default profile `docker-default` in enforce mode (moby's
+`profiles/apparmor` template), which denies a write to a file directly
+in `/proc`, under its non-numeric subdirectories and under `/proc/sys`
+outside `/proc/sys/kernel/shm*` whatever the runtime's mask admits, a
+mount, a write under `/sys` outside the container's own cgroup, and a
+ptrace of a process outside the profile; under a daemon naming
+SELinux, the container type the policy's container contexts name, with
+the per-container categories the daemon allocates; under a daemon
+naming neither, no confinement, the kernel reporting none or
+`unconfined` — and a daemon image — a daemon-local override, or the
 docker byte path (`REQ-plugin-core-verifies`) — runs under the image's
 whole configuration as the daemon applies it, since running an image
 other than as it declares is not what a daemon image means: a declared
 `VOLUME` is a writable anonymous volume over the read-only root,
 released with the container; `USER` sets the process's uid; a
-`HEALTHCHECK` runs. The native runner presents none of these: its world
-is the image's alone, as `Root` bounds it on the sandbox row that ran
-(sandbox's "Root is world-restriction"): the export at `/` on the
-`Strong` row, with a fixed hostname; on the Linux `OS` row — reached
-where the host refuses unprivileged user namespaces but has Landlock
-and seccomp (sandbox's ladder), and admitted only by an explicit
-lowering (`REQ-plugin-min-tier`) — the export at its host path,
-read-only, with no network, where only a static entrypoint loads: a
-plugin whose entrypoint is a script, dynamically linked, or
-unreadable is refused before it runs, the refusal naming the
-sandbox's reason. That row's exposures are the lowering's to accept:
-a plugin that dereferences image-absolute paths at runtime observes
-the host's resolution, the row presents no hostname so the plugin
-observes the host's, and the IPC the row leaves open to the same
-user — unix sockets by path, and abstract sockets and signals where
-the kernel does not scope them — is reachable by a plugin that goes
-for it, its own doing as the `docker` deviations are; pb hands it
-the standard streams alone on every row. INV-docker-deviations: every mount over the
-image's root is a filesystem the runtime created under one of the three
-roots — mounted whole, or re-bound from one of those very filesystems as
-the runtime's masks are, never a host directory bound there — or a name
-file, every variable beyond the image's is an injected one, `/dev`
-is writable while `/proc` itself and the root are not, the runtime's
-masks standing over the paths it masks — what a mask admits being
-the runtime's and the daemon's confinement's own — and the native
-runner's world is the image's alone, as the running
-plugin sees them; enforced by `TestDockerDeviations` against a live
-daemon and the native runner.
+`HEALTHCHECK` runs. The native runner presents none of these: its
+world is the image's alone, as `Root` bounds it on the sandbox row
+that ran (sandbox's "Root is world-restriction"): the export at `/` on
+the `Strong` row, with a fixed hostname; on the Linux `OS` row —
+reached where the host refuses unprivileged user namespaces but has
+Landlock and seccomp (sandbox's ladder), and admitted only by an
+explicit lowering (`REQ-plugin-min-tier`) — the export at its host
+path, read-only, with no network, where only a static entrypoint
+loads: a plugin whose entrypoint is a script, dynamically linked, or
+unreadable is refused before it runs, the refusal naming the sandbox's
+reason. That row's exposures are the lowering's to accept: a plugin
+that dereferences image-absolute paths at runtime observes the host's
+resolution, the row presents no hostname so the plugin observes the
+host's, and the IPC the row leaves open to the same user — unix
+sockets by path, and abstract sockets and signals where the kernel
+does not scope them — is reachable by a plugin that goes for it, its
+own doing as the `docker` deviations are; pb hands it the standard
+streams alone on every row. INV-docker-deviations: every mount over
+the image's root is a filesystem the runtime created under one of the
+three roots — mounted whole, or re-bound from one of those very
+filesystems as the runtime's masks are, never a host directory bound
+there — or a name file, every variable beyond the image's is an
+injected one, `/dev` is writable while `/proc` itself and the root are
+not, the runtime's masks standing over the paths it masks — what a
+mask admits being the runtime's and the daemon's confinement's own —
+the process's confinement is the daemon's default profile enforced
+where the daemon names AppArmor, the container type where it names
+SELinux and none, the kernel reporting none or `unconfined`, where it
+names neither, and the native runner's world is the image's alone, no
+confinement reported, as the running plugin sees them; enforced by
+`TestDockerDeviations` against a live daemon and the native runner.
 
 **REQ-plugin-resource-bounds** (behavior): Every plugin process — every
 scheme, every tier — MUST run under bounded memory, CPU, process count,
@@ -264,6 +278,12 @@ row runs no `oci` plugin at any floor, that row being unable to deny
 the network or to restrict the world to the export
 (`REQ-plugin-sandboxed`), and the error says so rather than offering
 a lowering that cannot help.
+
+A daemon that records the container unconfined by AppArmor is no
+`Strong` daemon: the tier is derived from the container's record as
+the daemon inspects it, the daemon's own account of the confinement it
+applied and not a verified one, `apparmor unconfined` among what the
+record may lack.
 
 **REQ-plugin-reported-tier** (invariant): The tier enforced against the
 requirement MUST be the tier the sandbox reports for the actual run —

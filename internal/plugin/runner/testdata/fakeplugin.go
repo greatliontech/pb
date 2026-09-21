@@ -76,8 +76,9 @@ func main() {
 		// mounted; the device names the filesystem instance, the root
 		// the mounted subtree of it — "/" for a mount the runtime
 		// created, a subpath for a bind), every environment
-		// variable's name, which of the probe's paths exist, and
-		// which of its writes succeed.
+		// variable's name, which of the probe's paths exist, which
+		// of its writes succeed, and the confinement the kernel
+		// reports for the process ("none" where it reports none).
 		mounts := "unreadable"
 		if mi, err := os.ReadFile("/proc/self/mountinfo"); err == nil {
 			var entries []string
@@ -117,7 +118,14 @@ func main() {
 			err := os.WriteFile(p, []byte("x"), 0o644)
 			writes = append(writes, fmt.Sprintf("%s:%v", p, err == nil))
 		}
-		emit(fmt.Sprintf("mounts=%s env=%s present=%s writes=%s", mounts, strings.Join(names, ","), strings.Join(present, ","), strings.Join(writes, ",")))
+		confinement := "none"
+		for _, p := range []string{"/proc/self/attr/apparmor/current", "/proc/self/attr/current"} {
+			if b, err := os.ReadFile(p); err == nil && strings.TrimSpace(string(b)) != "" {
+				confinement = behavior.Escape(strings.TrimSpace(string(b)))
+				break
+			}
+		}
+		emit(fmt.Sprintf("mounts=%s env=%s present=%s writes=%s confinement=%s", mounts, strings.Join(names, ","), strings.Join(present, ","), strings.Join(writes, ","), confinement))
 		return
 	case behavior.Hog:
 		var chunks [][]byte

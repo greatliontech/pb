@@ -24,11 +24,12 @@ type mount struct{ typ, device, root string }
 // environment names, which of the probe's paths exist, and which of
 // its writes succeeded.
 type worldReport struct {
-	unreadable bool
-	mounts     map[string]mount
-	env        []string
-	present    []string
-	writes     map[string]bool
+	unreadable  bool
+	mounts      map[string]mount
+	env         []string
+	present     []string
+	writes      map[string]bool
+	confinement string // the kernel's report for the process; "none" where none
 }
 
 func world(t *testing.T, r Runner) worldReport {
@@ -66,6 +67,10 @@ func world(t *testing.T, r Runner) worldReport {
 				p, ok, _ := strings.Cut(m, ":")
 				w.writes[p] = ok == "true"
 			}
+		case "confinement":
+			w.confinement = behavior.Unescape(v)
+		default:
+			t.Fatalf("the probe reported %q, no field of the report", part)
 		}
 	}
 	return w
@@ -86,17 +91,21 @@ func underRuntimeRoot(point string) bool {
 
 // The docker runner's world beyond the image is exactly the named
 // deviations: every mount over the image's root is a filesystem the
-// runtime created under one of the three roots — mounted whole, or
-// re-bound from one of those very filesystems (the runtime's masks),
+// runtime created under one of the three roots — mounted whole, or re-
+// bound from one of those very filesystems (the runtime's masks),
 // never a host directory bound there — or one of the daemon's name
-// files; every variable beyond the image's is one the
-// daemon injects; /dev is writable, /proc itself and the root are
-// not, and the runtime's masks stand over the paths it masks, what
-// a mask admits being the runtime's and the daemon's confinement's
-// own. The native runner's world is the
-// image's alone: no /proc to read mounts from, none of the runtime
-// roots or name files, no write anywhere (REQ-plugin-sandboxed's
-// deviation list, INV-docker-deviations).
+// files; every variable beyond the image's is one the daemon injects;
+// /dev is writable, /proc itself and the root are not, and the
+// runtime's masks stand over the paths it masks, what a mask admits
+// being the runtime's and the daemon's confinement's own; the daemon's
+// confinement is its default AppArmor profile in enforce mode where
+// the daemon names AppArmor among its security options, a container
+// type the policy names where it names SELinux, and none (or the
+// kernel's "unconfined") where it names neither — the daemon's claim,
+// which the kernel's report is held to. The native runner's world is
+// the image's alone: no /proc to read mounts from, none of the runtime
+// roots or name files, no write anywhere, no confinement reported
+// (REQ-plugin-sandboxed's deviation list, INV-docker-deviations).
 func TestDockerDeviations(t *testing.T) {
 	docker := requireDaemon(t)
 	w := world(t, docker)
@@ -157,6 +166,23 @@ func TestDockerDeviations(t *testing.T) {
 	if !maps.Equal(writes, want) {
 		t.Errorf("writes under the daemon = %v, want %v (/dev writable, /proc itself and the root not)", writes, want)
 	}
+	// The daemon's confinement, held to what the daemon names among
+	// its security options.
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	out, err := docker.docker(ctx, nil, "info", "--format", "{{json .SecurityOptions}}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := string(out)
+	switch {
+	case strings.Contains(options, `"name=apparmor"`) && w.confinement != "docker-default (enforce)":
+		t.Errorf("the daemon names AppArmor and the plugin runs under %q, not the daemon's default profile enforced", w.confinement)
+	case strings.Contains(options, `"name=selinux"`) && !strings.Contains(w.confinement, ":container_t:") && !strings.Contains(w.confinement, ":svirt_lxc_net_t:"):
+		t.Errorf("the daemon names SELinux and the plugin runs under %q, not a container type the policy names", w.confinement)
+	case !strings.Contains(options, `"name=apparmor"`) && !strings.Contains(options, `"name=selinux"`) && w.confinement != "none" && w.confinement != "unconfined":
+		t.Errorf("the daemon names no confinement and the plugin runs under %q", w.confinement)
+	}
 	if runtime.GOOS != "linux" {
 		return
 	}
@@ -166,12 +192,25 @@ func TestDockerDeviations(t *testing.T) {
 	}
 	requireSandbox(t)
 	w = world(t, native)
-	if !w.unreadable || len(w.present) != 0 || !slices.Equal(w.env, []string{"PB_PLUGIN_TEST_ENV"}) {
-		t.Errorf("the native runner's world beyond the image: mounts readable %v, present %v, env %v", !w.unreadable, w.present, w.env)
+	if !w.unreadable || len(w.present) != 0 || !slices.Equal(w.env, []string{"PB_PLUGIN_TEST_ENV"}) || w.confinement != "none" {
+		t.Errorf("the native runner's world beyond the image: mounts readable %v, present %v, env %v, confinement %q", !w.unreadable, w.present, w.env, w.confinement)
 	}
 	for p, ok := range w.writes {
 		if ok {
 			t.Errorf("the native runner let the plugin write %s", p)
+		}
+	}
+}
+
+// The probe's escape round-trips every value it is applied to — a
+// mount's device, root and point, the kernel's confinement with its
+// space — so no field splits on the report's separators, and a
+// value that already spells an escape comes back as itself.
+func TestProbeEscapeRoundTrip(t *testing.T) {
+	for _, v := range []string{"docker-default (enforce)", "system_u:system_r:container_t:s0:c1,c2", `a\b`, "/proc/interrupts", "", `a\040b`, `\134`} {
+		e := behavior.Escape(v)
+		if strings.ContainsAny(e, " ,:") || behavior.Unescape(e) != v {
+			t.Errorf("Escape(%q) = %q, Unescape = %q", v, e, behavior.Unescape(e))
 		}
 	}
 }

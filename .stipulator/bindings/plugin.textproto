@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunHappyPath"
   role: BINDING_ROLE_TESTS
@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunNoNetwork"
   role: BINDING_ROLE_TESTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Gen"
   role: BINDING_ROLE_IMPLEMENTS
@@ -163,8 +163,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenTierFloor"
   role: BINDING_ROLE_TESTS
@@ -253,8 +253,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunReadonlyRoot"
   role: BINDING_ROLE_TESTS
@@ -273,8 +273,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.SandboxRunner.Run"
   role: BINDING_ROLE_IMPLEMENTS
@@ -323,8 +323,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.SandboxRunner.Run"
   role: BINDING_ROLE_IMPLEMENTS
@@ -333,8 +333,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestSpecOf"
   role: BINDING_ROLE_TESTS
@@ -343,8 +343,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestSpecOf"
   role: BINDING_ROLE_TESTS
@@ -403,8 +403,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.DockerRunner.Run"
   role: BINDING_ROLE_IMPLEMENTS
@@ -413,8 +413,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestDockerProtocol"
   role: BINDING_ROLE_TESTS
@@ -423,8 +423,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestDockerLive"
   role: BINDING_ROLE_TESTS
@@ -483,8 +483,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.DockerRunner.Run"
   role: BINDING_ROLE_IMPLEMENTS
@@ -493,8 +493,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestDockerFloor"
   role: BINDING_ROLE_TESTS
@@ -803,8 +803,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestDockerDeviations"
   role: BINDING_ROLE_TESTS
@@ -813,8 +813,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestStartError"
   role: BINDING_ROLE_TESTS
@@ -823,8 +823,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-min-tier"
-  content_hash: "40ff60ce02a9cd53242265446ec59270882e60d4b6a125e088ab96b6d5c68095"
-  source_hash: "6d05578963e1273e9cbfc8db87ac0337453ca3bbf30e2d72d5c660b9e3a00b97"
+  content_hash: "bd2e01e47ebf2c4641e1792194ec5d0016c508bef42df631686cd040f7d6d4cb"
+  source_hash: "8b209dc1590bc39937213898f31a3f7914630669cdfef64385f078f003f1a698"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.startError"
   role: BINDING_ROLE_IMPLEMENTS
@@ -873,8 +873,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-sandboxed"
-  content_hash: "f035019ac06835f5c40b280a123bb3c2e5ae0bc3743ef8b4d82757ece08cea66"
-  source_hash: "e418559bbae7c70e37de36973b9f3cf98af4ff5daf7482b5f2221c94b5a6d5b5"
+  content_hash: "55acb8163028341a1ea4d33e9dac48bbde8aa9efa02d76bc538b3196f76a56f2"
+  source_hash: "ec324a59d601e75a529bfc02a6787eaaad0b8decc58acc2da45bf35f2facfab3"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunOnOSRow"
   role: BINDING_ROLE_TESTS
