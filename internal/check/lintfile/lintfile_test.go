@@ -32,6 +32,9 @@ modules:
     enable: [HOUSE_ONE]
     severity:
       HOUSE_ONE: warning
+    ignore:
+      - paths: ["old/**"]
+        rules: [HOUSE_ONE]
   fresh: {}
   .: {}
 breaking:
@@ -91,7 +94,7 @@ func TestParse(t *testing.T) {
 		"modules abs dir":    {"modules:\n  /a: {}\n", "modules:"},
 		"modules unclean":    {"modules:\n  ./a: {}\n", "modules:"},
 		"modules trailing":   {"modules:\n  a/: {}\n", "modules:"},
-		"modules unknown":    {"modules:\n  a:\n    ignore: []\n", `modules.a: unknown key "ignore"`},
+		"modules unknown":    {"modules:\n  a:\n    rules: []\n", `modules.a: unknown key "rules"`},
 		"modules severity":   {"modules:\n  a:\n    severity:\n      X: loud\n", "modules.a.severity.X must be error or warning"},
 		"breaking not map":   {"breaking: main\n", "breaking must be a mapping"},
 		"breaking no base":   {"breaking: {}\n", "breaking: missing base"},
@@ -121,17 +124,23 @@ func TestIgnored(t *testing.T) {
 		t.Fatal(err)
 	}
 	cases := []struct {
-		path, rule string
-		want       bool
+		dir, path, rule string
+		want            bool
 	}{
-		{"vendor/a/b.proto", "ENUM_NAMES", true},
-		{"vendor/a/b.proto", "FIELD_NAMES", false},
-		{"legacy/x.proto", "ENUM_NAMES", true},
-		{"legacy/sub/x.proto", "ENUM_NAMES", false},
-		{"gen/x.proto", "ANY", true},
-		{"gen/deep/x.proto", "ANY", true},
-		{"src/x.proto", "ENUM_NAMES", false},
-		{"", "ANY", false},
+		{"", "vendor/a/b.proto", "ENUM_NAMES", true},
+		{"", "vendor/a/b.proto", "FIELD_NAMES", false},
+		{"", "legacy/x.proto", "ENUM_NAMES", true},
+		{"", "legacy/sub/x.proto", "ENUM_NAMES", false},
+		{"", "gen/x.proto", "ANY", true},
+		{"", "gen/deep/x.proto", "ANY", true},
+		{"", "src/x.proto", "ENUM_NAMES", false},
+		{"", "", "ANY", false},
+		// The root's ignores reach every module; a module's own reach
+		// its files alone.
+		{"legacy/api", "gen/x.proto", "ANY", true},
+		{"legacy/api", "old/x.proto", "HOUSE", true},
+		{"legacy/api", "old/x.proto", "ENUM_NAMES", false},
+		{"other", "old/x.proto", "HOUSE", false},
 	}
 	std := Ruleset{Path: "example.com/std", Files: []rules.Located{located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD"), rule("NO_DELETE", "breaking", "STANDARD"))}}
 	house := Ruleset{Path: "example.com/house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
@@ -141,11 +150,15 @@ func TestIgnored(t *testing.T) {
 	}
 	for _, c := range cases {
 		name := c.rule
-		if name != "ANY" {
+		switch name {
+		case "ANY":
+		case "HOUSE":
+			name = "example.com/house:HOUSE_ONE"
+		default:
 			name = "example.com/std:" + name
 		}
-		if got := sel.Ignored(c.path, name); got != c.want {
-			t.Errorf("Ignored(%q, %s) = %v", c.path, name, got)
+		if got := sel.Ignored(c.dir, c.path, name); got != c.want {
+			t.Errorf("Ignored(%q, %q, %s) = %v", c.dir, c.path, name, got)
 		}
 	}
 	// A glob matching everything still ignores no finding without a
@@ -158,8 +171,132 @@ func TestIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if all.Ignored("", "ANY") || !all.Ignored("x.proto", "ANY") {
+	if all.Ignored("", "", "ANY") || !all.Ignored("", "x.proto", "ANY") {
 		t.Error("the path-less finding under **")
+	}
+}
+
+// Encode renders the canonical file (REQ-lint-emission): the keys in
+// order, lists sorted where the order means nothing, entries as given
+// where it does, a scalar quoted only where a plain one would read
+// otherwise; a rendering parses back to the file it came from.
+func TestEncode(t *testing.T) {
+	f, err := Parse([]byte(full))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `rulesets:
+  - example.com/std
+  - example.com/house
+enable:
+  - HOUSE_ONE
+  - STANDARD
+exclude:
+  - FIELD_NAMES
+severity:
+  ENUM_NAMES: warning
+ignore:
+  - paths:
+      - gen/**
+  - paths:
+      - legacy/*.proto
+      - vendor/**
+    rules:
+      - ENUM_NAMES
+breaking:
+  base:
+    ref: main
+modules:
+  .: {}
+  fresh: {}
+  legacy/api:
+    enable:
+      - HOUSE_ONE
+    severity:
+      HOUSE_ONE: warning
+    ignore:
+      - paths:
+          - old/**
+        rules:
+          - HOUSE_ONE
+`
+	if string(out) != want {
+		t.Fatalf("Encode:\n%s", out)
+	}
+	// The rendering is a fixed point: parsed and encoded again, the
+	// same bytes.
+	again, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if twice, err := Encode(again); err != nil || string(twice) != want {
+		t.Fatalf("round trip: %v\n%s", err, twice)
+	}
+	// An empty file; an empty enable, which means what an absent one
+	// does not, at the root and in a module's entry; a pinned base.
+	if out, err := Encode(&File{}); err != nil || string(out) != "{}\n" {
+		t.Fatalf("empty: %q %v", out, err)
+	}
+	f = &File{Enable: []string{}, Exclude: []string{}, Breaking: &Breaking{Base: Base{Form: BasePinned}}, Modules: map[string]ModuleSelection{"a": {Enable: []string{}}}}
+	if out, err := Encode(f); err != nil || string(out) != "enable: []\nbreaking:\n  base:\n    pinned: true\nmodules:\n  a:\n    enable: []\n" {
+		t.Fatalf("empty enable, pinned: %q %v", out, err)
+	}
+	// A breaking base, a module with nothing, and the scalars quoted:
+	// a spelling contractfile.Spell quotes, a glob opening with an
+	// asterisk among them.
+	g, _ := glob.Compile("*.proto")
+	f = &File{
+		Rulesets: []string{"example.com/x"},
+		Enable:   []string{"example.com/x:B", "example.com/x:A", "true"},
+		Ignore:   []Ignore{{Paths: []*glob.Pattern{g}, Rules: []string{"example.com/x:B", "example.com/x:A"}}},
+		Breaking: &Breaking{Base: Base{Form: BaseRef, Value: "origin/main"}},
+		Modules:  map[string]ModuleSelection{"b": {}, "a": {Exclude: []string{"example.com/x:A"}}},
+	}
+	out, err = Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = `rulesets:
+  - example.com/x
+enable:
+  - example.com/x:A
+  - example.com/x:B
+  - "true"
+ignore:
+  - paths:
+      - "*.proto"
+    rules:
+      - example.com/x:A
+      - example.com/x:B
+breaking:
+  base:
+    ref: origin/main
+modules:
+  a:
+    exclude:
+      - example.com/x:A
+  b: {}
+`
+	if string(out) != want {
+		t.Fatalf("Encode:\n%s", out)
+	}
+	// What Parse rejects, Encode refuses: a ruleset that is no path,
+	// an ignore with no paths, one whose rules list is empty.
+	for name, f := range map[string]*File{
+		"ruleset":  {Rulesets: []string{"not a path"}},
+		"no paths": {Ignore: []Ignore{{}}},
+		"no rules": {Ignore: []Ignore{{Paths: []*glob.Pattern{g}, Rules: []string{}}}},
+	} {
+		if _, err := Encode(f); err == nil {
+			t.Fatalf("%s: an invalid file encoded", name)
+		}
+	}
+	if _, err := Encode(nil); err == nil {
+		t.Fatal("a nil file encoded")
 	}
 }
 
@@ -259,7 +396,7 @@ func TestSelect(t *testing.T) {
 	if err != nil || names(sel.Rules) != "example.com/std:ENUM_NAMES:error example.com/dup:FIELD_NAMES:warning" {
 		t.Fatalf("qualified: %s %v", names(sel.Rules), err)
 	}
-	if !sel.Ignored("x/a.proto", "example.com/std:ENUM_NAMES") || !sel.Ignored("x/a.proto", "example.com/std:FIELD_NAMES") || sel.Ignored("x/a.proto", "example.com/dup:FIELD_NAMES") {
+	if !sel.Ignored("", "x/a.proto", "example.com/std:ENUM_NAMES") || !sel.Ignored("", "x/a.proto", "example.com/std:FIELD_NAMES") || sel.Ignored("", "x/a.proto", "example.com/dup:FIELD_NAMES") {
 		t.Fatal("ignore matches by canonical name")
 	}
 	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "example.com/std:FIELD_NAMES ENUM_NAMES" {

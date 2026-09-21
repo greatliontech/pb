@@ -9,8 +9,12 @@
 package lintfile
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
+	"maps"
+	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -58,11 +62,13 @@ type File struct {
 	Modules map[string]ModuleSelection
 }
 
-// ModuleSelection is one module's own selection.
+// ModuleSelection is one module's own selection, its ignores over its
+// own files beside the root's.
 type ModuleSelection struct {
 	Enable   []string
 	Exclude  []string
 	Severity map[string]check.Severity
+	Ignore   []Ignore
 }
 
 // Ignore excludes rules under path globs: every rule where Rules is
@@ -167,7 +173,13 @@ func Parse(data []byte) (*File, error) {
 					return fmt.Errorf("%w: modules: %v", ErrInvalid, err)
 				}
 				var ms ModuleSelection
-				if err := contractfile.Mapping(mkv.Value, "modules."+dir, ErrInvalid, selection("modules."+dir+".", &ms.Enable, &ms.Exclude, &ms.Severity)...); err != nil {
+				fields := selection("modules."+dir+".", &ms.Enable, &ms.Exclude, &ms.Severity)
+				fields = append(fields, contractfile.Field{Name: "ignore", Read: func(n ast.Node) error {
+					igs, err := parseIgnores(n, "modules."+dir+".ignore")
+					ms.Ignore = igs
+					return err
+				}})
+				if err := contractfile.Mapping(mkv.Value, "modules."+dir, ErrInvalid, fields...); err != nil {
 					return err
 				}
 				f.Modules[dir] = ms
@@ -175,7 +187,7 @@ func Parse(data []byte) (*File, error) {
 			return nil
 		}},
 		contractfile.Field{Name: "ignore", Read: func(n ast.Node) error {
-			igs, err := parseIgnores(n)
+			igs, err := parseIgnores(n, "ignore")
 			f.Ignore = igs
 			return err
 		}},
@@ -191,10 +203,10 @@ func Parse(data []byte) (*File, error) {
 	return f, nil
 }
 
-func parseIgnores(n ast.Node) ([]Ignore, error) {
+func parseIgnores(n ast.Node, key string) ([]Ignore, error) {
 	out := []Ignore{}
-	err := contractfile.Sequence(n, "ignore", ErrInvalid, func(i int, en ast.Node) error {
-		where := fmt.Sprintf("ignore[%d]", i)
+	err := contractfile.Sequence(n, key, ErrInvalid, func(i int, en ast.Node) error {
+		where := fmt.Sprintf("%s[%d]", key, i)
 		var ig Ignore
 		list := func(name string, set func([]string) error) contractfile.Field {
 			return contractfile.Field{Name: name, Read: func(n ast.Node) error {
@@ -352,7 +364,8 @@ func Rulesets(f *File, root *workspace.Root, mods []modfiles.Module) ([]Ruleset,
 type Selection struct {
 	Rules   []rules.Rule
 	Modules map[string][]rules.Rule
-	ignore  []Ignore
+	ignore  []Ignore            // the root's, over every module
+	ignores map[string][]Ignore // a module's own, over its files, by directory
 }
 
 // RulesFor is the rules governing a module at its directory: its own
@@ -367,21 +380,25 @@ func (s Selection) RulesFor(dir string) []rules.Rule {
 // Ignored reports whether a finding of the named rule at the path —
 // a module-relative proto path, or the workspace-relative directory
 // a module's own selection locates a set or package finding at,
-// which a glob matches as the directory itself — is excluded by an
-// ignore entry: a path matching one of its globs, and the rule among
-// its rules or the entry naming none (REQ-lint-config-schema's
-// ignore). A finding without a path is never ignored here.
-func (s Selection) Ignored(path, name string) bool {
+// which a glob matches as the directory itself — of the module at
+// dir is excluded by an ignore entry, the root's or that module's
+// own: a path matching one of its globs, and the rule among its
+// rules or the entry naming none (REQ-lint-config-schema's ignore,
+// REQ-lint-selection). A finding without a path is never ignored
+// here.
+func (s Selection) Ignored(dir, path, name string) bool {
 	if path == "" {
 		return false
 	}
-	for _, ig := range s.ignore {
-		if ig.Rules != nil && !contains(ig.Rules, name) {
-			continue
-		}
-		for _, g := range ig.Paths {
-			if g.Match(path) {
-				return true
+	for _, list := range [][]Ignore{s.ignore, s.ignores[dir]} {
+		for _, ig := range list {
+			if ig.Rules != nil && !contains(ig.Rules, name) {
+				continue
+			}
+			for _, g := range ig.Paths {
+				if g.Match(path) {
+					return true
+				}
 			}
 		}
 	}
@@ -449,22 +466,44 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 			sel.Modules = map[string][]rules.Rule{}
 		}
 		sel.Modules[d] = rs
+		igs, err := n.ignores(ms.Ignore, "modules."+d+".ignore")
+		if err != nil {
+			return Selection{}, err
+		}
+		if len(igs) > 0 {
+			if sel.ignores == nil {
+				sel.ignores = map[string][]Ignore{}
+			}
+			sel.ignores[d] = igs
+		}
 	}
-	for _, ig := range f.Ignore {
+	igs, err := n.ignores(f.Ignore, "ignore")
+	if err != nil {
+		return Selection{}, err
+	}
+	sel.ignore = igs
+	return sel, nil
+}
+
+// ignores is a list of ignore entries with each rule spelling
+// resolved to the one rule name it means.
+func (n names) ignores(list []Ignore, where string) ([]Ignore, error) {
+	var out []Ignore
+	for _, ig := range list {
 		canonical := Ignore{Paths: ig.Paths}
 		if ig.Rules != nil {
 			canonical.Rules = []string{}
 			for _, spelling := range ig.Rules {
-				names, err := n.resolve("ignore", spelling, true)
+				names, err := n.resolve(where, spelling, true)
 				if err != nil {
-					return Selection{}, err
+					return nil, err
 				}
 				canonical.Rules = append(canonical.Rules, names[0])
 			}
 		}
-		sel.ignore = append(sel.ignore, canonical)
+		out = append(out, canonical)
 	}
-	return sel, nil
+	return out, nil
 }
 
 // pick is one selection over the imported rules: every rule when
@@ -594,4 +633,194 @@ func (b Base) String() string {
 		return string(b.Form)
 	}
 	return string(b.Form) + " " + b.Value
+}
+
+// Encode renders the file canonically (REQ-lint-emission): the keys in
+// their order, each absent where it holds nothing — save enable,
+// whose empty list means what its absence does not and is spelled
+// `[]`; an ignore's empty rules list, which the schema forbids, is
+// spelled the same so Parse refuses it by name — enable and exclude
+// sorted, severity by key, ignore entries by their sorted paths then
+// their sorted rules, modules by directory; each scalar spelled as
+// contractfile.Spell has it. The rendering is
+// validated first through Parse — Encode never emits what Parse
+// rejects, nor what Parse reads as a different file.
+func Encode(f *File) ([]byte, error) {
+	if f == nil {
+		return nil, fmt.Errorf("%w: no file", ErrInvalid)
+	}
+	var b strings.Builder
+	list := func(indent, key string, values []string, sorted bool) {
+		if values == nil {
+			return
+		}
+		if len(values) == 0 {
+			b.WriteString(indent + key + ": []\n")
+			return
+		}
+		vs := slices.Clone(values)
+		if sorted {
+			slices.Sort(vs)
+		}
+		b.WriteString(indent + key + ":\n")
+		for _, v := range vs {
+			b.WriteString(indent + "  - " + contractfile.Spell(v) + "\n")
+		}
+	}
+	severity := func(indent string, sv map[string]check.Severity) {
+		if len(sv) == 0 {
+			return
+		}
+		b.WriteString(indent + "severity:\n")
+		for _, k := range slices.Sorted(maps.Keys(sv)) {
+			b.WriteString(indent + "  " + contractfile.Spell(k) + ": " + contractfile.Spell(string(sv[k])) + "\n")
+		}
+	}
+	ignores := func(indent string, igs []Ignore) {
+		if len(igs) == 0 {
+			return
+		}
+		b.WriteString(indent + "ignore:\n")
+		for _, ig := range ignoreForms(igs) {
+			b.WriteString(indent + "  - paths:\n")
+			for _, p := range ig.paths {
+				b.WriteString(indent + "      - " + contractfile.Spell(p) + "\n")
+			}
+			list(indent+"    ", "rules", ig.rules, false)
+		}
+	}
+	list("", "rulesets", orNil(f.Rulesets), false)
+	list("", "enable", f.Enable, true)
+	list("", "exclude", orNil(f.Exclude), true)
+	severity("", f.Severity)
+	ignores("", f.Ignore)
+	if f.Breaking != nil {
+		b.WriteString("breaking:\n  base:\n    ")
+		if f.Breaking.Base.Form == BasePinned {
+			b.WriteString("pinned: true\n")
+		} else {
+			b.WriteString(string(f.Breaking.Base.Form) + ": " + contractfile.Spell(f.Breaking.Base.Value) + "\n")
+		}
+	}
+	if len(f.Modules) > 0 {
+		b.WriteString("modules:\n")
+		for _, d := range slices.Sorted(maps.Keys(f.Modules)) {
+			ms := f.Modules[d]
+			b.WriteString("  " + contractfile.Spell(d) + ":")
+			if ms.Enable == nil && len(ms.Exclude) == 0 && len(ms.Severity) == 0 && len(ms.Ignore) == 0 {
+				b.WriteString(" {}\n")
+				continue
+			}
+			b.WriteString("\n")
+			list("    ", "enable", ms.Enable, true)
+			list("    ", "exclude", orNil(ms.Exclude), true)
+			severity("    ", ms.Severity)
+			ignores("    ", ms.Ignore)
+		}
+	}
+	out := []byte(b.String())
+	if len(out) == 0 {
+		out = []byte("{}\n")
+	}
+	again, err := Parse(out)
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(formOf(f), formOf(again)) {
+		return nil, fmt.Errorf("%w: the rendering reads back as a different file", ErrInvalid)
+	}
+	return out, nil
+}
+
+// orNil is the list, or nil for an empty one: a list whose absence
+// means what its emptiness does.
+func orNil(l []string) []string {
+	if len(l) == 0 {
+		return nil
+	}
+	return l
+}
+
+// ignoreForm is an ignore entry as the rendering orders it: the
+// paths' spellings sorted, the rules sorted, nil rules kept nil.
+type ignoreForm struct {
+	paths, rules []string
+}
+
+// ignoreForms is the entries in canonical order: each by its sorted
+// paths, then its sorted rules.
+func ignoreForms(igs []Ignore) []ignoreForm {
+	out := make([]ignoreForm, len(igs))
+	for i, ig := range igs {
+		for _, g := range ig.Paths {
+			out[i].paths = append(out[i].paths, g.String())
+		}
+		slices.Sort(out[i].paths)
+		if ig.Rules != nil {
+			// Cloned, not collected: an empty list stays one.
+			out[i].rules = slices.Clone(ig.Rules)
+			slices.Sort(out[i].rules)
+		}
+	}
+	slices.SortFunc(out, func(a, b ignoreForm) int {
+		return cmp.Or(slices.Compare(a.paths, b.paths), slices.Compare(a.rules, b.rules))
+	})
+	return out
+}
+
+// form is what a file means, free of the spellings that mean nothing:
+// list order where order means nothing, an empty list where absence
+// means the same. Two files of one form render identically.
+type form struct {
+	Rulesets, Enable, Exclude []string
+	Severity                  map[string]check.Severity
+	Ignore                    []ignoreForm
+	Breaking                  *Breaking
+	Modules                   map[string]form
+}
+
+// formOf is the file's form, over every field of File and
+// ModuleSelection: the unkeyed literals below stop compiling when a
+// field is added, so none is left out of the form unnoticed.
+var (
+	_ = File{nil, nil, nil, nil, nil, nil, nil}
+	_ = ModuleSelection{nil, nil, nil, nil}
+)
+
+func formOf(f *File) form {
+	sorted := func(l []string) []string {
+		if len(l) == 0 {
+			return nil
+		}
+		return slices.Sorted(slices.Values(l))
+	}
+	severity := func(sv map[string]check.Severity) map[string]check.Severity {
+		if len(sv) == 0 {
+			return nil
+		}
+		return sv
+	}
+	ignores := func(igs []Ignore) []ignoreForm {
+		if len(igs) == 0 {
+			return nil
+		}
+		return ignoreForms(igs)
+	}
+	enable := func(l []string) []string {
+		if l == nil {
+			return nil
+		}
+		// Cloned, not collected: an empty enable stays one.
+		l = slices.Clone(l)
+		slices.Sort(l)
+		return l
+	}
+	out := form{Rulesets: orNil(f.Rulesets), Enable: enable(f.Enable), Exclude: sorted(f.Exclude), Severity: severity(f.Severity), Ignore: ignores(f.Ignore), Breaking: f.Breaking}
+	if len(f.Modules) > 0 {
+		out.Modules = map[string]form{}
+		for d, ms := range f.Modules {
+			out.Modules[d] = form{Enable: enable(ms.Enable), Exclude: sorted(ms.Exclude), Severity: severity(ms.Severity), Ignore: ignores(ms.Ignore)}
+		}
+	}
+	return out
 }

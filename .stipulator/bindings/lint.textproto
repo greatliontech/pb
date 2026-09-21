@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-config-schema"
-  content_hash: "bfc7fbd2e5988b9df42af804a3a543928d412a628b4d65f40d63ac3e202bf44a"
-  source_hash: "b44dd90995b5c7d6187bf14471989cf0a31937c2455c21785593c8ac110be5aa"
+  content_hash: "1967789be4f407ca9b6391b25dae6fbdd76b51d110305e721a8bc03b056d4ab8"
+  source_hash: "2004a581759435c8019167bba09919140bb89450fc113b2a9c6bbe5a39bf4516"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -53,18 +53,18 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-config-schema"
-  content_hash: "bfc7fbd2e5988b9df42af804a3a543928d412a628b4d65f40d63ac3e202bf44a"
-  source_hash: "b44dd90995b5c7d6187bf14471989cf0a31937c2455c21785593c8ac110be5aa"
+  content_hash: "1967789be4f407ca9b6391b25dae6fbdd76b51d110305e721a8bc03b056d4ab8"
+  source_hash: "2004a581759435c8019167bba09919140bb89450fc113b2a9c6bbe5a39bf4516"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Selection.Ignored"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c0cc3f4d3b6c1dc18071bb4c8245bb00a37840321460b99270da2bb5c3908e70"
+  shape_hash: "31948549b5323af8791166bb86c956cba3c0a254ceccfac044c65811b826aba8"
 }
 
 bindings {
   requirement_id: "REQ-lint-config-schema"
-  content_hash: "bfc7fbd2e5988b9df42af804a3a543928d412a628b4d65f40d63ac3e202bf44a"
-  source_hash: "b44dd90995b5c7d6187bf14471989cf0a31937c2455c21785593c8ac110be5aa"
+  content_hash: "1967789be4f407ca9b6391b25dae6fbdd76b51d110305e721a8bc03b056d4ab8"
+  source_hash: "2004a581759435c8019167bba09919140bb89450fc113b2a9c6bbe5a39bf4516"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestParse"
   role: BINDING_ROLE_TESTS
@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-config-schema"
-  content_hash: "bfc7fbd2e5988b9df42af804a3a543928d412a628b4d65f40d63ac3e202bf44a"
-  source_hash: "b44dd90995b5c7d6187bf14471989cf0a31937c2455c21785593c8ac110be5aa"
+  content_hash: "1967789be4f407ca9b6391b25dae6fbdd76b51d110305e721a8bc03b056d4ab8"
+  source_hash: "2004a581759435c8019167bba09919140bb89450fc113b2a9c6bbe5a39bf4516"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestIgnored"
   role: BINDING_ROLE_TESTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-selection"
-  content_hash: "9517d3f082364d400a2fc08c0a5163cdba2a06519e0dc84439097ff577557ba6"
-  source_hash: "78d4ca1002f23c7daa40ac005116b3937b065e937846b33beb316b7efab94371"
+  content_hash: "76dbb9111349e672e83e45b7de9521e4f5b5c57449c49af51700cf456704b041"
+  source_hash: "fc814c789f21a7b448dfa72b9235d62aa874e873000794094a3c25961b9ee33f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Select"
   role: BINDING_ROLE_IMPLEMENTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-selection"
-  content_hash: "9517d3f082364d400a2fc08c0a5163cdba2a06519e0dc84439097ff577557ba6"
-  source_hash: "78d4ca1002f23c7daa40ac005116b3937b065e937846b33beb316b7efab94371"
+  content_hash: "76dbb9111349e672e83e45b7de9521e4f5b5c57449c49af51700cf456704b041"
+  source_hash: "fc814c789f21a7b448dfa72b9235d62aa874e873000794094a3c25961b9ee33f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestSelect"
   role: BINDING_ROLE_TESTS
@@ -143,8 +143,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-config-schema"
-  content_hash: "bfc7fbd2e5988b9df42af804a3a543928d412a628b4d65f40d63ac3e202bf44a"
-  source_hash: "b44dd90995b5c7d6187bf14471989cf0a31937c2455c21785593c8ac110be5aa"
+  content_hash: "1967789be4f407ca9b6391b25dae6fbdd76b51d110305e721a8bc03b056d4ab8"
+  source_hash: "2004a581759435c8019167bba09919140bb89450fc113b2a9c6bbe5a39bf4516"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestLint"
   role: BINDING_ROLE_TESTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-selection"
-  content_hash: "9517d3f082364d400a2fc08c0a5163cdba2a06519e0dc84439097ff577557ba6"
-  source_hash: "78d4ca1002f23c7daa40ac005116b3937b065e937846b33beb316b7efab94371"
+  content_hash: "76dbb9111349e672e83e45b7de9521e4f5b5c57449c49af51700cf456704b041"
+  source_hash: "fc814c789f21a7b448dfa72b9235d62aa874e873000794094a3c25961b9ee33f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.names.resolve"
   role: BINDING_ROLE_IMPLEMENTS
@@ -173,8 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-selection"
-  content_hash: "9517d3f082364d400a2fc08c0a5163cdba2a06519e0dc84439097ff577557ba6"
-  source_hash: "78d4ca1002f23c7daa40ac005116b3937b065e937846b33beb316b7efab94371"
+  content_hash: "76dbb9111349e672e83e45b7de9521e4f5b5c57449c49af51700cf456704b041"
+  source_hash: "fc814c789f21a7b448dfa72b9235d62aa874e873000794094a3c25961b9ee33f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Selection.RulesFor"
   role: BINDING_ROLE_IMPLEMENTS
@@ -183,10 +183,30 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-selection"
-  content_hash: "9517d3f082364d400a2fc08c0a5163cdba2a06519e0dc84439097ff577557ba6"
-  source_hash: "78d4ca1002f23c7daa40ac005116b3937b065e937846b33beb316b7efab94371"
+  content_hash: "76dbb9111349e672e83e45b7de9521e4f5b5c57449c49af51700cf456704b041"
+  source_hash: "fc814c789f21a7b448dfa72b9235d62aa874e873000794094a3c25961b9ee33f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.names.pick"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "e5369b19e7609e1bb6856d00fdb81a0cd70871d4a3be3c57dd6af8b7a646e3f0"
+}
+
+bindings {
+  requirement_id: "REQ-lint-emission"
+  content_hash: "4b9b3d0143a5e096a10bcac9d759b2574ad9934e7e00ef86a160f6438b9cd21b"
+  source_hash: "b818cfbc7f7afb710eb9ab4000e9da6641e30476e3b8f4e0e2083653f8f27499"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lintfile.Encode"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2deaad8a50cba03c2637f780c6c8a240cc54b83f537ded2eb212c560a390f9bb"
+}
+
+bindings {
+  requirement_id: "REQ-lint-emission"
+  content_hash: "4b9b3d0143a5e096a10bcac9d759b2574ad9934e7e00ef86a160f6438b9cd21b"
+  source_hash: "b818cfbc7f7afb710eb9ab4000e9da6641e30476e3b8f4e0e2083653f8f27499"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestEncode"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "be6d391c613136bc87590ded4a03268cbea30a12109fec44f29c37a7222de04d"
 }

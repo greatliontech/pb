@@ -26,7 +26,12 @@ root of a declared module.
 **REQ-work-emission** (behavior): Tooling that writes a workspace file
 MUST emit it canonically: UTF-8, LF line endings, two-space
 indentation, `use` first and alone, its entries cleaned and sorted in
-raw-byte order, so two writers of one workspace produce one file.
+raw-byte order, each spelled as `check-rules.md` REQ-lint-emission
+spells a scalar — plain where the file's reader reads the plain
+spelling back as exactly that text and no YAML schema of any version
+reads it as other than text, double-quoted otherwise — so two writers
+of one workspace produce one file and a file written once reads the
+same under every reader.
 
 **REQ-work-local-resolution** (invariant): A requirement on a workspace
 module's path MUST resolve to its local working copy, at whatever state

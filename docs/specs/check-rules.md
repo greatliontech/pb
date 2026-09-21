@@ -327,19 +327,19 @@ the form and the cause; nothing degrades to an empty base.
 optional: `rulesets`, a list of module paths to import rules from;
 `enable` and `exclude`, lists of rule names, ids or tags; `severity`,
 a map from rule name or id to override; `ignore`, a list of `{paths,
-rules}` entries excluding rules under path globs — `paths` one or more globs over
-module-relative proto paths (the component semantics `provenance.md`
-REQ-prov-trust-schema defines), `rules` optional and non-empty when
-present, absent meaning every rule, a finding without a path never
-ignored and one located at a module's directory matched by a glob
-matching the directory itself; and `breaking`, a mapping whose
+rules}` entries excluding rules under path globs — `paths` one or more
+globs over module-relative proto paths (the component semantics
+`provenance.md` REQ-prov-trust-schema defines), `rules` optional and
+non-empty when present, absent meaning every rule, a finding without a
+path never ignored and one located at a module's directory matched by
+a glob matching the directory itself; and `breaking`, a mapping whose
 `base` is a mapping with exactly one of `ref` (a git reference),
 `version` (a tagged version) and `pinned` (`true`; any other value is
 a schema violation); and `modules`, a map from a workspace module's
 directory — the cleaned relative directory the workspace file's `use`
 entry names, `.` the root itself — to a mapping of `enable`,
-`exclude` and `severity` in the forms above, each optional. No other
-keys exist at any level.
+`exclude`, `severity` and `ignore` in the forms above, each optional.
+No other keys exist at any level.
 
 **REQ-lint-selection** (behavior): The enabled rules MUST be every
 rule of every imported ruleset when `enable` is absent, or the rules
@@ -349,19 +349,41 @@ tag where exactly one imported ruleset declares it — less those
 `severity` and `ignore` naming rules alone; a `modules` entry is a
 selection of its own for the files of the module at its directory —
 its `enable`, `exclude` and `severity` read as the root's are, an
-absent `enable` every imported rule — replacing the root's, which
-governs every other module's files, so a rule of the `set` or
-`package` target enabled at the root sees the files of the modules
-the root governs and one enabled for a module that module's files
-alone, and a directory naming no workspace module fails the check
-run naming it; a spelling that names no
-imported rule or tag, a bare spelling several imported rulesets
-declare, a ruleset declaring one id in two of its files or as both an
-id and a tag — a ruleset's ids and tags one namespace, so a rule name
-is one rule and a qualified tag one tag — and two `severity`
+absent `enable` every imported rule, and its `ignore` excluding
+findings of that module's files beside the root's `ignore`, which
+excludes across every module — replacing the root's, which governs
+every other module's files, so a rule of the `set` or `package` target
+enabled at the root sees the files of the modules the root governs and
+one enabled for a module that module's files alone, and a directory
+naming no workspace module fails the check run naming it; a spelling
+that names no imported rule or tag, a bare spelling several imported
+rulesets declare, a ruleset declaring one id in two of its files or as
+both an id and a tag — a ruleset's ids and tags one namespace, so a
+rule name is one rule and a qualified tag one tag — and two `severity`
 spellings of one rule, fail the check run naming them and, for an
-ambiguous spelling, the candidates, since names drive every
-selection, override and suppression.
+ambiguous spelling, the candidates, since names drive every selection,
+override and suppression.
+
+**REQ-lint-emission** (behavior): Tooling that writes a lint file MUST
+emit it canonically: UTF-8, LF line endings, two-space indentation,
+the keys in the order `rulesets`, `enable`, `exclude`, `severity`,
+`ignore`, `breaking`, `modules`, each absent where it holds nothing —
+save `enable`, whose empty list means what its absence does not and
+is spelled `[]`; `rulesets` in the order given, `enable` and `exclude`
+sorted in raw-byte order, `severity` by key in raw-byte order,
+`ignore` entries by their `paths` sorted in raw-byte order, then by
+their `rules` so sorted, `pinned` as `true`, `modules` by directory
+in raw-byte order with each entry in the same form and `{}` where it
+holds nothing, a file holding nothing `{}`; a scalar plain where the
+lint file's reader reads its plain spelling back as exactly that text
+and no YAML schema of any version reads it as other than text — as a
+number, a boolean or null, including a spelling opening with a digit,
+a sign before a digit, or a dot before a digit or `inf` or `nan`, one
+of the words `y`, `yes`, `n`, `no`, `on`, `off`, `true`, `false`,
+`null` in any case, or a tilde; or as a merge key `<<` or a value key
+`=` — and double-quoted otherwise, so a file written once reads the
+same under every reader; and never a rendering the lint file's reader
+rejects or reads as a different file.
 
 **REQ-lint-suppression** (behavior): A finding MUST be suppressed by a
 line comment whose text opens with the word `pb:ignore` followed, as

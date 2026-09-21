@@ -112,6 +112,11 @@ func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population f
 					return nil, err
 				}
 				loc := desc.ParentFile().SourceLocations().ByDescriptor(desc)
+				// 1-based, so a located finding's line is never zero:
+				// a zero line marks a finding without a position — a
+				// set rule's, or a package rule's — which the check
+				// run relies on to relocate one under a module's own
+				// selection (REQ-rules-finding-location).
 				f.Line = loc.StartLine + 1
 				f.Column = t.column(loc.StartLine, loc.StartColumn)
 				if !base {

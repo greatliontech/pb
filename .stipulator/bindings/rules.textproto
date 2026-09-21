@@ -376,7 +376,7 @@ bindings {
   content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
   source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/dep.checkGroup.located"
+  symbol: "github.com/greatliontech/pb/internal/dep.checkGroup.admit"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fc38e07a4a49dc6e87eeee1a19db78878e21a2c59f0037b3b1dfc04927bb9089"
+  shape_hash: "72a8219273cd3bfb3a9518f683f151164e55b12d377a6ff5a654f4a51c19cb99"
 }

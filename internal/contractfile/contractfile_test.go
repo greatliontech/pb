@@ -281,3 +281,21 @@ func TestWalkUnknownPolicy(t *testing.T) {
 		t.Fatalf("mapping: %v", err)
 	}
 }
+
+// Spell quotes what a YAML schema of any version reads as null, a
+// boolean or a number — the reader of today or another — a merge or
+// value key, an alias-like glob, a mapping, a comment, a control
+// character, a space at an end; and leaves plain what every reader
+// reads back as itself, an inner space or a hash included.
+func TestSpell(t *testing.T) {
+	for _, c := range []struct{ in, out string }{
+		{"Null", `"Null"`}, {"~", `"~"`}, {"True", `"True"`}, {"FALSE", `"FALSE"`}, {"12", `"12"`}, {"0", `"0"`}, {"1.0", `"1.0"`}, {"0x1f", `"0x1f"`}, {"-0x1f", `"-0x1f"`}, {"0b1", `"0b1"`}, {"0o7", `"0o7"`}, {".inf", `".inf"`}, {"+.Inf", `"+.Inf"`}, {".NaN", `".NaN"`}, {"+1", `"+1"`}, {"-.5", `"-.5"`},
+		{"yes", `"yes"`}, {"YES", `"YES"`}, {"y", `"y"`}, {"On", `"On"`}, {"Off", `"Off"`}, {"NO", `"NO"`}, {"1e3", `"1e3"`}, {"6.8523015e+5", `"6.8523015e+5"`}, {"685_230.15", `"685_230.15"`}, {"2024-01-01", `"2024-01-01"`}, {"2024-01-01T00:00:00Z", `"2024-01-01T00:00:00Z"`}, {"1:20", `"1:20"`}, {"190:20:30", `"190:20:30"`}, {"1_000", `"1_000"`}, {"<<", `"<<"`}, {"=", `"="`},
+		{"*.proto", `"*.proto"`}, {"a:", `"a:"`}, {"a #b", `"a #b"`}, {"a\tb", `"a\tb"`}, {"a\x00b", `"a\x00b"`}, {"a\x7fb", `"a\x7fb"`}, {" a", `" a"`}, {"a ", `"a "`}, {"", `""`}, {"[a]", `"[a]"`}, {"{a}", `"{a}"`}, {"!a", `"!a"`}, {"&a", `"&a"`}, {"|", `"|"`}, {"-", `"-"`}, {"'a", `"'a"`},
+		{"vendor/**", "vendor/**"}, {"a b", "a b"}, {"a#b", "a#b"}, {"a:b", "a:b"}, {`a"b`, `a"b`}, {"-a", "-a"}, {".", "."}, {"yesterday", "yesterday"}, {"nan", "nan"}, {"inf", "inf"}, {"v1.0.0", "v1.0.0"}, {"e3", "e3"}, {"<<a", "<<a"}, {"a=b", "a=b"}, {"no_sir", "no_sir"}, {"example.com/x:A", "example.com/x:A"},
+	} {
+		if got := Spell(c.in); got != c.out {
+			t.Errorf("Spell(%q) = %s, want %s", c.in, got, c.out)
+		}
+	}
+}

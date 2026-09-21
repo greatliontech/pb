@@ -2,7 +2,8 @@
 // contract-file surface (pb.yaml, pb.lock, pb.trust.yaml, pb.gen.yaml,
 // pb.lint.yaml, the rule files): the shared document prologue every
 // contract-file parser opens with, the node-admissibility rule it
-// enforces, the scalar readers, and the mapping walk.
+// enforces, the scalar readers, the mapping walk, and the emitters'
+// spelling of a scalar.
 //
 // Admissibility rejects merge keys, anchors, aliases, and tags
 // anywhere in the document: their resolution is parser-defined — YAML
@@ -26,6 +27,13 @@
 // configuration keep their own readers — a strict typed decode, and
 // string scalars alone by their spec — with the same guarantees.
 //
+// Spell is the emitters' side of the same promise: a scalar spelled
+// plain where the reader reads it back as that text in a list item
+// and no YAML schema would type it, double-quoted otherwise. That is
+// what Spell alone certifies; an emitter placing a value in a key
+// position owes the rest itself, by parsing its rendering back and
+// holding it to the file given.
+//
 // Walk is the same walk with the one other policy for an unknown key:
 // handed to the caller with its value, unread, rather than refused.
 // It exists for a foreign file — another tool's configuration pb reads
@@ -37,6 +45,8 @@ package contractfile
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -274,4 +284,47 @@ func prefix(where, sep string) string {
 		return ""
 	}
 	return where + sep
+}
+
+// yamlLike matches a spelling some YAML schema reads as a number, a
+// boolean or null, or as a merge or value key, whatever the file's
+// reader makes of it today: opening with a digit, a sign before a
+// digit, or a dot before a digit or inf or nan; the boolean and null
+// words of YAML 1.1 and 1.2 in any case; the tilde; `<<`; `=`.
+// Quoted, such a value reads as its text under every reader, so a
+// file written once means one thing under every version of the
+// reader and under every consumer.
+var yamlLike = regexp.MustCompile(`(?i)^([-+]?(\.?[0-9]|\.(inf|nan)$)|(y|yes|n|no|on|off|true|false|null|~|<<|=)$)`)
+
+// Spell spells a value so a contract file reads it back as that text:
+// plain where the reader, asked over the value as a list item, reads
+// the plain spelling back as exactly that string and no YAML schema
+// of any version reads it as anything else (yamlLike), and as a
+// double-quoted YAML scalar otherwise — a control character, a space
+// at either end, an alias-like glob opening with an asterisk, a flow
+// indicator, a comment, a mapping. The list-item probe is one
+// position of several a value occupies; an emitter's re-parse of its
+// rendering holds the others. Go's escapes are YAML's for the
+// characters that need them.
+func Spell(v string) string {
+	for _, r := range v {
+		if r < 0x20 || r == 0x7f {
+			return strconv.Quote(v)
+		}
+	}
+	if v == "" || v[0] == ' ' || v[len(v)-1] == ' ' || yamlLike.MatchString(v) {
+		return strconv.Quote(v)
+	}
+	doc, err := parser.ParseBytes([]byte("- "+v+"\n"), 0)
+	if err != nil || len(doc.Docs) != 1 {
+		return strconv.Quote(v)
+	}
+	seq, ok := doc.Docs[0].Body.(*ast.SequenceNode)
+	if !ok || len(seq.Values) != 1 {
+		return strconv.Quote(v)
+	}
+	if s, ok := seq.Values[0].(*ast.StringNode); ok && s.Value == v {
+		return v
+	}
+	return strconv.Quote(v)
 }

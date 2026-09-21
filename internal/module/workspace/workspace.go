@@ -96,8 +96,10 @@ func Parse(data []byte) (*File, error) {
 
 // Encode renders the file canonically (REQ-work-emission): UTF-8, LF,
 // two-space indent, the use entries cleaned and sorted in raw-byte
-// order. The file is validated first — Encode never emits what Parse
-// rejects.
+// order, each spelled as contractfile.Spell has it — a directory
+// named like a number quoted, so the file reads it back as the
+// directory under every reader. The file is validated first — Encode
+// never emits what Parse rejects.
 func Encode(f *File) ([]byte, error) {
 	if f == nil || len(f.Use) == 0 {
 		return nil, fmt.Errorf("%w: missing use key", ErrInvalid)
@@ -111,7 +113,7 @@ func Encode(f *File) ([]byte, error) {
 	b.WriteString("use:\n")
 	for _, d := range dirs {
 		b.WriteString("  - ")
-		b.WriteString(d)
+		b.WriteString(contractfile.Spell(d))
 		b.WriteByte('\n')
 	}
 	return []byte(b.String()), nil

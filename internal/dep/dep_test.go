@@ -1330,6 +1330,7 @@ func newCheck(t *testing.T, lint string) *depFixture {
 		"house/house.rules.yaml": "celEnv: 1\nrules:\n" +
 			"  - id: FIELD_NAMES\n    kind: lint\n    target: field\n    severity: error\n    tags: [naming]\n    cel: case(field.name, 'snake') == field.name\n    message: field names are snake_case\n" +
 			"  - id: MESSAGE_COUNT\n    kind: lint\n    target: set\n    severity: warning\n    cel: messages(files).size() < 3\n    message: too many messages\n" +
+			"  - id: PACKAGE_SIZE\n    kind: lint\n    target: package\n    severity: warning\n    cel: messages(files).size() < 3\n    message: too many messages in a package\n" +
 			"  - id: FIELD_GONE\n    kind: breaking\n    target: field\n    severity: error\n    cel: new != null\n    message: field removed\n" +
 			"  - id: FIELD_TYPE\n    kind: breaking\n    target: field\n    severity: warning\n    cel: old == null || new == null || old.type == new.type\n    message: type changed\n",
 	})
@@ -1375,6 +1376,13 @@ func TestLint(t *testing.T) {
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("per module: %v %q", err, out.String())
 	}
+	// A module's own ignore excludes its files' findings alone: a's
+	// entry ignores a.proto, and b's finding under the root stands.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    ignore:\n      - paths: [a.proto, \"vendor/**\"]\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("a module's own ignore: %v %q", err, out.String())
+	}
 	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  nowhere:\n    enable: []\n")
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), `modules names "nowhere", which is no workspace module`) {
 		t.Fatalf("an unknown module: %v", err)
@@ -1397,11 +1405,21 @@ func TestLint(t *testing.T) {
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "pb lint: zero lint rules enabled\n" {
 		t.Fatalf("zero under every selection: %v %q %q", err, out.String(), diag.String())
 	}
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT]\n")
+	// A package finding under a module's own selection is located
+	// there too, in place of the package's first file.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT, PACKAGE_SIZE]\n")
 	fx.write(t, "a/more.proto", "syntax = \"proto3\";\npackage a;\nmessage M2 {}\nmessage M3 {}\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a: warning example.com/house:MESSAGE_COUNT: too many messages\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
-		t.Fatalf("a module's set finding located at its directory: %v %q", err, out.String())
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a: warning example.com/house:MESSAGE_COUNT: too many messages\na: warning example.com/house:PACKAGE_SIZE: too many messages in a package\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("a module's set and package findings located at its directory: %v %q", err, out.String())
+	}
+	// Under the root, the package finding sits at the package's first
+	// file, and the root's ignore over that file drops it.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [PACKAGE_SIZE]\nignore:\n  - paths: [a.proto]\n")
+	fx.write(t, "a/more.proto", "syntax = \"proto3\";\npackage a;\nmessage M2 {}\nmessage M3 {}\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" {
+		t.Fatalf("a package finding at its first file, ignored: %v %q", err, out.String())
 	}
 	// Zero rules enabled.
 	fx = newCheck(t, "")
@@ -1508,6 +1526,22 @@ func TestBreaking(t *testing.T) {
 	err = Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
 	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n" {
 		t.Fatalf("base lacking what b uses: %v %q", err, out.String())
+	}
+	// A module's own ignore reaches its base's files: a's base held a
+	// file since removed, whose finding a's entry drops by path, while
+	// an entry naming another rule leaves it standing.
+	for _, c := range []struct{ rules, want string }{
+		{"", ""},
+		{"\n        rules: [FIELD_TYPE]", "former.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n"},
+	} {
+		fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    ignore:\n      - paths: [former.proto]"+c.rules+"\nbreaking:\n  base:\n    version: v0.6.0\n")
+		fx.serve(t, "example.com/a", "v0.6.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": fx.read(t, "a/a.proto"), "former.proto": "syntax = \"proto3\";\npackage a;\nmessage Former {\n  string gone = 1;\n}\n"})
+		fx.serve(t, "example.com/b", "v0.6.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": fx.read(t, "b/b.proto")})
+		out.Reset()
+		err = Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
+		if (c.want == "") != (err == nil) || out.String() != c.want {
+			t.Fatalf("a module's ignore over its base's file (rules %q): %v %q", c.rules, err, out.String())
+		}
 	}
 	// A file a gained after its base, imported by b now: a's base run
 	// checks a's imports alone, b's being no requirer of it.

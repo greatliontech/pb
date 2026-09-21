@@ -2,6 +2,30 @@
   "version": 2,
   "attestations": [
     {
+      "editDigest": "1eeead3ed72645ef4f0bb28be9b49934f16195feb546cc0bd16d084d70b57d3d",
+      "rawEditDigest": "1eeead3ed72645ef4f0bb28be9b49934f16195feb546cc0bd16d084d70b57d3d",
+      "files": [
+        "internal/check/lintfile/lintfile.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/check/lintfile",
+      "run": "TestEncode$",
+      "reason": "The guard refuses a rendering Parse reads as a different file. Every File reachable through Parse or built by hand renders to its own form: lists are cloned and sorted, an empty enable kept distinct from an absent one, scalars spelled plain only where the parser itself reads them back as that text, and what Parse rejects is refused a line earlier. No input reaches the guard's refusal; it holds the emitter to the reader against drift between the two, and a test needs an emitter fault to observe it.",
+      "commit": "ab45896863077ea38816ec6819b00996682ce9e8",
+      "dirty": true
+    },
+    {
+      "editDigest": "54fdcc9864b15961aa409ce39489bb1d89f5b297d48a5df5399b358a263a16b3",
+      "rawEditDigest": "54fdcc9864b15961aa409ce39489bb1d89f5b297d48a5df5399b358a263a16b3",
+      "files": [
+        "internal/check/lintfile/lintfile.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/check/lintfile",
+      "run": "TestEncode$",
+      "reason": "A severity is one of the words error and warning, which the scalar rule spells plain; passing them through it changes no rendering. The rule is applied so the clause holds for every emitted scalar should the severity domain widen, and Parse refuses any other value before the rendering.",
+      "commit": "ab45896863077ea38816ec6819b00996682ce9e8",
+      "dirty": true
+    },
+    {
       "editDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
       "rawEditDigest": "55d4c0673206e4171b11780092412931e5f0a1920c60b06a4c9e66084c0eb506",
       "files": [

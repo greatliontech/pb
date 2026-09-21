@@ -149,19 +149,26 @@ type checkGroup struct {
 // run counts rules over such groups alone.
 func (g *checkGroup) evaluates() bool { return len(g.checked) != 0 && len(g.rules) != 0 }
 
-// located is a group's findings with the location a module's own
-// selection gives a location-less one: the module's directory, no
-// position (REQ-rules-finding-location).
-func (g *checkGroup) located(findings []check.Finding) []check.Finding {
-	if g.dir == "" {
-		return findings
-	}
-	for i := range findings {
-		if findings[i].Path == "" {
-			findings[i].Path = g.dir
+// admit is a group's findings the lint file keeps, each located as
+// the group's selection has it: under a module's own, a finding
+// without a position — a set rule's, or a package rule's — at the
+// module's directory (REQ-rules-finding-location); less those the
+// root's ignores exclude and, under a module's own selection, the
+// module's (REQ-lint-selection). The group is the finding's module:
+// its files are the ones the group checks, on either side of a
+// breaking run.
+func (g *checkGroup) admit(sel lintfile.Selection, findings []check.Finding) []check.Finding {
+	kept := findings[:0:0]
+	for _, f := range findings {
+		if g.dir != "" && f.Line == 0 {
+			f.Path = g.dir
 		}
+		if sel.Ignored(g.dir, f.Path, f.Rule) {
+			continue
+		}
+		kept = append(kept, f)
 	}
-	return findings
+	return kept
 }
 
 // rulesOf is the rules of the run's kind governing a module.
@@ -185,16 +192,10 @@ func (r *checkRun) source(p string) ([]byte, error) {
 	return nil, fmt.Errorf("%s is no checked file", p)
 }
 
-// report prints the findings the lint file does not ignore, sorted,
-// and returns ErrFindings where any of severity error remains
+// report prints the admitted findings, sorted, and returns
+// ErrFindings where any of severity error remains
 // (REQ-check-findings-output, REQ-check-exit-status).
-func (r *checkRun) report(findings []check.Finding, out io.Writer) error {
-	kept := findings[:0:0]
-	for _, f := range findings {
-		if !r.sel.Ignored(f.Path, f.Rule) {
-			kept = append(kept, f)
-		}
-	}
+func (r *checkRun) report(kept []check.Finding, out io.Writer) error {
 	check.Sort(kept)
 	for _, f := range kept {
 		if _, err := fmt.Fprintln(out, f); err != nil {
@@ -233,7 +234,7 @@ func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("lint: %w", err)
 		}
-		findings = append(findings, g.located(report.Findings)...)
+		findings = append(findings, g.admit(run.sel, report.Findings)...)
 	}
 	return run.report(findings, out)
 }
@@ -306,7 +307,7 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		if err != nil {
 			return fmt.Errorf("breaking: %s: %w", m.Path, err)
 		}
-		findings = append(findings, run.group[m.Dir].located(report.Findings)...)
+		findings = append(findings, run.group[m.Dir].admit(run.sel, report.Findings)...)
 	}
 	return run.report(findings, out)
 }

@@ -571,6 +571,15 @@ func TestEncode(t *testing.T) {
 	if f, err := Parse(got); err != nil || strings.Join(f.Use, ",") != ".,a,b/c" {
 		t.Fatalf("round trip: %+v %v", f, err)
 	}
+	// A directory named like a number or a boolean is quoted, and
+	// reads back as the directory.
+	got, err = Encode(&File{Use: []string{"12", "yes", "1.0/x"}})
+	if err != nil || string(got) != "use:\n  - \"1.0/x\"\n  - \"12\"\n  - \"yes\"\n" {
+		t.Fatalf("Encode = %q, %v", got, err)
+	}
+	if f, err := Parse(got); err != nil || strings.Join(f.Use, ",") != "1.0/x,12,yes" {
+		t.Fatalf("round trip: %+v %v", f, err)
+	}
 	for name, f := range map[string]*File{
 		"nil":       nil,
 		"empty":     {},
