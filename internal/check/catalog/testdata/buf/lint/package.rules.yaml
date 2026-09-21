@@ -19,9 +19,7 @@ rules:
     target: set
     severity: error
     tags: [MINIMAL, BASIC, STANDARD]
-    cel: >-
-      files.map(f, f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '').distinct().size()
-        == files.map(f, (f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '') + '\n' + f.package).distinct().size()
+    cel: unique(files.map(f, dir(f))).size() == unique(files.map(f, dir(f) + '\n' + f.package)).size()
     message: files in one directory declare one package
   - id: PACKAGE_SAME_DIRECTORY
     kind: lint
@@ -30,8 +28,8 @@ rules:
     tags: [MINIMAL, BASIC, STANDARD]
     cel: >-
       files.all(f,
-        (f.name.contains('/') ? f.name.substring(0, f.name.lastIndexOf('/')) : '')
-          == (files[0].name.contains('/') ? files[0].name.substring(0, files[0].name.lastIndexOf('/')) : ''))
+        dir(f)
+          == dir(files[0]))
     message: a package's files live in one directory
   - id: PACKAGE_DIRECTORY_MATCH
     kind: lint
@@ -39,7 +37,7 @@ rules:
     severity: error
     tags: [MINIMAL, BASIC, STANDARD]
     cel: >-
-      (file.name.contains('/') ? file.name.substring(0, file.name.lastIndexOf('/')) : '')
+      dir(file)
         == file.package.replace('.', '/')
     message: a file's directory matches its package
   - id: PACKAGE_NO_IMPORT_CYCLE

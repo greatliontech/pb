@@ -83,5 +83,5 @@ rules:
     tags: [STANDARD]
     cel: >-
       cel.bind(l, files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3),
-        l.size() == l.distinct().size())
+        l.size() == unique(l).size())
     message: every request and response is used by one rpc

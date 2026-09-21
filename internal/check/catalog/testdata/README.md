@@ -14,11 +14,9 @@ constraint expressions in another language, and
 `descriptor.proto`.
 
 `IMPORT_USED` binds the file, so a file with several unused imports
-gets one finding. `DIRECTORY_SAME_PACKAGE` and
-`RPC_REQUEST_RESPONSE_UNIQUE` group through `distinct()`, which CEL
-charges by the square of the list, so over a schema of some ten
-thousand files or rpcs the two exceed the cost limit and the run
-fails rather than judges.
+gets one finding. The corpus groups through `unique`, charged by
+the size of its list, never through cel-go's `distinct`, charged by
+the square.
 
 Three readings the corpus makes explicit. The FILE variants of the
 deletion rules (`MESSAGE_NO_DELETE` and its kin) hold an entity to its

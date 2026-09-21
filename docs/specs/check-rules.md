@@ -71,6 +71,13 @@ a result that is not `bool` — MUST fail the check run, naming the
 rule's id and the compiler's cause, an unknown function or variable
 named in it.
 
+**REQ-rules-eval** (behavior): A rule whose evaluation fails — a
+runtime error, the cost limit exceeded, or a fault the evaluator
+cannot attribute, a select of a value the environment puts beyond
+reach among its causes — MUST fail the check run naming the rule's
+id and the cause, an unattributed fault named as the environment's
+own failure to answer, the fault's text following the name.
+
 **REQ-rules-file-discovery** (behavior): A ruleset's rule files MUST be
 every file named `*.rules.yaml` under the module root, at any depth,
 read in path order — the byte order of their module-relative paths; a ruleset
@@ -238,6 +245,12 @@ upper-cased and so joined, `pascal` each word with its first letter
 upper-cased and the rest lower-cased except an acronym kept whole,
 `camel` as `pascal` with the first word lower-cased — so that a name
 is in a style exactly when `case(name, style)` equals it; and
+`dir(file)`, the directory of the file's path, empty at the root;
+`unique(list)`, the list's distinct members in first-seen order, two
+members one under CEL's equality — `1`, `1u` and `1.0` one member, a
+message one with another of its content, a list or map one with
+another of its members — a member of a kind with no equality
+refused; and
 `packageCycles(files)`, the strongly connected components of two or
 more packages in the files' package import graph — a file's import of
 a file of its own package is no edge — each a list of package names

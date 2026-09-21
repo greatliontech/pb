@@ -14,7 +14,8 @@ dynamic message over the compiler's descriptor, its own fields
 readable by name, an extension within it — `proto.getExt(
 proto.getExt(field.options, e.opt), e.deep)` — unreachable, the
 registry's lookup finding no field of that name and the rule
-failing with an internal error rather than a verdict.
+failing, named as the environment's own failure to answer, rather
+than a verdict.
 
 What would reach it: the set re-decoding each file's descriptor
 proto through the rebuilt family's extension types at construction,

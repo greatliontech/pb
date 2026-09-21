@@ -320,3 +320,43 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "d8593f6dba6ce6a37a8449f2d59702e990319fe7063afdb8eee0d4ad404840b7"
 }
+
+bindings {
+  requirement_id: "REQ-rules-eval"
+  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
+  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.Program.eval"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "96908e9d132f94d6a45d15191a0bf0d529e7e91d75433a1c14f752e28054201b"
+}
+
+bindings {
+  requirement_id: "REQ-rules-eval"
+  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
+  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestLibrary"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "eaa125287c1c9d1a9d3507b0d04499a7bf3e3ad81bde468a914d2b1212c9f9de"
+}
+
+bindings {
+  requirement_id: "REQ-rules-eval"
+  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
+  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestBounded"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2a6b6459539d412ae9497afc922538ad9adc10dc78d498cafe3f6b8c4540267d"
+}
+
+bindings {
+  requirement_id: "REQ-rules-eval"
+  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
+  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestEvalVerdicts"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d8593f6dba6ce6a37a8449f2d59702e990319fe7063afdb8eee0d4ad404840b7"
+}

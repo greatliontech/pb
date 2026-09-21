@@ -36,6 +36,12 @@ func (c costs) CallCost(function, overloadID string, args []ref.Val, result ref.
 	case "features":
 		// A resolution per language feature the environment knows.
 		cost += uint64(len(c.env.featureExts))
+	case "unique":
+		// A pass over the list and its members' extent: what the
+		// members' spellings amount to.
+		for _, a := range args {
+			cost += extent(a)
+		}
 	case "packageCycles", "messages", "enums", "extensions", "services", "references", "imports", "visible":
 		// A walk over what it was given: every declaration of each file
 		// it reaches, and the file's imports.
@@ -75,6 +81,36 @@ func (c costs) walked(v ref.Val) uint64 {
 	}
 	one(v)
 	return n
+}
+
+// extent is what spelling a value costs: a string or bytes its
+// length, a message its encoded size, a list or map its members'
+// extents and its own length, anything else one.
+func extent(v ref.Val) uint64 {
+	switch x := v.Value().(type) {
+	case string:
+		return 1 + uint64(len(x))
+	case []byte:
+		return 1 + uint64(len(x))
+	case proto.Message:
+		return 1 + uint64(proto.Size(x))
+	}
+	switch l := v.(type) {
+	case traits.Mapper:
+		n := uint64(1)
+		for it := l.Iterator(); it.HasNext() == types.True; {
+			k := it.Next()
+			n += extent(k) + extent(l.Get(k))
+		}
+		return n
+	case traits.Lister:
+		n := uint64(1)
+		for it := l.Iterator(); it.HasNext() == types.True; {
+			n += extent(it.Next())
+		}
+		return n
+	}
+	return 1
 }
 
 // size is a value's size: a collection's length, one for anything

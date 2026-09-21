@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"cel.dev/cel-go/common/types"
+	"cel.dev/cel-go/common/types/ref"
 	"github.com/greatliontech/pb/internal/testing/prototest"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -95,6 +96,9 @@ message D {}
 	"n/n.proto": `syntax = "proto3";
 message N {}
 `,
+	"root.proto": `syntax = "proto3";
+message Root {}
+`,
 	"u/u.proto": `message U {
   optional string s = 1;
 }
@@ -102,6 +106,16 @@ message N {}
 	"e/features.proto": `edition = "2023";
 package e;
 import "google/protobuf/descriptor.proto";
+message Opt {
+  string tag = 1;
+  extensions 100 to 200;
+}
+extend google.protobuf.FieldOptions {
+  Opt opt = 9997;
+}
+extend Opt {
+  bool deep = 100;
+}
 message Flag {
   bool on = 1 [targets = TARGET_TYPE_FILE, targets = TARGET_TYPE_FIELD, edition_defaults = { edition: EDITION_LEGACY, value: "false" }];
 }
@@ -120,7 +134,7 @@ import "e/features.proto";
 option features.field_presence = IMPLICIT;
 option features.(e.flag).on = true;
 message E {
-  int32 n = 1 [(e.Wrap.wrapped) = true];
+  int32 n = 1 [(e.Wrap.wrapped) = true, (e.opt) = {tag: "x", [e.deep]: true}];
   E child = 2;
 }
 `,
@@ -456,6 +470,32 @@ func TestLibrary(t *testing.T) {
 	holds(t, env, check.TargetFile, `proto.getExt(file.options, c.file_opt) == 'x'`, file)
 	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == true && proto.getExt(field.options, e.Wrap.wrapped) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
 	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == false`, kind)
+	holds(t, env, check.TargetField, `proto.getExt(field.options, e.opt).tag == 'x'`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
+	// A select the contract puts beyond reach — an extension within a
+	// message-valued option's value — fails the rule by name, never
+	// by the interpreter's recovered fault (REQ-rules-eval).
+	if _, err := verdict(t, env, check.KindLint, check.TargetField, `proto.getExt(proto.getExt(field.options, e.opt), e.deep) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef}); err == nil || !errors.Is(err, ErrEval) || !strings.Contains(err.Error(), "cannot answer (internal error:") {
+		t.Errorf("beyond reach: %v", err)
+	}
+	// dir: empty at the root.
+	holds(t, env, check.TargetFile, `dir(file) == 'a' && dir(fileByName('google/protobuf/descriptor.proto')) == 'google/protobuf' && dir(fileByName('u/u.proto')) == 'u' && dir(fileByName('root.proto')) == '' && dyn(dir(parent(file))) == null`, file)
+	// unique: first-seen order under CEL's equality — numbers by
+	// value across types, kinds never colliding, nested members by
+	// theirs, a kind with no equality refused.
+	holds(t, env, check.TargetFile, `unique([3, 1, 3, 2, 1]) == [3, 1, 2] && unique(['b', 'a', 'b']) == ['b', 'a'] && unique([]) == [] && unique([true, false, true]) == [true, false] && unique([b'x', b'x', b'y']).size() == 2`, file)
+	holds(t, env, check.TargetFile, `unique([1, dyn(1u), dyn(1.0), dyn(1.5), dyn(2u)]).size() == 3 && unique([[1], [dyn(1.0)]]).size() == 1 && unique([b'x', 'yx', 'x']).size() == 3 && unique([dyn(file.options), dyn('mgoogle.protobuf.FileOptions'), dyn('')]).size() == 3 && unique(['1', 1, 1]).size() == 2`, file)
+	holds(t, env, check.TargetFile, `unique([file, file, fileByName('b/b.proto')]).size() == 2 && unique([[1], [1], [2]]) == [[1], [2]] && unique([{'a': 1}, {'a': 1}, {'a': 2}]).size() == 2 && unique([{'a': 1, 'b': 2}, {'b': 2, 'a': 1}]).size() == 1 && unique([null, null, dyn('null')]).size() == 2 && unique([[1, 2], [12]]).size() == 2`, file)
+	// A spelling forged inside a member never reads as another's
+	// structure; each NaN stays; an integer beyond int64 is one
+	// member with the double of its value; durations and timestamps
+	// key by value.
+	holds(t, env, check.TargetFile, `unique([{'a': 'x2:sbsy'}, {'a': 'x', 'b': 'y'}]).size() == 2 && unique([{'a': 'x2:sb2:sy'}, {'a': 'x', 'b': 'y'}]).size() == 2 && unique([['a2:sb'], ['a', 'b']]).size() == 2 && unique([dyn(0.0 / 0.0), dyn(0.0 / 0.0)]).size() == 2 && unique([dyn(9223372036854775808u), dyn(9223372036854775808.0)]).size() == 1 && unique([dyn(18446744073709551615u), dyn(18446744073709551615.0)]).size() == 2`, file)
+	holds(t, env, check.TargetFile, `unique([duration('1s'), duration('1000ms'), duration('2s')]).size() == 2 && unique([timestamp('2020-01-01T00:00:00Z'), timestamp('2020-01-01T00:00:00Z'), timestamp('2020-01-01T00:00:00.5Z')]).size() == 2`, file)
+	refusedAtCompile(t, env, check.TargetFile, `unique(file) == []`, file)
+	holds(t, env, check.TargetFile, `unique([dyn(type(1)), dyn(type(2)), dyn('int'), dyn(type(''))]).size() == 3`, file)
+	if _, err := verdict(t, env, check.KindLint, check.TargetFile, `unique([dyn(optional.none())]).size() == 1`, file); err == nil || !strings.Contains(err.Error(), "no equality unique can key") {
+		t.Errorf("a member of no equality: %v", err)
+	}
 	// The file-only functions take a file and nothing else; the
 	// lookups take a name; the naming functions take strings.
 	for _, expr := range []string{`imports(message).size() == 0`, `visible(message).size() == 0`, `references(message).size() == 0`, `resolve(message) == null`, `fileByName(message) == null`, `words(message).size() == 0`, `case(message, 'snake') == ''`, `packageCycles(message).size() == 0`, `comments(file.name).leading == ''`, `features(file.name) == null`, `options(file.name) == {}`} {
@@ -676,7 +716,7 @@ func TestChargedBySize(t *testing.T) {
 func TestChargedFunctions(t *testing.T) {
 	env, _ := lintEnv(t)
 	c := costs{env}
-	names := []string{"comments", "parent", "file", "fullName", "messages", "enums", "extensions", "services", "resolve", "fileByName", "imports", "visible", "references", "features", "syntax", "options", "words", "case", "packageCycles"}
+	names := []string{"comments", "parent", "file", "fullName", "messages", "enums", "extensions", "services", "resolve", "fileByName", "imports", "visible", "references", "features", "syntax", "options", "words", "case", "dir", "unique", "packageCycles"}
 	for _, name := range names {
 		if c.CallCost(name, "", nil, types.String("")) == nil {
 			t.Errorf("%s is not charged", name)
@@ -689,6 +729,16 @@ func TestChargedFunctions(t *testing.T) {
 	// environment knows, beyond its result.
 	if got, want := *c.CallCost("features", "", nil, types.String("")), uint64(2+len(env.featureExts)); got < want || len(env.featureExts) < 3 {
 		t.Errorf("features charged %d over %d language features, want at least %d", got, len(env.featureExts), want)
+	}
+	// unique is charged a pass over its input and the members'
+	// extent: a nested or long member costs what its spelling does.
+	list := env.adapter.NativeToValue([]any{1, 2, 3, 4})
+	if got := *c.CallCost("unique", "", []ref.Val{list}, list); got < 1+5+4 {
+		t.Errorf("unique over four charged %d, want at least 10", got)
+	}
+	long := env.adapter.NativeToValue([]any{strings.Repeat("x", 1000), []any{1, 2, 3}, map[string]any{"k": "vvvv"}})
+	if got := *c.CallCost("unique", "", []ref.Val{long}, long); got < 1000+3+4+3 {
+		t.Errorf("unique over a long member charged %d, want at least 1010", got)
 	}
 	for _, name := range []string{"size", "flatten", "distinct", "matches"} {
 		if c.CallCost(name, "", nil, types.String("")) != nil {

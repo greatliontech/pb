@@ -2,8 +2,12 @@ package env1
 
 import (
 	"fmt"
+	"math"
+	"path"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
@@ -126,6 +130,16 @@ func (e *Env) library() []function {
 		entity("references", fileOnly, strList, func(en *entry) ref.Val { return e.adapter.NativeToValue(en.file.references()) }),
 		entity("features", descTypes, featType, e.features),
 		entity("syntax", fileOnly, cel.StringType, func(en *entry) ref.Val { return types.String(declaredSyntax(en.file.fd)) }),
+		entity("dir", fileOnly, cel.StringType, func(en *entry) ref.Val {
+			d := path.Dir(en.file.fd.Path())
+			if d == "." {
+				d = ""
+			}
+			return types.String(d)
+		}),
+		function{"unique", cel.Function("unique", cel.Overload("unique_list", []*cel.Type{dynList}, dynList, cel.UnaryBinding(func(v ref.Val) ref.Val {
+			return e.unique(v)
+		})))},
 		entity("options", descTypes, strDyn, e.options),
 		function{"words", cel.Function("words", cel.Overload("words_string", []*cel.Type{cel.StringType}, strList, cel.UnaryBinding(func(v ref.Val) ref.Val {
 			return e.adapter.NativeToValue(Words(string(v.(types.String))))
@@ -150,6 +164,117 @@ func (e *Env) library() []function {
 			return e.adapter.NativeToValue(out)
 		})))},
 	}
+}
+
+// unique is the list's distinct members in first-seen order, two
+// members one under CEL's equality: each keyed by a canonical
+// spelling — a number by its value whatever its type, so 1, 1u and
+// 1.0 are one member, an integer beyond int64 spelled as the exact
+// integer it is; a string, bytes, bool, null, type, duration or
+// timestamp by kind and value; a message by its type and
+// deterministic encoding; a list or map by its members' keys, each
+// length-prefixed, a map's in key order — so the pass is one over
+// the list and its members' extent. A NaN equals nothing, itself
+// included, so every NaN member stays. A member of no such kind is
+// refused.
+func (e *Env) unique(v ref.Val) ref.Val {
+	l, ok := v.(traits.Lister)
+	if !ok {
+		return types.NewErr("unique: %s is not a list", v.Type().TypeName())
+	}
+	seen := map[string]bool{}
+	var out []ref.Val
+	k := keyer{}
+	for it := l.Iterator(); it.HasNext() == types.True; {
+		m := it.Next()
+		key, err := k.key(m)
+		if err != nil {
+			return types.NewErr("unique: %v", err)
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, m)
+	}
+	return e.adapter.NativeToValue(out)
+}
+
+// keyer spells members canonically, each NaN its own.
+type keyer struct{ nans int }
+
+// key is a member's canonical spelling, equal for two members CEL
+// holds equal, distinct otherwise.
+func (k *keyer) key(m ref.Val) (string, error) {
+	if m.Type() == types.NullType {
+		return "null", nil
+	}
+	if m.Type() == types.TypeType {
+		return "t" + m.(ref.Type).TypeName(), nil
+	}
+	switch x := m.Value().(type) {
+	case bool:
+		return fmt.Sprintf("b%t", x), nil
+	case int64:
+		return "n" + strconv.FormatInt(x, 10), nil
+	case uint64:
+		return "n" + strconv.FormatUint(x, 10), nil
+	case float64:
+		switch {
+		case math.IsNaN(x):
+			k.nans++
+			return "nan" + strconv.Itoa(k.nans), nil
+		case x == math.Trunc(x) && x >= math.MinInt64 && x < math.MaxInt64:
+			return "n" + strconv.FormatInt(int64(x), 10), nil
+		case x == math.Trunc(x) && x >= 0 && x < math.MaxUint64:
+			return "n" + strconv.FormatUint(uint64(x), 10), nil
+		}
+		return "f" + strconv.FormatFloat(x, 'g', -1, 64), nil
+	case string:
+		return "s" + x, nil
+	case []byte:
+		return "y" + string(x), nil
+	case time.Duration:
+		return "d" + strconv.FormatInt(int64(x), 10), nil
+	case time.Time:
+		return "T" + strconv.FormatInt(x.Unix(), 10) + "." + strconv.Itoa(x.Nanosecond()), nil
+	case proto.Message:
+		b, err := proto.MarshalOptions{Deterministic: true}.Marshal(x)
+		if err != nil {
+			return "", err
+		}
+		return "m" + string(m.Type().TypeName()) + "\x00" + string(b), nil
+	}
+	sized := func(s string) string { return strconv.Itoa(len(s)) + ":" + s }
+	switch l := m.(type) {
+	case traits.Mapper:
+		var entries []string
+		for it := l.Iterator(); it.HasNext() == types.True; {
+			mk := it.Next()
+			kk, err := k.key(mk)
+			if err != nil {
+				return "", err
+			}
+			vk, err := k.key(l.Get(mk))
+			if err != nil {
+				return "", err
+			}
+			entries = append(entries, sized(kk)+sized(vk))
+		}
+		sort.Strings(entries)
+		return "{" + strings.Join(entries, "") + "}", nil
+	case traits.Lister:
+		var members []string
+		for it := l.Iterator(); it.HasNext() == types.True; {
+			mk, err := k.key(it.Next())
+			if err != nil {
+				return "", err
+			}
+			members = append(members, sized(mk))
+		}
+		return "[" + strings.Join(members, "") + "]", nil
+	}
+	return "", fmt.Errorf("a %s member has no equality unique can key", m.Type().TypeName())
 }
 
 func (e *Env) files(fs []*fileEntry) ref.Val {

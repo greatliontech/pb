@@ -29,6 +29,7 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
@@ -605,6 +606,14 @@ func (p *Program) Eval(vars map[string]any) (bool, error) {
 func (p *Program) eval(vars map[string]any) (bool, *cel.EvalDetails, error) {
 	out, details, err := p.prg.Eval(vars)
 	if err != nil {
+		// The interpreter recovers a panic into an "internal error":
+		// a select the contract puts beyond reach, or a fault of the
+		// library's own; the rule's failure names the environment as
+		// its cause and keeps the recovered text after the name, so a
+		// fault stays diagnosable (REQ-rules-eval).
+		if strings.HasPrefix(err.Error(), "internal error:") {
+			return false, details, fmt.Errorf("%w: %s: the expression reached a value the environment cannot answer (%v)", ErrEval, p.rule.ID, err)
+		}
 		return false, details, fmt.Errorf("%w: %s: %v", ErrEval, p.rule.ID, err)
 	}
 	// Compile admitted a boolean expression alone, so a value that is
