@@ -213,9 +213,11 @@ the standard streams alone on every row. INV-docker-deviations: every mount over
 image's root is a filesystem the runtime created under one of the three
 roots — mounted whole, or re-bound from one of those very filesystems as
 the runtime's masks are, never a host directory bound there — or a name
-file, every variable beyond the image's is an injected one, `/dev` and
-the runtime's masks are writable while `/proc` itself and the root are
-not, and the native runner's world is the image's alone, as the running
+file, every variable beyond the image's is an injected one, `/dev`
+is writable while `/proc` itself and the root are not, the runtime's
+masks standing over the paths it masks — what a mask admits being
+the runtime's and the daemon's confinement's own — and the native
+runner's world is the image's alone, as the running
 plugin sees them; enforced by `TestDockerDeviations` against a live
 daemon and the native runner.
 

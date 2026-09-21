@@ -90,8 +90,10 @@ func underRuntimeRoot(point string) bool {
 // re-bound from one of those very filesystems (the runtime's masks),
 // never a host directory bound there — or one of the daemon's name
 // files; every variable beyond the image's is one the
-// daemon injects; /dev and the runtime's masks are writable, /proc
-// itself and the root are not. The native runner's world is the
+// daemon injects; /dev is writable, /proc itself and the root are
+// not, and the runtime's masks stand over the paths it masks, what
+// a mask admits being the runtime's and the daemon's confinement's
+// own. The native runner's world is the
 // image's alone: no /proc to read mounts from, none of the runtime
 // roots or name files, no write anywhere (REQ-plugin-sandboxed's
 // deviation list, INV-docker-deviations).
@@ -132,8 +134,28 @@ func TestDockerDeviations(t *testing.T) {
 	if want := slices.Sorted(slices.Values(behavior.Present)); !slices.Equal(w.present, want) {
 		t.Errorf("present under the daemon = %v, want %v", w.present, want)
 	}
-	if want := map[string]bool{"/dev/probe": true, "/proc/interrupts": true, "/proc/probe": false, "/probe": false}; !maps.Equal(w.writes, want) {
-		t.Errorf("writes under the daemon = %v, want %v (/dev and the runtime's masks writable, /proc itself and the root not)", w.writes, want)
+	// What a mask admits is the runtime's and the daemon's
+	// confinement's own — runc binds a writable /dev/null over a
+	// masked file, and a daemon under its default AppArmor profile
+	// refuses every write beneath /proc by path — so the mask is
+	// held to standing there, not to what it admits; the probe's
+	// attempt on it is held to having been made.
+	if _, masked := w.mounts["/proc/interrupts"]; !masked {
+		t.Errorf("/proc/interrupts is not masked: the daemon mounted nothing over it")
+	}
+	if _, tried := w.writes["/proc/interrupts"]; !tried {
+		t.Errorf("the probe made no write attempt on /proc/interrupts: %v", w.writes)
+	}
+	writes := maps.Clone(w.writes)
+	delete(writes, "/proc/interrupts")
+	want := map[string]bool{}
+	for _, p := range behavior.Writes {
+		if p != "/proc/interrupts" {
+			want[p] = strings.HasPrefix(p, "/dev/")
+		}
+	}
+	if !maps.Equal(writes, want) {
+		t.Errorf("writes under the daemon = %v, want %v (/dev writable, /proc itself and the root not)", writes, want)
 	}
 	if runtime.GOOS != "linux" {
 		return
