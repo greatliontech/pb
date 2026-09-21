@@ -87,6 +87,27 @@ CEL, composed from ruleset repos.
    The migration asset is a byproduct of burning down the expressiveness
    risk.
 
+## Extending the environment
+
+The environment grows by CEL-defined functions in rulesets: a ruleset
+declares named, parameterized expressions in CEL and its rules call
+them, the engine expanding each call at compile time as a template
+over expressions, charged as the expanded expression is. No code
+enters beside CEL, so a rule from any source stays safe to evaluate
+by construction, nothing new is signed, and no charge model is
+trusted from an author. That is the extension mechanism; it becomes
+work when a second ruleset author needs shared predicates.
+
+Two stronger rungs were weighed and set aside. WebAssembly functions
+with metered fuel and no host imports would keep purity and an exact
+charge, run in-process, and pin like a dependency — the shape to
+reach for if a rule ever needs computation CEL cannot express in
+bounded time, which the catalog produced once, and that case became
+`unique`. Functions as OCI processes, the plugin mechanism, do not
+fit: a process round trip per call is unusable at population scale,
+the charge of a call is unknowable, determinism depends on the
+image, and it reopens the hole the concept closes.
+
 ## Deliberately out
 
 A container-based lint escape hatch (OCI image consuming a descriptor set,
