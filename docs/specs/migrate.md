@@ -16,7 +16,8 @@ documents place on such a file holds for a migrated one unchanged.
 `buf.gen.yaml` (`v1` or `v2`) and `buf.lock` (`v1` or `v2`). A
 `buf.yaml` of `v2` declares its modules under `modules`; one of `v1`
 declares one module at its directory, a `buf.work.yaml` beside it
-naming several.
+naming several. A key with no value is a key absent, as buf's decoder
+reads a null, a required key excepted.
 
 **mapping table** (term): A fixed list pb ships, keyed by a name buf's
 configuration uses, giving the pb form of that name and, where pb
@@ -88,9 +89,10 @@ place pb fetches from. A `v2` configuration's `modules` and a `v1`
 workspace's `directories` become the workspace file's `use` entries,
 each module's directory as written, relative to the configuration's
 directory; a lone `v1` module writes no workspace file. buf's
-`excludes` and `includes` under a module are unmapped facts: a pb
-module's file set is every regular file under its root
-(`module-archive.md` REQ-archive-file-set).
+`excludes` and `includes` under a module, and `v1`'s
+`build.excludes`, are unmapped facts: a pb module's file set is every
+regular file under its root (`module-archive.md`
+REQ-archive-file-set).
 
 ## Dependencies
 
@@ -156,8 +158,8 @@ MUST be unmapped facts where set to anything but their default —
 plugins — each naming the option and the rule it would have
 reshaped: a pb rule has no parameters, so an option's meaning lives
 in a rule of one's own, which the report says. `disallow_comment_ignores`
-is unmapped naming the pb comment form, `pb:ignore`, which is always
-honored.
+and `v1`'s `allow_comment_ignores` are unmapped naming the pb comment
+form, `pb:ignore`, which is always honored.
 
 **REQ-migrate-comments** (behavior): Every buf suppression comment in
 a checked file — `// buf:lint:ignore <ID>` and
@@ -172,27 +174,48 @@ suffices, the migrated lint file importing one ruleset
 
 **REQ-migrate-gen** (behavior): A `buf.gen.yaml` MUST become the
 generation file: each plugin entry naming a BSR plugin (`remote` in
-`v2`, `plugin` or `name` with a BSR prefix in `v1`) looked up among
-the replacements and then in the plugin table, a name either holds
+`v2`; in `v1`, `plugin` spelled as buf's plugin reference,
+`remote/owner/plugin` with a `:version` or none) looked up among the
+replacements and then in the plugin table, a name either holds
 becoming a `ref` entry at the reference given for that name and
-version, a name neither holds an unmapped fact naming the plugin; a `local` entry naming one executable
-becoming a `local` entry, one naming a command with arguments an
-unmapped fact; a `protoc_builtin` entry an unmapped fact, pb running
-no protoc; `out` as written; `opt`, a string or a list, joined with
-commas as buf hands it to the plugin. `strategy`, `include_imports`,
+version, a name neither holds an unmapped fact naming the plugin; a
+`local` entry naming one executable becoming a `local` entry, one
+naming a command with arguments an unmapped fact — a `v1` entry's
+`path` its command, and its bare `plugin` or `name` the executable
+`protoc-gen-<name>`, as buf ran them; a `protoc_builtin` entry — in
+`v1`, a name among protoc's builtins or any entry with `protoc_path` —
+an unmapped fact, pb running no protoc; `out` as written; `opt`, a
+string or a list, joined with commas as buf hands it to the plugin.
+`strategy`, `revision`, `protoc_path`, `include_imports`,
 `include_wkt`, `types`, `exclude_types` and `inputs` are unmapped
 facts naming the key: pb generates over the workspace's own files
-under one strategy (`generation.md`). buf's `managed` mode becomes
-`overrides` where an entry is declarative — a `file_option` with a
-`value` and, in `v2`, a `path` or `module` scope, over the files that
-scope names — and an unmapped fact where it is buf's own heuristic:
-`enabled` with no explicit override, a `field_option`, a `disable`
-entry, or a prefix or suffix form (`go_package_prefix`,
-`java_package_prefix`, `java_package_suffix`) pb would have to compute
-a value from. The plugin table's entries in pb's first release of the
-verb are the plugins greatliontech's fork of buf's plugin repository
-builds; a plugin an author publishes under their own registry enters
-the table by a pull request naming the reference.
+under one strategy (`generation.md`). An entry buf itself refuses does
+not parse under its version: no naming form, two, or an empty one; no
+`out`; a `v1` `name` spelled as a reference; a key its form takes no
+meaning from — `strategy` or `protoc_path` beside a remote plugin and,
+in `v1`, `path` there; in `v2`, `revision` or `protoc_path` beside a
+local plugin and `revision` beside a builtin. buf's `managed` mode
+becomes `overrides` where an entry is declarative — a `file_option`
+with a `value` and, in `v2`, a `path` or `module` scope, over the
+files that scope names; in `v1`, a boolean option, the `override` map
+of option to file to value, and `optimize_for`'s default for every
+file and its override per module — and an unmapped fact where it is
+buf's own heuristic: `enabled` with no explicit override, a
+`field_option`, a `disable` entry, or a form pb would have to compute
+a value from — a prefix or suffix (`go_package_prefix`,
+`java_package_prefix`, `java_package_suffix`), `v1`'s per-package
+forms of default, except and override (`objc_class_prefix`,
+`csharp_namespace`, `ruby_package`) and `optimize_for`'s `except`. A
+`v2` override naming no option or both, an option buf does not know,
+no `value`, or scoping a `file_option` to a `field`, a `disable` entry
+naming nothing, both options, an option buf does not know, or a
+`file_option` with a `field`, and a `v1` `override` map keyed by an
+option buf does not know, are buf's own refusals and do not parse.
+`v1`'s alpha `remote` plugin key is one the verb does not model, an
+unmapped fact naming it. The plugin table's entries in pb's first
+release of the verb are the plugins greatliontech's fork of buf's
+plugin repository builds; a plugin an author publishes under their own
+registry enters the table by a pull request naming the reference.
 
 ## What the verb never does
 

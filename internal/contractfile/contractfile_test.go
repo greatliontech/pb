@@ -254,3 +254,30 @@ func TestWalkers(t *testing.T) {
 		t.Errorf("empty list: %v %v", ss, err)
 	}
 }
+
+// Walk hands a key that is no field to the policy given, its value
+// unread, where Mapping refuses it.
+func TestWalkUnknownPolicy(t *testing.T) {
+	m, err := Doc([]byte("a: 1\nb: [1, 2]\nc: x\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var passed []string
+	read := 0
+	err = Walk(m, "", errors.New("bad"), func(key string, value ast.Node) {
+		// The value handed over is the key's own.
+		if _, seq := value.(*ast.SequenceNode); key == "b" && !seq {
+			t.Errorf("b's value: %T", value)
+		}
+		if s, ok := Line(value); key == "c" && (!ok || s != "x") {
+			t.Errorf("c's value: %v %v", s, ok)
+		}
+		passed = append(passed, key)
+	}, Field{Name: "a", Read: func(ast.Node) error { read++; return nil }})
+	if err != nil || strings.Join(passed, ",") != "b,c" || read != 1 {
+		t.Fatalf("walk: %v %v %d", err, passed, read)
+	}
+	if err := Mapping(m, "", errors.New("bad"), Field{Name: "a"}); err == nil || !strings.Contains(err.Error(), `unknown key "b"`) {
+		t.Fatalf("mapping: %v", err)
+	}
+}

@@ -19,6 +19,7 @@ while the tree does another.
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
 | check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
+| migrate | migrate.md (the buf configuration read) | `migrate/bufconfig` |
 | driver | module-resolution.md | `resolve` |
 | verbs | dep-verbs.md, check-rules.md §Verbs | `dep`, `cmd/pb` |
 

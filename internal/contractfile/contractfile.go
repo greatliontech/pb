@@ -25,6 +25,13 @@
 // is named the same way everywhere. The lockfile and the user
 // configuration keep their own readers — a strict typed decode, and
 // string scalars alone by their spec — with the same guarantees.
+//
+// Walk is the same walk with the one other policy for an unknown key:
+// handed to the caller with its value, unread, rather than refused.
+// It exists for a foreign file — another tool's configuration pb reads
+// once to migrate — whose keys pb does not all model and whose extra
+// key is a fact to report, not a fault; pb's own files never take that
+// policy: Mapping is Walk under the refusal.
 package contractfile
 
 import (
@@ -174,6 +181,14 @@ type Field struct {
 // The YAML parser refuses a duplicate key, so each field reads at
 // most once.
 func Mapping(n ast.Node, where string, sentinel error, fields ...Field) error {
+	return Walk(n, where, sentinel, nil, fields...)
+}
+
+// Walk is Mapping with a policy for a key that is no field: refused
+// where unknown is nil, as a contract file's is, else handed to
+// unknown with its value, unread — a foreign file's, whose keys
+// beyond the ones modeled are facts to report, not faults.
+func Walk(n ast.Node, where string, sentinel error, unknown func(key string, value ast.Node), fields ...Field) error {
 	m, ok := n.(*ast.MappingNode)
 	if !ok {
 		return fmt.Errorf("%w: %smust be a mapping", sentinel, prefix(where, " "))
@@ -187,7 +202,11 @@ func Mapping(n ast.Node, where string, sentinel error, fields ...Field) error {
 		key := Key(kv.Key)
 		i, known := byName[key]
 		if !known {
-			return fmt.Errorf("%w: %sunknown key %q (keys: %s)", sentinel, prefix(where, ": "), key, names(fields))
+			if unknown == nil {
+				return fmt.Errorf("%w: %sunknown key %q (keys: %s)", sentinel, prefix(where, ": "), key, names(fields))
+			}
+			unknown(key, kv.Value)
+			continue
 		}
 		seen[i] = true
 		if read := fields[i].Read; read != nil {
