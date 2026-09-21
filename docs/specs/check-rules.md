@@ -171,10 +171,10 @@ breaking rule each binding in two forms in place of the one — `old` and
 `oldFiles` and `newFiles` for `set` — the absent side `null`.
 
 **REQ-env1-library** (wire): Environment 1 MUST provide CEL's standard
-functions, cel-go's `strings` extension library at its version 5 and
-`lists` at its version 3, the last that library defines, a number
-above it selecting cel-go's unversioned behavior, and exactly these
-functions of pb's, each pure and each accepting `null` where a
+functions, CEL's optional values, cel-go's extension libraries at
+these versions — `strings` 5, `lists` 3, `math` 3, `encoders` 1,
+`bindings` 1, `sets` 0, `two-variable comprehensions` 0, `protos` 0,
+`regex` 0 — and exactly these functions of pb's, each pure and each accepting `null` where a
 descriptor is named by returning `null`: `comments(entity)`, a map
 with `leading` and `trailing` strings and `detached` a list of
 strings; `parent(entity)`, the enclosing declaration — the message for
@@ -202,14 +202,24 @@ extensions, nested messages), enums, extensions and services with
 their methods, each list in declaration order and a declaration's
 type before its options;
 `features(entity)`, the entity's resolved `google.protobuf.FeatureSet`
-with the message's own fields and no extension, editions inheritance
-applied and, in a proto2 or proto3 file, the syntax and a field's
-modifiers expressed as the features they imply (`optional` and
-oneof membership in proto3 explicit presence, `required` legacy
-required, a group delimited, `packed` as written and otherwise the
-syntax's default), for any entity but a package or the set; a
-message-typed field reports the resolved value in every syntax, its
-presence being its kind's to read; `syntax(file)`, the syntax the file declares — `proto2`, `proto3` or
+with the message's own fields, editions inheritance applied and, in
+a proto2 or proto3 file, the syntax and a field's modifiers
+expressed as the features they imply (`optional` and oneof
+membership in proto3 explicit presence, `required` legacy required,
+a group delimited, `packed` as written and otherwise the syntax's
+default), for any entity but a package or the set — a message-typed
+field reports the resolved value in every syntax, its presence
+being its kind's to read — and every language feature as its
+extension of `FeatureSet`, resolved through the same chain and, in
+a proto2 or proto3 file, at the edition's default: each extension
+the checked schema declares — in a breaking run the new side's, a
+feature the old side alone declared being one the schema no longer
+has — and the standard ones protoc ships (`(pb.java)`, `(pb.cpp)`,
+`(pb.go)`) whether or not a file imports them, read as
+`proto.getExt(features(entity), pb.java)` and their enums by name,
+as a custom option reads as `proto.getExt(entity.options, pkg.ext)`
+and a message-valued option's own fields by name, an extension
+within such a value beyond reach; `syntax(file)`, the syntax the file declares — `proto2`, `proto3` or
 `editions` — or the empty string where it declares none, since a
 descriptor spells no proto2 and a declaration is a source fact: a
 declaration the file's source information does not carry counts as

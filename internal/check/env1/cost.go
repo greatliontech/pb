@@ -33,6 +33,9 @@ func (c costs) CallCost(function, overloadID string, args []ref.Val, result ref.
 	case "resolve", "fileByName":
 		// A lookup by name searches the schema.
 		cost += uint64(c.env.new.Size())
+	case "features":
+		// A resolution per language feature the environment knows.
+		cost += uint64(len(c.env.featureExts))
 	case "packageCycles", "messages", "enums", "extensions", "services", "references", "imports", "visible":
 		// A walk over what it was given: every declaration of each file
 		// it reaches, and the file's imports.

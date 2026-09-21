@@ -13,13 +13,6 @@ constraint expressions in another language, and
 `FILE_SAME_PHP_GENERIC_SERVICES`, whose option protobuf removed from
 `descriptor.proto`.
 
-Two rules are approximations rather than translations.
-`FIELD_SAME_JAVA_UTF8_VALIDATION` and `FIELD_SAME_CPP_STRING_TYPE`
-read the `java_string_check_utf8` file option and the `ctype` field
-option, where buf reads the resolved language features
-(`(pb.java).utf8_validation`, `(pb.cpp).string_type`), extensions of
-`FeatureSet` that environment 1's `features` does not carry; an
-editions file setting those features passes the two rules here.
 `IMPORT_USED` binds the file, so a file with several unused imports
 gets one finding. `DIRECTORY_SAME_PACKAGE` and
 `RPC_REQUEST_RESPONSE_UNIQUE` group through `distinct()`, which CEL

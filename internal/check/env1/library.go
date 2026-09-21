@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 // A function of pb's library (REQ-env1-library): its name, which the
@@ -467,7 +468,36 @@ func (e *Env) features(en *entry) ref.Val {
 	if fd, ok := en.desc.(protoreflect.FieldDescriptor); ok {
 		modifierFeatures(fs, fd)
 	}
-	return e.adapter.NativeToValue(fs)
+	return e.adapter.NativeToValue(e.withLanguageFeatures(en, fs))
+}
+
+// withLanguageFeatures is the resolved FeatureSet carrying every
+// language feature the environment knows: each an extension of
+// FeatureSet in the runtime's family, the registry's, resolved
+// through the entity's own side's declaration of it — the standard
+// declaration where the side has none, whose value is then the
+// edition's default — and set on the feature set field by field.
+func (e *Env) withLanguageFeatures(en *entry, fs *descriptorpb.FeatureSet) proto.Message {
+	for _, xt := range e.featureExts {
+		own, declared := en.set.featureExts[xt.TypeDescriptor().FullName()]
+		if !declared {
+			own = xt
+		}
+		msg := dynamicpb.NewMessage(xt.TypeDescriptor().Message())
+		fields := own.TypeDescriptor().Message().Fields()
+		for i := 0; i < fields.Len(); i++ {
+			f := fields.Get(i)
+			v, err := protoutil.ResolveCustomFeature(en.desc, own, f)
+			if err != nil || !v.IsValid() {
+				continue
+			}
+			if g := msg.Descriptor().Fields().ByName(f.Name()); g != nil {
+				msg.Set(g, v)
+			}
+		}
+		fs.ProtoReflect().Set(xt.TypeDescriptor(), protoreflect.ValueOfMessage(msg))
+	}
+	return fs
 }
 
 // modifierFeatures applies a field's modifiers.

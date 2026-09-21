@@ -82,6 +82,6 @@ rules:
     severity: error
     tags: [STANDARD]
     cel: >-
-      files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3).size()
-        == files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3).distinct().size()
+      cel.bind(l, files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3),
+        l.size() == l.distinct().size())
     message: every request and response is used by one rpc

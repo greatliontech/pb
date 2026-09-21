@@ -138,7 +138,12 @@ rules:
     target: field
     severity: error
     tags: [FILE, PACKAGE]
-    cel: old == null || new == null || (has(options(old).ctype) == has(options(new).ctype) && (!has(options(old).ctype) || options(old).ctype == options(new).ctype))
+    cel: >-
+      old == null || new == null
+      || !(old.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES]) || !(new.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES])
+      || cel.bind(o, has(options(old).ctype) && options(old).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(old), pb.cpp).string_type,
+         cel.bind(n, has(options(new).ctype) && options(new).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(new), pb.cpp).string_type,
+         o == n))
     message: a field's C++ string type changed
   - id: FIELD_SAME_UTF8_VALIDATION
     kind: breaking
@@ -158,9 +163,11 @@ rules:
     cel: >-
       old == null || new == null
       || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING
-      || (has(options(file(old)).java_string_check_utf8) == has(options(file(new)).java_string_check_utf8)
-          && (!has(options(file(old)).java_string_check_utf8)
-              || options(file(old)).java_string_check_utf8 == options(file(new)).java_string_check_utf8))
+      || cel.bind(o, has(options(file(old)).java_string_check_utf8) && options(file(old)).java_string_check_utf8
+                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(old), pb.java).utf8_validation,
+         cel.bind(n, has(options(file(new)).java_string_check_utf8) && options(file(new)).java_string_check_utf8
+                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(new), pb.java).utf8_validation,
+         o == n))
     message: a field's Java UTF-8 validation changed
   - id: FILE_SAME_JAVA_STRING_CHECK_UTF8
     kind: breaking

@@ -34,11 +34,18 @@ import (
 	"cel.dev/cel-go/common/types"
 	"cel.dev/cel-go/common/types/ref"
 	"cel.dev/cel-go/ext"
+	"context"
+	"sync"
+
+	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/wellknownimports"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/rules"
@@ -66,6 +73,9 @@ type Set struct {
 	byPath map[string]*fileEntry
 	byName map[protoreflect.FullName]*entry
 	byMsg  map[proto.Message]*entry
+	// The extensions of google.protobuf.FeatureSet the set declares —
+	// the language features — by fully qualified name.
+	featureExts map[protoreflect.FullName]protoreflect.ExtensionType
 }
 
 // entry is one declaration: the descriptor the compiler linked, the
@@ -111,7 +121,159 @@ func NewSet(files linker.Files) *Set {
 	for _, f := range files {
 		s.addFile(f)
 	}
+	s.featureExts = map[protoreflect.FullName]protoreflect.ExtensionType{}
+	for _, f := range s.files {
+		for _, xt := range featureExtensionsOf(f.fd) {
+			s.featureExts[xt.TypeDescriptor().FullName()] = xt
+		}
+	}
 	return s
+}
+
+// featureSetName is the message whose extensions are the language
+// features.
+const featureSetName protoreflect.FullName = "google.protobuf.FeatureSet"
+
+// standardFeatureFiles are the language feature files protoc ships:
+// their features apply to every schema at the edition's defaults
+// whether or not a file imports them, so the environment knows them
+// without an import.
+var standardFeatureFiles = []string{"google/protobuf/java_features.proto", "google/protobuf/cpp_features.proto", "google/protobuf/go_features.proto"}
+
+var (
+	standardOnce  sync.Once
+	standardFiles []protoreflect.FileDescriptor
+	standardErr   error
+)
+
+// standardFeatures is the standard language feature files, each in
+// the Go runtime's descriptor family: the runtime's own where it
+// registers one, the compiler's embedded source compiled once —
+// from the embedded copy alone, no path of the host consulted — and
+// rebuilt over the runtime's descriptor.proto otherwise.
+func standardFeatures() ([]protoreflect.FileDescriptor, error) {
+	standardOnce.Do(func() {
+		var compile []string
+		for _, p := range standardFeatureFiles {
+			if fd, err := protoregistry.GlobalFiles.FindFileByPath(p); err == nil {
+				standardFiles = append(standardFiles, fd)
+				continue
+			}
+			compile = append(compile, p)
+		}
+		embedded := wellknownimports.WithStandardImports(protocompile.ResolverFunc(func(string) (protocompile.SearchResult, error) {
+			return protocompile.SearchResult{}, protoregistry.NotFound
+		}))
+		files, err := (&protocompile.Compiler{Resolver: embedded}).Compile(context.Background(), compile...)
+		if err != nil {
+			standardErr = fmt.Errorf("the standard language features: %w", err)
+			return
+		}
+		for _, f := range files {
+			fd, err := runtimeFamily(f, &protoregistry.Files{})
+			if err != nil {
+				standardErr = fmt.Errorf("the standard language features: %w", err)
+				return
+			}
+			standardFiles = append(standardFiles, fd)
+		}
+	})
+	return standardFiles, standardErr
+}
+
+// runtimeFamily is the file rebuilt over the Go runtime's descriptors
+// — its descriptor.proto the runtime's, so an extension it declares
+// extends the message a concrete options or feature-set value is an
+// instance of — every other import served from the rebuilt files
+// given; a file the runtime registers is taken as it is, so a
+// well-known type a rule names is the runtime's declaration where
+// the entity protos it walks are the compiler's, one and the same
+// while the two modules ship the same descriptors.
+func runtimeFamily(fd protoreflect.FileDescriptor, rebuilt *protoregistry.Files) (protoreflect.FileDescriptor, error) {
+	if g, err := protoregistry.GlobalFiles.FindFileByPath(fd.Path()); err == nil {
+		return g, nil
+	}
+	return protodesc.NewFile(protodesc.ToFileDescriptorProto(fd), familyResolver{rebuilt})
+}
+
+// runtimeFamilyFiles rebuilds every file of the set over the runtime's
+// descriptors, imports before importers, so each file's imports are
+// the rebuilt ones.
+func runtimeFamilyFiles(s *Set) ([]protoreflect.FileDescriptor, error) {
+	rebuilt := &protoregistry.Files{}
+	var out []protoreflect.FileDescriptor
+	done := map[*fileEntry]bool{}
+	var visit func(f *fileEntry) error
+	visit = func(f *fileEntry) error {
+		if done[f] {
+			return nil
+		}
+		done[f] = true
+		imports := f.fd.Imports()
+		for i := 0; i < imports.Len(); i++ {
+			if dep := s.byPath[imports.Get(i).Path()]; dep != nil {
+				if err := visit(dep); err != nil {
+					return err
+				}
+			}
+		}
+		rf, err := runtimeFamily(f.fd, rebuilt)
+		if err != nil {
+			return fmt.Errorf("%s: %w", f.fd.Path(), err)
+		}
+		if _, err := rebuilt.FindFileByPath(rf.Path()); err != nil {
+			if err := rebuilt.RegisterFile(rf); err != nil {
+				return fmt.Errorf("%s: %w", f.fd.Path(), err)
+			}
+		}
+		out = append(out, rf)
+		return nil
+	}
+	for _, f := range s.files {
+		if err := visit(f); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// familyResolver serves the runtime's files first and the rebuilt
+// ones after them.
+type familyResolver struct{ rebuilt *protoregistry.Files }
+
+func (r familyResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
+	if fd, err := protoregistry.GlobalFiles.FindFileByPath(path); err == nil {
+		return fd, nil
+	}
+	return r.rebuilt.FindFileByPath(path)
+}
+
+func (r familyResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
+	if d, err := protoregistry.GlobalFiles.FindDescriptorByName(name); err == nil {
+		return d, nil
+	}
+	return r.rebuilt.FindDescriptorByName(name)
+}
+
+// featureExtensionsOf lists a file's extensions of FeatureSet.
+func featureExtensionsOf(fd protoreflect.FileDescriptor) []protoreflect.ExtensionType {
+	var out []protoreflect.ExtensionType
+	exts := fd.Extensions()
+	for i := 0; i < exts.Len(); i++ {
+		if xd := exts.Get(i); xd.ContainingMessage().FullName() == featureSetName {
+			out = append(out, extensionType(xd))
+		}
+	}
+	return out
+}
+
+// extensionType is the extension's type: the compiler's own where it
+// carries one, a dynamic one over the descriptor otherwise.
+func extensionType(xd protoreflect.ExtensionDescriptor) protoreflect.ExtensionType {
+	if xtd, ok := xd.(protoreflect.ExtensionTypeDescriptor); ok {
+		return xtd.Type()
+	}
+	return dynamicpb.NewExtensionType(xd)
 }
 
 // Size is the number of declarations the set indexes, files
@@ -226,6 +388,11 @@ type Env struct {
 	// The library's functions by name: the ones the cost tracker
 	// charges by size.
 	charged map[string]bool
+	// The language features a rule can name: every extension of
+	// FeatureSet the new side declares, and the standard ones — the
+	// files protoc ships — where the schema holds no file of that
+	// path; each in the runtime's descriptor family, the registry's.
+	featureExts []protoreflect.ExtensionType
 	// The environment extended with each target's bindings, for the
 	// one kind the environment compiles.
 	byTarget map[check.Target]*cel.Env
@@ -243,13 +410,47 @@ func New(newSide, oldSide *Set) (*Env, error) {
 	opts := []cel.EnvOption{
 		cel.Types(&descriptorpb.FileDescriptorProto{}),
 		// The extension libraries at the versions REQ-env1-library
-		// names. Lists stops at 3, the last version the library
-		// defines: its cost estimators for flatten, distinct and sort
-		// are the versioned ones, and a number above 3 would select
-		// cel-go's unversioned estimators, which a later cel-go may
-		// change under environment 1.
+		// names: each at the last version the library defines, so a
+		// later cel-go's unversioned behavior never reaches a rule —
+		// lists at 3 keeps its versioned cost estimators for flatten,
+		// distinct and sort — and the libraries with no versioned
+		// behavior at their first.
 		ext.Strings(ext.StringsVersion(5)),
 		ext.Lists(ext.ListsVersion(3)),
+		ext.Math(ext.MathVersion(3)),
+		ext.Encoders(ext.EncodersVersion(1)),
+		ext.Bindings(ext.BindingsVersion(1)),
+		ext.Sets(ext.SetsVersion(0)),
+		ext.TwoVarComprehensions(ext.TwoVarComprehensionsVersion(0)),
+		ext.Protos(ext.ProtosVersion(0)),
+		// Optional values, the regex library's prerequisite.
+		cel.OptionalTypes(),
+		ext.Regex(ext.RegexVersion(0)),
+	}
+	// The checked schema's own types and extensions, so a rule can
+	// name an enum's value, a custom option or a language feature's
+	// extension: every file of the new side rebuilt over the runtime's
+	// descriptors, since the registry reads an extension only from a
+	// value of the message the registered extension extends, and the
+	// concrete options and feature sets a rule sees are the runtime's;
+	// then the standard language features, where the schema holds no
+	// file of that path.
+	rebuilt, err := runtimeFamilyFiles(newSide)
+	if err != nil {
+		return nil, fmt.Errorf("the schema's types: %w", err)
+	}
+	standard, err := standardFeatures()
+	if err != nil {
+		return nil, err
+	}
+	for _, fd := range standard {
+		if newSide.byPath[fd.Path()] == nil {
+			rebuilt = append(rebuilt, fd)
+		}
+	}
+	for _, fd := range rebuilt {
+		opts = append(opts, cel.TypeDescs(fd))
+		e.featureExts = append(e.featureExts, featureExtensionsOf(fd)...)
 	}
 	e.charged = map[string]bool{}
 	for _, f := range e.library() {

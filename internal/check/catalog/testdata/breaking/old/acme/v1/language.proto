@@ -1,0 +1,16 @@
+edition = "2023";
+
+package acme.v1;
+
+import "google/protobuf/cpp_features.proto";
+import "google/protobuf/java_features.proto";
+
+option features.(pb.java).utf8_validation = VERIFY;
+
+message Lang {
+  string s = 1;
+  string t = 2 [features.(pb.cpp).string_type = CORD];
+  bytes b = 3;
+  int32 n = 4;
+  string u = 5 [ctype = CORD];
+}

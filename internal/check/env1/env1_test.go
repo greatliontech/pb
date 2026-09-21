@@ -99,11 +99,28 @@ message N {}
   optional string s = 1;
 }
 `,
+	"e/features.proto": `edition = "2023";
+package e;
+import "google/protobuf/descriptor.proto";
+message Flag {
+  bool on = 1 [targets = TARGET_TYPE_FILE, targets = TARGET_TYPE_FIELD, edition_defaults = { edition: EDITION_LEGACY, value: "false" }];
+}
+extend google.protobuf.FeatureSet {
+  Flag flag = 9995;
+}
+message Wrap {
+  extend google.protobuf.FieldOptions {
+    bool wrapped = 9996;
+  }
+}
+`,
 	"e/e.proto": `edition = "2023";
 package e;
+import "e/features.proto";
 option features.field_presence = IMPLICIT;
+option features.(e.flag).on = true;
 message E {
-  int32 n = 1;
+  int32 n = 1 [(e.Wrap.wrapped) = true];
   E child = 2;
 }
 `,
@@ -111,7 +128,10 @@ message E {
 package c;
 
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/java_features.proto";
 import "a/y.proto";
+
+option features.(pb.java).utf8_validation = VERIFY;
 
 message FieldOpt {
   string tag = 1;
@@ -124,7 +144,7 @@ extend google.protobuf.FileOptions {
   string file_opt = 50002;
 }
 message Ed {
-  string s = 1 [features.field_presence = IMPLICIT];
+  string s = 1 [features.field_presence = IMPLICIT, features.(pb.java).utf8_validation = DEFAULT];
   a.Y y = 2;
   repeated int32 r = 3 [features.repeated_field_encoding = EXPANDED];
   FieldOpt delimited = 4 [features.message_encoding = DELIMITED];
@@ -402,9 +422,9 @@ func TestLibrary(t *testing.T) {
 	// every syntax: the feature reports the resolved value — implicit
 	// under an editions file's implicit default as under proto3 — and
 	// presence is read from the kind.
-	e := set.File("e/e.proto")
-	fieldFeature(e.MessageType[0].Field[0], e, `field.name == 'n' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`)
-	fieldFeature(e.MessageType[0].Field[1], e, `field.name == 'child' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`)
+	ef := set.File("e/e.proto")
+	fieldFeature(ef.MessageType[0].Field[0], ef, `field.name == 'n' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`)
+	fieldFeature(ef.MessageType[0].Field[1], ef, `field.name == 'child' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`)
 	fieldFeature(p.outer.Field[5], p.a, `field.name == 'inner' && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`)
 	// A proto3 repeated string is not packable: the file's feature
 	// stands. An editions field's modifiers are its features already.
@@ -419,6 +439,23 @@ func TestLibrary(t *testing.T) {
 		t.Errorf("descriptor.proto by descriptor alone declares %q, want none", got)
 	}
 	refusedAtCompile(t, env, check.TargetMessage, `syntax(message) == ''`, msg)
+	// language features: an extension of FeatureSet the schema
+	// declares, resolved through the editions chain as the standard
+	// ones are — the file's setting inherited by its message, a
+	// field's own overriding it — and in proto2 and proto3 the
+	// edition's defaults.
+	holds(t, env, check.TargetMessage, `proto.hasExt(features(message), pb.java) && proto.getExt(features(message), pb.java).utf8_validation == pb.JavaFeatures.Utf8Validation.VERIFY`, map[string]any{"message": p.c.MessageType[1], "file": p.c})
+	holds(t, env, check.TargetField, `proto.getExt(features(field), pb.java).utf8_validation == pb.JavaFeatures.Utf8Validation.DEFAULT && proto.getExt(features(field), pb.java).legacy_closed_enum == false`, map[string]any{"field": p.c.MessageType[1].Field[0], "file": p.c})
+	holds(t, env, check.TargetField, `proto.getExt(features(field), pb.java).utf8_validation == pb.JavaFeatures.Utf8Validation.VERIFY`, map[string]any{"field": p.c.MessageType[1].Field[1], "file": p.c})
+	holds(t, env, check.TargetField, `proto.getExt(features(field), pb.java).legacy_closed_enum == true && proto.getExt(features(field), pb.java).utf8_validation == pb.JavaFeatures.Utf8Validation.DEFAULT && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.EXPLICIT`, map[string]any{"field": p.b.MessageType[0].Field[0], "file": p.b})
+	holds(t, env, check.TargetField, `proto.getExt(features(field), pb.java).legacy_closed_enum == false && features(field).field_presence == google.protobuf.FeatureSet.FieldPresence.IMPLICIT`, kind)
+	// A language feature the schema declares itself resolves as the
+	// standard ones do; a custom option, top-level or nested in a
+	// message, reads through the same extension access.
+	holds(t, env, check.TargetFile, `proto.getExt(features(file), e.flag).on == true`, map[string]any{"file": ef})
+	holds(t, env, check.TargetFile, `proto.getExt(file.options, c.file_opt) == 'x'`, file)
+	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == true && proto.getExt(field.options, e.Wrap.wrapped) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
+	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == false`, kind)
 	// The file-only functions take a file and nothing else; the
 	// lookups take a name; the naming functions take strings.
 	for _, expr := range []string{`imports(message).size() == 0`, `visible(message).size() == 0`, `references(message).size() == 0`, `resolve(message) == null`, `fileByName(message) == null`, `words(message).size() == 0`, `case(message, 'snake') == ''`, `packageCycles(message).size() == 0`, `comments(file.name).leading == ''`, `features(file.name) == null`, `options(file.name) == {}`} {
@@ -429,7 +466,7 @@ func TestLibrary(t *testing.T) {
 	holds(t, env, check.TargetField, `options(field) == {} && dyn(options(parent(file))) == null`, field)
 	holds(t, env, check.TargetFile, `options(file) == {'(c.file_opt)': 'x'}`, file)
 	holds(t, env, check.TargetField, `options(field) == {'packed': true}`, map[string]any{"field": thing.Field[3], "file": p.b})
-	holds(t, env, check.TargetField, `options(field) == {'features': {'field_presence': 'IMPLICIT'}}`, map[string]any{"field": p.edS, "file": p.c})
+	holds(t, env, check.TargetField, `options(field) == {'features': {'field_presence': 'IMPLICIT', '(pb.java)': {'utf8_validation': 'DEFAULT'}}}`, map[string]any{"field": p.edS, "file": p.c})
 	// words, case
 	holds(t, env, check.TargetField, `words('getHTTPResponse2Code') == ['get', 'HTTP', 'Response2', 'Code'] && case('get_http_response', 'pascal') == 'GetHttpResponse' && case('HTTPServer', 'camel') == 'httpServer' && case('fooBar', 'upper-snake') == 'FOO_BAR' && case('FooBar', 'snake') == 'foo_bar'`, field)
 	if _, err := verdict(t, env, check.KindLint, check.TargetField, `case('x', 'kebab') == 'x'`, field); err == nil || !strings.Contains(err.Error(), "no style") {
@@ -492,7 +529,7 @@ func TestBreakingSides(t *testing.T) {
 	op, np := fixtureProtos(oldSet), fixtureProtos(newSet)
 	gone := op.outer.Field[1]
 	vars := map[string]any{"old": gone, "new": nil, "oldFile": op.a, "newFile": np.a}
-	ok, err := verdict(t, env, check.KindBreaking, check.TargetField, `new == null && file(old) == oldFile && file(old) != newFile && parent(old).field.size() == 9 && resolve('a.Outer').field.size() == 8 && resolve('a.Outer.gone') == null && fileByName('a/a.proto') == newFile`, vars)
+	ok, err := verdict(t, env, check.KindBreaking, check.TargetField, `new == null && file(old) == oldFile && file(old) != newFile && parent(old).field.size() == 9 && resolve('a.Outer').field.size() == 8 && resolve('a.Outer.gone') == null && fileByName('a/a.proto') == newFile && proto.getExt(features(old), pb.java).legacy_closed_enum == false && proto.getExt(features(old), e.flag).on == false`, vars)
 	if err != nil || !ok {
 		t.Fatalf("sides: %v %v", ok, err)
 	}
@@ -648,11 +685,30 @@ func TestChargedFunctions(t *testing.T) {
 	if len(env.charged) != len(names) {
 		t.Errorf("%d functions charged, the spec names %d", len(env.charged), len(names))
 	}
+	// features is charged a resolution per language feature the
+	// environment knows, beyond its result.
+	if got, want := *c.CallCost("features", "", nil, types.String("")), uint64(2+len(env.featureExts)); got < want || len(env.featureExts) < 3 {
+		t.Errorf("features charged %d over %d language features, want at least %d", got, len(env.featureExts), want)
+	}
 	for _, name := range []string{"size", "flatten", "distinct", "matches"} {
 		if c.CallCost(name, "", nil, types.String("")) != nil {
 			t.Errorf("%s is charged as a library function", name)
 		}
 	}
+}
+
+// The standard language features — the files protoc ships — are
+// known without an import: a schema importing none of them still
+// reads each at the edition's defaults.
+func TestStandardLanguageFeatures(t *testing.T) {
+	set := compileSet(t, map[string]string{"x/x.proto": "syntax = \"proto3\";\npackage x;\nmessage M { string s = 1; }\n"})
+	env, err := New(set, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vars := map[string]any{"field": set.File("x/x.proto").MessageType[0].Field[0], "file": set.File("x/x.proto")}
+	holds(t, env, check.TargetField, `proto.hasExt(features(field), pb.java) && proto.getExt(features(field), pb.java).utf8_validation == pb.JavaFeatures.Utf8Validation.DEFAULT && proto.getExt(features(field), pb.java).legacy_closed_enum == false`, vars)
+	holds(t, env, check.TargetField, `proto.getExt(features(field), pb.cpp).string_type == pb.CppFeatures.StringType.STRING && proto.hasExt(features(field), pb.go)`, vars)
 }
 
 // The extension libraries stand at their pinned versions
@@ -682,6 +738,20 @@ func TestExtensionLibraryVersions(t *testing.T) {
 	if shallow, deep := estimate(`[[1], [2], [3]].flatten(1)`), estimate(`[[1], [2], [3]].flatten(5)`); shallow >= deep {
 		t.Errorf("flatten(1) estimated %d, flatten(5) %d: lists is not at version 3", shallow, deep)
 	}
+	// math at 3 charges least and greatest over a list by its size,
+	// which no earlier version does.
+	if few, many := estimate(`math.least([1, 2, 3])`), estimate(`math.least([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])`); few >= many {
+		t.Errorf("math.least over 3 estimated %d, over 12 %d: math is not at version 3", few, many)
+	}
+	// The rest at their pinned versions — encoders and bindings at
+	// 1, sets, two-variable comprehensions, protos and regex at their
+	// first — exercised once each; protos over the language features
+	// in TestLibrary, regex over optional values.
+	holds(t, env, check.TargetFile, `sets.contains([1, 2], [2]) && !sets.equivalent([1], [2]) && sets.intersects([1, 2], [2, 3])`, file)
+	holds(t, env, check.TargetFile, `base64.encode(b'ab') == 'YWI=' && base64.decode('YWI=') == b'ab' && json.encode({'a': [1]}) == '{"a":[1]}'`, file)
+	holds(t, env, check.TargetFile, `cel.bind(x, 2, x * x) == 4`, file)
+	holds(t, env, check.TargetFile, `[1, 2].transformMapEntry(i, v, {v: i}) == {1: 0, 2: 1} && [1, 2].transformList(i, v, v * 2) == [2, 4]`, file)
+	holds(t, env, check.TargetFile, `regex.extract('a-b', '-(.)') == optional.of('b') && !regex.extract('ab', '-(.)').hasValue() && regex.replace('a-b', '-', '+') == 'a+b'`, file)
 }
 
 // inFile counts a file's declarations, itself included, from the
