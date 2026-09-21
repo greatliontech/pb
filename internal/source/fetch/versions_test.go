@@ -3,6 +3,7 @@ package fetch
 import (
 	"bytes"
 	"errors"
+	"github.com/greatliontech/pb/internal/module/version"
 	"testing"
 	"time"
 
@@ -233,4 +234,48 @@ func mustDigest(t *testing.T, zipBytes []byte) string {
 		t.Fatal(err)
 	}
 	return d
+}
+
+// Latest through a proxy is its @latest answer; through the origin the
+// highest release tag in the module's namespace, else the head's
+// pseudo-version with no precedent (REQ-resolve-synthesized-tags).
+func TestLatest(t *testing.T) {
+	fx := newFixture(t)
+	fx.Endpoints[proxyHost+"/example.com/m/@latest"] = []byte(`{"version":"v1.2.0","time":"2024-01-02T03:04:05Z"}`)
+	c := fx.Client("proxy")
+	v, err := c.Latest(ctx, "example.com/m")
+	if err != nil || v.String() != "v1.2.0" {
+		t.Fatalf("proxy latest = %v, %v", v, err)
+	}
+
+	fx = newFixture(t)
+	commit := fx.CommitFor(map[string]string{
+		"pb.yaml":      "module: example.com/m\n",
+		"sub/pb.yaml":  "module: example.com/m/sub\n",
+		"bare/b.proto": "syntax = \"proto3\";\n",
+	}, gitWhen)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Repo.Ref("refs/tags/v1.0.0", commit)
+	fx.Repo.Ref("refs/tags/v1.1.0", commit)
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	c = fx.Client("direct")
+	if v, err := c.Latest(ctx, "example.com/m"); err != nil || v.String() != "v1.1.0" {
+		t.Fatalf("origin latest = %v, %v", v, err)
+	}
+	// A declared subtree with no tag in its namespace: the head's
+	// pseudo-version, no tagged release preceding it.
+	want := "v0.0.0-" + gitWhen.UTC().Format(version.PseudoTimeLayout) + "-" + commit.String()[:12]
+	if v, err := c.Latest(ctx, "example.com/m/sub"); err != nil || v.String() != want {
+		t.Fatalf("origin head = %v, %v (want %s)", v, err, want)
+	}
+	// One release alone is the latest, no pseudo-version for it.
+	fx = newFixture(t)
+	commit = fx.CommitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Repo.Ref("refs/tags/v3.0.0", commit)
+	if v, err := fx.Client("direct").Latest(ctx, "example.com/m"); err != nil || v.String() != "v3.0.0" {
+		t.Fatalf("one-tag latest = %v, %v", v, err)
+	}
 }

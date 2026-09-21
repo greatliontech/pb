@@ -26,4 +26,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       mode as overrides, the rest unmapped
 - [ ] 7. The verb: assembly, the tidy that ends it, the report and its
       exit status, `pb migrate` registered
-- [ ] 8. Plan close-out
+- [ ] 8. The direct clone in the module cache: an origin's bare clone
+      kept on the cache's filesystem, fetched once and updated after,
+      so an origin the size of googleapis resolves within memory
+- [ ] 9. Plan close-out

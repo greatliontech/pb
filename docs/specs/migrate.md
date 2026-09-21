@@ -40,12 +40,14 @@ dropped and never contorted into a pb form that means something else.
 ## Invocation
 
 **replacement** (term): A mapping given on the command line for one
-run: `--dep <BSR module name>=<module path>` or
-`--plugin <BSR plugin name>=<plugin reference>`, each repeatable,
+run: `--dep <BSR module name>=<module path>[@<version>]` or `--plugin
+<BSR plugin name>=<plugin reference>`, each repeatable, a dependency's
+version, where given, declared as written with nothing discovered,
 naming what the tables lack or what the user wants elsewhere; a
 replacement naming what a table holds wins over the table. A
 replacement lives in the invocation alone — nothing of it is written,
-since a migration runs once.
+since a migration runs once — and one naming what the configuration
+never declares fails the verb naming it.
 
 **REQ-migrate-verb** (behavior): `pb migrate` MUST run at a directory
 holding a buf configuration — a `buf.yaml`, or a `buf.work.yaml`
@@ -120,31 +122,34 @@ fails naming both files.
 **REQ-migrate-deps** (behavior): Each entry of buf's `deps` MUST be
 looked up among the replacements and then in the dependency table by
 its BSR name, the `:ref` suffix aside: a name either holds becomes a
-declared dependency of every module the configuration declares, at
-the version resolution selects — the tidy that ends the verb picks
-it, a tagged release or the origin's pseudo-version per
-`module-resolution.md` — and a name neither holds is an unmapped
-fact naming the BSR module. The `buf.lock` entry for a dependency,
-its BSR commit and digest, is reported as unmapped: a BSR commit
-names no git commit, and pb's pin is the lockfile's own, made by the
-tidy. The dependency table names, for each entry, the module path
-and the subtree that is the BSR module's root, and holds:
+declared dependency of every module the configuration declares, at the
+replacement's version where it gives one, else at the version
+discovery names for the path — through a proxy its `@latest`
+(`module-proxy.md`), through the origin the highest release tag in the
+module's namespace or, none existing, the pseudo-version of its
+default-branch head (`module-resolution.md`
+REQ-resolve-synthesized-tags) — the tidy that ends the verb then
+keeping or moving it as the graph selects; a name neither holds, or
+one whose discovery fails, is an unmapped fact naming the BSR module
+and the flag's form that supplies what is missing, a failure's reason
+on the fact's one line. A module path is declared at one version: a
+replacement's version applies to every name reaching its path, and two
+replacements reaching one path at different versions fail the verb
+naming both. The `buf.lock` entry for a dependency, its BSR commit and
+digest, is reported as unmapped: a BSR commit names no git commit, and
+pb's pin is the lockfile's own, made by the tidy. The dependency table
+names, for each entry, the module path, whose resolution splits the
+repository from the subtree that is the BSR module's root, and holds:
 
 | BSR name | module path |
 |---|---|
-| `buf.build/googleapis/googleapis` | `github.com/googleapis/googleapis` |
-| `buf.build/bufbuild/protovalidate` | `github.com/bufbuild/protovalidate/proto/protovalidate` |
-| `buf.build/grpc-ecosystem/grpc-gateway` | `github.com/grpc-ecosystem/grpc-gateway` |
-| `buf.build/envoyproxy/protoc-gen-validate` | `github.com/bufbuild/protoc-gen-validate` |
-| `buf.build/envoyproxy/envoy` | `github.com/envoyproxy/envoy/api` |
-| `buf.build/cncf/xds` | `github.com/cncf/xds` |
 | `buf.build/opentelemetry/opentelemetry` | `github.com/open-telemetry/opentelemetry-proto` |
 | `buf.build/prometheus/client-model` | `github.com/prometheus/client_model` |
-| `buf.build/grpc/grpc` | `github.com/grpc/grpc-proto` |
-| `buf.build/gogo/protobuf` | `github.com/gogo/protobuf` |
 
 An entry enters the table with its layout verified: the module's own
-files compile from the named root as they did from the BSR module's.
+files compile from the named root, at the import paths the BSR served
+them at, the layout test the migrate package carries
+(TestDependencyLayouts) run against the origins at entry.
 
 ## Lint and breaking
 
@@ -241,8 +246,9 @@ registry enters the table by a pull request naming the reference.
 ## What the verb never does
 
 **REQ-migrate-no-network-but-tidy** (invariant): The verb MUST reach
-no network but through the tidy that ends it: the tables are pb's
-own, a BSR is never consulted, and no buf file is fetched.
+no network but through the discovery of its declarations' versions
+(REQ-migrate-deps) and the tidy that ends it: the tables are pb's own,
+a BSR is never consulted, and no buf file is fetched.
 
 **REQ-migrate-no-heuristic** (invariant): The verb MUST synthesize no
 value it was not given: a module path, a version, an option value or

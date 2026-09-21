@@ -13,9 +13,11 @@ import (
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
 )
 
-func facts(l *Layout) string {
+func facts(l *Layout) string { return factsOf(l.Facts) }
+
+func factsOf(fs []Fact) string {
 	var out []string
-	for _, f := range l.Facts {
+	for _, f := range fs {
 		if f.Mapped {
 			out = append(out, f.Source+" -> "+f.Text)
 		} else {

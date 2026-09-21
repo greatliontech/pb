@@ -35,8 +35,89 @@ type Fact struct {
 	Text   string
 }
 
-func mapped(source, form string) Fact  { return Fact{Source: source, Mapped: true, Text: form} }
-func unmapped(source, why string) Fact { return Fact{Source: source, Text: why} }
+// The constructors are the one way a fact is made, and each folds its
+// texts onto one line (REQ-migrate-report): foreign text — a remote's
+// banner in a discovery's error, a buf file's value — never breaks
+// the report's line or moves a terminal's cursor.
+func mapped(source, form string) Fact {
+	return Fact{Source: oneLine(source), Mapped: true, Text: oneLine(form)}
+}
+func unmapped(source, why string) Fact { return Fact{Source: oneLine(source), Text: oneLine(why)} }
+
+// oneLine folds text onto one printable line. An escape sequence is
+// dropped whole: ESC, then a CSI's parameters to a final byte in @
+// through ~, or intermediates to a final byte in 0 through ~, or a
+// string sequence (OSC, DCS, SOS, APC, PM) to its terminator, ESC \ or
+// BEL. A byte outside the sequence's grammar, or the text's end, ends
+// the sequence with the byte unconsumed: it is scanned again in its
+// own right, so it may open a sequence of its own or reach the line,
+// and a truncated sequence swallows nothing after it. A string
+// sequence's body admits every byte but a line break or a carriage
+// return, which end an unterminated one the same way, so it swallows
+// no later line and no later fragment. A letter after ESC [ is a final
+// byte, so a stray CSI before ordinary text costs that text's first
+// character, the one loss the grammar cannot tell from a real
+// sequence. A bare control byte, a carriage return included, becomes a
+// space, so a progress fragment never hides the cause after it; and of
+// the lines left the first that holds anything is the line, its runs
+// of whitespace one space. Multi-byte runes pass as they are: no byte
+// of one is below 0x80, and an escape consumes only ASCII. The fold is
+// idempotent: a text folded twice is the text folded once, so a fact's
+// text may be folded at its site and again by the constructor.
+func oneLine(text string) string {
+	var b strings.Builder
+	for i := 0; i < len(text); i++ {
+		c := text[i]
+		switch {
+		case c == 0x1b:
+			i++
+			switch {
+			case i < len(text) && text[i] == '[':
+				// The parameter loop runs to 0x3f, so the final byte
+				// test below, from 0x30, is CSI's own from @.
+				for i++; i < len(text) && text[i] >= 0x20 && text[i] < 0x40; i++ {
+				}
+			case i < len(text) && strings.IndexByte("]PX_^", text[i]) >= 0:
+				// A string sequence: its body runs to ESC \ or BEL,
+				// the terminator consumed with it; a line break or a
+				// carriage return ends an unterminated one, kept, as
+				// does the text's end.
+				for i++; i < len(text); i++ {
+					if text[i] == 0x07 {
+						break
+					}
+					if text[i] == 0x1b && i+1 < len(text) && text[i+1] == '\\' {
+						i++
+						break
+					}
+					if text[i] == '\n' || text[i] == '\r' {
+						i--
+						break
+					}
+				}
+				continue
+			default:
+				for ; i < len(text) && text[i] >= 0x20 && text[i] <= 0x2f; i++ {
+				}
+			}
+			if i >= len(text) || text[i] < 0x30 || text[i] > 0x7e {
+				i-- // no final byte: the escape ends here, the byte kept
+			}
+		case c == '\n':
+			b.WriteByte('\n')
+		case c < 0x20 || c == 0x7f:
+			b.WriteByte(' ')
+		default:
+			b.WriteByte(c)
+		}
+	}
+	for _, line := range strings.Split(b.String(), "\n") {
+		if fields := strings.Fields(line); len(fields) > 0 {
+			return strings.Join(fields, " ")
+		}
+	}
+	return ""
+}
 
 // Source is a buf configuration as read: the buf.yaml at the
 // directory, the buf.work.yaml beside it where one lies, and, for a
