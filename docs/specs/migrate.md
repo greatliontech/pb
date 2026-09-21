@@ -140,10 +140,11 @@ A buf id neither section's category nor the ruleset declares —
 `PROTOVALIDATE`, `FILE_SAME_PHP_GENERIC_SERVICES` — is an unmapped
 fact naming it. A `v2` configuration's top-level sections become the
 lint file's root selection and a module's own sections its entry in
-the lint file's `modules` map (`check-rules.md` REQ-lint-config-
-schema), `enable`, `exclude` and `severity` per module; `ignore` and
-`ignore_only` of a module scope by path and join the root's ignores
-with the module's directory prefixed to their paths.
+the lint file's `modules` map (`check-rules.md`
+REQ-lint-config-schema), `enable`, `exclude` and `severity` per
+module; `ignore` and
+`ignore_only` of a module join the root's ignores as written, their
+paths module-relative as pb's finding paths are.
 
 **REQ-migrate-rule-options** (behavior): buf's rule-shaping options
 MUST be unmapped facts where set to anything but their default —

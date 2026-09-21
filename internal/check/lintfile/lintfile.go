@@ -1,10 +1,11 @@
 // Package lintfile parses pb.lint.yaml, the lint file at the resolution
 // root (check-rules.md §Configuration and suppression): the rulesets to
-// import, the rule selection and severity overrides, the path ignores,
-// and the breaking-change base. It selects the enabled rules from the
-// imported rulesets' rule files, finds the rulesets among the build's
-// modules, and judges a finding's path against the ignores; the verbs
-// assemble the rest.
+// import, the rule selection and severity overrides — the root's, and a
+// module's own by its directory — the path ignores, and the
+// breaking-change base. It selects the enabled rules from the imported
+// rulesets' rule files, finds the rulesets among the build's modules,
+// and judges a finding's path against the ignores; the verbs assemble
+// the rest.
 package lintfile
 
 import (
@@ -23,6 +24,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
+	"github.com/greatliontech/pb/internal/rootpath"
 )
 
 // FileName is the lint file's name at the resolution root.
@@ -51,6 +53,16 @@ type File struct {
 	Severity map[string]check.Severity
 	Ignore   []Ignore
 	Breaking *Breaking
+	// Per-module selections by the module's directory, each replacing
+	// the root's enable, exclude and severity for that module's files.
+	Modules map[string]ModuleSelection
+}
+
+// ModuleSelection is one module's own selection.
+type ModuleSelection struct {
+	Enable   []string
+	Exclude  []string
+	Severity map[string]check.Severity
 }
 
 // Ignore excludes rules under path globs: every rule where Rules is
@@ -92,13 +104,37 @@ func Parse(data []byte) (*File, error) {
 	if m == nil { // an empty file: every part absent
 		return f, nil
 	}
-	list := func(name string, into *[]string) contractfile.Field {
-		return contractfile.Field{Name: name, Read: func(n ast.Node) error {
-			l, err := contractfile.Strings(n, name, ErrInvalid)
-			*into = l
-			return err
-		}}
+	selection := func(where string, enable, exclude *[]string, severity *map[string]check.Severity) []contractfile.Field {
+		list := func(name string, into *[]string) contractfile.Field {
+			return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+				l, err := contractfile.Strings(n, where+name, ErrInvalid)
+				*into = l
+				return err
+			}}
+		}
+		return []contractfile.Field{
+			list("enable", enable),
+			list("exclude", exclude),
+			{Name: "severity", Read: func(n ast.Node) error {
+				sm, ok := n.(*ast.MappingNode)
+				if !ok {
+					return fmt.Errorf("%w: %sseverity must be a mapping from rule name or id to severity", ErrInvalid, where)
+				}
+				*severity = map[string]check.Severity{}
+				for _, skv := range sm.Values {
+					id := contractfile.Key(skv.Key)
+					text, ok := contractfile.Line(skv.Value)
+					sv, valid := check.ParseSeverity(text)
+					if !ok || !valid {
+						return fmt.Errorf("%w: %sseverity.%s must be %s or %s", ErrInvalid, where, id, check.SeverityError, check.SeverityWarning)
+					}
+					(*severity)[id] = sv
+				}
+				return nil
+			}},
+		}
 	}
+	root := selection("", &f.Enable, &f.Exclude, &f.Severity)
 	err = contractfile.Mapping(m, "", ErrInvalid,
 		contractfile.Field{Name: "rulesets", Read: func(n ast.Node) error {
 			paths, err := contractfile.Strings(n, "rulesets", ErrInvalid)
@@ -118,22 +154,23 @@ func Parse(data []byte) (*File, error) {
 			f.Rulesets = paths
 			return nil
 		}},
-		list("enable", &f.Enable),
-		list("exclude", &f.Exclude),
-		contractfile.Field{Name: "severity", Read: func(n ast.Node) error {
-			sm, ok := n.(*ast.MappingNode)
+		root[0], root[1], root[2],
+		contractfile.Field{Name: "modules", Read: func(n ast.Node) error {
+			mm, ok := n.(*ast.MappingNode)
 			if !ok {
-				return fmt.Errorf("%w: severity must be a mapping from rule name or id to severity", ErrInvalid)
+				return fmt.Errorf("%w: modules must be a mapping from module directory to selection", ErrInvalid)
 			}
-			f.Severity = map[string]check.Severity{}
-			for _, skv := range sm.Values {
-				id := contractfile.Key(skv.Key)
-				text, ok := contractfile.Line(skv.Value)
-				sv, valid := check.ParseSeverity(text)
-				if !ok || !valid {
-					return fmt.Errorf("%w: severity.%s must be %s or %s", ErrInvalid, id, check.SeverityError, check.SeverityWarning)
+			f.Modules = map[string]ModuleSelection{}
+			for _, mkv := range mm.Values {
+				dir := contractfile.Key(mkv.Key)
+				if err := rootpath.Check(dir, "the workspace root"); err != nil {
+					return fmt.Errorf("%w: modules: %v", ErrInvalid, err)
 				}
-				f.Severity[id] = sv
+				var ms ModuleSelection
+				if err := contractfile.Mapping(mkv.Value, "modules."+dir, ErrInvalid, selection("modules."+dir+".", &ms.Enable, &ms.Exclude, &ms.Severity)...); err != nil {
+					return err
+				}
+				f.Modules[dir] = ms
 			}
 			return nil
 		}},
@@ -309,18 +346,31 @@ func Rulesets(f *File, root *workspace.Root, mods []modfiles.Module) ([]Ruleset,
 }
 
 // Selection is a lint file's selection over the imported rulesets:
-// the enabled rules, and the ignore entries with every rule spelled
-// by its name.
+// the enabled rules under the root's selection, each module's own
+// under its entry by directory, and the ignore entries with every
+// rule spelled by its name.
 type Selection struct {
-	Rules  []rules.Rule
-	ignore []Ignore
+	Rules   []rules.Rule
+	Modules map[string][]rules.Rule
+	ignore  []Ignore
+}
+
+// RulesFor is the rules governing a module at its directory: its own
+// entry's where the file holds one, the root's otherwise.
+func (s Selection) RulesFor(dir string) []rules.Rule {
+	if rs, ok := s.Modules[dir]; ok {
+		return rs
+	}
+	return s.Rules
 }
 
 // Ignored reports whether a finding of the named rule at the path —
-// a module-relative proto path — is excluded by an ignore entry: a
-// path matching one of its globs, and the rule among its rules or
-// the entry naming none (REQ-lint-config-schema's ignore). A finding
-// without a path is never ignored here.
+// a module-relative proto path, or the workspace-relative directory
+// a module's own selection locates a set or package finding at,
+// which a glob matches as the directory itself — is excluded by an
+// ignore entry: a path matching one of its globs, and the rule among
+// its rules or the entry naming none (REQ-lint-config-schema's
+// ignore). A finding without a path is never ignored here.
 func (s Selection) Ignored(path, name string) bool {
 	if path == "" {
 		return false
@@ -379,46 +429,27 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 		}
 	}
 	n := index(all)
-	resolve := func(what string, list []string, rulesOnly bool) (map[string]bool, error) {
-		out := map[string]bool{}
-		for _, spelling := range list {
-			names, err := n.resolve(what, spelling, rulesOnly)
-			if err != nil {
-				return nil, err
-			}
-			for _, name := range names {
-				out[name] = true
-			}
-		}
-		return out, nil
-	}
-	enabled, err := resolve("enable", f.Enable, false)
+	rootRules, err := n.pick(all, f.Enable, f.Exclude, f.Severity, "")
 	if err != nil {
 		return Selection{}, err
 	}
-	excluded, err := resolve("exclude", f.Exclude, false)
-	if err != nil {
-		return Selection{}, err
+	sel := Selection{Rules: rootRules}
+	dirs := make([]string, 0, len(f.Modules))
+	for d := range f.Modules {
+		dirs = append(dirs, d)
 	}
-	keys := make([]string, 0, len(f.Severity))
-	for k := range f.Severity {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	severity := map[string]check.Severity{}
-	spelled := map[string]string{}
-	for _, k := range keys {
-		names, err := n.resolve("severity", k, true)
+	sort.Strings(dirs)
+	for _, d := range dirs {
+		ms := f.Modules[d]
+		rs, err := n.pick(all, ms.Enable, ms.Exclude, ms.Severity, "modules."+d+".")
 		if err != nil {
 			return Selection{}, err
 		}
-		if prior, twice := spelled[names[0]]; twice {
-			return Selection{}, fmt.Errorf("%w: severity names %s twice, as %q and %q", ErrSelection, names[0], prior, k)
+		if sel.Modules == nil {
+			sel.Modules = map[string][]rules.Rule{}
 		}
-		spelled[names[0]] = k
-		severity[names[0]] = f.Severity[k]
+		sel.Modules[d] = rs
 	}
-	sel := Selection{Rules: []rules.Rule{}}
 	for _, ig := range f.Ignore {
 		canonical := Ignore{Paths: ig.Paths}
 		if ig.Rules != nil {
@@ -433,19 +464,66 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 		}
 		sel.ignore = append(sel.ignore, canonical)
 	}
+	return sel, nil
+}
+
+// pick is one selection over the imported rules: every rule when
+// enable is nil, else the rules it names, less the excluded, each at
+// its overridden severity; where names the spellings in the file.
+func (n names) pick(all []rules.Rule, enable, exclude []string, severity map[string]check.Severity, where string) ([]rules.Rule, error) {
+	resolve := func(what string, list []string) (map[string]bool, error) {
+		out := map[string]bool{}
+		for _, spelling := range list {
+			names, err := n.resolve(where+what, spelling, false)
+			if err != nil {
+				return nil, err
+			}
+			for _, name := range names {
+				out[name] = true
+			}
+		}
+		return out, nil
+	}
+	enabled, err := resolve("enable", enable)
+	if err != nil {
+		return nil, err
+	}
+	excluded, err := resolve("exclude", exclude)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(severity))
+	for k := range severity {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	overrides := map[string]check.Severity{}
+	spelled := map[string]string{}
+	for _, k := range keys {
+		names, err := n.resolve(where+"severity", k, true)
+		if err != nil {
+			return nil, err
+		}
+		if prior, twice := spelled[names[0]]; twice {
+			return nil, fmt.Errorf("%w: %sseverity names %s twice, as %q and %q", ErrSelection, where, names[0], prior, k)
+		}
+		spelled[names[0]] = k
+		overrides[names[0]] = severity[k]
+	}
+	out := []rules.Rule{}
 	for _, r := range all {
-		if f.Enable != nil && !enabled[r.Name()] {
+		if enable != nil && !enabled[r.Name()] {
 			continue
 		}
 		if excluded[r.Name()] {
 			continue
 		}
-		if sv, ok := severity[r.Name()]; ok {
+		if sv, ok := overrides[r.Name()]; ok {
 			r.Severity = sv
 		}
-		sel.Rules = append(sel.Rules, r)
+		out = append(out, r)
 	}
-	return sel, nil
+	return out, nil
 }
 
 // names indexes the imported rules' spellings (the rule name term):

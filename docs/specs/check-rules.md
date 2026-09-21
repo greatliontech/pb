@@ -122,7 +122,11 @@ sequence, as the compiler counts; for a pair whose new side is
 absent, the old
 side's declaration in the base, marked as the base's; for a `package`
 rule, the first of the package's checked files in path order, without
-a position; for a `set` rule, no location.
+a position; for a `set` rule, no location — unless the rule is
+enabled by a module's own selection, when a `set` finding, and a
+`package` finding likewise, is located at the module's directory
+without a position, so two selections' findings of one rule tell
+apart.
 
 ## CEL environment 1
 
@@ -327,17 +331,30 @@ rules}` entries excluding rules under path globs — `paths` one or more globs o
 module-relative proto paths (the component semantics `provenance.md`
 REQ-prov-trust-schema defines), `rules` optional and non-empty when
 present, absent meaning every rule, a finding without a path never
-ignored; and `breaking`, a mapping whose
+ignored and one located at a module's directory matched by a glob
+matching the directory itself; and `breaking`, a mapping whose
 `base` is a mapping with exactly one of `ref` (a git reference),
 `version` (a tagged version) and `pinned` (`true`; any other value is
-a schema violation). No other keys exist at any level.
+a schema violation); and `modules`, a map from a workspace module's
+directory — the cleaned relative directory the workspace file's `use`
+entry names, `.` the root itself — to a mapping of `enable`,
+`exclude` and `severity` in the forms above, each optional. No other
+keys exist at any level.
 
 **REQ-lint-selection** (behavior): The enabled rules MUST be every
 rule of every imported ruleset when `enable` is absent, or the rules
 `enable` names — by rule name, by qualified tag, or by a bare id or
 tag where exactly one imported ruleset declares it — less those
 `exclude` names, each with the severity `severity` overrides for it,
-`severity` and `ignore` naming rules alone; a spelling that names no
+`severity` and `ignore` naming rules alone; a `modules` entry is a
+selection of its own for the files of the module at its directory —
+its `enable`, `exclude` and `severity` read as the root's are, an
+absent `enable` every imported rule — replacing the root's, which
+governs every other module's files, so a rule of the `set` or
+`package` target enabled at the root sees the files of the modules
+the root governs and one enabled for a module that module's files
+alone, and a directory naming no workspace module fails the check
+run naming it; a spelling that names no
 imported rule or tag, a bare spelling several imported rulesets
 declare, a ruleset declaring one id in two of its files or as both an
 id and a tag — a ruleset's ids and tags one namespace, so a rule name
@@ -372,17 +389,19 @@ verified exactly as any dependency (`module-lockfile.md`,
 ## Verbs
 
 **REQ-check-lint-verb** (behavior): `pb lint`, taking no arguments,
-MUST evaluate every enabled lint rule over the checked modules and
-report the findings as REQ-check-findings-output says; with zero lint
-rules enabled it reports that on standard error.
+MUST evaluate every enabled lint rule over the checked modules, each
+module's files under the selection governing it, and report the
+findings as REQ-check-findings-output says; with zero lint rules
+enabled under every selection it reports that on standard error.
 
 **REQ-check-breaking-verb** (behavior): `pb breaking`, taking no
 arguments, MUST materialize each module under check's base, pair it
-with that module's checked schema, evaluate every enabled breaking
-rule over the pairs, and report the findings of every module as one
-stream, ordered as REQ-check-findings-output says, with one exit
-status; with zero breaking rules enabled it reports that on standard
-error.
+with that module's checked schema, evaluate every breaking rule
+enabled under the selection governing the module over the pairs —
+a module with none needing no base — and report the findings of
+every module as one stream, ordered as REQ-check-findings-output
+says, with one exit status; with zero breaking rules enabled under
+every selection it reports that on standard error.
 
 **REQ-check-findings-output** (wire): A check verb MUST print each
 finding as one line on standard output, `path:line:column: severity

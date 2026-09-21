@@ -27,6 +27,13 @@ ignore:
   - paths: ["vendor/**", "legacy/*.proto"]
     rules: [ENUM_NAMES]
   - paths: ["gen/**"]
+modules:
+  legacy/api:
+    enable: [HOUSE_ONE]
+    severity:
+      HOUSE_ONE: warning
+  fresh: {}
+  .: {}
 breaking:
   base:
     ref: main
@@ -42,6 +49,9 @@ func TestParse(t *testing.T) {
 	}
 	if strings.Join(f.Rulesets, ",") != "example.com/std,example.com/house" || strings.Join(f.Enable, ",") != "STANDARD,HOUSE_ONE" || strings.Join(f.Exclude, ",") != "FIELD_NAMES" {
 		t.Fatalf("file = %+v", f)
+	}
+	if legacy, fresh := f.Modules["legacy/api"], f.Modules["fresh"]; len(f.Modules) != 3 || f.Modules["."].Enable != nil || strings.Join(legacy.Enable, ",") != "HOUSE_ONE" || legacy.Severity["HOUSE_ONE"] != check.SeverityWarning || fresh.Enable != nil || fresh.Exclude != nil || fresh.Severity != nil {
+		t.Fatalf("modules = %+v", f.Modules)
 	}
 	if f.Severity["ENUM_NAMES"] != check.SeverityWarning || len(f.Ignore) != 2 || len(f.Ignore[0].Paths) != 2 || f.Ignore[1].Rules != nil || f.Breaking == nil || f.Breaking.Base != (Base{Form: BaseRef, Value: "main"}) || f.Breaking.Base.String() != "ref main" {
 		t.Fatalf("file = %+v", f)
@@ -76,6 +86,13 @@ func TestParse(t *testing.T) {
 		"ignore rules empty": {"ignore:\n  - paths: [a]\n    rules: []\n", "ignore[0].rules must not be empty"},
 		"base bad version":   {"breaking:\n  base:\n    version: nonsense\n", "breaking.base.version:"},
 		"ignore bad glob":    {"ignore:\n  - paths: [\"[\"]\n", "ignore[0].paths:"},
+		"modules not a map":  {"modules: [a]\n", "modules must be a mapping"},
+		"modules bad dir":    {"modules:\n  ../x: {}\n", "modules:"},
+		"modules abs dir":    {"modules:\n  /a: {}\n", "modules:"},
+		"modules unclean":    {"modules:\n  ./a: {}\n", "modules:"},
+		"modules trailing":   {"modules:\n  a/: {}\n", "modules:"},
+		"modules unknown":    {"modules:\n  a:\n    ignore: []\n", `modules.a: unknown key "ignore"`},
+		"modules severity":   {"modules:\n  a:\n    severity:\n      X: loud\n", "modules.a.severity.X must be error or warning"},
 		"breaking not map":   {"breaking: main\n", "breaking must be a mapping"},
 		"breaking no base":   {"breaking: {}\n", "breaking: missing base"},
 		"breaking unknown":   {"breaking:\n  base: {ref: main}\n  other: 1\n", `breaking: unknown key "other"`},
@@ -247,6 +264,22 @@ func TestSelect(t *testing.T) {
 	}
 	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "example.com/std:FIELD_NAMES ENUM_NAMES" {
 		t.Fatalf("the file's own spellings changed: %v", got)
+	}
+	// A module's own selection replaces the root's for that module
+	// alone, resolved over the same imports and spelled by its entry.
+	own := &File{Enable: []string{"STANDARD"}, Modules: map[string]ModuleSelection{"legacy": {Enable: []string{"HOUSE_ONE"}, Severity: map[string]check.Severity{"HOUSE_ONE": check.SeverityWarning}}, "fresh": {}}}
+	sel, err = Select(own, []Ruleset{std, house})
+	if err != nil || ids(sel.Rules) != "FIELD_NAMES:error ENUM_NAMES:error NO_DELETE:error" || ids(sel.Modules["legacy"]) != "HOUSE_ONE:warning" || ids(sel.Modules["fresh"]) != "FIELD_NAMES:error ENUM_NAMES:error NO_DELETE:error HOUSE_ONE:error HOUSE_TWO:error" {
+		t.Fatalf("per module: %s | %s | %s %v", ids(sel.Rules), ids(sel.Modules["legacy"]), ids(sel.Modules["fresh"]), err)
+	}
+	if ids(sel.RulesFor("legacy")) != "HOUSE_ONE:warning" || ids(sel.RulesFor("other")) != ids(sel.Rules) {
+		t.Fatalf("RulesFor: %s %s", ids(sel.RulesFor("legacy")), ids(sel.RulesFor("other")))
+	}
+	if _, err := Select(&File{Modules: map[string]ModuleSelection{"legacy": {Enable: []string{"NOPE"}}}}, []Ruleset{std}); err == nil || !strings.Contains(err.Error(), `modules.legacy.enable names "NOPE"`) {
+		t.Fatalf("a module's unknown spelling: %v", err)
+	}
+	if _, err := Select(&File{Modules: map[string]ModuleSelection{"legacy": {Severity: map[string]check.Severity{"STANDARD": check.SeverityWarning}}}}, []Ruleset{std}); err == nil || !strings.Contains(err.Error(), `modules.legacy.severity names "STANDARD"`) {
+		t.Fatalf("a module's severity naming a tag: %v", err)
 	}
 	// A ruleset declaring a name twice, in two files, or as both a
 	// rule and a tag; and two severity spellings of one rule.

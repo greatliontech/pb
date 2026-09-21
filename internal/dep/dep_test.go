@@ -1367,6 +1367,42 @@ func TestLint(t *testing.T) {
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning example.com/house:FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
 		t.Fatalf("warnings: %v %q", err, out.String())
 	}
+	// A module's own selection governs its files alone: a's entry
+	// enables nothing, b stays under the root, and the root's set
+	// rule counts b's messages alone.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: []\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("per module: %v %q", err, out.String())
+	}
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  nowhere:\n    enable: []\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), `modules names "nowhere", which is no workspace module`) {
+		t.Fatalf("an unknown module: %v", err)
+	}
+	// Every module with an entry leaves the root governing nothing; a
+	// set rule enabled for a module sees its files alone and its
+	// finding is located at the module's directory.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT]\n  b:\n    enable: [MESSAGE_COUNT]\n  house:\n    enable: []\n")
+	out.Reset()
+	diag.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "" {
+		t.Fatalf("every module its own, under the count: %v %q %q", err, out.String(), diag.String())
+	}
+	// Every module's entry enabling nothing leaves zero rules enabled
+	// under every selection governing a file, whatever the root would
+	// enable for a module it does not govern.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: []\n  b:\n    enable: []\n  house:\n    enable: []\n")
+	out.Reset()
+	diag.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "pb lint: zero lint rules enabled\n" {
+		t.Fatalf("zero under every selection: %v %q %q", err, out.String(), diag.String())
+	}
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT]\n")
+	fx.write(t, "a/more.proto", "syntax = \"proto3\";\npackage a;\nmessage M2 {}\nmessage M3 {}\n")
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a: warning example.com/house:MESSAGE_COUNT: too many messages\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("a module's set finding located at its directory: %v %q", err, out.String())
+	}
 	// Zero rules enabled.
 	fx = newCheck(t, "")
 	out.Reset()
@@ -1449,6 +1485,18 @@ func TestBreaking(t *testing.T) {
 	}
 	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "v0.8.0") {
 		t.Fatalf("a's base pin lost on b's failure: %q", lock)
+	}
+	// A module whose own selection enables no breaking rule needs no
+	// base: b's unserved base is never asked for, nothing of b is
+	// pinned, and a's findings under the root's rules stand.
+	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  b:\n    enable: []\nbreaking:\n  base:\n    version: v0.8.0\n")
+	fx.serve(t, "example.com/a", "v0.8.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {\n  string gone = 9;\n}\n"})
+	out.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n" {
+		t.Fatalf("a module needing no base: %v %q", err, out.String())
+	}
+	if lock := fx.read(t, "pb.lock"); strings.Contains(lock, "example.com/b") || !strings.Contains(lock, "v0.8.0") {
+		t.Fatalf("b's base pinned, or a's not: %q", lock)
 	}
 	// The base compiles with the build's other modules resolving its
 	// imports and none other a target: a's base lacking a message b

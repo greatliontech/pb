@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "70115a35969bb3af523e2ed1b289e8b08719e0a8c3989a504ad8f60c8fc52246"
-  source_hash: "922c91a113a96384b1ee5142baa186c686b3c9f7102e83de4c789f7d37ab1595"
+  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
+  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Lint"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "70115a35969bb3af523e2ed1b289e8b08719e0a8c3989a504ad8f60c8fc52246"
-  source_hash: "922c91a113a96384b1ee5142baa186c686b3c9f7102e83de4c789f7d37ab1595"
+  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
+  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.prepare"
   role: BINDING_ROLE_IMPLEMENTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "70115a35969bb3af523e2ed1b289e8b08719e0a8c3989a504ad8f60c8fc52246"
-  source_hash: "922c91a113a96384b1ee5142baa186c686b3c9f7102e83de4c789f7d37ab1595"
+  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
+  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestLint"
   role: BINDING_ROLE_TESTS
@@ -33,8 +33,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-breaking-verb"
-  content_hash: "4e05872f30044731a4b2421393d02237ae69e095f8d9ec0ebdfee39988d4f2e2"
-  source_hash: "97079f9806308ec36ade75d95e1a6228f6b9e5bab968a294db5881d16e33428f"
+  content_hash: "a4d0ca8c273c8e549eecf99a98914a5088135905a7db6f1a6c34d4d5f1f0da0d"
+  source_hash: "4d3f8172dd6a0cb9ed76425c7d27c3b78720c7024b859d8b3367fa21fa806186"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Breaking"
   role: BINDING_ROLE_IMPLEMENTS
@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-breaking-verb"
-  content_hash: "4e05872f30044731a4b2421393d02237ae69e095f8d9ec0ebdfee39988d4f2e2"
-  source_hash: "97079f9806308ec36ade75d95e1a6228f6b9e5bab968a294db5881d16e33428f"
+  content_hash: "a4d0ca8c273c8e549eecf99a98914a5088135905a7db6f1a6c34d4d5f1f0da0d"
+  source_hash: "4d3f8172dd6a0cb9ed76425c7d27c3b78720c7024b859d8b3367fa21fa806186"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestBreaking"
   role: BINDING_ROLE_TESTS
@@ -169,4 +169,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/cmd/pb.TestFailure"
   role: BINDING_ROLE_TESTS
   shape_hash: "164f16c4794173aff284bdc6414fcd176939c242559af44b4b8ff8127f65ccf8"
+}
+
+bindings {
+  requirement_id: "REQ-check-breaking-verb"
+  content_hash: "a4d0ca8c273c8e549eecf99a98914a5088135905a7db6f1a6c34d4d5f1f0da0d"
+  source_hash: "4d3f8172dd6a0cb9ed76425c7d27c3b78720c7024b859d8b3367fa21fa806186"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.checkRun.rulesOf"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c3bbe373645e18fbeb0929da639338cdaf93054a9c5fc4dbbdae108dddbdba5f"
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"sort"
 
 	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/go-git/go-git/v6"
@@ -46,21 +47,25 @@ func (s *Session) LintFile() (*lintfile.File, error) {
 }
 
 // checkRun is what the two check verbs share: the build's modules,
-// the lint file, the enabled rules of one kind, the compiled schema
-// and its environment set, and the checked modules' files.
+// the lint file and its selection, the checked modules grouped by the
+// selection governing each, the count of rules of one kind enabled
+// across the groups that evaluate, and the compiled schema's
+// environment set.
 type checkRun struct {
-	lint    *lintfile.File
-	sel     lintfile.Selection
-	mods    []modfiles.Module
-	rules   []rules.Rule
-	set     *env1.Set
-	checked []string // every checked module's files, module-relative
+	lint   *lintfile.File
+	sel    lintfile.Selection
+	mods   []modfiles.Module
+	groups []*checkGroup          // the root's first, then each module with its own selection
+	group  map[string]*checkGroup // by module directory
+	rules  int                    // enabled rules of the kind, every evaluating group's
+	set    *env1.Set
 }
 
 // prepare assembles a check run of one kind (REQ-check-lint-verb,
 // REQ-check-breaking-verb): the build list and the modules' files,
 // the lint file, the rulesets it names found among the build's
-// modules, the enabled rules of the kind, the checked schema
+// modules, the checked modules grouped by the selection governing
+// each with its enabled rules of the kind, the checked schema
 // compiled.
 func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error) {
 	_, mods, err := s.Modules(ctx)
@@ -79,23 +84,92 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	var rs []rules.Rule
-	for _, r := range sel.Rules {
-		if r.Kind == kind {
-			rs = append(rs, r)
+	local := map[string]bool{}
+	for _, m := range mods {
+		if m.Local {
+			local[m.Dir] = true
+		}
+	}
+	named := make([]string, 0, len(sel.Modules))
+	for d := range sel.Modules {
+		named = append(named, d)
+	}
+	sort.Strings(named)
+	for _, d := range named {
+		if !local[d] {
+			return nil, fmt.Errorf("%s: modules names %q, which is no workspace module", lintfile.FileName, d)
 		}
 	}
 	result, err := compile.Compile(ctx, mods)
 	if err != nil {
 		return nil, err
 	}
-	run := &checkRun{lint: lf, sel: sel, mods: mods, rules: rs, set: env1.NewSet(result.Files)}
+	run := &checkRun{lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), group: map[string]*checkGroup{}}
+	// The root's selection governs every module without an entry,
+	// as one group; a module with an entry is a group of its own,
+	// located at its directory.
+	root := &checkGroup{}
+	run.groups = append(run.groups, root)
 	for _, m := range mods {
-		if m.Local {
-			run.checked = append(run.checked, m.Protos()...)
+		if !m.Local {
+			continue
+		}
+		g := root
+		if _, own := sel.Modules[m.Dir]; own {
+			g = &checkGroup{dir: m.Dir}
+			run.groups = append(run.groups, g)
+		}
+		g.checked = append(g.checked, m.Protos()...)
+		run.group[m.Dir] = g
+	}
+	for _, g := range run.groups {
+		for _, r := range sel.RulesFor(g.dir) {
+			if r.Kind == kind {
+				g.rules = append(g.rules, r)
+			}
+		}
+		if g.evaluates() {
+			run.rules += len(g.rules)
 		}
 	}
 	return run, nil
+}
+
+// checkGroup is the files one selection governs and the rules of the
+// run's kind it enables: the root's, or a module's own, located at
+// the module's directory.
+type checkGroup struct {
+	dir     string // the module's directory for its own selection; "" for the root's
+	checked []string
+	rules   []rules.Rule
+}
+
+// evaluates reports whether the group has anything to judge: files
+// under its selection and rules of the kind enabled for them; the
+// run counts rules over such groups alone.
+func (g *checkGroup) evaluates() bool { return len(g.checked) != 0 && len(g.rules) != 0 }
+
+// located is a group's findings with the location a module's own
+// selection gives a location-less one: the module's directory, no
+// position (REQ-rules-finding-location).
+func (g *checkGroup) located(findings []check.Finding) []check.Finding {
+	if g.dir == "" {
+		return findings
+	}
+	for i := range findings {
+		if findings[i].Path == "" {
+			findings[i].Path = g.dir
+		}
+	}
+	return findings
+}
+
+// rulesOf is the rules of the run's kind governing a module.
+func (r *checkRun) rulesOf(dir string) []rules.Rule {
+	if g := r.group[dir]; g != nil {
+		return g.rules
+	}
+	return nil
 }
 
 // source reads a checked file's text from the workspace modules.
@@ -133,15 +207,16 @@ func (r *checkRun) report(findings []check.Finding, out io.Writer) error {
 	return nil
 }
 
-// Lint evaluates every enabled lint rule over the checked modules and
-// reports the findings (REQ-check-lint-verb); with zero lint rules
-// enabled it says so on diag and reports nothing.
+// Lint evaluates every enabled lint rule over the checked modules,
+// each module's files under the selection governing it, and reports
+// the findings (REQ-check-lint-verb); with zero lint rules enabled
+// under every selection it says so on diag and reports nothing.
 func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 	run, err := prepare(ctx, s, check.KindLint)
 	if err != nil {
 		return fmt.Errorf("lint: %w", err)
 	}
-	if len(run.rules) == 0 {
+	if run.rules == 0 {
 		fmt.Fprintln(diag, "pb lint: zero lint rules enabled")
 		return nil
 	}
@@ -149,11 +224,18 @@ func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("lint: %w", err)
 	}
-	report, err := eval.Lint(env, run.checked, run.source, run.rules)
-	if err != nil {
-		return fmt.Errorf("lint: %w", err)
+	var findings []check.Finding
+	for _, g := range run.groups {
+		if !g.evaluates() {
+			continue
+		}
+		report, err := eval.Lint(env, g.checked, run.source, g.rules)
+		if err != nil {
+			return fmt.Errorf("lint: %w", err)
+		}
+		findings = append(findings, g.located(report.Findings)...)
 	}
-	return run.report(report.Findings, out)
+	return run.report(findings, out)
 }
 
 // BreakingDeps is what the breaking verb draws on beside the session:
@@ -174,7 +256,7 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 	if err != nil {
 		return fmt.Errorf("breaking: %w", err)
 	}
-	if len(run.rules) == 0 {
+	if run.rules == 0 {
 		fmt.Fprintln(diag, "pb breaking: zero breaking rules enabled")
 		return nil
 	}
@@ -185,8 +267,9 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 	var findings []check.Finding
 	for i, m := range run.mods {
 		// A module under check with no protobuf files has nothing to
-		// pair and needs no base.
-		if !m.Local || len(m.Files) == 0 {
+		// pair and needs no base; nor does one whose selection enables
+		// no breaking rule.
+		if !m.Local || len(m.Files) == 0 || len(run.rulesOf(m.Dir)) == 0 {
 			continue
 		}
 		base, err := breaking.Materialize(ctx, run.lint.Breaking.Base, breaking.Module{Path: m.Path, Dir: m.Dir}, sources)
@@ -219,11 +302,11 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		for p := range base.Files {
 			oldChecked = append(oldChecked, p)
 		}
-		report, err := eval.Breaking(env, oldChecked, m.Protos(), run.source, baseSource, run.rules)
+		report, err := eval.Breaking(env, oldChecked, m.Protos(), run.source, baseSource, run.rulesOf(m.Dir))
 		if err != nil {
 			return fmt.Errorf("breaking: %s: %w", m.Path, err)
 		}
-		findings = append(findings, report.Findings...)
+		findings = append(findings, run.group[m.Dir].located(report.Findings)...)
 	}
 	return run.report(findings, out)
 }

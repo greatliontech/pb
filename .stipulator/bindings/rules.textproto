@@ -173,8 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.Lint"
   role: BINDING_ROLE_IMPLEMENTS
@@ -183,8 +183,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.text.column"
   role: BINDING_ROLE_IMPLEMENTS
@@ -193,8 +193,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestFindings"
   role: BINDING_ROLE_TESTS
@@ -203,8 +203,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestPositionless"
   role: BINDING_ROLE_TESTS
@@ -213,8 +213,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestColumnRecount"
   role: BINDING_ROLE_TESTS
@@ -273,8 +273,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-finding-location"
-  content_hash: "d91e1e3285b299b275b955dd272ebb33c02f2f4757d74d59a97724b013dfdfdf"
-  source_hash: "d9bda2528492ecf439bfbf35180f69f96292517bb48573f17d5821b108558f2a"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestBreaking"
   role: BINDING_ROLE_TESTS
@@ -369,4 +369,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/check/rules.Rule.Name"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "ef0a62f16226b335559a68488f03611cd99dc21f7ccdc079786eb682604a90b1"
+}
+
+bindings {
+  requirement_id: "REQ-rules-finding-location"
+  content_hash: "100107724b822d06081758958112b2f0749fae2419942240b937a67715c60cc8"
+  source_hash: "c6babe1cfe5c00597d69760b9082d5dac92c0b17a6bd1cb928e3264ff029f1fb"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.checkGroup.located"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "fc38e07a4a49dc6e87eeee1a19db78878e21a2c59f0037b3b1dfc04927bb9089"
 }

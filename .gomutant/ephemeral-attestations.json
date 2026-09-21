@@ -26,6 +26,18 @@
       "dirty": true
     },
     {
+      "editDigest": "bc7e6eec654b955eac2ed747bef1d8f22f6016dca9f8f07b7b03013b8fa90170",
+      "rawEditDigest": "bc7e6eec654b955eac2ed747bef1d8f22f6016dca9f8f07b7b03013b8fa90170",
+      "files": [
+        "internal/dep/check.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/dep",
+      "run": "Test",
+      "reason": "A version base's pin is recorded by the client at acquisition and the archive it verified is the archive parsed, so no path materializes a pin and then fails; a reference base records no pin; and every earlier module's pins were saved by their own iteration. A failure therefore never leaves an unsaved pin, and the save on the failure path is the discipline's shape, not a reachable difference.",
+      "commit": "69aa4f7723aeae98c66c318cb799d3acb24880d9",
+      "dirty": true
+    },
+    {
       "editDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "rawEditDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "files": [
