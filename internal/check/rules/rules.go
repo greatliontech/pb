@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
@@ -46,13 +47,26 @@ type File struct {
 
 // Rule is one declared check (check-rules.md, the rule term).
 type Rule struct {
+	// The id the rule file declares, and the module path of the
+	// ruleset that declares it, set when the rule is imported; the
+	// two spell the rule's name.
 	ID       string
+	Ruleset  string
 	Kind     check.Kind
 	Target   check.Target
 	Severity check.Severity
 	Tags     []string
 	CEL      string // the expression as written
 	Message  string
+}
+
+// Name is the rule's canonical name, `<module path>:<id>`, or the
+// bare id for a rule no ruleset imported.
+func (r Rule) Name() string {
+	if r.Ruleset == "" {
+		return r.ID
+	}
+	return r.Ruleset + ":" + r.ID
 }
 
 // Parse reads a rule file (REQ-rules-file-schema): the document a
@@ -120,7 +134,13 @@ func parseRules(n ast.Node) ([]Rule, error) {
 			}}
 		}
 		err := contractfile.Mapping(en, where, ErrInvalid,
-			line("id", func(s string) error { r.ID = s; return nil }),
+			line("id", func(s string) error {
+				if strings.Contains(s, ":") {
+					return fmt.Errorf("%w: %s: id %q holds a colon, the rule name's separator", ErrInvalid, where, s)
+				}
+				r.ID = s
+				return nil
+			}),
 			line("kind", func(s string) error {
 				k, ok := check.ParseKind(s)
 				if !ok {
@@ -147,8 +167,16 @@ func parseRules(n ast.Node) ([]Rule, error) {
 			}),
 			contractfile.Field{Name: "tags", Read: func(n ast.Node) error {
 				tags, err := contractfile.Strings(n, where+".tags", ErrInvalid)
+				if err != nil {
+					return err
+				}
+				for _, t := range tags {
+					if strings.Contains(t, ":") {
+						return fmt.Errorf("%w: %s: tag %q holds a colon, the rule name's separator", ErrInvalid, where, t)
+					}
+				}
 				r.Tags = tags
-				return err
+				return nil
 			}},
 			contractfile.Field{Name: "cel", Required: true, Read: func(n ast.Node) error {
 				// The expression is text, a block scalar its readable

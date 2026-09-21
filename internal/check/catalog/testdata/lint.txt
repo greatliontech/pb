@@ -1,76 +1,76 @@
-acme/legacy/old.proto:2:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-acme/legacy/old.proto:9:3: error FIELD_NOT_REQUIRED: fields are not required
-acme/legacy/old.proto:13:1: error ENUM_FIRST_VALUE_ZERO: the first enum value is the zero value
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_CSHARP_NAMESPACE: a package's files agree on csharp_namespace
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_DIRECTORY: a package's files live in one directory
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_GO_PACKAGE: a package's files agree on go_package
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_JAVA_MULTIPLE_FILES: a package's files agree on java_multiple_files
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_JAVA_PACKAGE: a package's files agree on java_package
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_PHP_NAMESPACE: a package's files agree on php_namespace
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_RUBY_PACKAGE: a package's files agree on ruby_package
-acme/shop/v1/BadFile.proto: error PACKAGE_SAME_SWIFT_PREFIX: a package's files agree on swift_prefix
-acme/shop/v1/BadFile.proto:1:1: error FILE_LOWER_SNAKE_CASE: file names are lower_snake_case.proto
-acme/shop/v1/BadFile.proto:1:1: error IMPORT_NO_PUBLIC: imports are not public
-acme/shop/v1/BadFile.proto:1:1: error IMPORT_NO_WEAK: imports are not weak
-acme/shop/v1/BadFile.proto:1:1: error IMPORT_USED: every import is used
-acme/shop/v1/BadFile.proto:1:1: error STABLE_PACKAGE_NO_IMPORT_UNSTABLE: a stable package imports no unstable package
-acme/shop/v1/BadFile.proto:12:1: error COMMENT_SERVICE: services have a non-empty leading comment
-acme/shop/v1/BadFile.proto:12:1: error SERVICE_PASCAL_CASE: service names are PascalCase
-acme/shop/v1/BadFile.proto:12:1: error SERVICE_SUFFIX: service names end in Service
-acme/shop/v1/BadFile.proto:13:3: error COMMENT_RPC: rpcs have a non-empty leading comment
-acme/shop/v1/BadFile.proto:13:3: error RPC_NO_SERVER_STREAMING: rpcs do not stream to the client
-acme/shop/v1/BadFile.proto:13:3: error RPC_PASCAL_CASE: rpc names are PascalCase
-acme/shop/v1/BadFile.proto:13:3: error RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
-acme/shop/v1/BadFile.proto:13:3: error RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
-acme/shop/v1/BadFile.proto:14:3: error COMMENT_RPC: rpcs have a non-empty leading comment
-acme/shop/v1/BadFile.proto:14:3: error RPC_NO_CLIENT_STREAMING: rpcs do not stream from the client
-acme/shop/v1/BadFile.proto:14:3: error RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
-acme/shop/v1/BadFile.proto:14:3: error RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
-acme/shop/v1/BadFile.proto:17:1: error COMMENT_MESSAGE: messages have a non-empty leading comment
-acme/shop/v1/BadFile.proto:17:1: error MESSAGE_PASCAL_CASE: message names are PascalCase
-acme/shop/v1/BadFile.proto:18:3: error COMMENT_FIELD: fields have a non-empty leading comment
-acme/shop/v1/BadFile.proto:18:3: error FIELD_LOWER_SNAKE_CASE: field names are lower_snake_case
-acme/shop/v1/BadFile.proto:19:3: error COMMENT_ONEOF: oneofs have a non-empty leading comment
-acme/shop/v1/BadFile.proto:19:3: error ONEOF_LOWER_SNAKE_CASE: oneof names are lower_snake_case
-acme/shop/v1/BadFile.proto:20:5: error COMMENT_FIELD: fields have a non-empty leading comment
-acme/shop/v1/BadFile.proto:24:1: error COMMENT_ENUM: enums have a non-empty leading comment
-acme/shop/v1/BadFile.proto:24:1: error ENUM_NO_ALLOW_ALIAS: enums do not allow aliases
-acme/shop/v1/BadFile.proto:26:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:27:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:28:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:29:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:29:3: error ENUM_VALUE_PREFIX: enum value names are prefixed with the enum name in UPPER_SNAKE_CASE
-acme/shop/v1/BadFile.proto:30:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:30:3: error ENUM_VALUE_PREFIX: enum value names are prefixed with the enum name in UPPER_SNAKE_CASE
-acme/shop/v1/BadFile.proto:30:3: error ENUM_VALUE_UPPER_SNAKE_CASE: enum value names are UPPER_SNAKE_CASE
-acme/shop/v1/BadFile.proto:33:1: error COMMENT_ENUM: enums have a non-empty leading comment
-acme/shop/v1/BadFile.proto:33:1: error ENUM_PASCAL_CASE: enum names are PascalCase
-acme/shop/v1/BadFile.proto:34:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:37:1: error COMMENT_ENUM: enums have a non-empty leading comment
-acme/shop/v1/BadFile.proto:38:3: error COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
-acme/shop/v1/BadFile.proto:38:3: error ENUM_ZERO_VALUE_SUFFIX: the zero value of an enum ends in _UNSPECIFIED
-acme/shop/v1beta1/preview.proto:2:1: error IMPORT_USED: every import is used
-wrong/Upper.proto:1:1: error FILE_LOWER_SNAKE_CASE: file names are lower_snake_case.proto
-wrong/Upper.proto:1:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/Upper.proto:1:1: error PACKAGE_LOWER_SNAKE_CASE: package names are lower_snake_case
-wrong/Upper.proto:1:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-wrong/Upper.proto:5:1: error COMMENT_MESSAGE: messages have a non-empty leading comment
-wrong/Upper.proto:6:3: error COMMENT_FIELD: fields have a non-empty leading comment
-wrong/cycle_a.proto:2:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/cycle_a.proto:2:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-wrong/cycle_b.proto:2:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/cycle_b.proto:2:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-wrong/cycle_c.proto:2:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/cycle_c.proto:2:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-wrong/misplaced.proto:1:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/misplaced.proto:5:1: error COMMENT_MESSAGE: messages have a non-empty leading comment
-wrong/misplaced.proto:6:3: error COMMENT_FIELD: fields have a non-empty leading comment
-wrong/nopackage.proto:1:1: error COMMENT_MESSAGE: messages have a non-empty leading comment
-wrong/nopackage.proto:1:1: error PACKAGE_DEFINED: files declare a package
-wrong/nopackage.proto:1:1: error PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
-wrong/nopackage.proto:1:1: error PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
-wrong/nopackage.proto:1:1: error SYNTAX_SPECIFIED: files declare a syntax
-wrong/nopackage.proto:2:3: error COMMENT_FIELD: fields have a non-empty leading comment
-error DIRECTORY_SAME_PACKAGE: files in one directory declare one package
-error PACKAGE_NO_IMPORT_CYCLE: packages import no cycle
-error RPC_REQUEST_RESPONSE_UNIQUE: every request and response is used by one rpc
+acme/legacy/old.proto:2:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+acme/legacy/old.proto:9:3: error buf/lint:FIELD_NOT_REQUIRED: fields are not required
+acme/legacy/old.proto:13:1: error buf/lint:ENUM_FIRST_VALUE_ZERO: the first enum value is the zero value
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_CSHARP_NAMESPACE: a package's files agree on csharp_namespace
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_DIRECTORY: a package's files live in one directory
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_GO_PACKAGE: a package's files agree on go_package
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_JAVA_MULTIPLE_FILES: a package's files agree on java_multiple_files
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_JAVA_PACKAGE: a package's files agree on java_package
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_PHP_NAMESPACE: a package's files agree on php_namespace
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_RUBY_PACKAGE: a package's files agree on ruby_package
+acme/shop/v1/BadFile.proto: error buf/lint:PACKAGE_SAME_SWIFT_PREFIX: a package's files agree on swift_prefix
+acme/shop/v1/BadFile.proto:1:1: error buf/lint:FILE_LOWER_SNAKE_CASE: file names are lower_snake_case.proto
+acme/shop/v1/BadFile.proto:1:1: error buf/lint:IMPORT_NO_PUBLIC: imports are not public
+acme/shop/v1/BadFile.proto:1:1: error buf/lint:IMPORT_NO_WEAK: imports are not weak
+acme/shop/v1/BadFile.proto:1:1: error buf/lint:IMPORT_USED: every import is used
+acme/shop/v1/BadFile.proto:1:1: error buf/lint:STABLE_PACKAGE_NO_IMPORT_UNSTABLE: a stable package imports no unstable package
+acme/shop/v1/BadFile.proto:12:1: error buf/lint:COMMENT_SERVICE: services have a non-empty leading comment
+acme/shop/v1/BadFile.proto:12:1: error buf/lint:SERVICE_PASCAL_CASE: service names are PascalCase
+acme/shop/v1/BadFile.proto:12:1: error buf/lint:SERVICE_SUFFIX: service names end in Service
+acme/shop/v1/BadFile.proto:13:3: error buf/lint:COMMENT_RPC: rpcs have a non-empty leading comment
+acme/shop/v1/BadFile.proto:13:3: error buf/lint:RPC_NO_SERVER_STREAMING: rpcs do not stream to the client
+acme/shop/v1/BadFile.proto:13:3: error buf/lint:RPC_PASCAL_CASE: rpc names are PascalCase
+acme/shop/v1/BadFile.proto:13:3: error buf/lint:RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+acme/shop/v1/BadFile.proto:13:3: error buf/lint:RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+acme/shop/v1/BadFile.proto:14:3: error buf/lint:COMMENT_RPC: rpcs have a non-empty leading comment
+acme/shop/v1/BadFile.proto:14:3: error buf/lint:RPC_NO_CLIENT_STREAMING: rpcs do not stream from the client
+acme/shop/v1/BadFile.proto:14:3: error buf/lint:RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+acme/shop/v1/BadFile.proto:14:3: error buf/lint:RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+acme/shop/v1/BadFile.proto:17:1: error buf/lint:COMMENT_MESSAGE: messages have a non-empty leading comment
+acme/shop/v1/BadFile.proto:17:1: error buf/lint:MESSAGE_PASCAL_CASE: message names are PascalCase
+acme/shop/v1/BadFile.proto:18:3: error buf/lint:COMMENT_FIELD: fields have a non-empty leading comment
+acme/shop/v1/BadFile.proto:18:3: error buf/lint:FIELD_LOWER_SNAKE_CASE: field names are lower_snake_case
+acme/shop/v1/BadFile.proto:19:3: error buf/lint:COMMENT_ONEOF: oneofs have a non-empty leading comment
+acme/shop/v1/BadFile.proto:19:3: error buf/lint:ONEOF_LOWER_SNAKE_CASE: oneof names are lower_snake_case
+acme/shop/v1/BadFile.proto:20:5: error buf/lint:COMMENT_FIELD: fields have a non-empty leading comment
+acme/shop/v1/BadFile.proto:24:1: error buf/lint:COMMENT_ENUM: enums have a non-empty leading comment
+acme/shop/v1/BadFile.proto:24:1: error buf/lint:ENUM_NO_ALLOW_ALIAS: enums do not allow aliases
+acme/shop/v1/BadFile.proto:26:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:27:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:28:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:29:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:29:3: error buf/lint:ENUM_VALUE_PREFIX: enum value names are prefixed with the enum name in UPPER_SNAKE_CASE
+acme/shop/v1/BadFile.proto:30:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:30:3: error buf/lint:ENUM_VALUE_PREFIX: enum value names are prefixed with the enum name in UPPER_SNAKE_CASE
+acme/shop/v1/BadFile.proto:30:3: error buf/lint:ENUM_VALUE_UPPER_SNAKE_CASE: enum value names are UPPER_SNAKE_CASE
+acme/shop/v1/BadFile.proto:33:1: error buf/lint:COMMENT_ENUM: enums have a non-empty leading comment
+acme/shop/v1/BadFile.proto:33:1: error buf/lint:ENUM_PASCAL_CASE: enum names are PascalCase
+acme/shop/v1/BadFile.proto:34:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:37:1: error buf/lint:COMMENT_ENUM: enums have a non-empty leading comment
+acme/shop/v1/BadFile.proto:38:3: error buf/lint:COMMENT_ENUM_VALUE: enum values have a non-empty leading comment
+acme/shop/v1/BadFile.proto:38:3: error buf/lint:ENUM_ZERO_VALUE_SUFFIX: the zero value of an enum ends in _UNSPECIFIED
+acme/shop/v1beta1/preview.proto:2:1: error buf/lint:IMPORT_USED: every import is used
+wrong/Upper.proto:1:1: error buf/lint:FILE_LOWER_SNAKE_CASE: file names are lower_snake_case.proto
+wrong/Upper.proto:1:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/Upper.proto:1:1: error buf/lint:PACKAGE_LOWER_SNAKE_CASE: package names are lower_snake_case
+wrong/Upper.proto:1:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+wrong/Upper.proto:5:1: error buf/lint:COMMENT_MESSAGE: messages have a non-empty leading comment
+wrong/Upper.proto:6:3: error buf/lint:COMMENT_FIELD: fields have a non-empty leading comment
+wrong/cycle_a.proto:2:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/cycle_a.proto:2:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+wrong/cycle_b.proto:2:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/cycle_b.proto:2:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+wrong/cycle_c.proto:2:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/cycle_c.proto:2:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+wrong/misplaced.proto:1:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/misplaced.proto:5:1: error buf/lint:COMMENT_MESSAGE: messages have a non-empty leading comment
+wrong/misplaced.proto:6:3: error buf/lint:COMMENT_FIELD: fields have a non-empty leading comment
+wrong/nopackage.proto:1:1: error buf/lint:COMMENT_MESSAGE: messages have a non-empty leading comment
+wrong/nopackage.proto:1:1: error buf/lint:PACKAGE_DEFINED: files declare a package
+wrong/nopackage.proto:1:1: error buf/lint:PACKAGE_DIRECTORY_MATCH: a file's directory matches its package
+wrong/nopackage.proto:1:1: error buf/lint:PACKAGE_VERSION_SUFFIX: the package's last component is a version suffix
+wrong/nopackage.proto:1:1: error buf/lint:SYNTAX_SPECIFIED: files declare a syntax
+wrong/nopackage.proto:2:3: error buf/lint:COMMENT_FIELD: fields have a non-empty leading comment
+error buf/lint:DIRECTORY_SAME_PACKAGE: files in one directory declare one package
+error buf/lint:PACKAGE_NO_IMPORT_CYCLE: packages import no cycle
+error buf/lint:RPC_REQUEST_RESPONSE_UNIQUE: every request and response is used by one rpc

@@ -100,7 +100,7 @@ of data. Real expressiveness gaps improve the stdlib instead.
 `docs/specs/check-rules.md` covers the rule-file schema, versioned CEL
 environment, boundedness, no-defaults behavior, breaking-change pairing,
 the lint file (`pb.lint.yaml`), and inline suppression
-(`// pb:ignore <rule-id>`, rule id mandatory).
+(`// pb:ignore <rule-name>`, the rule's name or unambiguous id mandatory).
 
 ## Remaining drafting
 

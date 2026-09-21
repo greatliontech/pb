@@ -108,7 +108,7 @@ func ProvidesEnvironment(v int) bool {
 // finding without a location (a set rule's); Base for a finding in
 // the comparison base, a pair whose new side is absent.
 type Finding struct {
-	RuleID   string
+	Rule     string
 	Severity Severity
 	Message  string
 	Path     string
@@ -128,7 +128,7 @@ type Report struct {
 
 // Sort orders findings as a check verb prints them
 // (REQ-check-findings-output): by path, then line and column, then
-// rule id, then message; findings without a location last, in the
+// rule name, then message; findings without a location last, in the
 // same order less the path.
 func Sort(findings []Finding) {
 	located := func(f Finding) int {
@@ -143,7 +143,7 @@ func Sort(findings []Finding) {
 			strings.Compare(a.Path, b.Path),
 			cmp.Compare(a.Line, b.Line),
 			cmp.Compare(a.Column, b.Column),
-			strings.Compare(a.RuleID, b.RuleID),
+			strings.Compare(a.Rule, b.Rule),
 			strings.Compare(a.Message, b.Message),
 		)
 	})
@@ -162,7 +162,7 @@ func (f Finding) String() string {
 		}
 		b.WriteString(": ")
 	}
-	b.WriteString(string(f.Severity) + " " + f.RuleID + ": " + f.Message)
+	b.WriteString(string(f.Severity) + " " + f.Rule + ": " + f.Message)
 	if f.Base {
 		b.WriteString(" [base]")
 	}

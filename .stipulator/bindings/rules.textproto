@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
-  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
+  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
-  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
+  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRuleFile"
   role: BINDING_ROLE_TESTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
-  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
+  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRefusesSchemaDepartures"
   role: BINDING_ROLE_TESTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
-  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
+  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseTakesEveryScalarSpelling"
   role: BINDING_ROLE_TESTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "dbbbc33fb87e7c8e43ff8cabcc28574163cb1c6c48e1cabc1e6fa5064fd78a84"
-  source_hash: "040de4dfe4c3f26fc3aa9bfcce94c4f446b4997de9ef86ec13f318f92288fcf4"
+  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
+  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/contractfile.TestScalarReaders"
   role: BINDING_ROLE_TESTS
@@ -143,8 +143,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-verdict"
-  content_hash: "3902e1382c15de6e598f0c9d9e849cfa5cf09f8b211a354faecace04b77103c1"
-  source_hash: "462fa85c0613ff4c5d74909cabad9e642dc97882a6fea01b434d97c654bda6a5"
+  content_hash: "cce73613b83e499a4ff021f83c8936f192e20cb29dc2bc7fa680d96c47e92fc9"
+  source_hash: "a20a580b0ca1e7a8bd63199664f4037887f3d3ddea35ed317bedf07130dbe7b5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.Lint"
   role: BINDING_ROLE_IMPLEMENTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-verdict"
-  content_hash: "3902e1382c15de6e598f0c9d9e849cfa5cf09f8b211a354faecace04b77103c1"
-  source_hash: "462fa85c0613ff4c5d74909cabad9e642dc97882a6fea01b434d97c654bda6a5"
+  content_hash: "cce73613b83e499a4ff021f83c8936f192e20cb29dc2bc7fa680d96c47e92fc9"
+  source_hash: "a20a580b0ca1e7a8bd63199664f4037887f3d3ddea35ed317bedf07130dbe7b5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestFindings"
   role: BINDING_ROLE_TESTS
@@ -163,8 +163,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-verdict"
-  content_hash: "3902e1382c15de6e598f0c9d9e849cfa5cf09f8b211a354faecace04b77103c1"
-  source_hash: "462fa85c0613ff4c5d74909cabad9e642dc97882a6fea01b434d97c654bda6a5"
+  content_hash: "cce73613b83e499a4ff021f83c8936f192e20cb29dc2bc7fa680d96c47e92fc9"
+  source_hash: "a20a580b0ca1e7a8bd63199664f4037887f3d3ddea35ed317bedf07130dbe7b5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestPositionless"
   role: BINDING_ROLE_TESTS
@@ -293,8 +293,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-compile"
-  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
-  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  content_hash: "1575bbdca8c6826bd96ddd7c34096a7fd1a22d71cb51ec444bc338c268bd12ab"
+  source_hash: "ec07ab58353dd3666e2880bc8fb6f5a2414e6bb5602feafb58f93de52782cfaa"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.Env.Compile"
   role: BINDING_ROLE_IMPLEMENTS
@@ -303,8 +303,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-compile"
-  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
-  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  content_hash: "1575bbdca8c6826bd96ddd7c34096a7fd1a22d71cb51ec444bc338c268bd12ab"
+  source_hash: "ec07ab58353dd3666e2880bc8fb6f5a2414e6bb5602feafb58f93de52782cfaa"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/eval.TestRunRefusals"
   role: BINDING_ROLE_TESTS
@@ -313,8 +313,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-compile"
-  content_hash: "cb05450f85214d9440b4c10d01e23aaab60e252847351c0e660887d57a2c393f"
-  source_hash: "829d25bb43a6c56b5dd390d358700423399c4f9ee72015b4259c2cc8101ce5ba"
+  content_hash: "1575bbdca8c6826bd96ddd7c34096a7fd1a22d71cb51ec444bc338c268bd12ab"
+  source_hash: "ec07ab58353dd3666e2880bc8fb6f5a2414e6bb5602feafb58f93de52782cfaa"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestEvalVerdicts"
   role: BINDING_ROLE_TESTS
@@ -323,8 +323,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-eval"
-  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
-  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  content_hash: "03b4ae312b10078987f1ecdcb591c3fbfc2b35102a95c46cb59f38294cb3d104"
+  source_hash: "dac710dc157caffc3c602bc3aa65510bf77a700196194ed789f22b8fa2f9305f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.Program.eval"
   role: BINDING_ROLE_IMPLEMENTS
@@ -333,8 +333,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-eval"
-  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
-  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  content_hash: "03b4ae312b10078987f1ecdcb591c3fbfc2b35102a95c46cb59f38294cb3d104"
+  source_hash: "dac710dc157caffc3c602bc3aa65510bf77a700196194ed789f22b8fa2f9305f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestLibrary"
   role: BINDING_ROLE_TESTS
@@ -343,8 +343,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-eval"
-  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
-  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  content_hash: "03b4ae312b10078987f1ecdcb591c3fbfc2b35102a95c46cb59f38294cb3d104"
+  source_hash: "dac710dc157caffc3c602bc3aa65510bf77a700196194ed789f22b8fa2f9305f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestBounded"
   role: BINDING_ROLE_TESTS
@@ -353,10 +353,20 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-eval"
-  content_hash: "1a0115814c0383170994aff79de5c81ec490747259a194c5e358c92780a6c837"
-  source_hash: "ae1d01eb242ecab338dda7a56d7ca8032498ddf1c14509fe283057a16878e1aa"
+  content_hash: "03b4ae312b10078987f1ecdcb591c3fbfc2b35102a95c46cb59f38294cb3d104"
+  source_hash: "dac710dc157caffc3c602bc3aa65510bf77a700196194ed789f22b8fa2f9305f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestEvalVerdicts"
   role: BINDING_ROLE_TESTS
   shape_hash: "d8593f6dba6ce6a37a8449f2d59702e990319fe7063afdb8eee0d4ad404840b7"
+}
+
+bindings {
+  requirement_id: "REQ-rules-verdict"
+  content_hash: "cce73613b83e499a4ff021f83c8936f192e20cb29dc2bc7fa680d96c47e92fc9"
+  source_hash: "a20a580b0ca1e7a8bd63199664f4037887f3d3ddea35ed317bedf07130dbe7b5"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.Rule.Name"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ef0a62f16226b335559a68488f03611cd99dc21f7ccdc079786eb682604a90b1"
 }

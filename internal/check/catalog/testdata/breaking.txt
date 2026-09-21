@@ -1,153 +1,153 @@
-acme/gone/v1/whole.proto: error PACKAGE_NO_DELETE: a package was deleted [base]
-acme/gone/v1/whole.proto:1:1: error FILE_NO_DELETE: a file was deleted [base]
-acme/gone/v1/whole.proto:5:1: error MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
-acme/gone/v1/whole.proto:5:1: error PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
-acme/v1/editions.proto:5:1: error ENUM_SAME_JSON_FORMAT: an enum's JSON format changed
-acme/v1/editions.proto:10:1: error MESSAGE_SAME_JSON_FORMAT: a message's JSON format changed
-acme/v1/editions.proto:12:3: error FIELD_SAME_UTF8_VALIDATION: a field's UTF-8 validation changed
-acme/v1/editions.proto:15:1: error EXTENSION_MESSAGE_NO_DELETE: an extension range was deleted from a message
-acme/v1/editions.proto:15:1: error MESSAGE_SAME_MESSAGE_SET_WIRE_FORMAT: a message's message_set_wire_format changed
-acme/v1/elsewhere.proto:5:1: error MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file
-acme/v1/elsewhere.proto:9:1: error ENUM_NO_DELETE: an enum was deleted from, or moved out of, its file
-acme/v1/elsewhere.proto:13:1: error SERVICE_NO_DELETE: a service was deleted from, or moved out of, its file
-acme/v1/elsewhere.proto:14:3: error RPC_SAME_REQUEST_TYPE: an rpc's request type changed
-acme/v1/elsewhere.proto:14:3: error RPC_SAME_RESPONSE_TYPE: an rpc's response type changed
-acme/v1/elsewhere.proto:18:3: error EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file
-acme/v1/elsewhere.proto:21:1: error MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file
-acme/v1/gone.proto:1:1: error FILE_NO_DELETE: a file was deleted [base]
-acme/v1/gone.proto:5:1: error MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
-acme/v1/gone.proto:5:1: error PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
-acme/v1/gone.proto:13:1: error ENUM_NO_DELETE: an enum was deleted from, or moved out of, its file [base]
-acme/v1/gone.proto:13:1: error PACKAGE_ENUM_NO_DELETE: an enum was deleted from its package [base]
-acme/v1/gone.proto:27:3: error EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file [base]
-acme/v1/gone.proto:27:3: error PACKAGE_EXTENSION_NO_DELETE: an extension was deleted from its package [base]
-acme/v1/kept.proto:1:1: error FILE_SAME_CC_ENABLE_ARENAS: a file's cc_enable_arenas changed
-acme/v1/kept.proto:1:1: error FILE_SAME_CC_GENERIC_SERVICES: a file's cc_generic_services changed
-acme/v1/kept.proto:1:1: error FILE_SAME_CSHARP_NAMESPACE: a file's csharp_namespace changed
-acme/v1/kept.proto:1:1: error FILE_SAME_GO_PACKAGE: a file's go_package changed
-acme/v1/kept.proto:1:1: error FILE_SAME_JAVA_GENERIC_SERVICES: a file's java_generic_services changed
-acme/v1/kept.proto:1:1: error FILE_SAME_JAVA_MULTIPLE_FILES: a file's java_multiple_files changed
-acme/v1/kept.proto:1:1: error FILE_SAME_JAVA_OUTER_CLASSNAME: a file's java_outer_classname changed
-acme/v1/kept.proto:1:1: error FILE_SAME_JAVA_PACKAGE: a file's java_package changed
-acme/v1/kept.proto:1:1: error FILE_SAME_JAVA_STRING_CHECK_UTF8: a file's java_string_check_utf8 changed
-acme/v1/kept.proto:1:1: error FILE_SAME_OBJC_CLASS_PREFIX: a file's objc_class_prefix changed
-acme/v1/kept.proto:1:1: error FILE_SAME_OPTIMIZE_FOR: a file's optimize_for changed
-acme/v1/kept.proto:1:1: error FILE_SAME_PHP_CLASS_PREFIX: a file's php_class_prefix changed
-acme/v1/kept.proto:1:1: error FILE_SAME_PHP_METADATA_NAMESPACE: a file's php_metadata_namespace changed
-acme/v1/kept.proto:1:1: error FILE_SAME_PHP_NAMESPACE: a file's php_namespace changed
-acme/v1/kept.proto:1:1: error FILE_SAME_PY_GENERIC_SERVICES: a file's py_generic_services changed
-acme/v1/kept.proto:1:1: error FILE_SAME_RUBY_PACKAGE: a file's ruby_package changed
-acme/v1/kept.proto:1:1: error FILE_SAME_SWIFT_PREFIX: a file's swift_prefix changed
-acme/v1/kept.proto:23:1: error EXTENSION_MESSAGE_NO_DELETE: an extension range was deleted from a message
-acme/v1/kept.proto:23:1: error MESSAGE_SAME_REQUIRED_FIELDS: a message's required fields changed
-acme/v1/kept.proto:23:1: error RESERVED_MESSAGE_NO_DELETE: a reserved range or name was deleted from a message
-acme/v1/kept.proto:24:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/kept.proto:24:3: error FIELD_SAME_JSON_NAME: a field's json_name changed
-acme/v1/kept.proto:24:3: error FIELD_SAME_NAME: a field's name changed
-acme/v1/kept.proto:25:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/kept.proto:25:3: error FIELD_SAME_JSON_NAME: a field's json_name changed
-acme/v1/kept.proto:26:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:26:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:26:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:27:3: error FIELD_SAME_CARDINALITY: a field's cardinality changed
-acme/v1/kept.proto:27:3: error FIELD_SAME_LABEL: a field's label changed
-acme/v1/kept.proto:27:3: error FIELD_WIRE_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond wire compatibility
-acme/v1/kept.proto:27:3: error FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
-acme/v1/kept.proto:28:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:28:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:29:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:29:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:31:5: error FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
-acme/v1/kept.proto:34:3: error FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
-acme/v1/kept.proto:35:3: error FIELD_SAME_DEFAULT: a field's default value changed
-acme/v1/kept.proto:36:3: error FIELD_SAME_JSTYPE: a field's jstype changed
-acme/v1/kept.proto:37:3: error FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
-acme/v1/kept.proto:37:3: error FIELD_SAME_CTYPE: a field's ctype changed
-acme/v1/kept.proto:37:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/kept.proto:38:3: error FIELD_SAME_CARDINALITY: a field's cardinality changed
-acme/v1/kept.proto:38:3: error FIELD_SAME_LABEL: a field's label changed
-acme/v1/kept.proto:38:3: error FIELD_WIRE_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond wire compatibility
-acme/v1/kept.proto:38:3: error FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
-acme/v1/kept.proto:39:3: error FIELD_NO_DELETE: a field was deleted [base]
-acme/v1/kept.proto:39:3: error FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
-acme/v1/kept.proto:39:3: error FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
-acme/v1/kept.proto:40:3: error FIELD_NO_DELETE: a field was deleted [base]
-acme/v1/kept.proto:40:3: error FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
-acme/v1/kept.proto:40:3: error FIELD_SAME_CARDINALITY: a field's cardinality changed
-acme/v1/kept.proto:40:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:40:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:40:3: error FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
-acme/v1/kept.proto:40:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:41:3: error FIELD_NO_DELETE: a field was deleted [base]
-acme/v1/kept.proto:41:3: error FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
-acme/v1/kept.proto:41:3: error FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
-acme/v1/kept.proto:43:5: error FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
-acme/v1/kept.proto:46:5: error FIELD_NO_DELETE: a field was deleted [base]
-acme/v1/kept.proto:46:5: error FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
-acme/v1/kept.proto:46:5: error FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
-acme/v1/kept.proto:51:1: error RESERVED_ENUM_NO_DELETE: a reserved range or name was deleted from an enum
-acme/v1/kept.proto:54:3: error ENUM_VALUE_SAME_NAME: an enum value's name changed
-acme/v1/kept.proto:56:3: error ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
-acme/v1/kept.proto:56:3: error ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
-acme/v1/kept.proto:56:3: error ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED: an enum value was deleted without its number reserved [base]
-acme/v1/kept.proto:57:3: error ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
-acme/v1/kept.proto:57:3: error ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
-acme/v1/kept.proto:58:3: error ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
-acme/v1/kept.proto:58:3: error ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
-acme/v1/kept.proto:58:3: error ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED: an enum value was deleted without its number reserved [base]
-acme/v1/kept.proto:71:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:72:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:73:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:73:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:74:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:75:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:76:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:76:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:77:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:77:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:78:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:78:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:78:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:79:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:80:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:80:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:80:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:81:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:81:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:81:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:82:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/kept.proto:82:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/kept.proto:82:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
-acme/v1/kept.proto:94:3: error EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file [base]
-acme/v1/kept.proto:94:3: error PACKAGE_EXTENSION_NO_DELETE: an extension was deleted from its package [base]
-acme/v1/kept.proto:99:3: error ONEOF_NO_DELETE: a oneof was deleted [base]
-acme/v1/kept.proto:106:3: error RPC_NO_DELETE: an rpc was deleted [base]
-acme/v1/kept.proto:112:1: error MESSAGE_NO_REMOVE_STANDARD_DESCRIPTOR_ACCESSOR: a message's standard descriptor accessor was removed
-acme/v1/kept.proto:114:1: error PACKAGE_SERVICE_NO_DELETE: a service was deleted from its package [base]
-acme/v1/kept.proto:114:1: error SERVICE_NO_DELETE: a service was deleted from, or moved out of, its file [base]
-acme/v1/kept.proto:122:3: error FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
-acme/v1/kept.proto:127:3: error RPC_SAME_REQUEST_TYPE: an rpc's request type changed
-acme/v1/kept.proto:127:3: error RPC_SAME_RESPONSE_TYPE: an rpc's response type changed
-acme/v1/kept.proto:128:3: error RPC_SAME_CLIENT_STREAMING: an rpc's client streaming changed
-acme/v1/kept.proto:128:3: error RPC_SAME_SERVER_STREAMING: an rpc's server streaming changed
-acme/v1/kept.proto:129:3: error RPC_SAME_IDEMPOTENCY_LEVEL: an rpc's idempotency level changed
-acme/v1/language.proto:11:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/language.proto:12:3: error FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
-acme/v1/language.proto:12:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/language.proto:13:3: error FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
-acme/v1/language.proto:15:3: error FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
-acme/v1/language.proto:15:3: error FIELD_SAME_CTYPE: a field's ctype changed
-acme/v1/language.proto:15:3: error FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
-acme/v1/renamed_package.proto:1:1: error FILE_SAME_PACKAGE: a file's package changed
-acme/v1/renamed_package.proto:5:1: error MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
-acme/v1/renamed_package.proto:5:1: error PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
-acme/v1/syntaxes.proto:1:1: error FILE_SAME_SYNTAX: a file's syntax changed
-acme/v1/syntaxes.proto:5:1: error ENUM_SAME_JSON_FORMAT: an enum's JSON format changed
-acme/v1/syntaxes.proto:5:1: error ENUM_SAME_TYPE: an enum changed between open and closed
-acme/v1/syntaxes.proto:9:1: error MESSAGE_SAME_JSON_FORMAT: a message's JSON format changed
-acme/v1/syntaxes.proto:10:3: error FIELD_SAME_CARDINALITY: a field's cardinality changed
-acme/v1/syntaxes.proto:10:3: error FIELD_SAME_UTF8_VALIDATION: a field's UTF-8 validation changed
-acme/v1/syntaxes.proto:11:3: error FIELD_SAME_CARDINALITY: a field's cardinality changed
-acme/v1/syntaxes.proto:11:3: error FIELD_SAME_TYPE: a field's type changed
-acme/v1/syntaxes.proto:11:3: error FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
-acme/v1/syntaxes.proto:11:3: error FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/gone/v1/whole.proto: error buf/breaking:PACKAGE_NO_DELETE: a package was deleted [base]
+acme/gone/v1/whole.proto:1:1: error buf/breaking:FILE_NO_DELETE: a file was deleted [base]
+acme/gone/v1/whole.proto:5:1: error buf/breaking:MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
+acme/gone/v1/whole.proto:5:1: error buf/breaking:PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
+acme/v1/editions.proto:5:1: error buf/breaking:ENUM_SAME_JSON_FORMAT: an enum's JSON format changed
+acme/v1/editions.proto:10:1: error buf/breaking:MESSAGE_SAME_JSON_FORMAT: a message's JSON format changed
+acme/v1/editions.proto:12:3: error buf/breaking:FIELD_SAME_UTF8_VALIDATION: a field's UTF-8 validation changed
+acme/v1/editions.proto:15:1: error buf/breaking:EXTENSION_MESSAGE_NO_DELETE: an extension range was deleted from a message
+acme/v1/editions.proto:15:1: error buf/breaking:MESSAGE_SAME_MESSAGE_SET_WIRE_FORMAT: a message's message_set_wire_format changed
+acme/v1/elsewhere.proto:5:1: error buf/breaking:MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file
+acme/v1/elsewhere.proto:9:1: error buf/breaking:ENUM_NO_DELETE: an enum was deleted from, or moved out of, its file
+acme/v1/elsewhere.proto:13:1: error buf/breaking:SERVICE_NO_DELETE: a service was deleted from, or moved out of, its file
+acme/v1/elsewhere.proto:14:3: error buf/breaking:RPC_SAME_REQUEST_TYPE: an rpc's request type changed
+acme/v1/elsewhere.proto:14:3: error buf/breaking:RPC_SAME_RESPONSE_TYPE: an rpc's response type changed
+acme/v1/elsewhere.proto:18:3: error buf/breaking:EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file
+acme/v1/elsewhere.proto:21:1: error buf/breaking:MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file
+acme/v1/gone.proto:1:1: error buf/breaking:FILE_NO_DELETE: a file was deleted [base]
+acme/v1/gone.proto:5:1: error buf/breaking:MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
+acme/v1/gone.proto:5:1: error buf/breaking:PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
+acme/v1/gone.proto:13:1: error buf/breaking:ENUM_NO_DELETE: an enum was deleted from, or moved out of, its file [base]
+acme/v1/gone.proto:13:1: error buf/breaking:PACKAGE_ENUM_NO_DELETE: an enum was deleted from its package [base]
+acme/v1/gone.proto:27:3: error buf/breaking:EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file [base]
+acme/v1/gone.proto:27:3: error buf/breaking:PACKAGE_EXTENSION_NO_DELETE: an extension was deleted from its package [base]
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_CC_ENABLE_ARENAS: a file's cc_enable_arenas changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_CC_GENERIC_SERVICES: a file's cc_generic_services changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_CSHARP_NAMESPACE: a file's csharp_namespace changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_GO_PACKAGE: a file's go_package changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_JAVA_GENERIC_SERVICES: a file's java_generic_services changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_JAVA_MULTIPLE_FILES: a file's java_multiple_files changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_JAVA_OUTER_CLASSNAME: a file's java_outer_classname changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_JAVA_PACKAGE: a file's java_package changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_JAVA_STRING_CHECK_UTF8: a file's java_string_check_utf8 changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_OBJC_CLASS_PREFIX: a file's objc_class_prefix changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_OPTIMIZE_FOR: a file's optimize_for changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_PHP_CLASS_PREFIX: a file's php_class_prefix changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_PHP_METADATA_NAMESPACE: a file's php_metadata_namespace changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_PHP_NAMESPACE: a file's php_namespace changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_PY_GENERIC_SERVICES: a file's py_generic_services changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_RUBY_PACKAGE: a file's ruby_package changed
+acme/v1/kept.proto:1:1: error buf/breaking:FILE_SAME_SWIFT_PREFIX: a file's swift_prefix changed
+acme/v1/kept.proto:23:1: error buf/breaking:EXTENSION_MESSAGE_NO_DELETE: an extension range was deleted from a message
+acme/v1/kept.proto:23:1: error buf/breaking:MESSAGE_SAME_REQUIRED_FIELDS: a message's required fields changed
+acme/v1/kept.proto:23:1: error buf/breaking:RESERVED_MESSAGE_NO_DELETE: a reserved range or name was deleted from a message
+acme/v1/kept.proto:24:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/kept.proto:24:3: error buf/breaking:FIELD_SAME_JSON_NAME: a field's json_name changed
+acme/v1/kept.proto:24:3: error buf/breaking:FIELD_SAME_NAME: a field's name changed
+acme/v1/kept.proto:25:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/kept.proto:25:3: error buf/breaking:FIELD_SAME_JSON_NAME: a field's json_name changed
+acme/v1/kept.proto:26:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:26:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:26:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:27:3: error buf/breaking:FIELD_SAME_CARDINALITY: a field's cardinality changed
+acme/v1/kept.proto:27:3: error buf/breaking:FIELD_SAME_LABEL: a field's label changed
+acme/v1/kept.proto:27:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond wire compatibility
+acme/v1/kept.proto:27:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
+acme/v1/kept.proto:28:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:28:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:29:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:29:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:31:5: error buf/breaking:FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
+acme/v1/kept.proto:34:3: error buf/breaking:FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
+acme/v1/kept.proto:35:3: error buf/breaking:FIELD_SAME_DEFAULT: a field's default value changed
+acme/v1/kept.proto:36:3: error buf/breaking:FIELD_SAME_JSTYPE: a field's jstype changed
+acme/v1/kept.proto:37:3: error buf/breaking:FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
+acme/v1/kept.proto:37:3: error buf/breaking:FIELD_SAME_CTYPE: a field's ctype changed
+acme/v1/kept.proto:37:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/kept.proto:38:3: error buf/breaking:FIELD_SAME_CARDINALITY: a field's cardinality changed
+acme/v1/kept.proto:38:3: error buf/breaking:FIELD_SAME_LABEL: a field's label changed
+acme/v1/kept.proto:38:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond wire compatibility
+acme/v1/kept.proto:38:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
+acme/v1/kept.proto:39:3: error buf/breaking:FIELD_NO_DELETE: a field was deleted [base]
+acme/v1/kept.proto:39:3: error buf/breaking:FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
+acme/v1/kept.proto:39:3: error buf/breaking:FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_NO_DELETE: a field was deleted [base]
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_SAME_CARDINALITY: a field's cardinality changed
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY: a field's cardinality changed beyond JSON compatibility
+acme/v1/kept.proto:40:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:41:3: error buf/breaking:FIELD_NO_DELETE: a field was deleted [base]
+acme/v1/kept.proto:41:3: error buf/breaking:FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
+acme/v1/kept.proto:41:3: error buf/breaking:FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
+acme/v1/kept.proto:43:5: error buf/breaking:FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
+acme/v1/kept.proto:46:5: error buf/breaking:FIELD_NO_DELETE: a field was deleted [base]
+acme/v1/kept.proto:46:5: error buf/breaking:FIELD_NO_DELETE_UNLESS_NAME_RESERVED: a field was deleted without its name and number reserved [base]
+acme/v1/kept.proto:46:5: error buf/breaking:FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED: a field was deleted without its number reserved [base]
+acme/v1/kept.proto:51:1: error buf/breaking:RESERVED_ENUM_NO_DELETE: a reserved range or name was deleted from an enum
+acme/v1/kept.proto:54:3: error buf/breaking:ENUM_VALUE_SAME_NAME: an enum value's name changed
+acme/v1/kept.proto:56:3: error buf/breaking:ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
+acme/v1/kept.proto:56:3: error buf/breaking:ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
+acme/v1/kept.proto:56:3: error buf/breaking:ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED: an enum value was deleted without its number reserved [base]
+acme/v1/kept.proto:57:3: error buf/breaking:ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
+acme/v1/kept.proto:57:3: error buf/breaking:ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
+acme/v1/kept.proto:58:3: error buf/breaking:ENUM_VALUE_NO_DELETE: an enum value was deleted [base]
+acme/v1/kept.proto:58:3: error buf/breaking:ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED: an enum value was deleted without its name and number reserved [base]
+acme/v1/kept.proto:58:3: error buf/breaking:ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED: an enum value was deleted without its number reserved [base]
+acme/v1/kept.proto:71:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:72:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:73:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:73:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:74:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:75:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:76:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:76:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:77:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:77:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:78:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:78:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:78:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:79:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:80:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:80:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:80:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:81:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:81:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:81:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:82:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/kept.proto:82:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/kept.proto:82:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility
+acme/v1/kept.proto:94:3: error buf/breaking:EXTENSION_NO_DELETE: an extension was deleted from, or moved out of, its file [base]
+acme/v1/kept.proto:94:3: error buf/breaking:PACKAGE_EXTENSION_NO_DELETE: an extension was deleted from its package [base]
+acme/v1/kept.proto:99:3: error buf/breaking:ONEOF_NO_DELETE: a oneof was deleted [base]
+acme/v1/kept.proto:106:3: error buf/breaking:RPC_NO_DELETE: an rpc was deleted [base]
+acme/v1/kept.proto:112:1: error buf/breaking:MESSAGE_NO_REMOVE_STANDARD_DESCRIPTOR_ACCESSOR: a message's standard descriptor accessor was removed
+acme/v1/kept.proto:114:1: error buf/breaking:PACKAGE_SERVICE_NO_DELETE: a service was deleted from its package [base]
+acme/v1/kept.proto:114:1: error buf/breaking:SERVICE_NO_DELETE: a service was deleted from, or moved out of, its file [base]
+acme/v1/kept.proto:122:3: error buf/breaking:FIELD_SAME_ONEOF: a field moved into, out of, or between oneofs
+acme/v1/kept.proto:127:3: error buf/breaking:RPC_SAME_REQUEST_TYPE: an rpc's request type changed
+acme/v1/kept.proto:127:3: error buf/breaking:RPC_SAME_RESPONSE_TYPE: an rpc's response type changed
+acme/v1/kept.proto:128:3: error buf/breaking:RPC_SAME_CLIENT_STREAMING: an rpc's client streaming changed
+acme/v1/kept.proto:128:3: error buf/breaking:RPC_SAME_SERVER_STREAMING: an rpc's server streaming changed
+acme/v1/kept.proto:129:3: error buf/breaking:RPC_SAME_IDEMPOTENCY_LEVEL: an rpc's idempotency level changed
+acme/v1/language.proto:11:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/language.proto:12:3: error buf/breaking:FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
+acme/v1/language.proto:12:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/language.proto:13:3: error buf/breaking:FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
+acme/v1/language.proto:15:3: error buf/breaking:FIELD_SAME_CPP_STRING_TYPE: a field's C++ string type changed
+acme/v1/language.proto:15:3: error buf/breaking:FIELD_SAME_CTYPE: a field's ctype changed
+acme/v1/language.proto:15:3: error buf/breaking:FIELD_SAME_JAVA_UTF8_VALIDATION: a field's Java UTF-8 validation changed
+acme/v1/renamed_package.proto:1:1: error buf/breaking:FILE_SAME_PACKAGE: a file's package changed
+acme/v1/renamed_package.proto:5:1: error buf/breaking:MESSAGE_NO_DELETE: a message was deleted from, or moved out of, its file [base]
+acme/v1/renamed_package.proto:5:1: error buf/breaking:PACKAGE_MESSAGE_NO_DELETE: a message was deleted from its package [base]
+acme/v1/syntaxes.proto:1:1: error buf/breaking:FILE_SAME_SYNTAX: a file's syntax changed
+acme/v1/syntaxes.proto:5:1: error buf/breaking:ENUM_SAME_JSON_FORMAT: an enum's JSON format changed
+acme/v1/syntaxes.proto:5:1: error buf/breaking:ENUM_SAME_TYPE: an enum changed between open and closed
+acme/v1/syntaxes.proto:9:1: error buf/breaking:MESSAGE_SAME_JSON_FORMAT: a message's JSON format changed
+acme/v1/syntaxes.proto:10:3: error buf/breaking:FIELD_SAME_CARDINALITY: a field's cardinality changed
+acme/v1/syntaxes.proto:10:3: error buf/breaking:FIELD_SAME_UTF8_VALIDATION: a field's UTF-8 validation changed
+acme/v1/syntaxes.proto:11:3: error buf/breaking:FIELD_SAME_CARDINALITY: a field's cardinality changed
+acme/v1/syntaxes.proto:11:3: error buf/breaking:FIELD_SAME_TYPE: a field's type changed
+acme/v1/syntaxes.proto:11:3: error buf/breaking:FIELD_WIRE_COMPATIBLE_TYPE: a field's type changed beyond wire compatibility
+acme/v1/syntaxes.proto:11:3: error buf/breaking:FIELD_WIRE_JSON_COMPATIBLE_TYPE: a field's type changed beyond JSON compatibility

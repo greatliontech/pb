@@ -63,6 +63,7 @@ type textKey struct {
 // a finding located and, off the base, judged for suppression.
 func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population func(check.Target) ([]env1.Binding, error)) (*check.Report, error) {
 	r := &check.Report{Rules: len(rs), Findings: []check.Finding{}}
+	shared := sharedIDs(rs)
 	texts := map[textKey]*text{}
 	textOf := func(path string, base bool) (*text, error) {
 		k := textKey{base, path}
@@ -104,7 +105,7 @@ func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population f
 				continue
 			}
 			base := b.Base
-			f := check.Finding{RuleID: rule.ID, Severity: rule.Severity, Message: rule.Message, Path: b.Path, Base: base}
+			f := check.Finding{Rule: rule.Name(), Severity: rule.Severity, Message: rule.Message, Path: b.Path, Base: base}
 			if desc := b.Located(); desc != nil {
 				t, err := textOf(b.Path, base)
 				if err != nil {
@@ -113,8 +114,14 @@ func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population f
 				loc := desc.ParentFile().SourceLocations().ByDescriptor(desc)
 				f.Line = loc.StartLine + 1
 				f.Column = t.column(loc.StartLine, loc.StartColumn)
-				if !base && t.suppresses(f.Line, rule.ID) {
-					continue
+				if !base {
+					suppressed, err := t.suppresses(f.Line, rule, shared)
+					if err != nil {
+						return nil, err
+					}
+					if suppressed {
+						continue
+					}
 				}
 			}
 			r.Findings = append(r.Findings, f)
@@ -222,25 +229,55 @@ func (t *text) column(line0, col0 int) int {
 	return points + 1
 }
 
-// suppresses reports whether a comment `// pb:ignore <id>` sits on
+// suppresses reports whether a comment `// pb:ignore <name>` sits on
 // the line, or alone on the one before it (REQ-lint-suppression): the
-// comment's text opens with the marker, the id its next word,
-// anything after being the reason. A trailing comment on the line
-// before belongs to that line's declaration.
-func (t *text) suppresses(n int, id string) bool {
-	if l, ok := t.line(n); ok && l.has && ignores(l.comment, id) {
-		return true
+// comment's text opens with the marker, the rule's name or its bare
+// id as the next word, anything after being the reason. A trailing
+// comment on the line before belongs to that line's declaration. A
+// bare id several enabled rules share names none of them: the run
+// fails naming them.
+func (t *text) suppresses(n int, r rules.Rule, shared map[string][]string) (bool, error) {
+	for _, at := range []int{n, n - 1} {
+		l, ok := t.line(at)
+		if !ok || !l.has || (at != n && !l.alone) {
+			continue
+		}
+		word, ok := ignoreWord(l.comment)
+		if !ok {
+			continue
+		}
+		if word == r.Name() {
+			return true, nil
+		}
+		if word == r.ID {
+			if names := shared[r.ID]; len(names) > 1 {
+				return false, fmt.Errorf("line %d: pb:ignore %s names several enabled rules: %s", at, word, strings.Join(names, ", "))
+			}
+			return true, nil
+		}
 	}
-	if l, ok := t.line(n - 1); ok && l.has && l.alone && ignores(l.comment, id) {
-		return true
-	}
-	return false
+	return false, nil
 }
 
 // The suppression marker.
 const marker = "pb:ignore"
 
-func ignores(comment, id string) bool {
+// ignoreWord is the rule spelling a suppression comment names, if
+// the comment is one.
+func ignoreWord(comment string) (string, bool) {
 	fields := strings.Fields(comment)
-	return len(fields) >= 2 && fields[0] == marker && fields[1] == id
+	if len(fields) >= 2 && fields[0] == marker {
+		return fields[1], true
+	}
+	return "", false
+}
+
+// sharedIDs indexes the enabled rules' names by bare id, so a bare id
+// several rules share is known.
+func sharedIDs(rs []rules.Rule) map[string][]string {
+	out := map[string][]string{}
+	for _, r := range rs {
+		out[r.ID] = append(out[r.ID], r.Name())
+	}
+	return out
 }

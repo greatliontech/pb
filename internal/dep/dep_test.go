@@ -1353,7 +1353,7 @@ func TestLint(t *testing.T) {
 	if !errors.Is(err, ErrFindings) {
 		t.Fatalf("Lint: %v", err)
 	}
-	want := "a.proto:5:3: error FIELD_NAMES: field names are snake_case\nb.proto:6:3: error FIELD_NAMES: field names are snake_case\nwarning MESSAGE_COUNT: too many messages\n"
+	want := "a.proto:5:3: error example.com/house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\nwarning example.com/house:MESSAGE_COUNT: too many messages\n"
 	if out.String() != want || diag.String() != "" {
 		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
 	}
@@ -1364,7 +1364,7 @@ func TestLint(t *testing.T) {
 	// Warnings alone pass; a severity override turns the error down.
 	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [naming]\nseverity:\n  FIELD_NAMES: warning\nignore:\n  - paths: [\"vendor/**\"]\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning example.com/house:FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
 		t.Fatalf("warnings: %v %q", err, out.String())
 	}
 	// Zero rules enabled.
@@ -1421,7 +1421,7 @@ func TestBreaking(t *testing.T) {
 	if !errors.Is(err, ErrFindings) {
 		t.Fatalf("Breaking: %v", err)
 	}
-	want := "a.proto:7:3: warning FIELD_TYPE: type changed\na.proto:8:3: error FIELD_GONE: field removed [base]\nb.proto:7:3: error FIELD_GONE: field removed [base]\n"
+	want := "a.proto:7:3: warning example.com/house:FIELD_TYPE: type changed\na.proto:8:3: error example.com/house:FIELD_GONE: field removed [base]\nb.proto:7:3: error example.com/house:FIELD_GONE: field removed [base]\n"
 	if out.String() != want || diag.String() != "" {
 		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
 	}
@@ -1458,7 +1458,7 @@ func TestBreaking(t *testing.T) {
 	fx.serve(t, "example.com/b", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": "syntax = \"proto3\";\npackage b;\nmessage Use {\n  string Loud = 2;\n  string dropped = 3;\n}\n"})
 	out.Reset()
 	err = Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
-	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error FIELD_GONE: field removed [base]\n" {
+	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n" {
 		t.Fatalf("base lacking what b uses: %v %q", err, out.String())
 	}
 	// A file a gained after its base, imported by b now: a's base run

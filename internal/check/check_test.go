@@ -60,13 +60,13 @@ func TestVocabulary(t *testing.T) {
 // (REQ-check-exit-status).
 func TestFindingsOutput(t *testing.T) {
 	fs := []Finding{
-		{RuleID: "SET", Severity: SeverityWarning, Message: "s"},
-		{RuleID: "B", Severity: SeverityError, Message: "m", Path: "b.proto", Line: 2, Column: 1},
-		{RuleID: "PKG", Severity: SeverityWarning, Message: "p", Path: "a.proto"},
-		{RuleID: "A", Severity: SeverityError, Message: "z", Path: "a.proto", Line: 3, Column: 5, Base: true},
-		{RuleID: "A", Severity: SeverityError, Message: "m", Path: "a.proto", Line: 3, Column: 5},
-		{RuleID: "C", Severity: SeverityWarning, Message: "c", Path: "a.proto", Line: 3, Column: 2},
-		{RuleID: "ALL", Severity: SeverityError, Message: "a"},
+		{Rule: "SET", Severity: SeverityWarning, Message: "s"},
+		{Rule: "B", Severity: SeverityError, Message: "m", Path: "b.proto", Line: 2, Column: 1},
+		{Rule: "PKG", Severity: SeverityWarning, Message: "p", Path: "a.proto"},
+		{Rule: "A", Severity: SeverityError, Message: "z", Path: "a.proto", Line: 3, Column: 5, Base: true},
+		{Rule: "A", Severity: SeverityError, Message: "m", Path: "a.proto", Line: 3, Column: 5},
+		{Rule: "C", Severity: SeverityWarning, Message: "c", Path: "a.proto", Line: 3, Column: 2},
+		{Rule: "ALL", Severity: SeverityError, Message: "a"},
 	}
 	Sort(fs)
 	var got []string

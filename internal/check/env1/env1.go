@@ -557,7 +557,7 @@ func (e *Env) Compile(r rules.Rule) (*Program, error) {
 		wantKind = check.KindBreaking
 	}
 	if r.Kind != wantKind {
-		return nil, fmt.Errorf("%w: %s is a %s rule under a %s environment", ErrCompile, r.ID, r.Kind, wantKind)
+		return nil, fmt.Errorf("%w: %s is a %s rule under a %s environment", ErrCompile, r.Name(), r.Kind, wantKind)
 	}
 	env, err := e.forTarget(r.Kind, r.Target)
 	if err != nil {
@@ -565,14 +565,14 @@ func (e *Env) Compile(r rules.Rule) (*Program, error) {
 	}
 	ast, iss := env.Compile(r.CEL)
 	if iss != nil && iss.Err() != nil {
-		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.ID, iss.Err())
+		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.Name(), iss.Err())
 	}
 	if !ast.OutputType().IsExactType(cel.BoolType) {
-		return nil, fmt.Errorf("%w: %s: the expression yields %s, not bool", ErrCompile, r.ID, ast.OutputType())
+		return nil, fmt.Errorf("%w: %s: the expression yields %s, not bool", ErrCompile, r.Name(), ast.OutputType())
 	}
 	prg, err := env.Program(ast, cel.CostLimit(e.limit), cel.CostTracking(costs{e}), cel.EvalOptions(cel.OptOptimize))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.ID, err)
+		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.Name(), err)
 	}
 	return &Program{rule: r, prg: prg}, nil
 }
@@ -612,9 +612,9 @@ func (p *Program) eval(vars map[string]any) (bool, *cel.EvalDetails, error) {
 		// its cause and keeps the recovered text after the name, so a
 		// fault stays diagnosable (REQ-rules-eval).
 		if strings.HasPrefix(err.Error(), "internal error:") {
-			return false, details, fmt.Errorf("%w: %s: the expression reached a value the environment cannot answer (%v)", ErrEval, p.rule.ID, err)
+			return false, details, fmt.Errorf("%w: %s: the expression reached a value the environment cannot answer (%v)", ErrEval, p.rule.Name(), err)
 		}
-		return false, details, fmt.Errorf("%w: %s: %v", ErrEval, p.rule.ID, err)
+		return false, details, fmt.Errorf("%w: %s: %v", ErrEval, p.rule.Name(), err)
 	}
 	// Compile admitted a boolean expression alone, so a value that is
 	// not an error is a bool.

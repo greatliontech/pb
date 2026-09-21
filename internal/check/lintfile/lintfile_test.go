@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/module/modfile"
@@ -115,14 +116,28 @@ func TestIgnored(t *testing.T) {
 		{"src/x.proto", "ENUM_NAMES", false},
 		{"", "ANY", false},
 	}
+	std := Ruleset{Path: "example.com/std", Files: []rules.Located{located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD"), rule("NO_DELETE", "breaking", "STANDARD"))}}
+	house := Ruleset{Path: "example.com/house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
+	sel, err := Select(f, []Ruleset{std, house})
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, c := range cases {
-		if got := f.Ignored(c.path, c.rule); got != c.want {
-			t.Errorf("Ignored(%q, %s) = %v", c.path, c.rule, got)
+		name := c.rule
+		if name != "ANY" {
+			name = "example.com/std:" + name
+		}
+		if got := sel.Ignored(c.path, name); got != c.want {
+			t.Errorf("Ignored(%q, %s) = %v", c.path, name, got)
 		}
 	}
 	// A glob matching everything still ignores no finding without a
 	// path: a package or set finding is suppressed by selection alone.
-	all, err := Parse([]byte("ignore:\n  - paths: [\"**\"]\n"))
+	every, err := Parse([]byte("ignore:\n  - paths: [\"**\"]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, err := Select(every, []Ruleset{std})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,9 +155,11 @@ func located(path string, rs ...rules.Rule) rules.Located {
 }
 
 // Selection: every rule when enable is absent, else the ones named
-// by id or tag, less the excluded, with severities overridden, in
-// ruleset, file and declaration order; a name no rule declares, and
-// an id declared twice, fail naming them (REQ-lint-selection).
+// by name, id or tag, less the excluded, with severities overridden,
+// in ruleset, file and declaration order; a spelling no rule
+// declares, an ambiguous one, a ruleset declaring an id twice or as
+// both an id and a tag, and two severity spellings of one rule, fail
+// naming them (REQ-lint-selection).
 func TestSelect(t *testing.T) {
 	std := Ruleset{Path: "example.com/std", Files: []rules.Located{
 		located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD")),
@@ -157,19 +174,19 @@ func TestSelect(t *testing.T) {
 		return strings.Join(out, " ")
 	}
 	all, err := Select(&File{}, []Ruleset{std, house})
-	if err != nil || ids(all) != "FIELD_NAMES:error ENUM_NAMES:error NO_DELETE:error HOUSE_ONE:error HOUSE_TWO:error" {
-		t.Fatalf("all: %s %v", ids(all), err)
+	if err != nil || ids(all.Rules) != "FIELD_NAMES:error ENUM_NAMES:error NO_DELETE:error HOUSE_ONE:error HOUSE_TWO:error" {
+		t.Fatalf("all: %s %v", ids(all.Rules), err)
 	}
 	f, err := Parse([]byte(full))
 	if err != nil {
 		t.Fatal(err)
 	}
 	sel, err := Select(f, []Ruleset{std, house})
-	if err != nil || ids(sel) != "ENUM_NAMES:warning NO_DELETE:error HOUSE_ONE:error" {
-		t.Fatalf("selected: %s %v", ids(sel), err)
+	if err != nil || ids(sel.Rules) != "ENUM_NAMES:warning NO_DELETE:error HOUSE_ONE:error" {
+		t.Fatalf("selected: %s %v", ids(sel.Rules), err)
 	}
 	none, err := Select(&File{Enable: []string{}}, []Ruleset{std})
-	if err != nil || len(none) != 0 || none == nil {
+	if err != nil || len(none.Rules) != 0 || none.Rules == nil {
 		t.Fatalf("enable empty: %v %v", none, err)
 	}
 	for name, f := range map[string]*File{
@@ -181,9 +198,68 @@ func TestSelect(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	dup := Ruleset{Path: "example.com/dup", Files: []rules.Located{located("d.rules.yaml", rule("FIELD_NAMES", "lint"))}}
-	if _, err := Select(&File{}, []Ruleset{std, dup}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "rule FIELD_NAMES declared by example.com/std/a.rules.yaml and example.com/dup/d.rules.yaml") {
-		t.Fatalf("duplicate: %v", err)
+	// Two rulesets may declare one id: each rule bears its name, a
+	// bare spelling of the shared id is ambiguous and names the
+	// candidates, a qualified spelling — of a rule or a tag — names
+	// its ruleset's alone, and severity and ignore take the canonical
+	// name (the rule name term).
+	dup := Ruleset{Path: "example.com/dup", Files: []rules.Located{located("d.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"))}}
+	names := func(rs []rules.Rule) string {
+		var out []string
+		for _, r := range rs {
+			out = append(out, r.Name()+":"+string(r.Severity))
+		}
+		return strings.Join(out, " ")
+	}
+	both, err := Select(&File{}, []Ruleset{std, dup})
+	if err != nil || names(both.Rules) != "example.com/std:FIELD_NAMES:error example.com/std:ENUM_NAMES:error example.com/std:NO_DELETE:error example.com/dup:FIELD_NAMES:error" {
+		t.Fatalf("two rulesets: %s %v", names(both.Rules), err)
+	}
+	for name, f := range map[string]*File{
+		"enable bare":   {Enable: []string{"FIELD_NAMES"}},
+		"enable tag":    {Enable: []string{"STANDARD"}},
+		"exclude bare":  {Exclude: []string{"FIELD_NAMES"}},
+		"severity bare": {Severity: map[string]check.Severity{"FIELD_NAMES": check.SeverityWarning}},
+		"ignore bare":   {Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"FIELD_NAMES"}}}},
+		"severity tag":  {Severity: map[string]check.Severity{"example.com/std:STANDARD": check.SeverityWarning}},
+		"ignore tag":    {Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"example.com/std:STANDARD"}}}},
+		"unknown name":  {Enable: []string{"example.com/std:NOPE"}},
+	} {
+		_, err := Select(f, []Ruleset{std, dup})
+		switch {
+		case err == nil || !errors.Is(err, ErrSelection):
+			t.Errorf("%s: %v", name, err)
+		case strings.HasSuffix(name, "bare") && !strings.Contains(err.Error(), "example.com/std:FIELD_NAMES, example.com/dup:FIELD_NAMES"):
+			t.Errorf("%s names no candidates: %v", name, err)
+		case name == "enable tag" && !strings.Contains(err.Error(), "example.com/std:STANDARD, example.com/dup:STANDARD"):
+			t.Errorf("%s names no candidates: %v", name, err)
+		case strings.HasSuffix(name, "tag") && name != "enable tag" && !strings.Contains(err.Error(), "a tag where a rule is named"):
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	qualified := &File{Enable: []string{"example.com/dup:STANDARD", "ENUM_NAMES"}, Exclude: []string{"example.com/std:NO_DELETE"}, Severity: map[string]check.Severity{"example.com/dup:FIELD_NAMES": check.SeverityWarning}, Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"example.com/std:FIELD_NAMES", "ENUM_NAMES"}}}}
+	sel, err = Select(qualified, []Ruleset{std, dup})
+	if err != nil || names(sel.Rules) != "example.com/std:ENUM_NAMES:error example.com/dup:FIELD_NAMES:warning" {
+		t.Fatalf("qualified: %s %v", names(sel.Rules), err)
+	}
+	if !sel.Ignored("x/a.proto", "example.com/std:ENUM_NAMES") || !sel.Ignored("x/a.proto", "example.com/std:FIELD_NAMES") || sel.Ignored("x/a.proto", "example.com/dup:FIELD_NAMES") {
+		t.Fatal("ignore matches by canonical name")
+	}
+	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "example.com/std:FIELD_NAMES ENUM_NAMES" {
+		t.Fatalf("the file's own spellings changed: %v", got)
+	}
+	// A ruleset declaring a name twice, in two files, or as both a
+	// rule and a tag; and two severity spellings of one rule.
+	twice := Ruleset{Path: "example.com/twice", Files: []rules.Located{located("a.rules.yaml", rule("X", "lint")), located("b.rules.yaml", rule("X", "lint"))}}
+	if _, err := Select(&File{}, []Ruleset{twice}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "example.com/twice:X declared by example.com/twice/a.rules.yaml and example.com/twice/b.rules.yaml") {
+		t.Fatalf("twice: %v", err)
+	}
+	clash := Ruleset{Path: "example.com/clash", Files: []rules.Located{located("a.rules.yaml", rule("STANDARD", "lint"), rule("OTHER", "lint", "STANDARD"))}}
+	if _, err := Select(&File{}, []Ruleset{clash}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "example.com/clash:STANDARD is both a rule, declared by example.com/clash/a.rules.yaml, and a tag, first carried by a rule of example.com/clash/a.rules.yaml") {
+		t.Fatalf("rule and tag: %v", err)
+	}
+	if _, err := Select(&File{Severity: map[string]check.Severity{"ENUM_NAMES": check.SeverityError, "example.com/std:ENUM_NAMES": check.SeverityWarning}}, []Ruleset{std}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), `severity names example.com/std:ENUM_NAMES twice, as "ENUM_NAMES" and "example.com/std:ENUM_NAMES"`) {
+		t.Fatalf("severity twice: %v", err)
 	}
 }
 

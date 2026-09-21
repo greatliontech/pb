@@ -39,10 +39,11 @@ func catalog(t *testing.T, kind string) []rules.Rule {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rs, err := lintfile.Select(&lintfile.File{}, []lintfile.Ruleset{{Path: "buf/" + kind, Files: located}})
+	sel, err := lintfile.Select(&lintfile.File{}, []lintfile.Ruleset{{Path: "buf/" + kind, Files: located}})
 	if err != nil {
 		t.Fatal(err)
 	}
+	rs := sel.Rules
 	if len(rs) == 0 {
 		t.Fatalf("no rules under testdata/buf/%s", kind)
 	}
@@ -101,11 +102,11 @@ func golden(t *testing.T, name string, rs []rules.Rule, findings []check.Finding
 	fired := map[string]bool{}
 	for _, f := range findings {
 		buf.WriteString(f.String() + "\n")
-		fired[f.RuleID] = true
+		fired[f.Rule] = true
 	}
 	for _, r := range rs {
-		if !fired[r.ID] {
-			t.Errorf("%s never fires over the fixture", r.ID)
+		if !fired[r.Name()] {
+			t.Errorf("%s never fires over the fixture", r.Name())
 		}
 	}
 	path := filepath.Join("testdata", name+".txt")

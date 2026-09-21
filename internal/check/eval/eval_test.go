@@ -77,7 +77,7 @@ func lines(r *check.Report) []string {
 		if f.Base {
 			base = " [base]"
 		}
-		out = append(out, fmt.Sprintf("%s:%d:%d %s %s: %s%s", f.Path, f.Line, f.Column, f.Severity, f.RuleID, f.Message, base))
+		out = append(out, fmt.Sprintf("%s:%d:%d %s %s: %s%s", f.Path, f.Line, f.Column, f.Severity, f.Rule, f.Message, base))
 	}
 	return out
 }
@@ -277,10 +277,51 @@ func TestLineComment(t *testing.T) {
 	if l := tx.lines[1]; !l.has || !l.alone || l.comment != " pb:ignore X" {
 		t.Errorf("after an unbalanced quote: %+v", l)
 	}
-	for comment, want := range map[string]bool{" pb:ignore X": true, "pb:ignore X reason here": true, "  pb:ignore   X  ": true, " pb:ignore Y": false, " pb:ignore": false, " pb:ignoreX": false, " pb:ignore XY": false, " see pb:ignore X": false, " pb:ignore X, Y": false} {
-		if ignores(comment, "X") != want {
-			t.Errorf("%q: %v", comment, !want)
+	for comment, want := range map[string]string{" pb:ignore X": "X", "pb:ignore X reason here": "X", "  pb:ignore   X  ": "X", " pb:ignore": "", " pb:ignoreX": "", " see pb:ignore X": "", " pb:ignore X, Y": "X,"} {
+		if got, ok := ignoreWord(comment); got != want || ok != (want != "") {
+			t.Errorf("%q: %q %v", comment, got, ok)
 		}
+	}
+}
+
+// A suppression comment names the rule by its name or by its bare id
+// where one enabled rule bears it; a bare id two enabled rules bear
+// fails the run naming them (REQ-lint-suppression).
+func TestSuppressionByName(t *testing.T) {
+	std := fieldNames
+	std.Ruleset = "example.com/std"
+	house := fieldNames
+	house.Ruleset = "example.com/house"
+	house.Message = "house names"
+	run := func(rs []rules.Rule, src string) (string, error) {
+		srcs := map[string]string{"p/n.proto": src}
+		set := env1.NewSet(prototest.Compile(t, srcs))
+		env, err := env1.New(set, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := Lint(env, []string{"p/n.proto"}, prototest.Source(srcs), rs)
+		if err != nil {
+			return "", err
+		}
+		check.Sort(r.Findings)
+		return strings.Join(lines(r), "\n"), nil
+	}
+	src := "syntax = \"proto3\";\npackage p;\nmessage M {\n  string A = 1; // pb:ignore example.com/std:FIELD_NAMES\n  string B = 2; // pb:ignore FIELD_NAMES\n  string C = 3;\n}\n"
+	got, err := run([]rules.Rule{std}, src)
+	if err != nil || got != "p/n.proto:6:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+		t.Fatalf("by name and by bare id: %q %v", got, err)
+	}
+	if _, err := run([]rules.Rule{std, house}, src); err == nil || !strings.Contains(err.Error(), "line 5: pb:ignore FIELD_NAMES names several enabled rules: example.com/std:FIELD_NAMES, example.com/house:FIELD_NAMES") {
+		t.Fatalf("an ambiguous bare id: %v", err)
+	}
+	above := "syntax = \"proto3\";\npackage p;\nmessage M {\n  // pb:ignore FIELD_NAMES\n  string A = 1;\n}\n"
+	if _, err := run([]rules.Rule{std, house}, above); err == nil || !strings.Contains(err.Error(), "line 4: pb:ignore FIELD_NAMES names several") {
+		t.Fatalf("an ambiguous bare id on the line above: %v", err)
+	}
+	got, err = run([]rules.Rule{std, house}, strings.Replace(src, "pb:ignore FIELD_NAMES", "pb:ignore example.com/house:FIELD_NAMES", 1))
+	if err != nil || got != "p/n.proto:4:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:5:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:6:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:6:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+		t.Fatalf("two rulesets, each named: %q %v", got, err)
 	}
 }
 

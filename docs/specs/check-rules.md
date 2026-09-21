@@ -13,6 +13,13 @@ and a message.
 **ruleset** (term): A module containing rule files; consumed through the
 ordinary module machinery — resolution, pinning, provenance.
 
+**rule name** (term): The canonical identifier of an imported rule,
+`<module path>:<id>` — the ruleset's module path, a colon, the id the
+rule file declares — so two rulesets may declare one id and a fork
+needs no edit; a tag qualifies the same way. A bare id or tag names
+the rule or tag exactly one imported ruleset declares, and is an
+error naming the candidates where several do.
+
 **rule file** (term): A YAML file within a ruleset declaring rules and
 the CEL environment version they target.
 
@@ -62,20 +69,21 @@ line of text — a spelling holding a line break refused, since an id is
 written in a suppression comment and a message on a finding line —
 `cel` is non-empty text, a block scalar included, `kind` is `lint` or
 `breaking`, `severity` is `error` or `warning`, `target` is a target,
-and ids are unique within the file. No other keys exist.
+ids are unique within the file, and no id or tag holds a colon, the
+rule name's separator. No other keys exist.
 
 **REQ-rules-compile** (behavior): A rule whose expression does not
 compile under the environment it targets — an unknown function or
 variable, a type error, a kind or target the environment refuses, or
 a result that is not `bool` — MUST fail the check run, naming the
-rule's id and the compiler's cause, an unknown function or variable
+rule's name and the compiler's cause, an unknown function or variable
 named in it.
 
 **REQ-rules-eval** (behavior): A rule whose evaluation fails — a
 runtime error, the cost limit exceeded, or a fault the evaluator
 cannot attribute, a select of a value the environment puts beyond
 reach among its causes — MUST fail the check run naming the rule's
-id and the cause, an unattributed fault named as the environment's
+name and the cause, an unattributed fault named as the environment's
 own failure to answer, the fault's text following the name.
 
 **REQ-rules-file-discovery** (behavior): A ruleset's rule files MUST be
@@ -101,7 +109,7 @@ MUST report that zero rules are enabled and produce no findings — no
 built-in rules exist at any severity.
 
 **REQ-rules-verdict** (behavior): A rule evaluating to false MUST yield
-exactly one finding carrying the rule id, severity, message, and the
+exactly one finding carrying the rule name, severity, message, and the
 location REQ-rules-finding-location assigns — positions come from the
 engine via `SourceCodeInfo`, never from the rule.
 
@@ -313,9 +321,9 @@ the form and the cause; nothing degrades to an empty base.
 
 **REQ-lint-config-schema** (wire): The lint file MUST contain, each
 optional: `rulesets`, a list of module paths to import rules from;
-`enable` and `exclude`, lists of rule ids or tags; `severity`, a map
-from rule id to override; `ignore`, a list of `{paths, rules}` entries
-excluding rule ids under path globs — `paths` one or more globs over
+`enable` and `exclude`, lists of rule names, ids or tags; `severity`,
+a map from rule name or id to override; `ignore`, a list of `{paths,
+rules}` entries excluding rules under path globs — `paths` one or more globs over
 module-relative proto paths (the component semantics `provenance.md`
 REQ-prov-trust-schema defines), `rules` optional and non-empty when
 present, absent meaning every rule, a finding without a path never
@@ -326,21 +334,29 @@ a schema violation). No other keys exist at any level.
 
 **REQ-lint-selection** (behavior): The enabled rules MUST be every
 rule of every imported ruleset when `enable` is absent, or the rules
-`enable` names by id or tag, less those `exclude` names, each with the
-severity `severity` overrides for it; an id or tag `enable`,
-`exclude` or `severity` names that no imported rule declares, and a
-rule id two rule files of the imported rulesets both declare, fail
-the check run naming it, since ids drive every selection, override
-and suppression.
+`enable` names — by rule name, by qualified tag, or by a bare id or
+tag where exactly one imported ruleset declares it — less those
+`exclude` names, each with the severity `severity` overrides for it,
+`severity` and `ignore` naming rules alone; a spelling that names no
+imported rule or tag, a bare spelling several imported rulesets
+declare, a ruleset declaring one id in two of its files or as both an
+id and a tag — a ruleset's ids and tags one namespace, so a rule name
+is one rule and a qualified tag one tag — and two `severity`
+spellings of one rule, fail the check run naming them and, for an
+ambiguous spelling, the candidates, since names drive every
+selection, override and suppression.
 
 **REQ-lint-suppression** (behavior): A finding MUST be suppressed by a
-line comment whose text opens with the word `pb:ignore` followed by
-the rule id as its next word, anything after being the reason, on
+line comment whose text opens with the word `pb:ignore` followed, as
+its next word, by the rule's name or by its bare id where one enabled
+rule of the run's kind bears it (a bare id several such rules bear
+fails the check run naming them and the comment's line), anything
+after being the reason, on
 the flagged line, or alone on the line immediately preceding it — a
 trailing comment on the preceding declaration's line suppresses that
 declaration's findings, never the next one's; a `//` inside a string
 literal or a block comment opens no line comment, and a block comment
-suppresses nothing; the rule id is mandatory, and no comment form
+suppresses nothing; the rule's name or id is mandatory, and no comment form
 suppresses more than the named rule; a finding without a position has
 no line to carry the comment, and a finding in the comparison base no
 working-tree line, and each is suppressed by configuration alone.
@@ -370,10 +386,10 @@ error.
 
 **REQ-check-findings-output** (wire): A check verb MUST print each
 finding as one line on standard output, `path:line:column: severity
-rule-id: message`, a finding in the base carrying ` [base]` after the
+rule-name: message`, a finding in the base carrying ` [base]` after the
 message, a finding without a position omitting `:line:column`, one
 without a location omitting the path and its colon, in the order path,
-then line and column, then rule id, then message, findings without a
+then line and column, then rule name, then message, findings without a
 location last in the same order less the path.
 
 **REQ-check-exit-status** (behavior): A check verb MUST exit with

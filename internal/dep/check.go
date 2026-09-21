@@ -50,6 +50,7 @@ func (s *Session) LintFile() (*lintfile.File, error) {
 // and its environment set, and the checked modules' files.
 type checkRun struct {
 	lint    *lintfile.File
+	sel     lintfile.Selection
 	mods    []modfiles.Module
 	rules   []rules.Rule
 	set     *env1.Set
@@ -74,12 +75,12 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	all, err := lintfile.Select(lf, sets)
+	sel, err := lintfile.Select(lf, sets)
 	if err != nil {
 		return nil, err
 	}
 	var rs []rules.Rule
-	for _, r := range all {
+	for _, r := range sel.Rules {
 		if r.Kind == kind {
 			rs = append(rs, r)
 		}
@@ -88,7 +89,7 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	run := &checkRun{lint: lf, mods: mods, rules: rs, set: env1.NewSet(result.Files)}
+	run := &checkRun{lint: lf, sel: sel, mods: mods, rules: rs, set: env1.NewSet(result.Files)}
 	for _, m := range mods {
 		if m.Local {
 			run.checked = append(run.checked, m.Protos()...)
@@ -116,7 +117,7 @@ func (r *checkRun) source(p string) ([]byte, error) {
 func (r *checkRun) report(findings []check.Finding, out io.Writer) error {
 	kept := findings[:0:0]
 	for _, f := range findings {
-		if !r.lint.Ignored(f.Path, f.RuleID) {
+		if !r.sel.Ignored(f.Path, f.Rule) {
 			kept = append(kept, f)
 		}
 	}

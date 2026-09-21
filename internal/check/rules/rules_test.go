@@ -93,6 +93,8 @@ func TestParseRefusesSchemaDepartures(t *testing.T) {
 		"mapping cel":        {rule(strings.Replace(full, "cel: \"true\"", "cel: {a: b}", 1)), "cel must be a non-empty scalar"},
 		"null cel":           {rule(strings.Replace(full, "cel: \"true\"", "cel: ~", 1)), "cel must be a non-empty scalar"},
 		"null tag":           {rule(full + "\ntags: [~]"), "rules[0].tags must hold non-empty lines of text"},
+		"colon in id":        {rule(strings.Replace(full, "id: A", "id: x:A", 1)), `id "x:A" holds a colon, the rule name's separator`},
+		"colon in tag":       {rule(full + "\ntags: [a:b]"), `tag "a:b" holds a colon, the rule name's separator`},
 		"broken tag":         {rule(full + "\ntags: [\"a\\nb\"]"), "rules[0].tags must hold non-empty lines of text"},
 		"literal-block tag":  {rule(full + "\ntags:\n  - |\n    a"), "rules[0].tags must hold non-empty lines of text"},
 		"bad kind":           {rule(strings.Replace(full, "kind: lint", "kind: style", 1)), `kind "style"`},

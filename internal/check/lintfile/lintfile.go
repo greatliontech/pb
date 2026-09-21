@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/greatliontech/glob"
@@ -32,7 +33,8 @@ const FileName = "pb.lint.yaml"
 var ErrInvalid = errors.New("invalid lint file")
 
 // ErrSelection is wrapped when the selection names what no imported
-// rule declares, or the imported rulesets declare an id twice
+// rule declares, a bare spelling several rulesets declare, a ruleset
+// declaring a name twice, or two spellings of one rule
 // (REQ-lint-selection).
 var ErrSelection = errors.New("invalid rule selection")
 
@@ -44,7 +46,7 @@ var ErrRuleset = errors.New("ruleset")
 // File is a parsed lint file, every part optional.
 type File struct {
 	Rulesets []string
-	Enable   []string // rule ids or tags; nil means every imported rule
+	Enable   []string // rule names, ids or tags; nil means every imported rule
 	Exclude  []string
 	Severity map[string]check.Severity
 	Ignore   []Ignore
@@ -121,7 +123,7 @@ func Parse(data []byte) (*File, error) {
 		contractfile.Field{Name: "severity", Read: func(n ast.Node) error {
 			sm, ok := n.(*ast.MappingNode)
 			if !ok {
-				return fmt.Errorf("%w: severity must be a mapping from rule id to severity", ErrInvalid)
+				return fmt.Errorf("%w: severity must be a mapping from rule name or id to severity", ErrInvalid)
 			}
 			f.Severity = map[string]check.Severity{}
 			for _, skv := range sm.Values {
@@ -251,28 +253,6 @@ func parseBreaking(n ast.Node) (*Breaking, error) {
 	return b, nil
 }
 
-// Ignored reports whether a finding of the rule at the path — a
-// module-relative proto path — is excluded by an ignore entry: a
-// path matching one of its globs, and the rule among its rules or the
-// entry naming none (REQ-lint-config-schema's ignore). A finding
-// without a path is never ignored here.
-func (f *File) Ignored(path, ruleID string) bool {
-	if path == "" {
-		return false
-	}
-	for _, ig := range f.Ignore {
-		if ig.Rules != nil && !contains(ig.Rules, ruleID) {
-			continue
-		}
-		for _, g := range ig.Paths {
-			if g.Match(path) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // Declared reports whether a module path may be a ruleset of the
 // root: a workspace module, or a dependency some workspace module
 // declares (REQ-lint-rulesets-declared).
@@ -328,81 +308,205 @@ func Rulesets(f *File, root *workspace.Root, mods []modfiles.Module) ([]Ruleset,
 	return out, nil
 }
 
-// Select is the enabled rules (REQ-lint-selection): every rule of
-// every imported ruleset when enable is absent, else the rules enable
-// names by id or tag; less those exclude names; each at the severity
-// the file overrides for it. The order is the rulesets', then the
-// rule files' by path, then declaration. An id or tag that enable,
-// exclude or severity names and no imported rule declares, and an id
-// two rule files declare, fail naming it.
-func Select(f *File, sets []Ruleset) ([]rules.Rule, error) {
-	var all []rules.Rule
-	declaredIn := map[string]string{}
-	for _, s := range sets {
-		for _, rf := range s.Files {
-			for _, r := range rf.File.Rules {
-				where := s.Path + "/" + rf.Path
-				if prior, dup := declaredIn[r.ID]; dup {
-					return nil, fmt.Errorf("%w: rule %s declared by %s and %s", ErrSelection, r.ID, prior, where)
-				}
-				declaredIn[r.ID] = where
-				all = append(all, r)
-			}
+// Selection is a lint file's selection over the imported rulesets:
+// the enabled rules, and the ignore entries with every rule spelled
+// by its name.
+type Selection struct {
+	Rules  []rules.Rule
+	ignore []Ignore
+}
+
+// Ignored reports whether a finding of the named rule at the path —
+// a module-relative proto path — is excluded by an ignore entry: a
+// path matching one of its globs, and the rule among its rules or
+// the entry naming none (REQ-lint-config-schema's ignore). A finding
+// without a path is never ignored here.
+func (s Selection) Ignored(path, name string) bool {
+	if path == "" {
+		return false
+	}
+	for _, ig := range s.ignore {
+		if ig.Rules != nil && !contains(ig.Rules, name) {
+			continue
 		}
-	}
-	names := map[string]bool{}
-	for _, r := range all {
-		names[r.ID] = true
-		for _, t := range r.Tags {
-			names[t] = true
-		}
-	}
-	known := func(what string, list []string) error {
-		for _, n := range list {
-			if !names[n] {
-				return fmt.Errorf("%w: %s names %q, which no imported rule declares as its id or a tag", ErrSelection, what, n)
-			}
-		}
-		return nil
-	}
-	if err := known("enable", f.Enable); err != nil {
-		return nil, err
-	}
-	if err := known("exclude", f.Exclude); err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(f.Severity))
-	for id := range f.Severity {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-	for _, id := range ids {
-		if _, ok := declaredIn[id]; !ok {
-			return nil, fmt.Errorf("%w: severity names %q, which no imported rule declares as its id", ErrSelection, id)
-		}
-	}
-	named := func(r rules.Rule, list []string) bool {
-		for _, n := range list {
-			if n == r.ID || contains(r.Tags, n) {
+		for _, g := range ig.Paths {
+			if g.Match(path) {
 				return true
 			}
 		}
-		return false
 	}
-	out := []rules.Rule{}
+	return false
+}
+
+// Select is the enabled rules (REQ-lint-selection): every rule of
+// every imported ruleset when enable is absent, else the rules enable
+// names — by name, by qualified tag, or by a bare id or tag exactly
+// one ruleset declares — less those exclude names; each at the
+// severity the file overrides for it, severity and ignore naming
+// rules alone. The order is the rulesets', then the rule files' by
+// path, then declaration. A spelling no imported rule declares, a
+// bare spelling several rulesets declare, a name a ruleset declares
+// twice or as both an id and a tag, and two severity spellings of one
+// rule, fail naming them.
+func Select(f *File, sets []Ruleset) (Selection, error) {
+	var all []rules.Rule
+	for _, s := range sets {
+		declaredIn := map[string]string{}
+		tagsIn := map[string]string{}
+		for _, rf := range s.Files {
+			for _, r := range rf.File.Rules {
+				r.Ruleset = s.Path
+				where := s.Path + "/" + rf.Path
+				if prior, dup := declaredIn[r.ID]; dup {
+					return Selection{}, fmt.Errorf("%w: %s declared by %s and %s", ErrSelection, r.Name(), prior, where)
+				}
+				declaredIn[r.ID] = where
+				for _, t := range r.Tags {
+					if _, tagged := tagsIn[t]; !tagged {
+						tagsIn[t] = where
+					}
+				}
+				all = append(all, r)
+			}
+		}
+		for _, r := range all {
+			if r.Ruleset != s.Path {
+				continue
+			}
+			if by, clash := tagsIn[r.ID]; clash {
+				return Selection{}, fmt.Errorf("%w: %s is both a rule, declared by %s, and a tag, first carried by a rule of %s", ErrSelection, r.Name(), declaredIn[r.ID], by)
+			}
+		}
+	}
+	n := index(all)
+	resolve := func(what string, list []string, rulesOnly bool) (map[string]bool, error) {
+		out := map[string]bool{}
+		for _, spelling := range list {
+			names, err := n.resolve(what, spelling, rulesOnly)
+			if err != nil {
+				return nil, err
+			}
+			for _, name := range names {
+				out[name] = true
+			}
+		}
+		return out, nil
+	}
+	enabled, err := resolve("enable", f.Enable, false)
+	if err != nil {
+		return Selection{}, err
+	}
+	excluded, err := resolve("exclude", f.Exclude, false)
+	if err != nil {
+		return Selection{}, err
+	}
+	keys := make([]string, 0, len(f.Severity))
+	for k := range f.Severity {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	severity := map[string]check.Severity{}
+	spelled := map[string]string{}
+	for _, k := range keys {
+		names, err := n.resolve("severity", k, true)
+		if err != nil {
+			return Selection{}, err
+		}
+		if prior, twice := spelled[names[0]]; twice {
+			return Selection{}, fmt.Errorf("%w: severity names %s twice, as %q and %q", ErrSelection, names[0], prior, k)
+		}
+		spelled[names[0]] = k
+		severity[names[0]] = f.Severity[k]
+	}
+	sel := Selection{Rules: []rules.Rule{}}
+	for _, ig := range f.Ignore {
+		canonical := Ignore{Paths: ig.Paths}
+		if ig.Rules != nil {
+			canonical.Rules = []string{}
+			for _, spelling := range ig.Rules {
+				names, err := n.resolve("ignore", spelling, true)
+				if err != nil {
+					return Selection{}, err
+				}
+				canonical.Rules = append(canonical.Rules, names[0])
+			}
+		}
+		sel.ignore = append(sel.ignore, canonical)
+	}
 	for _, r := range all {
-		if f.Enable != nil && !named(r, f.Enable) {
+		if f.Enable != nil && !enabled[r.Name()] {
 			continue
 		}
-		if named(r, f.Exclude) {
+		if excluded[r.Name()] {
 			continue
 		}
-		if sv, ok := f.Severity[r.ID]; ok {
+		if sv, ok := severity[r.Name()]; ok {
 			r.Severity = sv
 		}
-		out = append(out, r)
+		sel.Rules = append(sel.Rules, r)
 	}
-	return out, nil
+	return sel, nil
+}
+
+// names indexes the imported rules' spellings (the rule name term):
+// every rule by its name; every tag, qualified by its ruleset, by the
+// names of the rules that carry it; and every bare id and tag by the
+// qualified spellings it may mean — a ruleset's ids and tags one
+// namespace, checked apart, so a qualified spelling is a rule or a
+// tag, never both.
+type names struct {
+	rule map[string]bool
+	tag  map[string][]string
+	bare map[string][]string
+}
+
+func index(all []rules.Rule) names {
+	n := names{rule: map[string]bool{}, tag: map[string][]string{}, bare: map[string][]string{}}
+	seen := map[string]bool{}
+	add := func(bare, qualified string) {
+		if !seen[bare+"\x00"+qualified] {
+			seen[bare+"\x00"+qualified] = true
+			n.bare[bare] = append(n.bare[bare], qualified)
+		}
+	}
+	for _, r := range all {
+		n.rule[r.Name()] = true
+		add(r.ID, r.Name())
+		for _, t := range r.Tags {
+			q := r.Ruleset + ":" + t
+			n.tag[q] = append(n.tag[q], r.Name())
+			add(t, q)
+		}
+	}
+	return n
+}
+
+// resolve is the rule names a spelling means: a rule name itself; a
+// qualified tag, the rules carrying it; a bare id or tag, whatever it
+// means in exactly one ruleset — an unknown spelling, an ambiguous
+// one, and a tag where a rule alone is admitted fail naming them
+// (REQ-lint-selection).
+func (n names) resolve(what, spelling string, rulesOnly bool) ([]string, error) {
+	qualified := []string{spelling}
+	if !strings.Contains(spelling, ":") {
+		qualified = n.bare[spelling]
+		if len(qualified) > 1 {
+			return nil, fmt.Errorf("%w: %s names %q, which several imported rulesets declare: %s", ErrSelection, what, spelling, strings.Join(qualified, ", "))
+		}
+	}
+	if len(qualified) == 1 {
+		q := qualified[0]
+		if n.rule[q] {
+			return []string{q}, nil
+		}
+		if rs, ok := n.tag[q]; ok {
+			if rulesOnly {
+				return nil, fmt.Errorf("%w: %s names %q, a tag where a rule is named", ErrSelection, what, spelling)
+			}
+			return rs, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %s names %q, which no imported rule declares as its id or a tag", ErrSelection, what, spelling)
 }
 
 // String spells a base for messages: its form and, where one is
