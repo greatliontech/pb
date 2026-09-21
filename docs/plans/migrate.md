@@ -3,7 +3,7 @@
 Spec: docs/specs/migrate.md; the files it writes per module-file.md,
 workspace.md, check-rules.md (the lint file), generation.md.
 
-- [ ] 1. The lint file's per-module selection: a `modules` map keyed
+- [x] 1. The lint file's per-module selection: a `modules` map keyed
       by workspace-relative module directory, each entry's `enable`,
       `exclude` and `severity` replacing the root's for that module's
       files (check-rules.md amended)
