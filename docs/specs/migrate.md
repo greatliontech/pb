@@ -151,6 +151,11 @@ files compile from the named root, at the import paths the BSR served
 them at, the layout test the migrate package carries
 (TestDependencyLayouts) run against the origins at entry.
 
+`buf.build/gogo/protobuf` has no entry: its repository root holds
+generator test protos that compile from no root, and
+`gogoproto/gogo.proto` is imported by a path that pins the module root
+there, so no layout pb can name compiles as a set.
+
 ## Lint and breaking
 
 **REQ-migrate-rules** (behavior): buf's `lint` and `breaking`

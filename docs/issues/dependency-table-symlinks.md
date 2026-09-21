@@ -1,14 +1,13 @@
 # Two BSR module roots hold symbolic links
 
-Lands: user decision
+Lands: the migrate plan's chunk 9
 
 The dependency table (`migrate.md` REQ-migrate-deps) admits an entry
-with its layout verified: the module's own files compile from the
-named root. The layout test run against the origins refuses two
-entries before any file compiles, each origin's module root holding
-a symbolic link, which a module's file set admits none of
-(`module-archive.md` REQ-archive-file-set; the direct construction's
-forbidden entries):
+with its layout verified, and the layout test refuses two entries
+before any file compiles, each origin's module root holding a
+symbolic link, which a module's file set today admits none of
+(`module-archive.md` REQ-archive-file-set, every regular file and
+nothing else; REQ-archive-forbidden-entries, the tree invalid):
 
 - `buf.build/bufbuild/protovalidate` at
   `github.com/bufbuild/protovalidate/proto/protovalidate`: `LICENSE`
@@ -17,28 +16,23 @@ forbidden entries):
   `github.com/bufbuild/protoc-gen-validate`: `example-workspace/.bazelrc`
   is a link.
 
-Both are out of the table until the fork below is decided; a
-migration naming either reports it unmapped, and `--dep` names a
-mirror without the links. buf's own file set is the `.proto` files
-alone, so buf never met the links.
-
-The fork, the user's to weigh:
-
-- A module's file set stays every regular file under its root, links
-  refused: the archive is the tree as git holds it, its hash the
-  origin's, and a link — a path git records as pointing elsewhere —
-  is a file the module cannot carry. The two entries wait for their
-  origins to drop the links, or for mirrors.
-- The file set skips symbolic links (and submodule entries), as buf
-  skips every non-proto file: the archive's tree hash then differs
-  from the origin commit's for a tree holding one, so the invariant
-  that refuses the entries (`module-archive.md`
-  REQ-archive-forbidden-entries, stating that very reason) and the
-  binding of the recomputed tree hash to the commit's
-  (REQ-archive-tree-binding) must be restated over the file set
-  rather than the tree, a soundness-sensitive change.
-
-The tradeoff visible outside: the first keeps the two most common
-validation modules out of the table until their origins change; the
-second admits them and every origin like them, at the cost of an
-archive whose hash is no longer the commit's tree.
+The rule's ground does not hold: git stores a link as a tree entry
+of mode 120000 whose blob is the target path, and a submodule as an
+entry of mode 160000 whose hash is the submodule's commit id, no
+blob behind it. A file set that records a link as that blob and a
+submodule as that recorded id — the manifest carrying the id where
+it carries a content hash for a file, the tree recompute taking it
+as the entry's hash — recomputes the origin's tree hash exactly
+(REQ-archive-tree-binding kept) in the origin's object format: the
+id is copied, so the recompute's promise of either format
+(REQ-archive-tree-recompute) narrows to the recorded one where a
+submodule is present. Chunk 9 carries them — never followed, never
+fetched, a proto reachable only through a link no module file, and
+extraction onto a filesystem writing neither a link nor a submodule
+directory, since protovalidate's own link points above the module
+root — repealing REQ-archive-forbidden-entries and amending the file
+set, mode normalization, manifest, tree recompute, zip mode and
+materialization rules; the two entries then enter the table as the
+layout test verifies each, envoy and xds with them, which depend on
+protoc-gen-validate. Until then a migration naming either reports it
+unmapped, and `--dep` names a fork without the links.
