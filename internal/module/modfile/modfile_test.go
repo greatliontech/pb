@@ -170,8 +170,11 @@ func TestCheckIdentityProperty(t *testing.T) {
 func TestRoundTripProperty(t *testing.T) {
 	segAlpha := []rune("abcdefghijklmnopqrstuvwxyz0123456789-_~")
 	rapid.Check(t, func(t *rapid.T) {
+		// A host label may be all digits: such a path is spelled
+		// quoted, as YAML would read it as a number.
+		hostAlpha := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 		path := func(label string) string {
-			return "example.com/" + string(rapid.SliceOfN(rapid.SampledFrom(segAlpha), 1, 10).Draw(t, label))
+			return string(rapid.SliceOfN(rapid.SampledFrom(hostAlpha), 1, 4).Draw(t, label+"Host")) + ".example.com/" + string(rapid.SliceOfN(rapid.SampledFrom(segAlpha), 1, 10).Draw(t, label))
 		}
 		f := &File{Module: path("module")}
 		n := rapid.IntRange(0, 6).Draw(t, "n")
@@ -185,7 +188,7 @@ func TestRoundTripProperty(t *testing.T) {
 				if rapid.Bool().Draw(t, "pre") {
 					v += "-rc." + fmt.Sprint(rapid.IntRange(0, 9).Draw(t, "rcn"))
 				}
-				f.Deps[fmt.Sprintf("example.com/d%d/%s", i, string(rapid.SliceOfN(rapid.SampledFrom(segAlpha), 1, 6).Draw(t, "dseg")))] = v
+				f.Deps[fmt.Sprintf("%s/d%d/%s", path("dhost"), i, string(rapid.SliceOfN(rapid.SampledFrom(segAlpha), 1, 6).Draw(t, "dseg")))] = v
 			}
 		}
 		out1, err := Encode(f)
@@ -363,5 +366,20 @@ func TestFromFileSet(t *testing.T) {
 func TestFromFileSetRejectsInvalidRequired(t *testing.T) {
 	if _, err := FromFileSet("nodot/x", nil); err == nil {
 		t.Fatal("invalid required path accepted")
+	}
+}
+
+// A module path or dependency key YAML would read as a number — a host
+// label of digits alone — is spelled quoted and reads back as the path
+// (REQ-modfile-emission).
+func TestEncodeSpellsWhatYAMLWouldType(t *testing.T) {
+	f := &File{Module: "123.example.com/m", Deps: map[string]string{"123.com/x": "v1.0.0", "example.com/y": "v2.0.0"}}
+	out, err := Encode(f)
+	if err != nil || string(out) != "module: \"123.example.com/m\"\ndeps:\n  \"123.com/x\": v1.0.0\n  example.com/y: v2.0.0\n" {
+		t.Fatalf("Encode: %q %v", out, err)
+	}
+	again, err := Parse(out)
+	if err != nil || again.Module != f.Module || again.Deps["123.com/x"] != "v1.0.0" {
+		t.Fatalf("round trip: %+v %v", again, err)
 	}
 }

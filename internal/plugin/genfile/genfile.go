@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -76,6 +77,43 @@ func Parse(data []byte) (*File, error) {
 		return nil, err
 	}
 	return f, nil
+}
+
+// Encode renders the file canonically (REQ-gen-emission): plugins then
+// overrides, the latter absent where empty, entries in the order
+// given, an entry's keys in the order ref or local, out, opt — absent
+// where empty — and files, option, value, each scalar spelled as
+// contractfile.Spell has it. The rendering is held to its reading —
+// Encode never emits what Parse rejects, nor what Parse reads as a
+// different file.
+func Encode(f *File) ([]byte, error) {
+	if f == nil {
+		return nil, fmt.Errorf("%w: no file", ErrInvalid)
+	}
+	return contractfile.Emit(func(w *contractfile.Writer) {
+		w.Sequence("plugins", len(f.Plugins), func(i int) {
+			p := f.Plugins[i]
+			key := "ref"
+			if p.Scheme == plugin.SchemeLocal {
+				key = "local"
+			}
+			w.Scalar(key, p.Ref)
+			w.Scalar("out", p.Out)
+			if p.Opt != "" {
+				w.Scalar("opt", p.Opt)
+			}
+		})
+		if len(f.Overrides) > 0 {
+			w.Sequence("overrides", len(f.Overrides), func(i int) {
+				o := f.Overrides[i]
+				w.Scalar("files", o.Files)
+				w.Scalar("option", o.Option)
+				w.Scalar("value", o.Value)
+			})
+		}
+	}, Parse, f, func(a, b *File) bool {
+		return slices.Equal(a.Plugins, b.Plugins) && slices.Equal(a.Overrides, b.Overrides)
+	}, ErrInvalid)
 }
 
 // parsePlugins reads the plugins list: each entry a mapping carrying

@@ -30,9 +30,13 @@
 // Spell is the emitters' side of the same promise: a scalar spelled
 // plain where the reader reads it back as that text in a list item
 // and no YAML schema would type it, double-quoted otherwise. That is
-// what Spell alone certifies; an emitter placing a value in a key
-// position owes the rest itself, by parsing its rendering back and
-// holding it to the file given.
+// what Spell alone certifies; Writer renders a file's block style
+// with every scalar through it, and Emit holds each rendering to its
+// reading — the file's own reader over the bytes, compared to what
+// was meant — so an emitter writes neither what its reader rejects
+// nor what it reads as another file, a key position included. Every
+// contract file's emitter builds on the two: what one spells, all
+// spell alike.
 //
 // Walk is the same walk with the one other policy for an unknown key:
 // handed to the caller with its value, unread, rather than refused.

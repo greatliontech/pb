@@ -203,8 +203,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-work-emission"
-  content_hash: "9328210f20dfca0f8fce7fefe61e46311bcab34e1181c8c487019f7587bc2c7c"
-  source_hash: "122cd07861b5c1af6a3aa55a7ef620d194f12911fad0d03f4041a883e65a84b0"
+  content_hash: "b400d60c16d329801a14bd7a6bd22426a58bdb69f793058de728e768de367901"
+  source_hash: "3ccd3545a2274190effbf7ec6a9e525441eb403db9c4447b4e9c47d23bb99bee"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/workspace.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -213,8 +213,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-work-emission"
-  content_hash: "9328210f20dfca0f8fce7fefe61e46311bcab34e1181c8c487019f7587bc2c7c"
-  source_hash: "122cd07861b5c1af6a3aa55a7ef620d194f12911fad0d03f4041a883e65a84b0"
+  content_hash: "b400d60c16d329801a14bd7a6bd22426a58bdb69f793058de728e768de367901"
+  source_hash: "3ccd3545a2274190effbf7ec6a9e525441eb403db9c4447b4e9c47d23bb99bee"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/workspace.TestEncode"
   role: BINDING_ROLE_TESTS

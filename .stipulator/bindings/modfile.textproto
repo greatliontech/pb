@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-modfile-emission"
-  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
-  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
+  content_hash: "57c540754eb7bb4e9ebfe3b2ebed69d49dc4e8ea3169c5bc85696967c8f6c4fd"
+  source_hash: "76793b179300ae289e49729786d41da42c0af58c61ccec8cbd4a779bb72a6806"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/modfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-modfile-emission"
-  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
-  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
+  content_hash: "57c540754eb7bb4e9ebfe3b2ebed69d49dc4e8ea3169c5bc85696967c8f6c4fd"
+  source_hash: "76793b179300ae289e49729786d41da42c0af58c61ccec8cbd4a779bb72a6806"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/modfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS
@@ -113,8 +113,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-modfile-emission"
-  content_hash: "8f5070a2a737e7117fb8609fae52b684280bc9b80575d0b178dd3e3f0260a77b"
-  source_hash: "2f83ef4651d3b6f1614f4dc00d28652f48ec649df8f84bcd0e9f6cf1e4c88db9"
+  content_hash: "57c540754eb7bb4e9ebfe3b2ebed69d49dc4e8ea3169c5bc85696967c8f6c4fd"
+  source_hash: "76793b179300ae289e49729786d41da42c0af58c61ccec8cbd4a779bb72a6806"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/modfile.TestRoundTripProperty"
   role: BINDING_ROLE_TESTS

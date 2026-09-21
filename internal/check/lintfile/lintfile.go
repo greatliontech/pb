@@ -659,90 +659,80 @@ func Encode(f *File) ([]byte, error) {
 	if f == nil {
 		return nil, fmt.Errorf("%w: no file", ErrInvalid)
 	}
-	var b strings.Builder
-	list := func(indent, key string, values []string, sorted bool) {
-		if values == nil {
-			return
-		}
-		if len(values) == 0 {
-			b.WriteString(indent + key + ": []\n")
-			return
-		}
-		vs := slices.Clone(values)
-		if sorted {
-			slices.Sort(vs)
-		}
-		b.WriteString(indent + key + ":\n")
-		for _, v := range vs {
-			b.WriteString(indent + "  - " + contractfile.Spell(v) + "\n")
-		}
-	}
-	severity := func(indent string, sv map[string]check.Severity) {
-		if len(sv) == 0 {
-			return
-		}
-		b.WriteString(indent + "severity:\n")
-		for _, k := range slices.Sorted(maps.Keys(sv)) {
-			b.WriteString(indent + "  " + contractfile.Spell(k) + ": " + contractfile.Spell(string(sv[k])) + "\n")
-		}
-	}
-	ignores := func(indent string, igs []Ignore) {
-		if len(igs) == 0 {
-			return
-		}
-		b.WriteString(indent + "ignore:\n")
-		for _, ig := range ignoreForms(igs) {
-			b.WriteString(indent + "  - paths:\n")
-			for _, p := range ig.paths {
-				b.WriteString(indent + "      - " + contractfile.Spell(p) + "\n")
+	return contractfile.Emit(func(w *contractfile.Writer) {
+		list := func(key string, values []string, sorted bool) {
+			if values == nil {
+				return
 			}
-			list(indent+"    ", "rules", ig.rules, false)
-			if ig.kind != "" {
-				b.WriteString(indent + "    kind: " + string(ig.kind) + "\n")
+			vs := slices.Clone(values)
+			if sorted {
+				slices.Sort(vs)
 			}
+			w.List(key, vs)
 		}
-	}
-	list("", "rulesets", orNil(f.Rulesets), false)
-	list("", "enable", f.Enable, true)
-	list("", "exclude", orNil(f.Exclude), true)
-	severity("", f.Severity)
-	ignores("", f.Ignore)
-	if f.Breaking != nil {
-		b.WriteString("breaking:\n  base:\n    ")
-		if f.Breaking.Base.Form == BasePinned {
-			b.WriteString("pinned: true\n")
-		} else {
-			b.WriteString(string(f.Breaking.Base.Form) + ": " + contractfile.Spell(f.Breaking.Base.Value) + "\n")
-		}
-	}
-	if len(f.Modules) > 0 {
-		b.WriteString("modules:\n")
-		for _, d := range slices.Sorted(maps.Keys(f.Modules)) {
-			ms := f.Modules[d]
-			b.WriteString("  " + contractfile.Spell(d) + ":")
-			if ms.Enable == nil && len(ms.Exclude) == 0 && len(ms.Severity) == 0 && len(ms.Ignore) == 0 {
-				b.WriteString(" {}\n")
-				continue
+		severity := func(sv map[string]check.Severity) {
+			if len(sv) == 0 {
+				return
 			}
-			b.WriteString("\n")
-			list("    ", "enable", ms.Enable, true)
-			list("    ", "exclude", orNil(ms.Exclude), true)
-			severity("    ", ms.Severity)
-			ignores("    ", ms.Ignore)
+			w.Mapping("severity", func() {
+				for _, k := range slices.Sorted(maps.Keys(sv)) {
+					w.Scalar(k, string(sv[k]))
+				}
+			})
 		}
-	}
-	out := []byte(b.String())
-	if len(out) == 0 {
-		out = []byte("{}\n")
-	}
-	again, err := Parse(out)
-	if err != nil {
-		return nil, err
-	}
-	if !reflect.DeepEqual(formOf(f), formOf(again)) {
-		return nil, fmt.Errorf("%w: the rendering reads back as a different file", ErrInvalid)
-	}
-	return out, nil
+		ignores := func(igs []Ignore) {
+			if len(igs) == 0 {
+				return
+			}
+			forms := ignoreForms(igs)
+			w.Sequence("ignore", len(forms), func(i int) {
+				w.List("paths", forms[i].paths)
+				list("rules", forms[i].rules, false)
+				if forms[i].kind != "" {
+					w.Scalar("kind", string(forms[i].kind))
+				}
+			})
+		}
+		list("rulesets", orNil(f.Rulesets), false)
+		list("enable", f.Enable, true)
+		list("exclude", orNil(f.Exclude), true)
+		severity(f.Severity)
+		ignores(f.Ignore)
+		if f.Breaking != nil {
+			w.Mapping("breaking", func() {
+				w.Mapping("base", func() {
+					if f.Breaking.Base.Form == BasePinned {
+						w.Literal("pinned", "true")
+					} else {
+						w.Scalar(string(f.Breaking.Base.Form), f.Breaking.Base.Value)
+					}
+				})
+			})
+		}
+		if len(f.Modules) > 0 {
+			w.Mapping("modules", func() {
+				for _, d := range slices.Sorted(maps.Keys(f.Modules)) {
+					ms := f.Modules[d]
+					if ms.Enable == nil && len(ms.Exclude) == 0 && len(ms.Severity) == 0 && len(ms.Ignore) == 0 {
+						w.Empty(d)
+						continue
+					}
+					w.Mapping(d, func() {
+						list("enable", ms.Enable, true)
+						list("exclude", orNil(ms.Exclude), true)
+						severity(ms.Severity)
+						ignores(ms.Ignore)
+					})
+				}
+			})
+		}
+	}, func(out []byte) (form, error) {
+		again, err := Parse(out)
+		if err != nil {
+			return form{}, err
+		}
+		return formOf(again), nil
+	}, formOf(f), func(a, b form) bool { return reflect.DeepEqual(a, b) }, ErrInvalid)
 }
 
 // orNil is the list, or nil for an empty one: a list whose absence

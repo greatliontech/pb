@@ -45,6 +45,16 @@ scalar included. Runner selection, trust
 posture, and resource limits are not generation configuration and
 have no keys here (`plugin-execution.md`, `provenance.md`).
 
+**REQ-gen-emission** (behavior): Tooling that writes a generation file
+MUST emit it canonically: UTF-8, LF line endings, two-space
+indentation, `plugins` then `overrides`, the latter absent where it
+holds nothing, entries in the order given, a `plugins` entry's keys in
+the order `ref` or `local`, `out`, `opt` (absent where empty) and an
+`overrides` entry's in the order `files`, `option`, `value`, each
+scalar spelled as `check-rules.md`
+REQ-lint-emission spells a scalar, and never a rendering the file's
+reader rejects or reads as a different file.
+
 **REQ-gen-compile** (behavior): Generation MUST compile every protobuf
 file of every workspace module — a module's files being those under
 its directory outside any nested module, with the module directory as

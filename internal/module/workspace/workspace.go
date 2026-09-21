@@ -98,8 +98,9 @@ func Parse(data []byte) (*File, error) {
 // two-space indent, the use entries cleaned and sorted in raw-byte
 // order, each spelled as contractfile.Spell has it — a directory
 // named like a number quoted, so the file reads it back as the
-// directory under every reader. The file is validated first — Encode
-// never emits what Parse rejects.
+// directory under every reader. The file is validated first and the
+// rendering held to its reading — Encode never emits what Parse
+// rejects or reads as a different file.
 func Encode(f *File) ([]byte, error) {
 	if f == nil || len(f.Use) == 0 {
 		return nil, fmt.Errorf("%w: missing use key", ErrInvalid)
@@ -109,14 +110,15 @@ func Encode(f *File) ([]byte, error) {
 		return nil, err
 	}
 	slices.Sort(dirs)
-	var b strings.Builder
-	b.WriteString("use:\n")
-	for _, d := range dirs {
-		b.WriteString("  - ")
-		b.WriteString(contractfile.Spell(d))
-		b.WriteByte('\n')
-	}
-	return []byte(b.String()), nil
+	return contractfile.Emit(func(w *contractfile.Writer) {
+		w.List("use", dirs)
+	}, func(out []byte) ([]string, error) {
+		again, err := Parse(out)
+		if err != nil {
+			return nil, err
+		}
+		return again.Use, nil
+	}, dirs, slices.Equal, ErrInvalid)
 }
 
 // cleanUse validates the use entries as one list: each cleaned, no

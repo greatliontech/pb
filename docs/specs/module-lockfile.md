@@ -83,9 +83,12 @@ alone leads YAML's float spellings and is excluded — not end with
 `:`, and not be a YAML null
 spelling (`null`, `Null`, `NULL`, `~`). This bound is exactly what lets
 canonical emission write every value as an unquoted plain scalar that
-re-parses to the same bytes; values outside it are rejected on parse and
-on emission alike. Paths, digests, hashes, and object fields are bounded
-by their own grammars.
+re-parses to the same bytes under the lockfile's own reader, which
+takes every value as the text written and types none — a spelling a
+generic YAML reader would type, `y`, `True`, `0x1f`, is read as its
+text here, the lockfile being read by pb alone; values outside the
+bound are rejected on parse and on emission alike. Paths, digests,
+hashes, and object fields are bounded by their own grammars.
 
 **REQ-lock-acceptance** (wire): Parsing MUST accept key-order, comment,
 line-ending, and quoting variants that yield the recorded facts
@@ -99,8 +102,13 @@ fact.
 **REQ-lock-canonical-emission** (invariant): Lockfile emission MUST be a
 pure function of the recorded facts: entries sorted by path then version
 (raw-byte order), keys in the specified order, two-space indentation,
-block style throughout, no comments, no anchors, no tags. Regenerating a
-lockfile from the same facts yields byte-identical output.
+block style throughout, no comments, no anchors, no tags, every value an
+unquoted plain scalar — each fact's own grammar, REQ-lock-scalar-values
+for the free strings, admitting no spelling the lockfile's reader
+retypes — never a rendering the lockfile's reader rejects or reads as
+a different file.
+Regenerating a lockfile from the same facts yields byte-identical
+output.
 
 ## Semantics
 

@@ -11,8 +11,8 @@ package modfile
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
-	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
@@ -156,26 +156,18 @@ func Encode(f *File) ([]byte, error) {
 	if err := validate(f); err != nil {
 		return nil, err
 	}
-	var b strings.Builder
-	b.WriteString("module: ")
-	b.WriteString(f.Module)
-	b.WriteByte('\n')
-	if len(f.Deps) > 0 {
-		b.WriteString("deps:\n")
-		paths := make([]string, 0, len(f.Deps))
-		for p := range f.Deps {
-			paths = append(paths, p)
+	return contractfile.Emit(func(w *contractfile.Writer) {
+		w.Scalar("module", f.Module)
+		if len(f.Deps) > 0 {
+			w.Mapping("deps", func() {
+				for _, p := range slices.Sorted(maps.Keys(f.Deps)) {
+					w.Scalar(p, f.Deps[p])
+				}
+			})
 		}
-		slices.Sort(paths)
-		for _, p := range paths {
-			b.WriteString("  ")
-			b.WriteString(p)
-			b.WriteString(": ")
-			b.WriteString(f.Deps[p])
-			b.WriteByte('\n')
-		}
-	}
-	return []byte(b.String()), nil
+	}, Parse, f, func(a, b *File) bool {
+		return a.Module == b.Module && maps.Equal(a.Deps, b.Deps)
+	}, ErrInvalid)
 }
 
 // CheckIdentity enforces REQ-modfile-identity: the declared module path

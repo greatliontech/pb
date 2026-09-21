@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -331,63 +332,91 @@ func sortPins(f *File) {
 
 // Encode renders the lockfile canonically (REQ-lock-canonical-emission,
 // REQ-lock-format): version 1, modules sorted by (path, version), plugins
-// sorted by ref, fixed key order, two-space indent, block style, LF.
-// Emission is a pure function of the recorded facts.
+// sorted by ref, fixed key order, two-space indent, block style, LF,
+// every value a plain scalar — the domain REQ-lock-scalar-values bounds
+// is what the reader takes raw, so no value is quoted — and the
+// rendering held to its reading. Emission is a pure function of the
+// recorded facts.
 func Encode(f *File) ([]byte, error) {
 	if err := validate(f); err != nil {
 		return nil, err
 	}
 	c := &File{Modules: slices.Clone(f.Modules), Plugins: slices.Clone(f.Plugins)}
 	sortPins(c)
-
-	var b strings.Builder
-	b.WriteString("version: 1\n")
-	b.WriteString("modules:\n")
-	for _, m := range c.Modules {
-		fmt.Fprintf(&b, "  - path: %s\n", m.Path)
-		fmt.Fprintf(&b, "    version: %s\n", m.Version)
-		if m.Digest != "" {
-			fmt.Fprintf(&b, "    digest: %s\n", m.Digest)
-		}
-		if m.Modfile != "" {
-			fmt.Fprintf(&b, "    modfile: %s\n", m.Modfile)
-		}
-		writeProvenance(&b, "    ", m.Provenance)
-	}
-	if len(c.Plugins) > 0 {
-		b.WriteString("plugins:\n")
-		for _, p := range c.Plugins {
-			fmt.Fprintf(&b, "  - ref: %s\n", p.Ref)
-			fmt.Fprintf(&b, "    scheme: %s\n", p.Scheme)
-			switch p.Scheme {
-			case SchemeOCI:
-				fmt.Fprintf(&b, "    digest: %s\n", p.Digest)
-				writeProvenance(&b, "    ", p.Provenance)
-			case SchemeLocal:
-				b.WriteString("    binary:\n")
-				for _, platform := range slices.Sorted(maps.Keys(p.Binary)) {
-					fmt.Fprintf(&b, "      %s: %s\n", platform, p.Binary[platform])
-				}
+	return contractfile.Emit(func(w *contractfile.Writer) {
+		w.Literal("version", "1")
+		w.Sequence("modules", len(c.Modules), func(i int) {
+			m := c.Modules[i]
+			w.Literal("path", m.Path)
+			w.Literal("version", m.Version)
+			if m.Digest != "" {
+				w.Literal("digest", m.Digest)
 			}
+			if m.Modfile != "" {
+				w.Literal("modfile", m.Modfile)
+			}
+			writeProvenance(w, m.Provenance)
+		})
+		if len(c.Plugins) > 0 {
+			w.Sequence("plugins", len(c.Plugins), func(i int) {
+				p := c.Plugins[i]
+				w.Literal("ref", p.Ref)
+				w.Literal("scheme", p.Scheme)
+				switch p.Scheme {
+				case SchemeOCI:
+					w.Literal("digest", p.Digest)
+					writeProvenance(w, p.Provenance)
+				case SchemeLocal:
+					w.Mapping("binary", func() {
+						for _, platform := range slices.Sorted(maps.Keys(p.Binary)) {
+							w.Literal(platform, p.Binary[platform])
+						}
+					})
+				}
+			})
 		}
-	}
-	return []byte(b.String()), nil
+	}, func(out []byte) (File, error) {
+		again, err := Parse(out)
+		if err != nil {
+			return File{}, err
+		}
+		sortPins(again)
+		return pinsOf(again), nil
+	}, pinsOf(c), func(a, b File) bool { return reflect.DeepEqual(a, b) }, ErrInvalid)
 }
 
-func writeProvenance(b *strings.Builder, indent string, p Provenance) {
+// pinsOf is a file's pins as recorded facts, an absent list and an
+// empty one alike — a file may pin no module and no plugin.
+func pinsOf(f *File) File {
+	var out File
+	if len(f.Modules) > 0 {
+		out.Modules = f.Modules
+	}
+	if len(f.Plugins) > 0 {
+		out.Plugins = f.Plugins
+	}
+	return out
+}
+
+// writeProvenance writes a pin's provenance record: `none` where it
+// has none, else its type and, for a signed tag, the object, then the
+// identity.
+func writeProvenance(w *contractfile.Writer, p Provenance) {
 	if p == (Provenance{}) {
-		fmt.Fprintf(b, "%sprovenance: none\n", indent)
+		w.Literal("provenance", "none")
 		return
 	}
-	fmt.Fprintf(b, "%sprovenance:\n", indent)
-	fmt.Fprintf(b, "%s  type: %s\n", indent, p.Type)
-	if p.Type == ProvenanceGitSignedTag {
-		fmt.Fprintf(b, "%s  objectFormat: %s\n", indent, p.ObjectFormat)
-		fmt.Fprintf(b, "%s  object: %s\n", indent, p.Object)
-	}
-	fmt.Fprintf(b, "%s  identity:\n", indent)
-	fmt.Fprintf(b, "%s    san: %s\n", indent, p.SAN)
-	fmt.Fprintf(b, "%s    issuer: %s\n", indent, p.Issuer)
+	w.Mapping("provenance", func() {
+		w.Literal("type", p.Type)
+		if p.Type == ProvenanceGitSignedTag {
+			w.Literal("objectFormat", p.ObjectFormat)
+			w.Literal("object", p.Object)
+		}
+		w.Mapping("identity", func() {
+			w.Literal("san", p.SAN)
+			w.Literal("issuer", p.Issuer)
+		})
+	})
 }
 
 // rawScalar captures a scalar's exact spelling (one matching quote layer

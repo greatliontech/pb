@@ -249,3 +249,78 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+// The generation file renders canonically (REQ-gen-emission): plugins
+// then overrides, entries in the order given, keys in their order,
+// opt absent where empty, scalars spelled by the shared rule, a
+// multi-line opt or value double-quoted; the rendering reads back as
+// the file; what Parse rejects Encode refuses.
+func TestEncode(t *testing.T) {
+	f := &File{
+		Plugins: []Plugin{
+			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x"},
+			{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-connect-go", Out: "gen/connect"},
+			{Scheme: plugin.SchemeLocal, Ref: "tools/gen", Out: "gen/x", Opt: "a=1\nb=2\n"},
+		},
+		Overrides: []Override{
+			{Files: "**", Option: "java_package", Value: "com.acme"},
+			{Files: "acme/*.proto", Option: "(pkg.ext).field", Value: "true"},
+		},
+	}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `plugins:
+  - ref: ghcr.io/acme/protoc-gen-go:v1.36.0
+    out: gen/go
+    opt: paths=source_relative,module=example.com/x
+  - local: protoc-gen-connect-go
+    out: gen/connect
+  - local: tools/gen
+    out: gen/x
+    opt: "a=1\nb=2\n"
+overrides:
+  - files: "**"
+    option: java_package
+    value: com.acme
+  - files: acme/*.proto
+    option: (pkg.ext).field
+    value: "true"
+`
+	if string(out) != want {
+		t.Fatalf("Encode:\n%s", out)
+	}
+	again, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if twice, err := Encode(again); err != nil || string(twice) != want {
+		t.Fatalf("round trip: %v\n%s", err, twice)
+	}
+	if out, err := Encode(&File{Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}}); err != nil || string(out) != "plugins:\n  - ref: ghcr.io/a/b:v1\n    out: gen\n" {
+		t.Fatalf("one plugin, no overrides: %q %v", out, err)
+	}
+	// Entries stay in the order given: generation runs them in
+	// declaration order, and later overrides win on overlap.
+	ordered := &File{
+		Plugins:   []Plugin{{Scheme: plugin.SchemeLocal, Ref: "z-gen", Out: "gen/z"}, {Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen/a"}},
+		Overrides: []Override{{Files: "z/**", Option: "java_package", Value: "z"}, {Files: "**", Option: "java_package", Value: "a"}},
+	}
+	if out, err := Encode(ordered); err != nil || string(out) != "plugins:\n  - local: z-gen\n    out: gen/z\n  - ref: ghcr.io/a/b:v1\n    out: gen/a\noverrides:\n  - files: z/**\n    option: java_package\n    value: z\n  - files: \"**\"\n    option: java_package\n    value: a\n" {
+		t.Fatalf("the order given: %q %v", out, err)
+	}
+	for name, f := range map[string]*File{
+		"nil":            nil,
+		"no plugins":     {},
+		"no out":         {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1"}}},
+		"no tag":         {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b", Out: "gen"}}},
+		"escaping out":   {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "../gen"}}},
+		"bad option":     {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Option: "not an option", Value: "v"}}},
+		"unknown scheme": {Plugins: []Plugin{{Scheme: "remote", Ref: "x", Out: "gen"}}},
+	} {
+		if _, err := Encode(f); err == nil {
+			t.Errorf("%s: encoded", name)
+		}
+	}
+}

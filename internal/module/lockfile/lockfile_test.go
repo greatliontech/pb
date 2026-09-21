@@ -374,7 +374,13 @@ func TestFixedPointProperty(t *testing.T) {
 				for _, platform := range platforms {
 					binary[platform] = "sha256:" + hex64("binary-"+platform)
 				}
-				f.Plugins = append(f.Plugins, PluginPin{Ref: plain("lref", printable), Scheme: SchemeLocal, Binary: binary})
+				// A local ref may start with "/" or "./", a path's starts
+				// (REQ-lock-scalar-values).
+				lref := rapid.SampledFrom([]string{"", "/", "./"}).Draw(t, "lrefStart")
+				if lref == "" || rapid.Bool().Draw(t, "lrefBody") {
+					lref += plain("lref", printable)
+				}
+				f.Plugins = append(f.Plugins, PluginPin{Ref: lref, Scheme: SchemeLocal, Binary: binary})
 			} else {
 				pin := PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")}
 				if rapid.Bool().Draw(t, "hasImageProv") {

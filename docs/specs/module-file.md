@@ -38,4 +38,7 @@ pseudo-version.
 
 **REQ-modfile-emission** (behavior): Tooling that writes a module file
 MUST emit it canonically: UTF-8, LF line endings, two-space indentation,
-`module` first, `deps` sorted by key in raw-byte order.
+`module` first, `deps` sorted by key in raw-byte order, each scalar
+spelled as `check-rules.md` REQ-lint-emission spells a scalar, and
+never a rendering the file's reader rejects or reads as a different
+file.

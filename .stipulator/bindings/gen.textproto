@@ -390,3 +390,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "34cf9b51dc35e46e4cf3993ed162ec1e8682b17a629accb72cf93a712333fa05"
 }
+
+bindings {
+  requirement_id: "REQ-gen-emission"
+  content_hash: "c1bf623c4148fa0fe3b4b237aa37cab2d293f1e21181e94b0cbdf3b5156b24f6"
+  source_hash: "8fc0d86e433c3d87c8966684530c3266641b00a0d2d04b9c18a650ad727db335"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/genfile.Encode"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "80622bf7e9479db6d2c335b758f6c34d7cf91eaa9333d456376fe664ddf4cfc1"
+}
+
+bindings {
+  requirement_id: "REQ-gen-emission"
+  content_hash: "c1bf623c4148fa0fe3b4b237aa37cab2d293f1e21181e94b0cbdf3b5156b24f6"
+  source_hash: "8fc0d86e433c3d87c8966684530c3266641b00a0d2d04b9c18a650ad727db335"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/genfile.TestEncode"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6755b0687be92f02905fad8a837d00f5e19408f8406fa9fa399b9f1eb94dd49b"
+}
