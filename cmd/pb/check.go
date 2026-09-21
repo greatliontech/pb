@@ -6,8 +6,8 @@ import (
 	"github.com/go-git/go-git/v6"
 	"github.com/spf13/cobra"
 
-	"github.com/greatliontech/pb/internal/check/breaking"
 	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/gitdir"
 )
 
 // lintCmd is the lint verb (check-rules.md REQ-check-lint-verb): the
@@ -38,7 +38,7 @@ func breakingCmd() *cobra.Command {
 				return err
 			}
 			deps := dep.BreakingDeps{Repo: func() (*git.Repository, string, error) {
-				return breaking.RepoOf(rootOSPath(s))
+				return gitdir.RepoOf(rootOSPath(s))
 			}}
 			return dep.Breaking(c.Context(), s, deps, os.Stdout, os.Stderr)
 		},

@@ -96,9 +96,9 @@ bindings {
   content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
   source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/breaking.RepoOf"
+  symbol: "github.com/greatliontech/pb/internal/gitdir.RepoOf"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fef31f9abc09497b77f02b5b6be78f19a1986fad8456a4c6a86768c5cb580c84"
+  shape_hash: "53f79cad0dfdbd179dd03c3dde90cb344b92bc84e5cb5fb36b3ca465388991f6"
 }
 
 bindings {
@@ -176,9 +176,9 @@ bindings {
   content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
   source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/breaking.TestRepositorySearch"
+  symbol: "github.com/greatliontech/pb/internal/gitdir.TestRepositorySearch"
   role: BINDING_ROLE_TESTS
-  shape_hash: "6dca7f851f508ee702e7c608f21332b68e70e3cfdff941f9e116639f393389e8"
+  shape_hash: "3e40116a4c73e71f76a59f8eb3b825355dd04f0303430e2fcd6a5d1b05b2d042"
 }
 
 bindings {
@@ -186,9 +186,9 @@ bindings {
   content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
   source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/breaking.repositoryRoot"
+  symbol: "github.com/greatliontech/pb/internal/gitdir.repositoryRoot"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "8c721f7930a9e1bfdb0c0890def9e389a69671d5da49eea85cefed7b370e28d3"
+  shape_hash: "dc50a0767aa9891654b615c98634943aa8460967321b3a1691384fc76ea1c7fe"
 }
 
 bindings {
@@ -196,7 +196,7 @@ bindings {
   content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
   source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/check/breaking.ceilings"
+  symbol: "github.com/greatliontech/pb/internal/gitdir.ceilings"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c5b48079e8316d2bc98414cbfbc1a3c4bf1d4fda230ed3de8390be153221b29c"
+  shape_hash: "d65205f3f0231460c2260a013b2e3dd1493993096190e9cf63a60caaaf4f2acd"
 }

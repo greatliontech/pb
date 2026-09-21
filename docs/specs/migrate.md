@@ -79,9 +79,10 @@ finish it.
 declares MUST become a module file at that module's root declaring the
 module's pb path: the path `--module` gives for a single module, or,
 for several, the path it gives for the workspace joined with the
-module's directory relative to it; absent the flag, the git
-origin of the repository the directory lies in, spelled as a module
-path (`module-resolution.md` REQ-resolve-path-syntax), joined with the
+module's directory relative to it; absent the flag, the git origin of
+the repository the directory lies in — found as `check-rules.md`
+REQ-break-base-materialized finds it — spelled as a module path
+(`module-resolution.md` REQ-resolve-path-syntax), joined with the
 directory's path within the repository — a directory in no repository
 with no path given fails naming the flag. buf's `name` for the module
 (a BSR name) is reported, never used as the path: a BSR name is no
@@ -89,10 +90,9 @@ place pb fetches from. A `v2` configuration's `modules` and a `v1`
 workspace's `directories` become the workspace file's `use` entries,
 each module's directory as written, relative to the configuration's
 directory; a lone `v1` module writes no workspace file. buf's
-`excludes` and `includes` under a module, and `v1`'s
-`build.excludes`, are unmapped facts: a pb module's file set is every
-regular file under its root (`module-archive.md`
-REQ-archive-file-set).
+`excludes` and `includes` under a module, and `v1`'s `build.excludes`,
+are unmapped facts: a pb module's file set is every regular file under
+its root (`module-archive.md` REQ-archive-file-set).
 
 ## Dependencies
 

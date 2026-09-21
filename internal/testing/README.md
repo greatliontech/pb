@@ -20,6 +20,18 @@ here ships, which the layering test at `internal/` enforces:
 - `imagetest` — a registry double answering the OCI referrers API
   as the specification describes it, and the pushes cosign's
   conventions make.
+- `prototest` — in-memory protobuf sources compiled with their
+  well-known imports and source info, so a test holds a linked schema
+  and the text it came from.
+- `scratchtest` — a fresh directory under the package's own
+  `testdata/scratch` for a test that must touch the operating system's
+  filesystem, and the same bounded against the repository search, so
+  a test that uses it reads nothing outside the tree.
+
+The roster above is held to the directory by the test beside this
+file: a fixture's bullet opens with its name in backticks and a
+space, its description on the same line, no other bullet opens that
+way, and every subdirectory here is a fixture.
 
 A fixture lives here when more than one package builds on it or when
 its shapes are a domain's, not a package's. It stays a package of its

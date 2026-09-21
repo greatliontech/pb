@@ -1,6 +1,7 @@
 # The check subsystem's mutation evidence stays machine-local
 
-Lands: the check subsystem's campaign banks repo-committable records
+Lands: the campaign over the check subsystem and the repository
+search (`gitdir`, hoisted out of it) banks repo-committable records
 on the tree whose oracles read nothing outside it
 
 The delta campaign over the check subsystem's eight chunks measured
@@ -34,11 +35,14 @@ oracle before any is dispositioned; the interrupted rule-file
 campaign's dirty-tree records (12 open, at lines that no longer
 exist) are superseded by the same re-measurement.
 
-What stabilized the oracles: `RepoOf` searches for `.git` itself,
+What stabilized the oracles: `gitdir.RepoOf` (the search the
+breaking check and the migration share) searches for `.git` itself,
 bounded by `GIT_CEILING_DIRECTORIES` as git's search is, the tests
-setting the ceiling at their scratch root; the breaking fixture is
+setting the ceiling at their scratch root through
+`scratchtest.NoRepo`; the breaking fixture is
 built through the object store alone, no commit and no
 configuration consulted; the symlink test roots its filesystem at
-an in-tree scratch directory. A trace of both packages' tests shows
-no read outside the tree. The campaign re-runs on that tree and its
-records promote, closing this issue.
+an in-tree scratch directory. A trace of the packages' tests shows
+no read outside the tree. The campaign, over the check subsystem and
+`gitdir` together, re-runs on that tree and its records promote,
+closing this issue.

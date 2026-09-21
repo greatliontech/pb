@@ -41,3 +41,18 @@ func Dir(tb testing.TB) string {
 	})
 	return dir
 }
+
+// NoRepo is a fresh scratch directory with the repository search
+// bounded at its parent through GIT_CEILING_DIRECTORIES for the test's
+// duration, so a search from it never reaches the .git of the
+// repository this tree lies in: a directory in no repository of its
+// own, as a test of that case needs. The bound is set with Setenv, so
+// the test must not be parallel; and the scratch root is found from
+// the working directory, as Dir finds it, so the call precedes any
+// change of directory the test makes.
+func NoRepo(tb testing.TB) string {
+	tb.Helper()
+	dir := Dir(tb)
+	tb.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
+	return dir
+}

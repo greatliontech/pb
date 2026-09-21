@@ -17,23 +17,13 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
+	"github.com/greatliontech/pb/internal/gitdir"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
 	"github.com/greatliontech/pb/internal/testing/gittest"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
 )
-
-// scratch is a fresh directory inside the module with the repository
-// search bounded at the scratch root through GIT_CEILING_DIRECTORIES,
-// so a scratch directory in no repository of its own never reaches
-// this repository's .git above it.
-func scratch(t *testing.T) string {
-	t.Helper()
-	dir := scratchtest.Dir(t)
-	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
-	return dir
-}
 
 // repo builds a repository in a scratch directory through the object
 // store alone, no working tree and no configuration consulted: the
@@ -42,7 +32,7 @@ func scratch(t *testing.T) string {
 // tag on the first, HEAD on the second.
 func repo(t *testing.T) (dir string) {
 	t.Helper()
-	dir = scratch(t)
+	dir = scratchtest.NoRepo(t)
 	r := gittest.NewAt(t, osfs.New(dir), git.GitDirName)
 	file := func(name, content string) object.TreeEntry {
 		return object.TreeEntry{Name: name, Mode: filemode.Regular, Hash: r.Blob(content)}
@@ -92,7 +82,7 @@ func names(files map[string][]byte) string {
 // (REQ-break-base-materialized).
 func TestFromRef(t *testing.T) {
 	dir := repo(t)
-	src := Sources{Repo: func() (*git.Repository, string, error) { return RepoOf(filepath.Join(dir, "ws")) }}
+	src := Sources{Repo: func() (*git.Repository, string, error) { return gitdir.RepoOf(filepath.Join(dir, "ws")) }}
 	m := Module{Path: "example.com/a", Dir: "a"}
 	for _, ref := range []string{"v1.0.0", "HEAD~1"} {
 		b, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: ref}, m, src)
@@ -127,19 +117,19 @@ func TestFromRef(t *testing.T) {
 		t.Fatalf("no repo source: %v", err)
 	}
 	// A root in no repository: the search stops at the ceiling.
-	outside := Sources{Repo: func() (*git.Repository, string, error) { return RepoOf(scratch(t)) }}
+	outside := Sources{Repo: func() (*git.Repository, string, error) { return gitdir.RepoOf(scratchtest.NoRepo(t)) }}
 	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "HEAD"}, m, outside); err == nil || !strings.Contains(err.Error(), "lies in no git repository") {
 		t.Fatalf("no repository: %v", err)
 	}
 	// The .git file form — a working tree pointing at its repository
 	// directory, absolutely or relatively — opens as the directory
 	// form does.
-	pointer := scratch(t)
+	pointer := scratchtest.NoRepo(t)
 	for form, target := range map[string]string{"absolute": filepath.Join(dir, git.GitDirName), "relative": filepath.Join("..", filepath.Base(dir), git.GitDirName)} {
 		if err := os.WriteFile(filepath.Join(pointer, git.GitDirName), []byte("gitdir: "+target+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		b, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "v1.0.0"}, Module{Path: "example.com/a", Dir: "ws/a"}, Sources{Repo: func() (*git.Repository, string, error) { return RepoOf(pointer) }})
+		b, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "v1.0.0"}, Module{Path: "example.com/a", Dir: "ws/a"}, Sources{Repo: func() (*git.Repository, string, error) { return gitdir.RepoOf(pointer) }})
 		if err != nil {
 			t.Fatalf("through a %s .git file: %v", form, err)
 		}
@@ -150,19 +140,19 @@ func TestFromRef(t *testing.T) {
 	// The repository's root itself as the workspace root; a relative
 	// directory is made absolute; a nested directory yields its
 	// slash-separated path within the repository.
-	repo, rel, err := RepoOf(dir)
+	repo, rel, err := gitdir.RepoOf(dir)
 	if err != nil || rel != "" || repo == nil {
-		t.Fatalf("RepoOf(root) = %q %v", rel, err)
+		t.Fatalf("gitdir.RepoOf(root) = %q %v", rel, err)
 	}
-	if _, rel, err := RepoOf(filepath.Join(dir, "ws", "a")); err != nil || rel != "ws/a" {
-		t.Fatalf("RepoOf(nested) = %q %v", rel, err)
+	if _, rel, err := gitdir.RepoOf(filepath.Join(dir, "ws", "a")); err != nil || rel != "ws/a" {
+		t.Fatalf("gitdir.RepoOf(nested) = %q %v", rel, err)
 	}
-	if _, rel, err := RepoOf(filepath.Join(dir, "ws", "a", "..")); err != nil || rel != "ws" {
-		t.Fatalf("RepoOf(unclean) = %q %v", rel, err)
+	if _, rel, err := gitdir.RepoOf(filepath.Join(dir, "ws", "a", "..")); err != nil || rel != "ws" {
+		t.Fatalf("gitdir.RepoOf(unclean) = %q %v", rel, err)
 	}
 	t.Chdir(dir)
-	if _, rel, err := RepoOf(filepath.Join("ws", "a")); err != nil || rel != "ws/a" {
-		t.Fatalf("RepoOf(relative) = %q %v", rel, err)
+	if _, rel, err := gitdir.RepoOf(filepath.Join("ws", "a")); err != nil || rel != "ws/a" {
+		t.Fatalf("gitdir.RepoOf(relative) = %q %v", rel, err)
 	}
 	b, err = Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseRef, Value: "v1.0.0"}, Module{Path: "example.com/a", Dir: "ws/a"}, Sources{Repo: func() (*git.Repository, string, error) { return repo, rel, nil }})
 	if err != nil || names(b.Files) != "sub/y.proto,x.proto" {
@@ -222,80 +212,5 @@ func TestFromVersion(t *testing.T) {
 	}
 	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BasePinned}, m, Sources{Zip: src.Zip}); err == nil || !strings.Contains(err.Error(), "pins no version") {
 		t.Fatalf("no lockfile: %v", err)
-	}
-}
-
-// The repository search reads GIT_CEILING_DIRECTORIES as git does —
-// absolute entries alone, by identity until an empty entry and by
-// spelling after it — never enters a ceiling, an ancestor spelled
-// through a link included, never excludes the start directory, and
-// searches the filesystem's root last (REQ-break-base-materialized).
-func TestRepositorySearch(t *testing.T) {
-	dir := scratchtest.Dir(t)
-	real := filepath.Join(dir, "real")
-	link := filepath.Join(dir, "link")
-	// A second link into a subdirectory, so that ".." after it
-	// resolves to that subdirectory's parent, not the link's.
-	deep := filepath.Join(dir, "deep")
-	link2 := filepath.Join(dir, "link2")
-	for _, d := range []string{filepath.Join(real, "a", "b"), filepath.Join(deep, "target"), filepath.Join(deep, "other"), filepath.Join(dir, "other")} {
-		if err := os.MkdirAll(d, 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := os.Symlink(real, link); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink(filepath.Join(deep, "target"), link2); err != nil {
-		t.Fatal(err)
-	}
-	sep := string(filepath.Separator)
-	got := ceilings("relative:" + sep + ":" + link + sep + ":" + filepath.Join(dir, "nonesuch") + "::" + dir + sep + "x" + sep + ".." + sep + "y" + sep + ":" + sep)
-	if len(got) != 2 || got[0].path != link || got[0].dir == nil || got[1].path != dir+sep+"x"+sep+".."+sep+"y" || got[1].dir != nil {
-		t.Fatalf("ceilings = %+v", got)
-	}
-	// An entry resolves as the operating system resolves it: through
-	// the link first, then up.
-	if c := ceilings(link2 + sep + ".." + sep + "other"); len(c) != 1 || !c[0].is(filepath.Join(deep, "other")) || c[0].is(filepath.Join(dir, "other")) {
-		t.Fatalf("an entry through a link and up: %+v", c)
-	}
-	never := func(string) bool { return false }
-	at := func(root string) func(string) bool { return func(d string) bool { return d == root } }
-	viaLink := filepath.Join(link, "a", "b")
-	viaReal := filepath.Join(real, "a", "b")
-	if root, ok := repositoryRoot(viaLink, nil, never); ok || root != "" {
-		t.Fatalf("no .git anywhere: %q %v", root, ok)
-	}
-	if root, ok := repositoryRoot(viaLink, nil, at(filepath.Join(link, "a"))); !ok || root != filepath.Join(link, "a") {
-		t.Fatalf("the nearest ancestor: %q %v", root, ok)
-	}
-	if root, ok := repositoryRoot(viaLink, nil, at(string(filepath.Separator))); !ok || root != string(filepath.Separator) {
-		t.Fatalf("the filesystem's root searched last: %q %v", root, ok)
-	}
-	// By identity, the ceiling stops a walk spelled either way; by
-	// spelling, only the walk spelled as the entry is.
-	if _, ok := repositoryRoot(viaLink, ceilings(real), at(dir)); ok {
-		t.Fatal("entered a ceiling named by identity, reached through a link")
-	}
-	if _, ok := repositoryRoot(viaReal, ceilings(link), at(dir)); ok {
-		t.Fatal("entered a ceiling named by identity through a link, reached directly")
-	}
-	if _, ok := repositoryRoot(viaLink, ceilings(":"+link), at(dir)); ok {
-		t.Fatal("entered a ceiling named by spelling, reached as spelled")
-	}
-	if root, ok := repositoryRoot(viaReal, ceilings(":"+link), at(dir)); !ok || root != dir {
-		t.Fatalf("a ceiling named by spelling stopped a walk spelled otherwise: %q %v", root, ok)
-	}
-	// A ceiling not on the path stops nothing; the start directory
-	// itself is never excluded, even when named.
-	if root, ok := repositoryRoot(viaLink, ceilings(filepath.Join(dir, "elsewhere")), at(dir)); !ok || root != dir {
-		t.Fatalf("an unrelated ceiling: %q %v", root, ok)
-	}
-	if root, ok := repositoryRoot(viaLink, ceilings(viaLink), at(dir)); !ok || root != dir {
-		t.Fatalf("the start directory as a ceiling: %q %v", root, ok)
-	}
-	// A ceiling that does not exist is no ceiling.
-	if root, ok := repositoryRoot(viaLink, ceilings(filepath.Join(dir, "nonesuch")), at(dir)); !ok || root != dir {
-		t.Fatalf("an absent ceiling: %q %v", root, ok)
 	}
 }
