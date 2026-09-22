@@ -33,6 +33,12 @@ type Module struct {
 	Dir     string // workspace module: its directory relative to the root; "" for externals
 	Files   map[string][]byte
 	Rules   map[string][]byte // the module's rule files (module.RuleFileSuffix), by the same paths
+	// Synthesized marks an external module whose archive holds no
+	// module file: a subtree consumed as a module
+	// (module-resolution.md REQ-resolve-synthesis), declaring no
+	// dependency of its own — what its files import, a workspace
+	// module declaring it carries.
+	Synthesized bool
 }
 
 // Protos returns the module's file paths in sorted order.
@@ -62,6 +68,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 			return nil, fmt.Errorf("%s@%s: %w", r.Path, r.Version, err)
 		}
 		files, rules := map[string][]byte{}, map[string][]byte{}
+		_, declared := all[module.ModuleFileName]
 		for p, content := range all {
 			switch {
 			case module.IsProtoFile(p):
@@ -70,7 +77,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 				rules[p] = content
 			}
 		}
-		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files, Rules: rules})
+		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files, Rules: rules, Synthesized: !declared})
 	}
 	return out, nil
 }

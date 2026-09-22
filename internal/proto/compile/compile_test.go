@@ -196,11 +196,15 @@ func TestCompileOrderProperty(t *testing.T) {
 	})
 }
 
-// CompileOnly compiles one module alone: every module provides
-// imports, and no other module's imports are checked or compiled —
-// a build where a's files no longer satisfy b's import still compiles
-// a (check-rules.md REQ-break-base-materialized).
-func TestCompileOnly(t *testing.T) {
+// CompileFiles compiles one module's files alone: every module
+// provides imports, and no other module's imports are checked or
+// compiled — a build where a's files no longer satisfy b's import
+// still compiles a (check-rules.md REQ-break-base-materialized). The
+// module's every file has its imports checked, the files given alone
+// are compiled: a module whose files declare one symbol twice
+// compiles a file of them, and a file outside the targets with an
+// unsatisfied import fails them.
+func TestCompileFiles(t *testing.T) {
 	mods := []modfiles.Module{
 		{Path: "example.com/a", Local: true, Dir: "a", Files: map[string][]byte{"a.proto": []byte("syntax = \"proto3\";\npackage a;\nmessage A {}\n")}},
 		{Path: "example.com/b", Local: true, Dir: "b", Files: map[string][]byte{"b.proto": []byte("syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"gone.proto\";\nmessage B { a.A a = 1; }\n")}},
@@ -208,11 +212,31 @@ func TestCompileOnly(t *testing.T) {
 	if _, err := Compile(context.Background(), mods); err == nil {
 		t.Fatal("the build with an unsatisfied import compiled whole")
 	}
-	r, err := CompileOnly(context.Background(), mods, 0)
+	r, err := CompileFiles(context.Background(), mods, 0, mods[0].Protos())
 	if err != nil || len(r.Files) != 1 || r.Files[0].Path() != "a.proto" {
 		t.Fatalf("a alone: %v %v", err, r)
 	}
-	if _, err := CompileOnly(context.Background(), mods, 1); err == nil {
+	if _, err := CompileFiles(context.Background(), mods, 1, mods[1].Protos()); err == nil {
 		t.Fatal("b alone compiled with its import unsatisfied")
+	}
+
+	// A subset: the whole set fails on the twice-declared symbol, a
+	// file of it compiles; a file outside the targets still has its
+	// imports checked.
+	twice := modfiles.Module{Path: "example.com/t", Local: true, Dir: "t", Files: map[string][]byte{
+		"x/m.proto":         []byte("syntax = \"proto3\";\npackage x;\nmessage M {}\n"),
+		"preview/x/m.proto": []byte("syntax = \"proto3\";\npackage x;\nmessage M {}\n"),
+		"y.proto":           []byte("syntax = \"proto3\";\nimport \"x/m.proto\";\nimport \"preview/x/m.proto\";\n"),
+	}}
+	if _, err := CompileFiles(context.Background(), []modfiles.Module{twice}, 0, twice.Protos()); err == nil {
+		t.Fatal("a symbol declared twice compiled as a set")
+	}
+	r, err = CompileFiles(context.Background(), []modfiles.Module{twice}, 0, []string{"x/m.proto"})
+	if err != nil || len(r.Files) != 1 || r.Files[0].Path() != "x/m.proto" {
+		t.Fatalf("one file of the set: %v %v", err, r)
+	}
+	twice.Files["z.proto"] = []byte("syntax = \"proto3\";\nimport \"gone.proto\";\n")
+	if _, err := CompileFiles(context.Background(), []modfiles.Module{twice}, 0, []string{"x/m.proto"}); err == nil {
+		t.Fatal("a file outside the targets with an unsatisfied import passed")
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,9 +35,10 @@ func (f *fakeDiscovery) Latest(_ context.Context, path string) (version.Version,
 	return version.Parse(s)
 }
 
-// specTable reads a two-column table of backticked cells under one
-// heading of a spec, as a map from the first column to the second.
-func specTable(t *testing.T, file, heading string) map[string]string {
+// specTable reads a table of backticked cells under one heading of a
+// spec, as a map from the first column to the rest, each cell's
+// backticked values in order.
+func specTable(t *testing.T, file, heading string) map[string][][]string {
 	t.Helper()
 	text, err := os.ReadFile(file)
 	if err != nil {
@@ -46,30 +48,119 @@ func specTable(t *testing.T, file, heading string) map[string]string {
 	if section == nil {
 		t.Fatalf("%s has no section %q", file, heading)
 	}
-	rows := map[string]string{}
-	for _, r := range regexp.MustCompile("(?m)^\\| `([^`]+)` \\| `([^`]+)` \\|$").FindAllStringSubmatch(section[1], -1) {
-		rows[r[1]] = r[2]
+	rows := map[string][][]string{}
+	cell := regexp.MustCompile("`([^`]+)`")
+	for _, line := range strings.Split(section[1], "\n") {
+		if !strings.HasPrefix(line, "| `") {
+			continue
+		}
+		cols := strings.Split(strings.Trim(line, "|"), "|")
+		var vals [][]string
+		for _, c := range cols[1:] {
+			var v []string
+			for _, m := range cell.FindAllStringSubmatch(c, -1) {
+				v = append(v, m[1])
+			}
+			vals = append(vals, v)
+		}
+		rows[cell.FindStringSubmatch(cols[0])[1]] = vals
 	}
 	return rows
 }
 
-// The dependency table is the spec's table, entry for entry.
+// The dependency table is the spec's table, entry for entry: the
+// path, the imports, and — the layout test's own data — an anchor
+// file for every entry and an import naming an entry.
 func TestDependencyTableMatchesSpec(t *testing.T) {
 	rows := specTable(t, "../../docs/specs/migrate.md", "Dependencies")
 	if len(rows) != len(Dependencies) || len(rows) == 0 {
 		t.Fatalf("the spec's table has %d rows, the code's %d", len(rows), len(Dependencies))
 	}
-	for name, path := range rows {
-		if Dependencies[name] != path {
-			t.Errorf("%s: spec %q, code %q", name, path, Dependencies[name])
+	for name, cols := range rows {
+		e, ok := Dependencies[name]
+		if !ok || len(cols) != 2 || len(cols[0]) != 1 || e.Path != cols[0][0] {
+			t.Errorf("%s: spec %v, code %+v", name, cols, e)
+			continue
 		}
-		if err := module.ValidatePath(path); err != nil {
+		if !slices.Equal(cols[1], e.Deps) {
+			t.Errorf("%s imports: spec %v, code %v", name, cols[1], e.Deps)
+		}
+		if err := module.ValidatePath(e.Path); err != nil {
 			t.Errorf("%s: %v", name, err)
+		}
+		for _, d := range e.Deps {
+			if _, ok := Dependencies[d]; !ok {
+				t.Errorf("%s imports %s, which the table lacks", name, d)
+			}
+		}
+		if _, ok := anchors[name]; !ok {
+			t.Errorf("%s: no anchor file for the layout test", name)
+		}
+	}
+	for name := range anchors {
+		if _, ok := Dependencies[name]; !ok {
+			t.Errorf("%s: an anchor for no entry", name)
 		}
 	}
 }
 
 const otel, otelPath = "buf.build/opentelemetry/opentelemetry", "github.com/open-telemetry/opentelemetry-proto"
+
+// A name the table holds brings the entries its files import, to
+// closure, each declared at its discovered version and reported as
+// the name's dependency; a replacement's path stands for the name
+// and the table's imports for it still (REQ-migrate-deps).
+func TestDepsDeclaresTheClosure(t *testing.T) {
+	cfg, err := bufconfig.ParseFile([]byte("version: v2\ndeps:\n  - buf.build/grpc/grpc\n  - buf.build/grpc-ecosystem/grpc-gateway\nmodules:\n  - path: a\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := &Source{File: cfg}
+	l, err := Modules(src, "github.com/acme/mono")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The gateway replaced; googleapis, a name the closure brings,
+	// pinned by the flag a failed discovery's fact would name.
+	var repl Replacements
+	for _, v := range []string{"buf.build/grpc-ecosystem/grpc-gateway=github.com/acme/gateway@v3.0.0", "buf.build/googleapis/googleapis=github.com/googleapis/googleapis@v0.0.0-20240102030405-123456123456"} {
+		if err := repl.Replace("dep", v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d := &fakeDiscovery{latest: map[string]string{
+		"github.com/grpc/grpc-proto": "v0.0.0-20240102030405-abcdefabcdef",
+		Ruleset:                      "v0.1.0",
+	}}
+	facts, err := Deps(context.Background(), d, src, nil, repl, l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"github.com/grpc/grpc-proto":       "v0.0.0-20240102030405-abcdefabcdef",
+		"github.com/acme/gateway":          "v3.0.0",
+		"github.com/googleapis/googleapis": "v0.0.0-20240102030405-123456123456",
+		Ruleset:                            "v0.1.0",
+	}
+	if got := l.Modules["a"].Deps; len(got) != len(want) {
+		t.Fatalf("deps %v, want %v", got, want)
+	} else {
+		for p, v := range want {
+			if got[p] != v {
+				t.Fatalf("%s: %q, want %q", p, got[p], v)
+			}
+		}
+	}
+	found := false
+	for _, f := range facts {
+		if f.Source == "buf.build/grpc/grpc's dependency buf.build/googleapis/googleapis" && f.Mapped && f.Text == "github.com/googleapis/googleapis@v0.0.0-20240102030405-123456123456 (--dep)" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no fact for the closure among %+v", facts)
+	}
+}
 
 // Each buf dependency, its ref aside, is declared in every module at
 // the replacement's version or the latest discovered once per path; a

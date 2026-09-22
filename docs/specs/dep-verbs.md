@@ -67,10 +67,16 @@ lockfile appears when a resolving verb first records a pin.
 
 **REQ-dep-tidy** (behavior): `tidy` MUST make each workspace module's
 declared dependencies exactly the modules whose files that module's own
-protobuf imports are satisfied by, at the versions the tidied graph
-selects — dropping declarations no import of the declaring module uses,
-adding a declaration for any build-list module it imports directly, and
-re-emitting each changed module file canonically. An import satisfied
+protobuf imports are satisfied by, and the modules whose files the
+imports of every synthesized module among them are satisfied by,
+transitively — a synthesized module declares no dependency
+(`module-resolution.md` REQ-resolve-synthesis), so the workspace
+module declaring it carries what its files need, the one declaration
+that can — at the versions the tidied graph selects — dropping
+declarations no import of the declaring module or of a synthesized
+module it declares uses, adding a declaration for any build-list
+module either imports directly, and re-emitting each changed module
+file canonically. An import satisfied
 by no build-list module and no well-known import fails tidy per
 `REQ-resolve-unsatisfied-imports`: with no registry, an import path
 names no module, so tidy never invents a dependency. An import

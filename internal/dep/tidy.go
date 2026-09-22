@@ -23,11 +23,15 @@ import (
 const tidyRounds = 10
 
 // Tidy makes each workspace module's declared dependencies exactly the
-// modules its own protobuf imports are satisfied by, at the versions
-// the tidied graph selects (REQ-dep-tidy): unused declarations drop,
-// directly-imported build-list modules gain declarations, an import
-// satisfied by nothing fails per REQ-resolve-unsatisfied-imports (tidy
-// never invents a dependency), workspace-local imports keep their
+// modules its own protobuf imports are satisfied by, and those the
+// imports of every synthesized module among them are satisfied by,
+// transitively — a synthesized module declares nothing, so the
+// workspace module declaring it carries what its files need — at the
+// versions the tidied graph selects (REQ-dep-tidy): unused
+// declarations drop, directly-imported build-list modules gain
+// declarations, an import satisfied by nothing fails per
+// REQ-resolve-unsatisfied-imports (tidy never invents a dependency),
+// workspace-local imports keep their
 // existing declared version (and fail when none exists to keep), a
 // ruleset the lint file names is kept where a workspace module
 // declares it as if an import used it and fails where none does
@@ -76,6 +80,12 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	if err != nil {
 		return false, err
 	}
+	synthesized := map[string]bool{}
+	for _, m := range mods {
+		if m.Synthesized {
+			synthesized[m.Path] = true
+		}
+	}
 	provider := map[string]string{} // proto file -> module path
 	for _, v := range views {
 		for f := range v.Files {
@@ -108,25 +118,59 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 				break
 			}
 		}
+		// The module's own imports' providers, and the providers of
+		// what each synthesized module among them imports, to closure:
+		// a synthesized module declares nothing, so what its files
+		// need is carried here, the one place a declaration can live.
 		want := map[string]string{}
-		for _, imports := range view.Files {
+		var carry []string
+		require := func(from string, imports []string) error {
 			for _, imp := range imports {
 				if importcheck.WellKnown(imp) {
 					continue
 				}
 				p, ok := provider[imp]
-				if !ok || p == m.File.Module {
+				if !ok || p == m.File.Module || p == from {
+					continue
+				}
+				if _, seen := want[p]; seen {
 					continue
 				}
 				if _, isLocal := s.Root.IsLocal(p); isLocal {
 					v, declared := m.File.Deps[p]
 					if !declared {
-						return false, fmt.Errorf("dep tidy: %s imports workspace module %s but declares no version for it — tidy cannot invent one; add the dependency with the version consumers should require", m.File.Module, p)
+						if from != m.File.Module {
+							return fmt.Errorf("dep tidy: %s needs %s, whose files import workspace module %s, but declares no version for it — tidy cannot invent one; add the dependency with the version consumers should require", m.File.Module, from, p)
+						}
+						return fmt.Errorf("dep tidy: %s imports workspace module %s but declares no version for it — tidy cannot invent one; add the dependency with the version consumers should require", m.File.Module, p)
 					}
 					want[p] = v
+				} else {
+					want[p] = selected[p]
+				}
+				if synthesized[p] {
+					carry = append(carry, p)
+				}
+			}
+			return nil
+		}
+		for _, imports := range view.Files {
+			if err := require(m.File.Module, imports); err != nil {
+				return false, err
+			}
+		}
+		for len(carry) > 0 {
+			p := carry[0]
+			carry = carry[1:]
+			for i := range views {
+				if views[i].Path != p {
 					continue
 				}
-				want[p] = selected[p]
+				for _, imports := range views[i].Files {
+					if err := require(p, imports); err != nil {
+						return false, err
+					}
+				}
 			}
 		}
 		// A ruleset this module declares stays as if an import used it

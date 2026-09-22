@@ -11,12 +11,24 @@ import (
 	"github.com/greatliontech/pb/internal/module/version"
 )
 
+// Entry is a dependency table entry: the module path that is a BSR
+// module's origin, and the BSR modules its files import — declared
+// with it, since its origin is a synthesized module declaring nothing
+// of its own.
+type Entry struct {
+	Path string
+	Deps []string
+}
+
 // Dependencies is the dependency table (REQ-migrate-deps): a BSR module
-// name to the module path that is its origin, each entry's layout
-// verified at entry by TestDependencyLayouts against the origins.
-var Dependencies = map[string]string{
-	"buf.build/opentelemetry/opentelemetry": "github.com/open-telemetry/opentelemetry-proto",
-	"buf.build/prometheus/client-model":     "github.com/prometheus/client_model",
+// name to its entry, each entry's layout verified at entry by
+// TestDependencyLayouts against the origins.
+var Dependencies = map[string]Entry{
+	"buf.build/googleapis/googleapis":       {Path: "github.com/googleapis/googleapis"},
+	"buf.build/grpc-ecosystem/grpc-gateway": {Path: "github.com/grpc-ecosystem/grpc-gateway", Deps: []string{"buf.build/googleapis/googleapis"}},
+	"buf.build/grpc/grpc":                   {Path: "github.com/grpc/grpc-proto", Deps: []string{"buf.build/googleapis/googleapis"}},
+	"buf.build/opentelemetry/opentelemetry": {Path: "github.com/open-telemetry/opentelemetry-proto"},
+	"buf.build/prometheus/client-model":     {Path: "github.com/prometheus/client_model"},
 }
 
 // Dep is a dependency replacement's target: the module path and, where
@@ -115,12 +127,32 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 			entries = append(entries, entry{dep, fmt.Sprintf("%s/%s deps[%d]", dir, bufconfig.FileName, i)})
 		}
 	}
+	// A name the table holds brings the BSR modules its files import,
+	// to closure: their origins are synthesized modules declaring
+	// nothing, and the migration's declaration is the one that can
+	// carry what they need (REQ-migrate-deps). A replacement gives the
+	// name a path of its own; the table's knowledge of what the BSR
+	// module imports stands regardless.
+	named := map[string]bool{}
+	for _, e := range entries {
+		name, _ := bsrSplit(e.name)
+		named[name] = true
+	}
+	for i := 0; i < len(entries); i++ {
+		name, _ := bsrSplit(entries[i].name)
+		for _, dep := range Dependencies[name].Deps {
+			if named[dep] {
+				continue
+			}
+			named[dep] = true
+			entries = append(entries, entry{dep, name + "'s dependency"})
+		}
+	}
 	// A replacement the configuration never names is refused first: a
 	// stale flag is the likelier fault, and a conflict it takes part
 	// in would name it as if it counted.
 	declared := map[string]bool{Ruleset: true} // the ruleset's version may be pinned by its own path
-	for _, e := range entries {
-		name, _ := bsrSplit(e.name)
+	for name := range named {
 		declared[name] = true
 	}
 	if r, ok := repl.Deps[Ruleset]; ok && r.Path != Ruleset {
@@ -154,7 +186,7 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		if r, ok := repl.Deps[name]; ok {
 			path, from = r.Path, "--dep"
 		} else {
-			path = Dependencies[name]
+			path = Dependencies[name].Path
 		}
 		if path == "" {
 			facts = append(facts, unmapped(e.from+" "+e.name, "no entry in the dependency table: pass --dep "+name+"=<module path>"))

@@ -146,29 +146,9 @@ bindings {
   content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
   source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proto/compile.CompileOnly"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "b30f575f65187660a51b0b3e1234242e0d843f5cd4bb2d584bc6dcc97b74ea17"
-}
-
-bindings {
-  requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
-  backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proto/importcheck.CheckRequirers"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "04cf1390e41e0f08fb2c4777dc99ebb7de9638295f2cb413913c1d0655ca7b2c"
-}
-
-bindings {
-  requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileOnly"
-  role: BINDING_ROLE_TESTS
-  shape_hash: "be2bdf11fe01565828a72849ebbdee5245fb8944ee52041c78a7a030f27d64b4"
 }
 
 bindings {
@@ -199,4 +179,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/gitdir.ceilings"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "d65205f3f0231460c2260a013b2e3dd1493993096190e9cf63a60caaaf4f2acd"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
+  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileFiles"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "78437e29bc5cc3365912d5089ec2489dc03bb05ecf637d124d059cb9941aa0d3"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
+  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.CompileFiles"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2894878a907df9ea31df6b830b29c247b7440db3c068adc465147a2efe4ebde2"
 }

@@ -142,7 +142,12 @@ discovery names for the path — through a proxy its `@latest`
 module's namespace or, none existing, the pseudo-version of its
 default-branch head (`module-resolution.md`
 REQ-resolve-synthesized-tags) — the tidy that ends the verb then
-keeping or moving it as the graph selects; a name neither holds, or
+keeping or moving it as the graph selects — and so does each BSR
+module the table records the name's files importing, to closure,
+since an entry's origin is a synthesized module declaring nothing of
+its own (`module-resolution.md` REQ-resolve-synthesis) and the
+migration's declaration is what carries its needs, as the tidy then
+keeps them (`dep-verbs.md` REQ-dep-tidy); a name neither holds, or
 one whose discovery fails, is an unmapped fact naming the BSR module
 and the flag's form that supplies what is missing, a failure's reason
 on the fact's one line. A module path is declared at one version: a
@@ -152,22 +157,35 @@ naming both. The `buf.lock` entry for a dependency, its BSR commit and
 digest, is reported as unmapped: a BSR commit names no git commit, and
 pb's pin is the lockfile's own, made by the tidy. The dependency table
 names, for each entry, the module path, whose resolution splits the
-repository from the subtree that is the BSR module's root, and holds:
+repository from the subtree that is the BSR module's root, and the
+BSR modules the entry's files import, and holds:
 
-| BSR name | module path |
-|---|---|
-| `buf.build/opentelemetry/opentelemetry` | `github.com/open-telemetry/opentelemetry-proto` |
-| `buf.build/prometheus/client-model` | `github.com/prometheus/client_model` |
+| BSR name | module path | imports |
+|---|---|---|
+| `buf.build/googleapis/googleapis` | `github.com/googleapis/googleapis` | |
+| `buf.build/grpc-ecosystem/grpc-gateway` | `github.com/grpc-ecosystem/grpc-gateway` | `buf.build/googleapis/googleapis` |
+| `buf.build/grpc/grpc` | `github.com/grpc/grpc-proto` | `buf.build/googleapis/googleapis` |
+| `buf.build/opentelemetry/opentelemetry` | `github.com/open-telemetry/opentelemetry-proto` | |
+| `buf.build/prometheus/client-model` | `github.com/prometheus/client_model` | |
 
-An entry enters the table with its layout verified: the module's own
-files compile from the named root, at the import paths the BSR served
-them at, the layout test the migrate package carries
-(TestDependencyLayouts) run against the origins at entry.
+An entry enters the table with its layout verified: every file of
+the module resolves its imports from the named root — within the
+module, the entries it imports mapped through the table, or the
+well-known imports — and a file buf's users import, at the path they
+import it by, compiles; the layout test the migrate package carries
+(TestDependencyLayouts) is run against the origins at entry. Every
+file must resolve its imports because a build checks every file of
+every module in its build list for them
+(`module-resolution.md` REQ-resolve-unsatisfied-imports); the
+module's files are not required to compile as one set because a
+build compiles what a user's files import, never a dependency whole,
+and a repository may hold files no one compiles together, as
+googleapis holds a `preview` tree redeclaring its packages.
 
 `buf.build/gogo/protobuf` has no entry: its repository root holds
-generator test protos that compile from no root, and
+generator test protos whose imports resolve from no root, and
 `gogoproto/gogo.proto` is imported by a path that pins the module root
-there, so no layout pb can name compiles as a set.
+there, so no layout pb can name has every file resolving its imports.
 
 ## Lint and breaking
 

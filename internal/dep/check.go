@@ -286,7 +286,7 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		// target (REQ-break-base-materialized).
 		baseMods := append([]modfiles.Module(nil), run.mods...)
 		baseMods[i] = modfiles.Module{Path: m.Path, Local: true, Dir: m.Dir, Files: base.Files}
-		compiled, err := compile.CompileOnly(ctx, baseMods, i)
+		compiled, err := compile.CompileFiles(ctx, baseMods, i, baseMods[i].Protos())
 		if err != nil {
 			return fmt.Errorf("breaking: %s: the base %s: %w", m.Path, base.Label, err)
 		}

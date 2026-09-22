@@ -255,6 +255,103 @@ func TestTidy(t *testing.T) {
 	}
 }
 
+// A synthesized module declares nothing, so the workspace module
+// declaring it carries what its files import (REQ-dep-tidy): a
+// declared synthesized module importing another external keeps that
+// external declared though no workspace file imports it, to closure
+// through a synthesized module the first imports; tidy is idempotent
+// over the shape; and the external the synthesized module needs must
+// already be in the build list — tidy invents none.
+func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/s: v1.0.0\n  example.com/t: v1.0.0\n  example.com/u: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"s.proto\";\n",
+	})
+	fx.serve(t, "example.com/s", "v1.0.0", map[string]string{
+		"s.proto": "syntax = \"proto3\";\nimport \"t.proto\";\n",
+	})
+	fx.serve(t, "example.com/t", "v1.0.0", map[string]string{
+		"t.proto": "syntax = \"proto3\";\nimport \"u.proto\";\n",
+	})
+	fx.serve(t, "example.com/u", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/u", ""),
+		"u.proto": "syntax = \"proto3\";\n",
+	})
+	s := fx.session(t, ".")
+	if err := Tidy(ctx, s); err != nil {
+		t.Fatalf("Tidy: %v", err)
+	}
+	want := "module: example.com/a\ndeps:\n  example.com/s: v1.0.0\n  example.com/t: v1.0.0\n  example.com/u: v1.0.0\n"
+	if got := fx.read(t, "a/pb.yaml"); got != want {
+		t.Fatalf("tidied a/pb.yaml = %q, want %q", got, want)
+	}
+	s2 := fx.session(t, ".")
+	s2.Client.Cache = s.Client.Cache
+	if err := Tidy(ctx, s2); err != nil {
+		t.Fatalf("second Tidy: %v", err)
+	}
+	if got := fx.read(t, "a/pb.yaml"); got != want {
+		t.Fatalf("tidy is not idempotent: %q", got)
+	}
+
+	// A declaring external carries its own needs as the graph's edges:
+	// its imports are not carried by the workspace module, which keeps
+	// exactly what its own files and the synthesized modules it
+	// declares import.
+	fx4 := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/d: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"d.proto\";\n",
+	})
+	fx4.serve(t, "example.com/d", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/d", "  example.com/e: v1.0.0\n"),
+		"d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n",
+	})
+	fx4.serve(t, "example.com/e", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/e", ""),
+		"e.proto": "syntax = \"proto3\";\n",
+	})
+	if err := Tidy(ctx, fx4.session(t, ".")); err != nil {
+		t.Fatalf("Tidy over a declaring external: %v", err)
+	}
+	if got := fx4.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/d: v1.0.0\n") {
+		t.Fatalf("a declaring external's needs carried: %q", got)
+	}
+
+	// A synthesized module importing a workspace module the declaring
+	// module gives no version for: the error names the module that
+	// must declare it and the one whose files import it.
+	fx3 := newDep(t, map[string]string{
+		"pb.work":       "use:\n  - a\n  - lib\n",
+		"a/pb.yaml":     ws("example.com/a", "  example.com/s: v1.0.0\n"),
+		"a/x.proto":     "syntax = \"proto3\";\nimport \"s.proto\";\n",
+		"lib/pb.yaml":   ws("example.com/lib", ""),
+		"lib/lib.proto": "syntax = \"proto3\";\n",
+	})
+	fx3.serve(t, "example.com/s", "v1.0.0", map[string]string{
+		"s.proto": "syntax = \"proto3\";\nimport \"lib.proto\";\n",
+	})
+	if err := Tidy(ctx, fx3.session(t, ".")); err == nil || !strings.Contains(err.Error(), "example.com/a needs example.com/s, whose files import workspace module example.com/lib") {
+		t.Fatalf("err = %v, want the carried local import named", err)
+	}
+
+	// The synthesized module's need not declared: unsatisfied, never
+	// invented.
+	fx2 := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/s: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"s.proto\";\n",
+	})
+	fx2.serve(t, "example.com/s", "v1.0.0", map[string]string{
+		"s.proto": "syntax = \"proto3\";\nimport \"t.proto\";\n",
+	})
+	var ue *importcheck.UnsatisfiedError
+	if err := Tidy(ctx, fx2.session(t, ".")); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/s" {
+		t.Fatalf("err = %v, want s's import of t unsatisfied", err)
+	}
+}
+
 // An import no module satisfies fails tidy with the exhaustive report
 // (REQ-resolve-unsatisfied-imports through REQ-dep-tidy): tidy never
 // invents a dependency.

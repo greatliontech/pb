@@ -71,12 +71,17 @@ func Compile(ctx context.Context, mods []modfiles.Module) (*Result, error) {
 	return compileTargets(ctx, mods, -1, targets)
 }
 
-// CompileOnly compiles the files of one module of a build, mods[i],
-// every module a provider of imports and none other a target nor a
-// requirer: what a base stands in for its module as (check-rules.md
-// REQ-break-base-materialized).
-func CompileOnly(ctx context.Context, mods []modfiles.Module, i int) (*Result, error) {
-	return compileTargets(ctx, mods, i, mods[i].Protos())
+// CompileFiles compiles the given files of one module of a build,
+// mods[i], every module a provider of imports and none other a
+// target nor a requirer. The module's every file has its imports
+// checked for satisfaction first, the files given alone are compiled:
+// all of them where a base stands in for its module (check-rules.md
+// REQ-break-base-materialized); an entry's anchor where a dependency
+// table entry is verified (migrate.md REQ-migrate-deps), the
+// repository's files resolving their imports from the named root
+// though it may hold files no one compiles together.
+func CompileFiles(ctx context.Context, mods []modfiles.Module, i int, files []string) (*Result, error) {
+	return compileTargets(ctx, mods, i, files)
 }
 
 // compileTargets compiles the target files with every module

@@ -21,31 +21,27 @@ import (
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
 )
 
-// bsrDeps are the dependencies each table entry's BSR module declares,
-// by BSR name: what its files import beyond the well-known imports,
-// mapped through the table as a migration would map them — a name
-// the table lacks (protoc-gen-validate, opencensus) leaves the
-// entry's files short of an import, which the compile reports.
-var bsrDeps = map[string][]string{
-	"buf.build/grpc-ecosystem/grpc-gateway": {"buf.build/googleapis/googleapis"},
-	"buf.build/envoyproxy/envoy":            {"buf.build/cncf/xds", "buf.build/envoyproxy/protoc-gen-validate", "buf.build/googleapis/googleapis", "buf.build/opencensus/opencensus", "buf.build/opentelemetry/opentelemetry", "buf.build/prometheus/client-model"},
-	"buf.build/cncf/xds":                    {"buf.build/googleapis/googleapis", "buf.build/envoyproxy/protoc-gen-validate"},
-	"buf.build/grpc/grpc":                   {"buf.build/googleapis/googleapis"},
-}
-
 // anchors are, per table entry, a file the BSR module serves at that
 // import path: the module's files must sit at the paths buf's users
 // import them by.
 var anchors = map[string]string{
+	"buf.build/googleapis/googleapis":       "google/api/annotations.proto",
+	"buf.build/grpc-ecosystem/grpc-gateway": "protoc-gen-openapiv2/options/annotations.proto",
+	"buf.build/grpc/grpc":                   "grpc/health/v1/health.proto",
 	"buf.build/opentelemetry/opentelemetry": "opentelemetry/proto/common/v1/common.proto",
 	"buf.build/prometheus/client-model":     "io/prometheus/client/metrics.proto",
 }
 
 // TestDependencyLayouts verifies each dependency table entry's layout
-// against its origin (REQ-migrate-deps): the module's own files
-// compile from the named root with its BSR dependencies mapped through
-// the table, and its anchor file sits at the import path the BSR
-// served it at. It reaches the network and clones the origins, so it
+// against its origin (REQ-migrate-deps): every file of the module
+// resolves its imports from the named root, within the module, its
+// BSR dependencies mapped through the table, or the well-known
+// imports, and its anchor file — one buf's users import at that path
+// — sits at that path and compiles. The module's files are not
+// compiled as one set: a repository may hold files no one compiles
+// together (googleapis' preview tree redeclares its packages), and a
+// build compiles only what a user's files import. It reaches the
+// network and clones the origins, so it
 // runs only where PB_LIVE_ORIGINS is set — at an entry's addition, by
 // hand; set to a directory's absolute path, that directory is the
 // module cache the run keeps, so a second run clones nothing twice.
@@ -84,13 +80,19 @@ func TestDependencyLayouts(t *testing.T) {
 			// A probe workspace declaring the entry and its BSR
 			// dependencies, each at the latest version discovered.
 			ws := scratchtest.Dir(t)
+			// A probe workspace declaring the entry and, as a migration
+			// would, the entries it imports to closure.
 			probe := &modfile.File{Module: "example.com/probe", Deps: map[string]string{}}
-			for _, n := range append([]string{name}, bsrDeps[name]...) {
-				path, ok := Dependencies[n]
-				if !ok {
-					t.Logf("%s depends on %s, which the table lacks", name, n)
-					continue
+			closure := []string{name}
+			for i := 0; i < len(closure); i++ {
+				for _, d := range Dependencies[closure[i]].Deps {
+					if !slices.Contains(closure, d) {
+						closure = append(closure, d)
+					}
 				}
+			}
+			for _, n := range closure {
+				path := Dependencies[n].Path
 				v, err := client.Latest(ctx, path)
 				if err != nil {
 					t.Fatalf("latest of %s: %v", path, err)
@@ -113,7 +115,7 @@ func TestDependencyLayouts(t *testing.T) {
 				t.Fatalf("build: %v", err)
 			}
 			for i, m := range mods {
-				if m.Path != Dependencies[name] {
+				if m.Path != Dependencies[name].Path {
 					continue
 				}
 				if len(m.Protos()) == 0 {
@@ -126,13 +128,13 @@ func TestDependencyLayouts(t *testing.T) {
 				if !slices.Contains(m.Protos(), anchor) {
 					t.Fatalf("%s: %q is not among the module's files at %s", name, anchor, m.Path)
 				}
-				if _, err := compile.CompileOnly(ctx, mods, i); err != nil {
+				if _, err := compile.CompileFiles(ctx, mods, i, []string{anchor}); err != nil {
 					t.Fatalf("%s at %s@%s: %v", name, m.Path, probe.Deps[m.Path], err)
 				}
-				t.Logf("%s: %d files compile at %s@%s", name, len(m.Protos()), m.Path, probe.Deps[m.Path])
+				t.Logf("%s: %d files resolve their imports and %s compiles at %s@%s", name, len(m.Protos()), anchor, m.Path, probe.Deps[m.Path])
 				return
 			}
-			t.Fatalf("%s is not in the build", Dependencies[name])
+			t.Fatalf("%s is not in the build", Dependencies[name].Path)
 		})
 	}
 }

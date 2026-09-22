@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-tidy"
-  content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
-  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
+  content_hash: "597dfff37d2d199770683e8b42319b01de6b0aeb1acceffd29f23429d9021b71"
+  source_hash: "5a9557fa31c63010c0e2442918d767ff5512d998c3a5247433d430e070e739f5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Tidy"
   role: BINDING_ROLE_IMPLEMENTS
@@ -113,8 +113,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-tidy"
-  content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
-  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
+  content_hash: "597dfff37d2d199770683e8b42319b01de6b0aeb1acceffd29f23429d9021b71"
+  source_hash: "5a9557fa31c63010c0e2442918d767ff5512d998c3a5247433d430e070e739f5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidy"
   role: BINDING_ROLE_TESTS
@@ -123,8 +123,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-tidy"
-  content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
-  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
+  content_hash: "597dfff37d2d199770683e8b42319b01de6b0aeb1acceffd29f23429d9021b71"
+  source_hash: "5a9557fa31c63010c0e2442918d767ff5512d998c3a5247433d430e070e739f5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidyUnsatisfiedImportFails"
   role: BINDING_ROLE_TESTS
@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-tidy"
-  content_hash: "6b8cb772fb3c9399197fbe122054f588ea89a4977cf64949d3b484f02753b0db"
-  source_hash: "6ad169abf5c6ec5412a9935f35c0466553e8665a670b58aa2f20390fa8fec78d"
+  content_hash: "597dfff37d2d199770683e8b42319b01de6b0aeb1acceffd29f23429d9021b71"
+  source_hash: "5a9557fa31c63010c0e2442918d767ff5512d998c3a5247433d430e070e739f5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidyLocalImportNeedsDeclaredVersion"
   role: BINDING_ROLE_TESTS
@@ -309,4 +309,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestTidyKeepsRulesets"
   role: BINDING_ROLE_TESTS
   shape_hash: "dbfe5b4cde512cd99a29637193062e056edf966c08069c4bfefac1b9e3ff3f17"
+}
+
+bindings {
+  requirement_id: "REQ-dep-tidy"
+  content_hash: "597dfff37d2d199770683e8b42319b01de6b0aeb1acceffd29f23429d9021b71"
+  source_hash: "5a9557fa31c63010c0e2442918d767ff5512d998c3a5247433d430e070e739f5"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestTidyCarriesSynthesizedNeeds"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a84025872ced090301fbe28f34f1d7260a27df0b83494fbebed4d80c1c1e1f99"
 }
