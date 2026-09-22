@@ -138,7 +138,9 @@ func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population f
 // text is a checked file's source scanned once: each line's bytes,
 // and the line comment it carries, if any, found past string literals
 // and block comments — a block comment spanning lines is tracked
-// across them — with whether the comment stands alone on its line.
+// across them — with whether the line holds anything outside a
+// comment, and whether it holds nothing at all: a line inside a
+// block comment spanning lines is the comment's, blank or not.
 type text struct {
 	lines []line
 }
@@ -147,7 +149,8 @@ type line struct {
 	bytes   string
 	comment string // the text after //, where the line has a line comment
 	has     bool
-	alone   bool // nothing but whitespace before the //
+	code    bool // anything outside a comment and whitespace
+	blank   bool // nothing at all, and not inside a block comment
 }
 
 // newText scans the source. Strings never span a line (the compiler
@@ -166,6 +169,7 @@ func newText(data []byte) *text {
 			end += start
 		}
 		l := line{bytes: strings.TrimSuffix(src[start:end], "\r")}
+		l.blank = !block && strings.TrimSpace(l.bytes) == ""
 		quote = 0
 		for i := 0; i < len(l.bytes); i++ {
 			c := l.bytes[i]
@@ -182,14 +186,15 @@ func newText(data []byte) *text {
 					quote = 0
 				}
 			case c == '"' || c == '\'':
-				quote = c
+				quote, l.code = c, true
 			case c == '/' && i+1 < len(l.bytes) && l.bytes[i+1] == '*':
 				block = true
 				i++
 			case c == '/' && i+1 < len(l.bytes) && l.bytes[i+1] == '/':
 				l.comment, l.has = l.bytes[i+2:], true
-				l.alone = strings.TrimSpace(l.bytes[:i]) == ""
 				i = len(l.bytes)
+			case c != ' ' && c != '\t':
+				l.code = true
 			}
 		}
 		t.lines = append(t.lines, l)
@@ -235,16 +240,25 @@ func (t *text) column(line0, col0 int) int {
 }
 
 // suppresses reports whether a comment `// pb:ignore <name>` sits on
-// the line, or alone on the one before it (REQ-lint-suppression): the
-// comment's text opens with the marker, the rule's name or its bare
-// id as the next word, anything after being the reason. A trailing
-// comment on the line before belongs to that line's declaration. A
-// bare id several enabled rules share names none of them: the run
-// fails naming them.
+// the line, or on a line of the comment block leading it — the lines
+// directly above holding nothing outside comments, up to a line of
+// code or a line holding nothing at all, a blank line inside a block
+// comment being the comment's (REQ-lint-suppression): the comment's
+// text opens with the marker, the rule's name or its bare id as the
+// next word, anything after being the reason. A trailing comment on
+// the line of code above belongs to that line's declaration, and
+// ends the block. A bare id several enabled rules share names none
+// of them: the run fails naming them.
 func (t *text) suppresses(n int, r rules.Rule, shared map[string][]string) (bool, error) {
-	for _, at := range []int{n, n - 1} {
+	for at := n; ; at-- {
 		l, ok := t.line(at)
-		if !ok || !l.has || (at != n && !l.alone) {
+		if !ok {
+			break
+		}
+		if at != n && (l.code || l.blank) {
+			break
+		}
+		if !l.has {
 			continue
 		}
 		word, ok := ignoreWord(l.comment)

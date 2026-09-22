@@ -49,4 +49,8 @@ workspace.md, check-rules.md (the lint file), generation.md.
       .netrc, a proxy's host included, and SSH through the agent for
       `git@host:` origins (module-resolution.md, module-proxy.md and
       user-config.md amended)
-- [ ] 11. Plan close-out
+- [ ] 11. One line scanner: the checker's text and the migration's
+      line scan collapsed onto one reader of a proto file's lexical
+      structure, the migration's placed-or-displaced claim the
+      checker's own reading
+- [ ] 12. Plan close-out

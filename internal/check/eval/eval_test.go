@@ -35,7 +35,7 @@ var fixture = map[string]string{
 		"  string Eleventh = 12; //pb:ignore FIELD_NAMES\n" + // no space after the slashes: the comment's first word is the marker
 		"  string ok = 13;\n" +
 		"}\n\n" +
-		"// pb:ignore FIELD_NAMES\n\n" + // two lines above: not adjacent
+		"// pb:ignore FIELD_NAMES\n\n" + // above a blank line: not in the block
 		"message Fine {\n  string Twelfth = 1;\n}\n",
 	"p/two.proto": "syntax = \"proto3\";\npackage p;\nmessage Two {}\n",
 	"q/dep.proto": "syntax = \"proto3\";\npackage q;\nimport \"google/protobuf/descriptor.proto\";\nextend google.protobuf.FieldOptions {\n  string doc = 50000;\n}\nmessage DepBad {\n  string DepName = 1;\n}\n",
@@ -85,10 +85,11 @@ func lines(r *check.Report) []string {
 // A false verdict is one finding at the entity's declaration — line
 // and column 1-based, the column in code points whatever tabs and
 // multibyte text precede it — over the checked files alone; a
-// suppression comment on the line, or alone on the line before,
-// naming the rule drops it, and nothing else does — not a marker in
-// a string, in a block comment, or two lines up (REQ-rules-verdict,
-// REQ-rules-finding-location, REQ-lint-suppression).
+// suppression comment on the line, or in the comment block leading
+// it, naming the rule drops it, and nothing else does — not a marker
+// in a string, in a block comment, or above a blank line
+// (REQ-rules-verdict, REQ-rules-finding-location,
+// REQ-lint-suppression).
 func TestFindings(t *testing.T) {
 	r, err := fixtureRun(t, []rules.Rule{fieldNames}, "p/one.proto", "p/two.proto")
 	if err != nil {
@@ -234,36 +235,54 @@ func TestColumnRecount(t *testing.T) {
 // A line comment is the text after a // outside string literals and
 // block comments, a block comment spanning lines included; a
 // suppression is the marker and the id as the comment's first two
-// words; a comment is alone when nothing but whitespace precedes it.
+// words; a line holds code where anything stands outside a comment,
+// and is blank where nothing at all stands on it outside a block
+// comment spanning lines.
 func TestLineComment(t *testing.T) {
 	cases := []struct {
 		src     string
 		comment string
 		ok      bool
-		alone   bool
 	}{
-		{`string a = 1; // pb:ignore X`, " pb:ignore X", true, false},
-		{`string a = 1;`, "", false, false},
-		{`string a = 1 [(o) = "http://x"]; // c`, " c", true, false},
-		{`string a = 1 [(o) = "// no"];`, "", false, false},
-		{`string a = 1 [(o) = 'it\'s // no'];`, "", false, false},
-		{`string a = 1 [(o) = "esc\"aped // no"]; //yes`, "yes", true, false},
-		{`// pb:ignore X`, " pb:ignore X", true, true},
-		{"  \t// pb:ignore X", " pb:ignore X", true, true},
-		{`/* pb:ignore X */`, "", false, false},
-		{`/* // pb:ignore X */ string a = 1;`, "", false, false},
-		{`string a = 1; /* the user's name */ // yes`, " yes", true, false},
-		{`/* a */ // yes`, " yes", true, false},
-		{`a / b // c`, " c", true, false},
-		{"/* opens\n // inside\n */ string a = 1; // after", " after", true, false},
-		{`// pb:ignore X // note`, " pb:ignore X // note", true, true},
-		{"// see /* below\n// pb:ignore X", " pb:ignore X", true, true},
+		{`string a = 1; // pb:ignore X`, " pb:ignore X", true},
+		{`string a = 1;`, "", false},
+		{`string a = 1 [(o) = "http://x"]; // c`, " c", true},
+		{`string a = 1 [(o) = "// no"];`, "", false},
+		{`string a = 1 [(o) = 'it\'s // no'];`, "", false},
+		{`string a = 1 [(o) = "esc\"aped // no"]; //yes`, "yes", true},
+		{`// pb:ignore X`, " pb:ignore X", true},
+		{`/* a note */`, "", false},
+		{`  `, "", false},
+		{"  \t// pb:ignore X", " pb:ignore X", true},
+		{`/* pb:ignore X */`, "", false},
+		{`/* // pb:ignore X */ string a = 1;`, "", false},
+		{`string a = 1; /* the user's name */ // yes`, " yes", true},
+		{`/* a */ // yes`, " yes", true},
+		{`a / b // c`, " c", true},
+		{"/* opens\n // inside\n */ string a = 1; // after", " after", true},
+		{`// pb:ignore X // note`, " pb:ignore X // note", true},
+		{"// see /* below\n// pb:ignore X", " pb:ignore X", true},
 	}
 	for _, c := range cases {
 		tx := newText([]byte(c.src))
 		l := tx.lines[len(tx.lines)-1]
-		if l.has != c.ok || l.comment != c.comment || l.alone != c.alone {
-			t.Errorf("%q: %q has=%v alone=%v", c.src, l.comment, l.has, l.alone)
+		if l.has != c.ok || l.comment != c.comment {
+			t.Errorf("%q: %q has=%v", c.src, l.comment, l.has)
+		}
+	}
+	// A line holds code where anything stands outside a comment: a
+	// block comment's line alone does not, nor a blank one, nor one
+	// closing a body; a line is blank where nothing at all stands on
+	// it, unless inside a block comment spanning lines.
+	for src, want := range map[string][2]bool{ // code, blank
+		`string a = 1;`: {true, false}, `// c`: {false, false}, `/* c */`: {false, false}, `/* c */ x`: {true, false},
+		`  `: {false, true}, "x\n\n": {false, true}, `"s"`: {true, false}, "/* opens\n inside\n */": {false, false},
+		"/* opens\n  ": {false, false}, "/* opens\n": {false, false}, `}`: {true, false},
+	} {
+		tx := newText([]byte(src))
+		l := tx.lines[len(tx.lines)-1]
+		if l.code != want[0] || l.blank != want[1] {
+			t.Errorf("%q: code=%v blank=%v", src, l.code, l.blank)
 		}
 	}
 	// Inside a block comment spanning lines, a // is no comment.
@@ -274,7 +293,7 @@ func TestLineComment(t *testing.T) {
 	// A string resets at the line end, so an unbalanced quote never
 	// swallows the next line; CRLF endings are stripped.
 	tx = newText([]byte("string a = 1 [(o) = \"unterminated;\r\n// pb:ignore X\r\n"))
-	if l := tx.lines[1]; !l.has || !l.alone || l.comment != " pb:ignore X" {
+	if l := tx.lines[1]; !l.has || l.code || l.comment != " pb:ignore X" {
 		t.Errorf("after an unbalanced quote: %+v", l)
 	}
 	for comment, want := range map[string]string{" pb:ignore X": "X", "pb:ignore X reason here": "X", "  pb:ignore   X  ": "X", " pb:ignore": "", " pb:ignoreX": "", " see pb:ignore X": "", " pb:ignore X, Y": "X,"} {
@@ -318,6 +337,32 @@ func TestSuppressionByName(t *testing.T) {
 	above := "syntax = \"proto3\";\npackage p;\nmessage M {\n  // pb:ignore FIELD_NAMES\n  string A = 1;\n}\n"
 	if _, err := run([]rules.Rule{std, house}, above); err == nil || !strings.Contains(err.Error(), "line 4: pb:ignore FIELD_NAMES names several") {
 		t.Fatalf("an ambiguous bare id on the line above: %v", err)
+	}
+	// The comment block leading the line: directives stack, a block
+	// comment's line keeps the block whole — one spanning lines with
+	// a blank inside it too, and one sharing its line with a directive
+	// — a blank line or a line of code ends it, a body's closing brace
+	// among the lines of code, and a trailing comment on the line of
+	// code above belongs to that line.
+	stacked := "syntax = \"proto3\";\npackage p;\nmessage M {\n" +
+		"  // pb:ignore example.com/house:FIELD_NAMES\n" + // 4
+		"  /* a note\n" + // 5
+		"\n" + // 6: blank inside the block comment
+		"     more */ // pb:ignore example.com/std:FIELD_NAMES\n" + // 7
+		"  string A = 1;\n" + // 8: suppressed for both
+		"  // pb:ignore example.com/std:FIELD_NAMES\n" + // 9
+		"\n" + // 10: blank
+		"  string B = 2;\n" + // 11: both
+		"  string C = 3; // pb:ignore example.com/std:FIELD_NAMES\n" + // 12: house
+		"  string D = 4;\n" + // 13: both
+		"  message N {\n" + // 14
+		"    // pb:ignore example.com/std:FIELD_NAMES\n" + // 15
+		"  }\n" + // 16: a line of code, the block above E
+		"  string E = 5;\n" + // 17: both
+		"}\n"
+	got, err = run([]rules.Rule{std, house}, stacked)
+	if err != nil || got != "p/n.proto:11:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:11:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:12:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:13:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:13:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:17:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:17:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+		t.Fatalf("the leading block: %q %v", got, err)
 	}
 	got, err = run([]rules.Rule{std, house}, strings.Replace(src, "pb:ignore FIELD_NAMES", "pb:ignore example.com/house:FIELD_NAMES", 1))
 	if err != nil || got != "p/n.proto:4:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:5:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:6:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:6:3 error example.com/std:FIELD_NAMES: field names are snake_case" {

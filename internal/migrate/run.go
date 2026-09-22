@@ -342,7 +342,7 @@ func rewriteComments(ws billy.Filesystem, dir string, l *Layout) ([]Fact, error)
 				facts = append(facts, mapped(name, fmt.Sprintf("%d suppression comments rewritten to pb:ignore", r.Rewritten)))
 			}
 			for _, line := range r.Displaced {
-				facts = append(facts, unmapped(fmt.Sprintf("%s:%d", name, line), "a directive pb reads not where it stands: pb reads the line immediately before the flagged one alone, a file rule's above the file's first line of code"))
+				facts = append(facts, unmapped(fmt.Sprintf("%s:%d", name, line), "a directive pb reads not where it stands: pb reads the comment block leading a finding's line, a declaration's first, a file rule's the block leading the file's first line of code; no finding sits on an option, reserved, extensions, import, package, syntax or edition line, nor on a body's closing brace"))
 			}
 			for _, line := range r.Unplaced {
 				facts = append(facts, unmapped(fmt.Sprintf("%s:%d", name, line), "names a package or set rule, whose finding carries no position: no comment suppresses it, an ignore entry does"))

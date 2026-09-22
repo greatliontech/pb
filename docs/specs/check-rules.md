@@ -394,11 +394,14 @@ its next word, by the rule's name or by its bare id where one enabled
 rule of the run's kind bears it (a bare id several such rules bear
 fails the check run naming them and the comment's line), anything
 after being the reason, on
-the flagged line, or alone on the line immediately preceding it — a
-trailing comment on the preceding declaration's line suppresses that
-declaration's findings, never the next one's; a `//` inside a string
-literal or a block comment opens no line comment, and a block comment
-suppresses nothing; the rule's name or id is mandatory, and no comment form
+the flagged line, or on any line of the comment block leading it —
+the lines directly above it holding nothing outside comments, up to
+a line of code or a line holding nothing at all, so directives stack
+— a trailing comment on the preceding declaration's line suppresses
+that declaration's findings, never the next one's; a `//` inside a
+string literal or a block comment opens no line comment, and a block
+comment suppresses nothing, though its lines keep the block whole, a
+blank line inside one being the comment's; the rule's name or id is mandatory, and no comment form
 suppresses more than the named rule; a finding without a position has
 no line to carry the comment, and a finding in the comparison base no
 working-tree line, and each is suppressed by configuration alone.

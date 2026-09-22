@@ -5,9 +5,9 @@ import "bytes"
 // Rewrite is a proto file's suppression comments rewritten
 // (REQ-migrate-comments): the text after; the count of directives
 // rewritten to pb's form; the lines (1-based) of rewritten directives
-// pb does not read — any but the last of its block, a block inside a
-// declaration continued from the line before or leading a statement
-// declaring no entity but the file's, or a file rule's anywhere but
+// pb does not read — a block inside a declaration continued from the
+// line before, leading a statement declaring no entity but the
+// file's or a body's closing brace, or a file rule's anywhere but
 // the block leading the file's first line of code; the lines of
 // directives in block comments, which buf honored and pb reads not,
 // left as they were; the lines of rewritten directives naming a rule
@@ -37,7 +37,8 @@ const (
 // (the terminator aside), whether it holds code — anything outside a
 // comment or blank — where a `//` comment opens on it, whether a
 // block comment segment on it opens with a lint directive, and
-// whether it holds any comment at all.
+// whether it holds any comment at all — a line inside a block comment
+// spanning lines holding the comment, blank or not.
 type line struct {
 	start, end int
 	code       bool
@@ -52,9 +53,9 @@ type line struct {
 // lines directly above a line of code — so each `//` directive on
 // such a line is rewritten to pb's form, `buf:lint:ignore` becoming
 // `pb:ignore`, the whitespace, id and any trailing text kept and the
-// file otherwise byte-for-byte as it was; a directive there but not
-// on the block's last line, the one pb reads, or in a block inside a
-// continued declaration, is reported displaced, one naming a package
+// file otherwise byte-for-byte as it was; a directive in a block
+// inside a continued declaration, where pb reads the block leading
+// the declaration's first line, is reported displaced, one naming a package
 // or set rule reported unplaced, and one in a block comment reported
 // as such and left. A directive buf never honored — trailing code on
 // its line, in a block no code follows, breaking's, or parted from
@@ -130,7 +131,7 @@ func RewriteComments(src []byte) Rewrite {
 				continue
 			}
 			r.Rewritten++
-			displaced := k != j-1 || continued
+			displaced := continued
 			switch {
 			case positionless(id):
 				// Unplaced, whatever the line: no line carries its
@@ -187,12 +188,16 @@ func directive(comment []byte, form string) (lead int, id string, ok bool) {
 
 // declaresNothing reports whether a line of code opens a statement
 // that declares no entity but the file's, which a file rule's
-// finding sits at: an option, a reserved range or name, an extensions
-// range, an import, the package, the syntax or edition. The keyword
-// ends the line or is followed by whitespace or a parenthesis, as
-// protoc tokenizes it.
+// finding sits at — an option, a reserved range or name, an
+// extensions range, an import, the package, the syntax or edition,
+// the keyword ending the line or followed by whitespace or a
+// parenthesis, as protoc tokenizes it — or closes a body, on whose
+// line no finding ever sits.
 func declaresNothing(src []byte, l line) bool {
 	code := bytes.TrimLeft(src[l.start:l.end], " \t")
+	if bytes.HasPrefix(code, []byte("}")) {
+		return true
+	}
 	for _, word := range []string{"option", "reserved", "extensions", "import", "package", "syntax", "edition"} {
 		if !bytes.HasPrefix(code, []byte(word)) {
 			continue
@@ -260,7 +265,7 @@ func scanLines(src []byte) []line {
 		if start == len(src) && len(src) > 0 && src[len(src)-1] == '\n' {
 			break
 		}
-		l := line{start: start, end: end, comment: -1}
+		l := line{start: start, end: end, comment: -1, any: inBlock}
 		i := start
 		for i < end {
 			if inBlock {

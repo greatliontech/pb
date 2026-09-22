@@ -7,8 +7,9 @@ import (
 
 // Suppression comments are rewritten as buf read them: a lint
 // directive on any line of the block leading a line of code, the
-// file otherwise byte-for-byte; a directive not on the block's last
-// line reported displaced, one in a block comment reported as such;
+// file otherwise byte-for-byte; a directive inside a continued
+// declaration reported displaced, one in a block comment reported as
+// such;
 // a directive buf never honored — trailing code, parted by a blank
 // line or the file's end, breaking's — left and counted
 // (REQ-migrate-comments).
@@ -19,7 +20,7 @@ func TestRewriteComments(t *testing.T) {
 	}{
 		"line before":          {"// buf:lint:ignore FIELD_LOWER_SNAKE_CASE\nstring f = 1;\n", "// pb:ignore FIELD_LOWER_SNAKE_CASE\nstring f = 1;\n", "1/[]/[]/[]/0"},
 		"reason kept":          {"// buf:lint:ignore X legacy name\nstring f = 1;\n", "// pb:ignore X legacy name\nstring f = 1;\n", "1/[]/[]/[]/0"},
-		"stacked":              {"// buf:lint:ignore A\n// a note\n// buf:lint:ignore B\nmessage m {}\n", "// pb:ignore A\n// a note\n// pb:ignore B\nmessage m {}\n", "2/[1]/[]/[]/0"},
+		"stacked":              {"// buf:lint:ignore A\n// a note\n// buf:lint:ignore B\nmessage m {}\n", "// pb:ignore A\n// a note\n// pb:ignore B\nmessage m {}\n", "2/[]/[]/[]/0"},
 		"indented":             {"message M {\n  // buf:lint:ignore A\n  string BadName = 1;\n}\n", "message M {\n  // pb:ignore A\n  string BadName = 1;\n}\n", "1/[]/[]/[]/0"},
 		"tabs before":          {"//\tbuf:lint:ignore X\nm;\n", "//\tpb:ignore X\nm;\n", "1/[]/[]/[]/0"},
 		"no space":             {"//buf:lint:ignore X\nm\n", "//pb:ignore X\nm\n", "1/[]/[]/[]/0"},
@@ -29,6 +30,8 @@ func TestRewriteComments(t *testing.T) {
 		"file's end":           {"m\n// buf:lint:ignore X", "m\n// buf:lint:ignore X", "0/[]/[]/[]/1"},
 		"block comment":        {"/* buf:lint:ignore X */\nmessage m {}\n", "/* buf:lint:ignore X */\nmessage m {}\n", "0/[]/[1]/[]/0"},
 		"block, lines":         {"/*\n  buf:lint:ignore X\n*/\nmessage m {}\n", "/*\n  buf:lint:ignore X\n*/\nmessage m {}\n", "0/[]/[2]/[]/0"},
+		"blank inside block":   {"// buf:lint:ignore X\n/* note\n\n   more */\nstring BadName = 1;\n", "// pb:ignore X\n/* note\n\n   more */\nstring BadName = 1;\n", "1/[]/[]/[]/0"},
+		"closing brace":        {"message M {\n  // buf:lint:ignore A\n}\n", "message M {\n  // pb:ignore A\n}\n", "1/[2]/[]/[]/0"},
 		"block then line":      {"/* buf:lint:ignore X\n// buf:lint:ignore Y */ // buf:lint:ignore Z\nm\n", "/* buf:lint:ignore X\n// buf:lint:ignore Y */ // pb:ignore Z\nm\n", "1/[]/[1]/[]/0"},
 		"unterminated blck":    {"/* buf:lint:ignore X\n// buf:lint:ignore Y\n", "/* buf:lint:ignore X\n// buf:lint:ignore Y\n", "0/[]/[]/[]/1"},
 		"no id":                {"// buf:lint:ignore\nm\n// buf:lint:ignore \nm\n", "// buf:lint:ignore\nm\n// buf:lint:ignore \nm\n", "0/[]/[]/[]/0"},

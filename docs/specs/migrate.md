@@ -266,16 +266,16 @@ each `//` comment on a leading block's line whose text opens
 with `buf:lint:ignore` and an id is rewritten to `// pb:ignore <ID>`,
 the id and any trailing text kept, the file otherwise byte-for-byte
 as it was, and the rewrite is reported per file with its count; a
-rewritten directive on a line pb does not read — any but the last of
-its block, a block inside a declaration continued from the line
-before or leading a statement declaring no entity but the file's —
-an `option`, `reserved`, `extensions`, `import`, `package`, `syntax`
-or `edition` — or a `file` rule's anywhere but the block
-leading the file's first line of code, pb reading the line
-immediately before the flagged one alone, a finding's line being its
-declaration's first and a file's its first lexical element's
-(`check-rules.md` REQ-lint-suppression, REQ-rules-finding-location)
-— a rewritten
+rewritten directive on a line pb does not read — a block inside a
+declaration continued from the line before, leading a statement
+declaring no entity but the file's — an `option`, `reserved`,
+`extensions`, `import`, `package`, `syntax` or `edition` — or a
+body's closing brace, on whose line no finding sits, or a `file`
+rule's anywhere but the block leading the file's first line of
+code, pb reading the comment block leading the flagged line, a
+finding's line being its declaration's first and a file's its first
+lexical element's (`check-rules.md` REQ-lint-suppression,
+REQ-rules-finding-location) — a rewritten
 directive naming a rule whose finding carries no position, a
 `package` or `set` rule, which no comment suppresses wherever it
 stands, and a directive in a block comment, which pb reads not, are
