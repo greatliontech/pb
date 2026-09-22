@@ -137,6 +137,6 @@ func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {
 			return origin.Resolve(ctx, origin.Deps{Prober: &origin.GitProber{}, Client: httpClient}, modPath)
 		},
-		Fetcher: direct.Fetcher{},
+		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cache.Value, "vcs"))},
 	}, nil
 }

@@ -3,6 +3,7 @@ package direct
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -69,7 +70,7 @@ func TestArchiveRoundTripsProxyVerification(t *testing.T) {
 	f := newArtifactFixture(t)
 	repo := f.fetch()
 	var buf bytes.Buffer
-	digest, err := repo.Archive(&buf, f.c.String(), "")
+	digest, err := repo.Archive(context.Background(), &buf, f.c.String(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ func TestArchiveTreeBindingEquivalence(t *testing.T) {
 	f := newArtifactFixture(t)
 	repo := f.fetch()
 
-	pack, ok, err := repo.VerificationPack(mustParse(t, "v1.0.0"), "sub/mod")
+	pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "sub/mod")
 	if err != nil || !ok {
 		t.Fatalf("pack ok=%v err=%v", ok, err)
 	}
@@ -129,7 +130,7 @@ func TestArchiveTreeBindingEquivalence(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	digest, err := repo.Archive(&buf, f.c.String(), "sub/mod")
+	digest, err := repo.Archive(context.Background(), &buf, f.c.String(), "sub/mod")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func TestArchiveForbiddenEntries(t *testing.T) {
 			f.Branch("main", commit)
 			f.Head("main")
 			var buf bytes.Buffer
-			if _, err := f.open().Archive(&buf, commit.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
+			if _, err := f.open().Archive(context.Background(), &buf, commit.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
 				t.Fatalf("err = %v, want ErrForbiddenEntry", err)
 			}
 		})
@@ -248,7 +249,7 @@ func TestArchiveNestedModuleFails(t *testing.T) {
 	f.Branch("main", commit)
 	f.Head("main")
 	var buf bytes.Buffer
-	if _, err := f.open().Archive(&buf, commit.String(), ""); !errors.Is(err, archive.ErrNestedModule) {
+	if _, err := f.open().Archive(context.Background(), &buf, commit.String(), ""); !errors.Is(err, archive.ErrNestedModule) {
 		t.Fatalf("err = %v, want archive.ErrNestedModule", err)
 	}
 }
@@ -256,13 +257,13 @@ func TestArchiveNestedModuleFails(t *testing.T) {
 func TestModuleFileBytes(t *testing.T) {
 	f := newArtifactFixture(t)
 	repo := f.fetch()
-	data, ok, err := repo.ModuleFileBytes(f.c.String(), "")
+	data, ok, err := repo.ModuleFileBytes(context.Background(), f.c.String(), "")
 	if err != nil || !ok || string(data) != f.mod {
 		t.Fatalf("root module file = %q ok=%v err=%v, want exact declared bytes", data, ok, err)
 	}
 	// The subtree module is synthesized: no module file exists, and a
 	// proxy answers not-here for its .mod.
-	data, ok, err = repo.ModuleFileBytes(f.c.String(), "sub/mod")
+	data, ok, err = repo.ModuleFileBytes(context.Background(), f.c.String(), "sub/mod")
 	if err != nil || ok || data != nil {
 		t.Fatalf("synthesized module file = %q ok=%v err=%v, want absent", data, ok, err)
 	}
@@ -296,7 +297,7 @@ func TestVerificationPackShapes(t *testing.T) {
 	repo := f.fetch()
 
 	t.Run("signed tag yields the evidence verbatim", func(t *testing.T) {
-		pack, ok, err := repo.VerificationPack(mustParse(t, "v1.0.0"), "")
+		pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "")
 		if err != nil || !ok {
 			t.Fatalf("ok=%v err=%v", ok, err)
 		}
@@ -331,28 +332,28 @@ func TestVerificationPackShapes(t *testing.T) {
 		}
 	})
 	t.Run("unsigned annotated tag has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(mustParse(t, "v2.0.0"), ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v2.0.0"), ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("lightweight tag has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(mustParse(t, "v3.0.0"), ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v3.0.0"), ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("pseudo-version has no evidence", func(t *testing.T) {
 		v := mustPseudo(t, nil, f.when, f.c.String())
-		if _, ok, err := repo.VerificationPack(v, ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), v, ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("signed tag naming a non-commit has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(mustParse(t, "v1.0.0"), "obj"); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "obj"); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("unknown version errors", func(t *testing.T) {
-		if _, _, err := repo.VerificationPack(mustParse(t, "v9.9.9"), ""); !errors.Is(err, ErrUnknownVersion) {
+		if _, _, err := repo.VerificationPack(context.Background(), mustParse(t, "v9.9.9"), ""); !errors.Is(err, ErrUnknownVersion) {
 			t.Fatalf("err = %v, want ErrUnknownVersion", err)
 		}
 	})
@@ -384,7 +385,7 @@ func TestForbiddenEntryProperty(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		var buf bytes.Buffer
-		if _, err := f.open().Archive(&buf, c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
+		if _, err := f.open().Archive(context.Background(), &buf, c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
 			rt.Fatal("forbidden entry survived: ", err)
 		}
 	})
@@ -451,10 +452,10 @@ func TestArtifactFailures(t *testing.T) {
 		f, _ := build(t)
 		repo := f.open()
 		var buf bytes.Buffer
-		if _, err := repo.Archive(&buf, absent, ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
+		if _, err := repo.Archive(context.Background(), &buf, absent, ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
 			t.Fatalf("Archive err = %v", err)
 		}
-		if _, _, err := repo.ModuleFileBytes(absent, ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
+		if _, _, err := repo.ModuleFileBytes(context.Background(), absent, ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
 			t.Fatalf("ModuleFileBytes err = %v", err)
 		}
 	})
@@ -462,19 +463,19 @@ func TestArtifactFailures(t *testing.T) {
 		f, c := build(t)
 		repo := f.open()
 		var buf bytes.Buffer
-		if _, err := repo.Archive(&buf, c.String(), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		if _, err := repo.Archive(context.Background(), &buf, c.String(), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
 			t.Fatalf("Archive err = %v", err)
 		}
 		// The absent module root is classifiable: consumers read it as
 		// "not a declared module at this commit", not as a storage fault.
-		if _, _, err := repo.ModuleFileBytes(c.String(), "nope"); !errors.Is(err, ErrNoModuleRoot) {
+		if _, _, err := repo.ModuleFileBytes(context.Background(), c.String(), "nope"); !errors.Is(err, ErrNoModuleRoot) {
 			t.Fatalf("ModuleFileBytes err = %v, want ErrNoModuleRoot", err)
 		}
 	})
 	t.Run("subtree segment is a file", func(t *testing.T) {
 		f, c := build(t)
 		var buf bytes.Buffer
-		if _, err := f.open().Archive(&buf, c.String(), "a.proto"); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		if _, err := f.open().Archive(context.Background(), &buf, c.String(), "a.proto"); err == nil || !strings.Contains(err.Error(), "not a directory") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -484,7 +485,7 @@ func TestArtifactFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		var buf bytes.Buffer
-		if _, err := f.open().Archive(&buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading root tree") {
+		if _, err := f.open().Archive(context.Background(), &buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading root tree") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -496,10 +497,10 @@ func TestArtifactFailures(t *testing.T) {
 		f.Head("main")
 		repo := f.open()
 		var buf bytes.Buffer
-		if _, err := repo.Archive(&buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading tree") {
+		if _, err := repo.Archive(context.Background(), &buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading tree") {
 			t.Fatalf("fileSet walk err = %v", err)
 		}
-		if _, err := repo.Archive(&buf, c.String(), "d"); err == nil || !strings.Contains(err.Error(), "reading tree") {
+		if _, err := repo.Archive(context.Background(), &buf, c.String(), "d"); err == nil || !strings.Contains(err.Error(), "reading tree") {
 			t.Fatalf("moduleRoot walk err = %v", err)
 		}
 	})
@@ -510,7 +511,7 @@ func TestArtifactFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		var buf bytes.Buffer
-		if _, err := f.open().Archive(&buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading blob") {
+		if _, err := f.open().Archive(context.Background(), &buf, c.String(), ""); err == nil || !strings.Contains(err.Error(), "reading blob") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -527,7 +528,7 @@ func TestArtifactFailures(t *testing.T) {
 		c := f.CommitTree(root, "c", when)
 		f.Branch("main", c)
 		f.Head("main")
-		if _, _, err := f.open().ModuleFileBytes(c.String(), ""); !errors.Is(err, archive.ErrNestedModule) {
+		if _, _, err := f.open().ModuleFileBytes(context.Background(), c.String(), ""); !errors.Is(err, archive.ErrNestedModule) {
 			t.Fatalf("err = %v, want archive.ErrNestedModule", err)
 		}
 	})
@@ -540,7 +541,7 @@ func TestArtifactFailures(t *testing.T) {
 		c := f.CommitTree(root, "c", when)
 		f.Branch("main", c)
 		f.Head("main")
-		if _, _, err := f.open().ModuleFileBytes(c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
+		if _, _, err := f.open().ModuleFileBytes(context.Background(), c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
 			t.Fatalf("err = %v, want ErrForbiddenEntry", err)
 		}
 	})
@@ -557,7 +558,7 @@ func TestArtifactFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		var buf bytes.Buffer
-		digest, err := f.open().Archive(&buf, c.String(), "")
+		digest, err := f.open().Archive(context.Background(), &buf, c.String(), "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -574,7 +575,7 @@ func TestVerificationPackFailures(t *testing.T) {
 	t.Run("symbolic tag ref resolves through", func(t *testing.T) {
 		f := newArtifactFixture(t)
 		f.Symref("refs/tags/v9.0.0", "refs/tags/v1.0.0")
-		pack, ok, err := f.open().VerificationPack(mustParse(t, "v9.0.0"), "")
+		pack, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v9.0.0"), "")
 		if err != nil || !ok || len(pack) == 0 {
 			t.Fatalf("ok=%v err=%v", ok, err)
 		}
@@ -585,7 +586,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTagSHA256("v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		_, ok, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), "")
+		_, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "")
 		if err != nil || !ok {
 			t.Fatalf("ok=%v err=%v, want evidence", ok, err)
 		}
@@ -596,19 +597,8 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.Ref("refs/tags/v1.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
-		if _, _, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading tag object") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading tag object") {
 			t.Fatalf("err = %v, want a loud tag decode failure", err)
-		}
-	})
-	t.Run("corrupt ref storage is not an unknown version", func(t *testing.T) {
-		f := newFixture(t)
-		c := f.Commit("c", when)
-		f.Branch("main", c)
-		f.Head("main")
-		f.WriteFile("packed-refs", "this is not a packed-refs file\n@@garbage@@\n")
-		_, _, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), "")
-		if err == nil || errors.Is(err, ErrUnknownVersion) {
-			t.Fatalf("err = %v, want a loud non-unknown failure", err)
 		}
 	})
 	t.Run("invalid file set withholds the pack too", func(t *testing.T) {
@@ -621,7 +611,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), ""); !errors.Is(err, archive.ErrNestedModule) {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); !errors.Is(err, archive.ErrNestedModule) {
 			t.Fatalf("err = %v, want archive.ErrNestedModule", err)
 		}
 	})
@@ -631,7 +621,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("nope/v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
 			t.Fatalf("err = %v, want a module-root failure", err)
 		}
 	})
@@ -641,7 +631,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("v1.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
 			t.Fatalf("err = %v, want a loud absent-commit failure", err)
 		}
 	})

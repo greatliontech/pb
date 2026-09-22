@@ -28,7 +28,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       an unmapped fact, the comments rewritten over the checked files,
       the tidy that ends it, the report and its exit status,
       `pb migrate` registered
-- [ ] 8. The direct construction fetches what its proof needs — refs for
+- [x] 8. The direct construction fetches what its proof needs — refs for
       a listing, a tag's or a commit's tree at depth one, and for a
       pseudo-version the history that decides its base per
       REQ-resolve-pseudo-base, derived under the chunk's own gate —

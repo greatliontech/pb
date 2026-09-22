@@ -139,3 +139,39 @@ packs, constructed from the origin repository itself. A version whose
 file set the archive contract rejects has no artifacts at all — a
 source that cannot produce the archive serves nothing else for that
 version either.
+
+**REQ-proxy-direct-fetch** (behavior): The `direct` source MUST fetch
+from an origin what its decision needs and no more, into two bare
+repositories kept in the module cache under `vcs` (dep-verbs.md, the
+module cache term), one directory per origin URL, reused across runs:
+the snapshots, holding each commit a decision or an artifact needed
+with its tree, and the history, holding the commit graph. Opening an
+origin lists its refs and fetches no object, and a run's decisions
+are made over that listing: a tag's or a head's hash is the
+listing's, the repositories' own refs are read by no decision, and
+an origin that moves a listed ref before its fetch fails the fetch
+rather than answer with what the listing did not name. A release
+version fetches its tag into the snapshots at depth one, the tag's
+objects and the commit's tree; the origin's default-branch head, for
+a tagless module's pseudo-version, its commit at depth one; an
+artifact of a commit the snapshots lack the commit at depth one by
+its hash; the snapshots are never deepened. A pseudo-version, whose
+binding and base are decided over the commits reachable from the
+origin's heads and tags (module-resolution.md
+REQ-resolve-pseudo-commit, REQ-resolve-pseudo-base), fetches the
+history: every head and tag, whole, the commits and tag objects alone
+through git's object filter where the origin offers one and every
+object where it refuses, never at a depth; the graph a decision reads
+is what the listing's heads and tags reach in it, a commit the
+history holds beyond their reach — left by an earlier run whose
+listing reached it — absent; a listed ref whose object the history
+lacks after the fetch is fetched by its name into a repository
+thrown away after, never into the history: a non-commit it names
+is kept in the history and names no root, a commit the origin no
+longer serves under the name fails the fetch. No fixed depth stands in for a
+decision's need. The repositories are a fetch cache, never a source
+of truth: every artifact built from them verifies as
+REQ-proxy-client-verification has it. An origin's repositories are
+held by one process at a time, the lock beside them taken at opening
+and held to the process's end, another run waiting at its opening
+and failing with its context where that ends first.

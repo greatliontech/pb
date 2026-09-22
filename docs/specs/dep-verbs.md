@@ -24,7 +24,13 @@ module artifacts: the `cache` setting — `$PBCACHE`, or the user
 configuration file's `cache` key (`user-config.md`) — when set,
 otherwise `pb/mod` under the platform user cache directory. The cache
 is shared across resolution roots — its entries are version-addressed
-and content-verified, so no root-local fact may live in it.
+and content-verified, so no root-local fact may live in it. Under
+`vcs` it holds the origin repositories the `direct` source fetches
+into (module-proxy.md REQ-proxy-direct-fetch), one directory per
+origin URL holding two bare repositories, `snapshots` and `history`,
+and the `lock` one process holds at a time, reused across roots and
+runs, a fetch cache holding no root-local fact and no fact trusted on
+presence.
 
 **direct requirement** (term): A declared dependency of a workspace
 module — an entry in the `deps` map of a module the resolution root

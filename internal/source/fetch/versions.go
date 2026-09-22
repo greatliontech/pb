@@ -70,7 +70,7 @@ func (c *Client) directLatest(ctx context.Context, modPath string) (proxy.Unveri
 	if len(tags) > 0 {
 		v = tags[len(tags)-1].Version
 	} else {
-		head, err := repo.Head()
+		head, err := repo.Head(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -118,11 +118,11 @@ func (c *Client) directTags(ctx context.Context, modPath string) (*direct.Repo, 
 	}
 	namespace := o.Subtree
 	if namespace != "" {
-		head, err := repo.Head()
+		head, err := repo.Head(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
-		_, declared, err := repo.ModuleFileBytes(head.Hash, o.Subtree)
+		_, declared, err := repo.ModuleFileBytes(ctx, head.Hash, o.Subtree)
 		switch {
 		case errors.Is(err, direct.ErrNoModuleRoot):
 			// The subtree does not exist at head at all: certainly not a

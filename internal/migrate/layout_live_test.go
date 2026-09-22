@@ -72,7 +72,7 @@ func TestDependencyLayouts(t *testing.T) {
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {
 			return origin.Resolve(ctx, origin.Deps{Prober: &origin.GitProber{}, Client: httpClient}, modPath)
 		},
-		Fetcher: direct.Fetcher{},
+		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cache, "vcs"))},
 	}
 	names := make([]string, 0, len(Dependencies))
 	for n := range Dependencies {

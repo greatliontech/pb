@@ -518,7 +518,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.Repo.resolvePseudo"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "34c2aa872882d15211a659479641beed90debcc52a2fc019e3d7ca39c163a9d9"
+  shape_hash: "f9972c1139420b1cc9f8638dfb3d52587cc386f507c37b7964b6fcf7765c9b73"
 }
 
 bindings {
@@ -558,7 +558,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.Repo.expectedPseudo"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "5ae070d3a2808c3ef5c2bf5e553b8acc0268c2a62077e8a596078b1da4ab2c2d"
+  shape_hash: "6144b934ffff1a0c301dd3cbd870433587672ef0dc1e49d75b108b123466b184"
 }
 
 bindings {
@@ -598,7 +598,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.Repo.Head"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "b200759409f4270ebae5dcaa315bf3f10ab6b0b1e3482bfdd4762de24320f1e8"
+  shape_hash: "16b21ec49886e8c914e723b8220b7531e66d5bde0c9188ea90e02219ffa288af"
 }
 
 bindings {

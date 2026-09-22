@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -108,7 +109,7 @@ func TestResolveReleaseTags(t *testing.T) {
 		{"v1.5.0", "lw", f.c2, f.t2}, // lightweight, subtree namespace
 	}
 	for _, c := range cases {
-		got, err := repo.ResolveVersion(mustParse(t, c.version), c.subtree)
+		got, err := repo.ResolveVersion(context.Background(), mustParse(t, c.version), c.subtree)
 		if err != nil {
 			t.Fatalf("ResolveVersion(%s, %q): %v", c.version, c.subtree, err)
 		}
@@ -121,11 +122,11 @@ func TestResolveReleaseTags(t *testing.T) {
 func TestResolveUnknownVersionFails(t *testing.T) {
 	f := newGraphFixture(t)
 	repo := f.fetch()
-	if _, err := repo.ResolveVersion(mustParse(t, "v9.9.9"), ""); !errors.Is(err, ErrUnknownVersion) {
+	if _, err := repo.ResolveVersion(context.Background(), mustParse(t, "v9.9.9"), ""); !errors.Is(err, ErrUnknownVersion) {
 		t.Fatalf("err = %v, want ErrUnknownVersion", err)
 	}
 	// A tag present only in another namespace is not this module's.
-	if _, err := repo.ResolveVersion(mustParse(t, "v1.5.0"), ""); !errors.Is(err, ErrUnknownVersion) {
+	if _, err := repo.ResolveVersion(context.Background(), mustParse(t, "v1.5.0"), ""); !errors.Is(err, ErrUnknownVersion) {
 		t.Fatalf("err = %v, want ErrUnknownVersion for foreign-namespace tag", err)
 	}
 }
@@ -133,7 +134,7 @@ func TestResolveUnknownVersionFails(t *testing.T) {
 func TestResolveTagNamingNonCommitFails(t *testing.T) {
 	f := newGraphFixture(t)
 	repo := f.fetch()
-	_, err := repo.ResolveVersion(mustParse(t, "v1.0.0"), "obj")
+	_, err := repo.ResolveVersion(context.Background(), mustParse(t, "v1.0.0"), "obj")
 	if err == nil || errors.Is(err, ErrUnknownVersion) {
 		t.Fatalf("err = %v, want a non-commit tag failure", err)
 	}
@@ -171,7 +172,7 @@ func TestResolvePseudoBases(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			v := mustPseudo(t, c.precedent, c.when, c.commit.String())
-			got, err := repo.ResolveVersion(v, c.subtree)
+			got, err := repo.ResolveVersion(context.Background(), v, c.subtree)
 			if err != nil {
 				t.Fatalf("ResolveVersion(%s, %q): %v", v, c.subtree, err)
 			}
@@ -196,7 +197,7 @@ func TestResolvePseudoCraftedBaseFails(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if _, err := repo.ResolveVersion(c.v, c.subtree); !errors.Is(err, ErrBaseInconsistent) {
+			if _, err := repo.ResolveVersion(context.Background(), c.v, c.subtree); !errors.Is(err, ErrBaseInconsistent) {
 				t.Fatalf("err = %v, want ErrBaseInconsistent", err)
 			}
 		})
@@ -207,7 +208,7 @@ func TestResolvePseudoAbsentCommitFails(t *testing.T) {
 	f := newGraphFixture(t)
 	repo := f.fetch()
 	v := mustPseudo(t, nil, f.t3, "abcdefabcdefabcdefabcdefabcdefabcdefabcd")
-	if _, err := repo.ResolveVersion(v, ""); !errors.Is(err, ErrCommitAbsent) {
+	if _, err := repo.ResolveVersion(context.Background(), v, ""); !errors.Is(err, ErrCommitAbsent) {
 		t.Fatalf("err = %v, want ErrCommitAbsent", err)
 	}
 }
@@ -218,7 +219,7 @@ func TestResolvePseudoTimeMismatchFails(t *testing.T) {
 	// Right commit, wrong embedded time: binding must fail before any
 	// base derivation applies.
 	v := mustPseudo(t, nil, f.t3.Add(time.Hour), f.c3.String())
-	if _, err := repo.ResolveVersion(v, "decoy"); !errors.Is(err, origin.ErrPseudoMismatch) {
+	if _, err := repo.ResolveVersion(context.Background(), v, "decoy"); !errors.Is(err, origin.ErrPseudoMismatch) {
 		t.Fatalf("err = %v, want origin.ErrPseudoMismatch", err)
 	}
 }
@@ -252,7 +253,7 @@ func TestUniqueCommitDecision(t *testing.T) {
 func TestHeadResolvesDefaultBranch(t *testing.T) {
 	f := newGraphFixture(t)
 	repo := f.fetch()
-	head, err := repo.Head()
+	head, err := repo.Head(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +290,7 @@ func TestSynthesizedFallbackResolvesHeadPseudo(t *testing.T) {
 	f.Head("main")
 	repo := f.fetch()
 
-	head, err := repo.Head()
+	head, err := repo.Head(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +305,7 @@ func TestSynthesizedFallbackResolvesHeadPseudo(t *testing.T) {
 	if len(tags) != 1 || !tags[0].Version.IsPseudo() {
 		t.Fatalf("SynthesizedVersions = %+v, want one head pseudo-version", tags)
 	}
-	got, err := repo.ResolveVersion(tags[0].Version, "")
+	got, err := repo.ResolveVersion(context.Background(), tags[0].Version, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +326,7 @@ func TestHeadFailures(t *testing.T) {
 	t.Run("HEAD names a missing branch", func(t *testing.T) {
 		f := newFixture(t)
 		f.Head("gone")
-		if _, err := f.open().Head(); err == nil || !strings.Contains(err.Error(), "resolving origin HEAD") {
+		if _, err := f.open().Head(context.Background()); err == nil || !strings.Contains(err.Error(), "resolving origin HEAD") {
 			t.Fatalf("err = %v, want a HEAD resolution failure", err)
 		}
 	})
@@ -333,15 +334,16 @@ func TestHeadFailures(t *testing.T) {
 		f := newFixture(t)
 		f.Ref("refs/heads/blob", f.Blob("not a commit\n"))
 		f.Head("blob")
-		if _, err := f.open().Head(); err == nil || !strings.Contains(err.Error(), "reading HEAD commit") {
+		if _, err := f.open().Head(context.Background()); err == nil || !strings.Contains(err.Error(), "reading HEAD commit") {
 			t.Fatalf("err = %v, want a HEAD commit read failure", err)
 		}
 	})
 }
 
-// The advertised shape at storage level, exactly: only branch and tag
-// hash refs appear, annotated tags gain one fully-peeled entry, an
-// unpeelable tag gains none, and the output is name-sorted.
+// The advertised shape, exactly: only branch and tag refs appear, a
+// symbolic one resolved as the wire advertises it, annotated tags
+// gain one fully-peeled entry, an unpeelable tag gains none, and the
+// output is name-sorted.
 func TestRefsShapeAtStorageLevel(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
@@ -365,6 +367,7 @@ func TestRefsShapeAtStorageLevel(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []origin.Ref{
+		{Name: "refs/heads/link", Hash: c.String()},
 		{Name: "refs/heads/main", Hash: c.String()},
 		{Name: "refs/tags/corrupt", Hash: corrupt.String()},
 		{Name: "refs/tags/light", Hash: c.String()},
@@ -378,11 +381,10 @@ func TestRefsShapeAtStorageLevel(t *testing.T) {
 }
 
 // A symbolic ref under refs/tags resolves through to its target, as it
-// does for git itself — the resolved-lookup flag is what honors it.
-// This pins lookup semantics at the storage level only: through the
-// fetch seam the wire advertises every tag symref already resolved to
-// its hash (HEAD alone stays symbolic), so fetched storage never holds
-// one and Refs()' hash-refs-only view agrees with tag lookup there.
+// does for git itself: the wire advertises every tag symref already
+// resolved to its hash (HEAD alone stays symbolic), the listing the
+// fixture builds in place does the same, and the decision reads the
+// listing.
 func TestResolveTagThroughSymbolicRef(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
@@ -390,7 +392,7 @@ func TestResolveTagThroughSymbolicRef(t *testing.T) {
 	f.Branch("main", c)
 	f.Head("main")
 	f.Symref("refs/tags/v7.0.0", "refs/heads/main")
-	got, err := f.open().ResolveVersion(mustParse(t, "v7.0.0"), "")
+	got, err := f.open().ResolveVersion(context.Background(), mustParse(t, "v7.0.0"), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -406,45 +408,23 @@ func TestResolveTagPeelFailure(t *testing.T) {
 	f.Branch("main", c)
 	f.Head("main")
 	f.Ref("refs/tags/v1.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
-	_, err := f.open().ResolveVersion(mustParse(t, "v1.0.0"), "")
+	_, err := f.open().ResolveVersion(context.Background(), mustParse(t, "v1.0.0"), "")
 	if err == nil || !strings.Contains(err.Error(), "peeling") {
 		t.Fatalf("err = %v, want a peel failure", err)
-	}
-}
-
-// Broken ref storage fails loudly on every path that reads refs — and
-// never masquerades as an unknown version, which callers may treat as
-// in-spec absence.
-func TestCorruptPackedRefsFailsLoudly(t *testing.T) {
-	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-	f := newFixture(t)
-	c := f.Commit("c", when)
-	f.Branch("main", c)
-	f.Head("main")
-	f.WriteFile("packed-refs", "this is not a packed-refs file\n@@garbage@@\n")
-	repo := f.open()
-
-	if _, err := repo.ResolveVersion(mustParse(t, "v1.0.0"), ""); err == nil || errors.Is(err, ErrUnknownVersion) {
-		t.Fatalf("tag lookup err = %v, want a loud non-unknown failure", err)
-	}
-	if _, err := repo.Refs(); err == nil || !strings.Contains(err.Error(), "listing refs") {
-		t.Fatalf("Refs() err = %v, want a listing failure", err)
-	}
-	v := mustPseudo(t, nil, when, c.String())
-	if _, err := repo.ResolveVersion(v, ""); err == nil || !strings.Contains(err.Error(), "resolving "+v.String()) {
-		t.Fatalf("pseudo err = %v, want base derivation to surface the corruption", err)
 	}
 }
 
 func TestResolvePseudoCorruptCommitObject(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	c := f.Commit("c", when)
+	// The corrupt commit is the head's parent: reachable, so the
+	// graph walk reads it — an unreachable object is never read.
+	corrupt := f.CorruptObject(plumbing.CommitObject, "not a decodable commit object")
+	c := f.Commit("c", when, corrupt)
 	f.Branch("main", c)
 	f.Head("main")
-	f.CorruptObject(plumbing.CommitObject, "not a decodable commit object")
 	v := mustPseudo(t, nil, when, c.String())
-	_, err := f.open().ResolveVersion(v, "")
+	_, err := f.open().ResolveVersion(context.Background(), v, "")
 	if err == nil || !strings.Contains(err.Error(), "iterating commits") {
 		t.Fatalf("err = %v, want a commit iteration failure", err)
 	}
@@ -470,33 +450,56 @@ func TestResolvePseudoCorruptReleaseTagFails(t *testing.T) {
 	t.Run("dangling tag target", func(t *testing.T) {
 		f, v := build(t)
 		f.AnnotatedTag("v5.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.CommitObject, when)
-		_, err := f.open().ResolveVersion(v, "")
-		if err == nil || !strings.Contains(err.Error(), "release tag v5.0.0") {
+		_, err := f.open().ResolveVersion(context.Background(), v, "")
+		if err == nil || !strings.Contains(err.Error(), "refs/tags/v5.0.0") {
 			t.Fatalf("err = %v, want a loud v5.0.0 corruption failure", err)
 		}
 	})
 	t.Run("undecodable tag object", func(t *testing.T) {
 		f, v := build(t)
 		f.Ref("refs/tags/v5.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
-		_, err := f.open().ResolveVersion(v, "")
-		if err == nil || !strings.Contains(err.Error(), "release tag v5.0.0") {
+		_, err := f.open().ResolveVersion(context.Background(), v, "")
+		if err == nil || !strings.Contains(err.Error(), "refs/tags/v5.0.0") {
 			t.Fatalf("err = %v, want a loud v5.0.0 corruption failure", err)
 		}
 	})
 }
 
+// An annotated tag in the module's namespace naming a non-commit is no
+// release, decided by the type the tag object declares: the history
+// holds no tree or blob, so the target is never read — a tag naming a
+// blob the repository lacks derives the base from the releases beside
+// it.
+func TestResolvePseudoNonCommitTagInHistory(t *testing.T) {
+	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	f := newFixture(t)
+	c1 := f.Commit("c1", when)
+	c2 := f.Commit("c2", when.Add(time.Hour), c1)
+	f.Branch("main", c2)
+	f.Head("main")
+	f.Tag("v1.0.0", c1)
+	f.AnnotatedTag("v5.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.BlobObject, when)
+	v100 := mustParse(t, "v1.0.0")
+	v := mustPseudo(t, &v100, when.Add(time.Hour), c2.String())
+	got, err := f.open().ResolveVersion(context.Background(), v, "")
+	if err != nil || got.Hash != c2.String() {
+		t.Fatalf("resolved %+v %v, want %s under the v1.0.0 base", got, err, c2)
+	}
+}
+
 // A pseudo-version of a commit whose parent is missing from storage
-// fails ancestry derivation loudly rather than shrinking the base.
+// fails the graph walk loudly rather than shrinking the base.
 func TestResolvePseudoDanglingParentFails(t *testing.T) {
 	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	f := newFixture(t)
-	x := f.Commit("x", when, plumbing.NewHash(strings.Repeat("ab", 20)))
+	missing := plumbing.NewHash(strings.Repeat("ab", 20))
+	x := f.Commit("x", when, missing)
 	f.Branch("main", x)
 	f.Head("main")
 	v := mustPseudo(t, nil, when, x.String())
-	_, err := f.open().ResolveVersion(v, "")
-	if err == nil || !strings.Contains(err.Error(), "reading ancestor") {
-		t.Fatalf("err = %v, want an ancestor read failure", err)
+	_, err := f.open().ResolveVersion(context.Background(), v, "")
+	if err == nil || !strings.Contains(err.Error(), "reading "+missing.String()) {
+		t.Fatalf("err = %v, want a parent read failure", err)
 	}
 }
 
@@ -544,7 +547,7 @@ func TestPseudoBaseAncestryProperty(t *testing.T) {
 
 		when := base.Add(time.Duration(target) * time.Hour)
 		expected := mustPseudo(rt, precedent, when, hashes[target].String())
-		got, err := repo.ResolveVersion(expected, "prop")
+		got, err := repo.ResolveVersion(context.Background(), expected, "prop")
 		if err != nil {
 			rt.Fatal(err)
 		}
@@ -553,7 +556,7 @@ func TestPseudoBaseAncestryProperty(t *testing.T) {
 		}
 
 		crafted := mustPseudo(rt, &v99, when, hashes[target].String())
-		if _, err := repo.ResolveVersion(crafted, "prop"); !errors.Is(err, ErrBaseInconsistent) {
+		if _, err := repo.ResolveVersion(context.Background(), crafted, "prop"); !errors.Is(err, ErrBaseInconsistent) {
 			rt.Fatal("crafted base resolved: ", err)
 		}
 	})

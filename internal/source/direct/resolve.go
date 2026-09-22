@@ -1,14 +1,18 @@
 package direct
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 
+	git "github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"github.com/go-git/go-git/v6/storage/memory"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/source/origin"
 )
@@ -37,13 +41,19 @@ var ErrBaseInconsistent = errors.New("pseudo-version base inconsistent with the 
 // ResolveVersion binds a version to the commit it names for the module
 // at subtree ("" for a module at the repository root, and for a
 // synthesized module's repository-level namespace). A release version
-// resolves through its tag (REQ-resolve-release-tags); a pseudo-version
-// resolves only to the commit whose hash and time it embeds, present at
-// the origin and with a base consistent with the module's release-tag
-// history (REQ-resolve-pseudo-commit, REQ-resolve-pseudo-base).
-func (r *Repo) ResolveVersion(v version.Version, subtree string) (origin.Commit, error) {
+// resolves through its tag (REQ-resolve-release-tags), the listing's,
+// fetched at depth one where the snapshots lack it; a pseudo-version
+// resolves only to the commit whose hash and time it embeds, present
+// at the origin and with a base consistent with the module's
+// release-tag history (REQ-resolve-pseudo-commit,
+// REQ-resolve-pseudo-base), the commit graph fetched into the history
+// for the decision.
+func (r *Repo) ResolveVersion(ctx context.Context, v version.Version, subtree string) (origin.Commit, error) {
 	if v.IsPseudo() {
-		return r.resolvePseudo(v, subtree)
+		return r.resolvePseudo(ctx, v, subtree)
+	}
+	if err := r.ensureTag(ctx, tagRefName(v, subtree)); err != nil {
+		return origin.Commit{}, fmt.Errorf("resolving %s: %w", v, err)
 	}
 	return r.resolveTag(v, subtree)
 }
@@ -58,26 +68,25 @@ func tagRefName(v version.Version, subtree string) string {
 	return name + v.String()
 }
 
-// tagRef looks up the module's tag ref for a release version, mapping
-// absence to ErrUnknownVersion; resolveTag and VerificationPack share
-// the one lookup.
-func (r *Repo) tagRef(v version.Version, subtree string) (*plumbing.Reference, error) {
-	ref, err := r.r.Reference(plumbing.ReferenceName(tagRefName(v, subtree)), true)
-	if err != nil {
-		if errors.Is(err, plumbing.ErrReferenceNotFound) {
-			return nil, fmt.Errorf("%w: %s (tag %s)", ErrUnknownVersion, v, tagRefName(v, subtree))
-		}
-		return nil, fmt.Errorf("resolving %s: %w", v, err)
+// tagHash is the listing's hash for the module's tag ref of a release
+// version, mapping absence to ErrUnknownVersion; resolveTag and
+// VerificationPack share the one lookup, and the store's refs are no
+// part of it — a tag the origin retracted is unknown however many
+// runs fetched it before.
+func (r *Repo) tagHash(v version.Version, subtree string) (plumbing.Hash, error) {
+	h, ok := r.hashes[tagRefName(v, subtree)]
+	if !ok {
+		return plumbing.ZeroHash, fmt.Errorf("%w: %s (tag %s)", ErrUnknownVersion, v, tagRefName(v, subtree))
 	}
-	return ref, nil
+	return h, nil
 }
 
 func (r *Repo) resolveTag(v version.Version, subtree string) (origin.Commit, error) {
-	ref, err := r.tagRef(v, subtree)
+	h, err := r.tagHash(v, subtree)
 	if err != nil {
 		return origin.Commit{}, err
 	}
-	c, ok, err := r.tagCommit(ref.Hash())
+	c, ok, err := tagCommit(r.r, h)
 	if err != nil {
 		return origin.Commit{}, fmt.Errorf("resolving %s: tag %s: %w", v, tagRefName(v, subtree), err)
 	}
@@ -87,19 +96,25 @@ func (r *Repo) resolveTag(v version.Version, subtree string) (origin.Commit, err
 	return commitIdentity(c), nil
 }
 
-// tagCommit peels a tag ref's target and reads the commit it names.
-// ok=false reports the one in-spec non-release shape — a tag ultimately
-// naming a non-commit object. Everything else (an undecodable tag
-// object, a peeled target absent from storage) is corruption and
-// errors: both callers must fail loudly on it, base derivation in
-// particular must never let corruption shrink the release history it
-// derives from (REQ-resolve-pseudo-base).
-func (r *Repo) tagCommit(h plumbing.Hash) (*object.Commit, bool, error) {
-	peeled, ok := r.peel(h)
+// tagCommit peels a tag ref's target in a repository and reads the
+// commit it names. ok=false reports the one in-spec non-release shape
+// — a tag ultimately naming a non-commit object, decided by the tag
+// object's declared target type where one was read, so the history,
+// which holds no tree or blob, decides it without the object.
+// Everything else (an undecodable tag object, a peeled target absent
+// from the repository) is corruption and errors: both callers must
+// fail loudly on it, base derivation in particular must never let
+// corruption shrink the release history it derives from
+// (REQ-resolve-pseudo-base).
+func tagCommit(repo *git.Repository, h plumbing.Hash) (*object.Commit, bool, error) {
+	peeled, typ, ok := peel(repo, h)
 	if !ok {
 		return nil, false, fmt.Errorf("peeling %s failed", h)
 	}
-	obj, err := r.r.Object(plumbing.AnyObject, peeled)
+	if typ != plumbing.AnyObject && typ != plumbing.CommitObject {
+		return nil, false, nil
+	}
+	obj, err := repo.Object(plumbing.AnyObject, peeled)
 	if err != nil {
 		return nil, false, fmt.Errorf("tag target %s: %w", peeled, err)
 	}
@@ -107,9 +122,9 @@ func (r *Repo) tagCommit(h plumbing.Hash) (*object.Commit, bool, error) {
 	return c, isCommit, nil
 }
 
-func (r *Repo) resolvePseudo(v version.Version, subtree string) (origin.Commit, error) {
+func (r *Repo) resolvePseudo(ctx context.Context, v version.Version, subtree string) (origin.Commit, error) {
 	_, prefix, _ := v.Pseudo()
-	matches, err := r.commitsWithPrefix(prefix)
+	matches, err := r.commitsWithPrefix(ctx, prefix)
 	if err != nil {
 		return origin.Commit{}, fmt.Errorf("resolving %s: %w", v, err)
 	}
@@ -123,7 +138,7 @@ func (r *Repo) resolvePseudo(v version.Version, subtree string) (origin.Commit, 
 	if err := origin.VerifyPseudo(v, commitIdentity(c)); err != nil {
 		return origin.Commit{}, err
 	}
-	expected, err := r.expectedPseudo(c, subtree)
+	expected, err := r.expectedPseudo(ctx, c, subtree)
 	if err != nil {
 		return origin.Commit{}, fmt.Errorf("resolving %s: %w", v, err)
 	}
@@ -134,37 +149,131 @@ func (r *Repo) resolvePseudo(v version.Version, subtree string) (origin.Commit, 
 	return commitIdentity(c), nil
 }
 
-// commitIndex is the memoized hash index over the snapshot's commit
-// objects: every commit keyed by full hash, plus the sorted hash list
-// prefix lookup ranges over. Built on the first pseudo-version
-// resolution; a driver resolving many versions against one Repo pays
-// the full-storage iteration once.
-func (r *Repo) commitIndex() (map[string]*object.Commit, []string, error) {
+// commitIndex is the memoized index over the commit graph the listing
+// reaches: every commit reachable from the listing's heads and tags in
+// the history, keyed by full hash, plus the sorted hash list prefix
+// lookup ranges over. What the history holds beyond the listing's
+// reach — commits earlier runs fetched that the origin since moved
+// away from — is no part of it: presence is the listing's. Built on
+// the first pseudo-version resolution, the history fetched for it; a
+// driver resolving many versions against one Repo walks the graph
+// once.
+func (r *Repo) commitIndex(ctx context.Context) (map[string]*object.Commit, []string, error) {
 	if r.indexed {
-		return r.commits, r.hashes, nil
+		return r.commits, r.sorted, nil
 	}
-	iter, err := r.r.CommitObjects()
+	if err := r.ensureHistory(ctx); err != nil {
+		return nil, nil, err
+	}
+	roots, err := r.roots(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("iterating commits: %w", err)
+		return nil, nil, err
 	}
 	commits := map[string]*object.Commit{}
-	err = iter.ForEach(func(c *object.Commit) error {
-		commits[c.Hash.String()] = c
-		return nil
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("iterating commits: %w", err)
+	queue := roots
+	for len(queue) > 0 {
+		h := queue[0]
+		queue = queue[1:]
+		if _, seen := commits[h.String()]; seen {
+			continue
+		}
+		c, err := r.hist.CommitObject(h)
+		if err != nil {
+			return nil, nil, fmt.Errorf("iterating commits: reading %s: %w", h, err)
+		}
+		commits[h.String()] = c
+		queue = append(queue, c.ParentHashes...)
 	}
 	hashes := slices.Sorted(maps.Keys(commits))
-	r.commits, r.hashes, r.indexed = commits, hashes, true
+	r.commits, r.sorted, r.indexed = commits, hashes, true
 	return commits, hashes, nil
+}
+
+// roots are the commits the listing's heads and tags name, peeled in
+// the history: the graph's entry points. The answer for each listed
+// ref — the commit it peels to, or none — is recorded by the ref's
+// hash for base derivation, so the question is asked once and
+// answered once. A listed object the history lacks after its fetch
+// is either a lightweight tag's non-commit target, which the object
+// filter left out, or a ref the origin moved since the listing; the
+// ref is probed by name, a non-commit kept in the history so the
+// next run finds it, a commit the listing named that the origin no
+// longer serves reported.
+func (r *Repo) roots(ctx context.Context) ([]plumbing.Hash, error) {
+	refs, err := r.Refs()
+	if err != nil {
+		return nil, err
+	}
+	var roots []plumbing.Hash
+	targets := map[plumbing.Hash]plumbing.Hash{}
+	for _, ref := range refs {
+		if strings.HasSuffix(ref.Name, "^{}") {
+			continue
+		}
+		h := plumbing.NewHash(ref.Hash)
+		if _, err := r.hist.Object(plumbing.AnyObject, h); errors.Is(err, plumbing.ErrObjectNotFound) && r.remote != nil {
+			if err := r.probeRef(ctx, ref.Name, h); err != nil {
+				return nil, err
+			}
+		} else if err != nil {
+			return nil, fmt.Errorf("reading %s at %s: %w", ref.Name, h, err)
+		}
+		c, ok, err := tagCommit(r.hist, h)
+		if err != nil {
+			return nil, fmt.Errorf("reading %s: %w", ref.Name, err)
+		}
+		if ok {
+			roots = append(roots, c.Hash)
+			targets[h] = c.Hash
+		} else {
+			targets[h] = plumbing.ZeroHash
+		}
+	}
+	r.targets = targets
+	return roots, nil
+}
+
+// probeRef fetches a listed ref the history lacks by its name, at
+// depth one and unfiltered, into a repository thrown away after: the
+// history is never fetched at a depth, so a moved ref's commit must
+// not leave a shallow boundary in it. What arrives decides: the
+// listing's object absent, the origin moved the ref; a non-commit,
+// the ref names no root, and the object is copied into the history
+// so the next run reads it there; a commit, one the history's fetch
+// of every head and tag should have held — reported, never patched
+// in.
+func (r *Repo) probeRef(ctx context.Context, name string, h plumbing.Hash) error {
+	probe, err := git.Init(memory.NewStorage())
+	if err != nil {
+		return err
+	}
+	remote, err := probe.CreateRemote(&config.RemoteConfig{Name: remoteName, URLs: r.remote.Config().URLs})
+	if err != nil {
+		return err
+	}
+	if err := r.fetchListed(ctx, remote, probe, name, h); err != nil {
+		return err
+	}
+	if _, ok, err := tagCommit(probe, h); err != nil {
+		return fmt.Errorf("reading %s: %w", name, err)
+	} else if ok {
+		return fmt.Errorf("fetching the history: %s at %s is a commit the origin left out of it", name, h)
+	}
+	obj, err := probe.Storer.EncodedObject(plumbing.AnyObject, h)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", name, err)
+	}
+	if _, err := r.hist.Storer.SetEncodedObject(obj); err != nil {
+		return fmt.Errorf("keeping %s in the history: %w", name, err)
+	}
+	return nil
 }
 
 // commitsWithPrefix lists the commits whose hash carries the given
 // prefix, in hash order over the memoized index; uniqueCommit owns the
 // zero/one/many decision.
-func (r *Repo) commitsWithPrefix(prefix string) ([]*object.Commit, error) {
-	commits, hashes, err := r.commitIndex()
+func (r *Repo) commitsWithPrefix(ctx context.Context, prefix string) ([]*object.Commit, error) {
+	commits, hashes, err := r.commitIndex(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -204,16 +313,20 @@ func uniqueCommit(v version.Version, matches []*object.Commit) (*object.Commit, 
 // assigns to a commit for the module at subtree: the highest release
 // tag in the module's namespace on an ancestor of the commit seeds the
 // base, the zero base when none exists (REQ-resolve-pseudo-base).
-// Ancestry is reachability — the commit itself included. A
-// pseudo-version-shaped tag never seeds a base: origin.ReleaseTags
-// excludes it from the release list, and version.PseudoVersion refuses
-// one as precedent regardless.
-func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version, error) {
+// Ancestry is reachability — the commit itself included. A release
+// tag's commit is what the graph's roots recorded for it, decided
+// once for every listed ref. A pseudo-version-shaped tag never seeds
+// a base: origin.ReleaseTags excludes it from the release list, and
+// version.PseudoVersion refuses one as precedent regardless.
+func (r *Repo) expectedPseudo(ctx context.Context, c *object.Commit, subtree string) (version.Version, error) {
 	refs, err := r.Refs()
 	if err != nil {
 		return version.Version{}, err
 	}
-	ancestors, err := r.ancestors(c)
+	if _, _, err := r.commitIndex(ctx); err != nil {
+		return version.Version{}, err
+	}
+	ancestors, err := r.ancestors(ctx, c)
 	if err != nil {
 		return version.Version{}, err
 	}
@@ -221,16 +334,16 @@ func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version
 	var precedent *version.Version
 	for i := len(tags) - 1; i >= 0; i-- {
 		t := tags[i]
-		tc, ok, err := r.tagCommit(plumbing.NewHash(t.Hash))
-		if err != nil {
-			return version.Version{}, fmt.Errorf("release tag %s: %w", t.Version, err)
+		tc, known := r.targets[plumbing.NewHash(t.Hash)]
+		if !known {
+			return version.Version{}, fmt.Errorf("release tag %s: %s is not among the listing's refs", t.Version, t.Hash)
 		}
-		if !ok {
+		if tc.IsZero() {
 			// A tag naming a non-commit object tags nothing on any
 			// ancestor; it is no release of the module.
 			continue
 		}
-		if ancestors[tc.Hash.String()] {
+		if ancestors[tc.String()] {
 			precedent = &t.Version
 			break
 		}
@@ -238,13 +351,16 @@ func (r *Repo) expectedPseudo(c *object.Commit, subtree string) (version.Version
 	return version.PseudoVersion(precedent, c.Committer.When, c.Hash.String())
 }
 
-// ancestors is the commit's reachability set, itself included,
-// memoized per resolved commit: repeated resolution of the same
-// pseudo-version (and the same commit across subtree namespaces)
+// ancestors is the commit's reachability set in the history, itself
+// included, memoized per resolved commit: repeated resolution of the
+// same pseudo-version (and the same commit across subtree namespaces)
 // walks history once.
-func (r *Repo) ancestors(c *object.Commit) (map[string]bool, error) {
+func (r *Repo) ancestors(ctx context.Context, c *object.Commit) (map[string]bool, error) {
 	if seen, ok := r.ancestry[c.Hash.String()]; ok {
 		return seen, nil
+	}
+	if err := r.ensureHistory(ctx); err != nil {
+		return nil, err
 	}
 	seen := map[string]bool{c.Hash.String(): true}
 	queue := []*object.Commit{c}
@@ -256,7 +372,7 @@ func (r *Repo) ancestors(c *object.Commit) (map[string]bool, error) {
 				continue
 			}
 			seen[ph.String()] = true
-			parent, err := r.r.CommitObject(ph)
+			parent, err := r.hist.CommitObject(ph)
 			if err != nil {
 				return nil, fmt.Errorf("reading ancestor %s of %s: %w", ph, c.Hash, err)
 			}

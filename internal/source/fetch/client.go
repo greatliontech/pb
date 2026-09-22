@@ -103,8 +103,9 @@ func (c *Client) origin(ctx context.Context, modPath string) (origin.Origin, err
 	return o, nil
 }
 
-// repo fetches and memoizes an origin repository. The fetched storage
-// is immutable, so one fetch serves every version resolved against it.
+// repo opens and memoizes an origin repository: one listing serves
+// every version resolved against it, the objects fetched as each
+// decision needs them.
 func (c *Client) repo(ctx context.Context, repoURL string) (*direct.Repo, error) {
 	if r, ok := c.repos[repoURL]; ok {
 		return r, nil
@@ -161,7 +162,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 	if err != nil {
 		return nil, err
 	}
-	commit, err := repo.ResolveVersion(v, o.Subtree)
+	commit, err := repo.ResolveVersion(ctx, v, o.Subtree)
 	switch {
 	case errors.Is(err, direct.ErrUnknownVersion), errors.Is(err, direct.ErrCommitAbsent):
 		// The origin does not have this version — the direct analog of a
@@ -179,7 +180,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 	case KindInfo:
 		return direct.InfoJSON(v, commit)
 	case KindMod:
-		b, ok, err := repo.ModuleFileBytes(commit.Hash, o.Subtree)
+		b, ok, err := repo.ModuleFileBytes(ctx, commit.Hash, o.Subtree)
 		if err != nil {
 			return nil, err
 		}
@@ -191,12 +192,12 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		return b, nil
 	case KindZip:
 		var buf bytes.Buffer
-		if _, err := repo.Archive(&buf, commit.Hash, o.Subtree); err != nil {
+		if _, err := repo.Archive(ctx, &buf, commit.Hash, o.Subtree); err != nil {
 			return nil, err
 		}
 		return buf.Bytes(), nil
 	case KindProv:
-		b, ok, err := repo.VerificationPack(v, o.Subtree)
+		b, ok, err := repo.VerificationPack(ctx, v, o.Subtree)
 		if err != nil {
 			return nil, err
 		}

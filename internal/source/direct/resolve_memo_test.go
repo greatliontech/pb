@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -25,13 +26,13 @@ func TestRepoViewsAreSnapshots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := repo.ResolveVersion(mustParse(t, "v1.0.0"), ""); err != nil {
+	if _, err := repo.ResolveVersion(context.Background(), mustParse(t, "v1.0.0"), ""); err != nil {
 		t.Fatal(err)
 	}
 	// Resolving a pseudo-version builds the commit index and ancestry
 	// now — the snapshot the growth below must not reach.
 	pseudo1 := pseudoFor(t, repo, c1, "")
-	if _, err := repo.ResolveVersion(pseudo1, ""); err != nil {
+	if _, err := repo.ResolveVersion(context.Background(), pseudo1, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -49,12 +50,12 @@ func TestRepoViewsAreSnapshots(t *testing.T) {
 	// The new commit is invisible to prefix binding through this Repo:
 	// absent, specifically — a rebuilt index would instead find it and
 	// fail base derivation (or resolve it), never report absence.
-	if _, err := repo.ResolveVersion(pseudoOf(t, c2, time.Unix(1700003600, 0)), ""); !errors.Is(err, ErrCommitAbsent) {
+	if _, err := repo.ResolveVersion(context.Background(), pseudoOf(t, c2, time.Unix(1700003600, 0)), ""); !errors.Is(err, ErrCommitAbsent) {
 		t.Fatalf("post-snapshot commit through the snapshot: err = %v, want ErrCommitAbsent", err)
 	}
 	// The pre-growth pseudo-version still resolves, its base unchanged
 	// by the post-snapshot tag.
-	if _, err := repo.ResolveVersion(pseudo1, ""); err != nil {
+	if _, err := repo.ResolveVersion(context.Background(), pseudo1, ""); err != nil {
 		t.Fatalf("pre-snapshot pseudo-version: %v", err)
 	}
 }
@@ -67,7 +68,7 @@ func pseudoFor(t *testing.T, repo *Repo, h plumbing.Hash, subtree string) versio
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := repo.expectedPseudo(c, subtree)
+	v, err := repo.expectedPseudo(context.Background(), c, subtree)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,8 +111,8 @@ func TestMemoizedResolutionEqualsFresh(t *testing.T) {
 		{mustParse(t, "v9.9.9"), ""},
 	}
 	for _, in := range inputs {
-		got, gotErr := memo.ResolveVersion(in.v, in.subtree)
-		want, wantErr := f.open().ResolveVersion(in.v, in.subtree)
+		got, gotErr := memo.ResolveVersion(context.Background(), in.v, in.subtree)
+		want, wantErr := f.open().ResolveVersion(context.Background(), in.v, in.subtree)
 		if (gotErr == nil) != (wantErr == nil) || got != want {
 			t.Fatalf("%s (subtree %q): memoized (%v, %v) != fresh (%v, %v)",
 				in.v, in.subtree, got, gotErr, want, wantErr)

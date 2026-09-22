@@ -2,6 +2,7 @@ package direct
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -43,7 +44,10 @@ var ErrForbiddenEntry = errors.New("forbidden entry under module root")
 var ErrNoModuleRoot = errors.New("module root not present in commit tree")
 
 // commitObject looks up the full-hash commit a resolved version bound.
-func (r *Repo) commitObject(commitHash string) (*object.Commit, error) {
+func (r *Repo) commitObject(ctx context.Context, commitHash string) (*object.Commit, error) {
+	if err := r.ensureCommit(ctx, plumbing.NewHash(commitHash)); err != nil {
+		return nil, fmt.Errorf("reading commit %s: %w", commitHash, err)
+	}
 	c, err := r.r.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("reading commit %s: %w", commitHash, err)
@@ -159,8 +163,8 @@ func fileSetInfos(entries []fileEntry) []archive.FileInfo {
 // archive contract rejects has no artifacts at all
 // (REQ-proxy-direct-equivalence), so a tree Archive rejects is never
 // partially served by another endpoint.
-func (r *Repo) moduleFileSet(commitHash, subtree string) ([]fileEntry, [][]byte, error) {
-	c, err := r.commitObject(commitHash)
+func (r *Repo) moduleFileSet(ctx context.Context, commitHash, subtree string) ([]fileEntry, [][]byte, error) {
+	c, err := r.commitObject(ctx, commitHash)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -181,8 +185,8 @@ func (r *Repo) moduleFileSet(commitHash, subtree string) ([]fileEntry, [][]byte,
 // Archive writes the module version's canonical zip and returns its
 // module digest. commitHash is the full hash a resolved version bound
 // (ResolveVersion); subtree is the module root within the repository.
-func (r *Repo) Archive(w io.Writer, commitHash, subtree string) (string, error) {
-	entries, _, err := r.moduleFileSet(commitHash, subtree)
+func (r *Repo) Archive(ctx context.Context, w io.Writer, commitHash, subtree string) (string, error) {
+	entries, _, err := r.moduleFileSet(ctx, commitHash, subtree)
 	if err != nil {
 		return "", err
 	}
@@ -213,8 +217,8 @@ func blobBytes(blob *object.Blob) ([]byte, error) {
 // .mod (REQ-proxy-not-found). The shared moduleFileSet walk enforces
 // the whole archive discipline, so a tree Archive rejects is never
 // partially served.
-func (r *Repo) ModuleFileBytes(commitHash, subtree string) ([]byte, bool, error) {
-	entries, _, err := r.moduleFileSet(commitHash, subtree)
+func (r *Repo) ModuleFileBytes(ctx context.Context, commitHash, subtree string) ([]byte, bool, error) {
+	entries, _, err := r.moduleFileSet(ctx, commitHash, subtree)
 	if err != nil {
 		return nil, false, err
 	}
@@ -250,15 +254,18 @@ func InfoJSON(v version.Version, c origin.Commit) ([]byte, error) {
 // (REQ-proxy-not-found). Base64 uses the standard padded alphabet with
 // no whitespace: the canonical wire spelling
 // (REQ-proxy-prov-envelope).
-func (r *Repo) VerificationPack(v version.Version, subtree string) ([]byte, bool, error) {
+func (r *Repo) VerificationPack(ctx context.Context, v version.Version, subtree string) ([]byte, bool, error) {
 	if v.IsPseudo() {
 		return nil, false, nil
 	}
-	ref, err := r.tagRef(v, subtree)
+	if err := r.ensureTag(ctx, tagRefName(v, subtree)); err != nil {
+		return nil, false, fmt.Errorf("provenance for %s: %w", v, err)
+	}
+	h, err := r.tagHash(v, subtree)
 	if err != nil {
 		return nil, false, err
 	}
-	tag, err := r.r.TagObject(ref.Hash())
+	tag, err := r.r.TagObject(h)
 	if err != nil {
 		if err == plumbing.ErrObjectNotFound {
 			// A lightweight tag: no tag object exists to be signed.
@@ -276,7 +283,7 @@ func (r *Repo) VerificationPack(v version.Version, subtree string) ([]byte, bool
 		// anything else carries no verifiable module provenance.
 		return nil, false, nil
 	}
-	c, err := r.commitObject(tag.Target.String())
+	c, err := r.commitObject(ctx, tag.Target.String())
 	if err != nil {
 		// A signed tag referencing an absent commit is corruption, not
 		// absence of evidence.
@@ -285,11 +292,11 @@ func (r *Repo) VerificationPack(v version.Version, subtree string) ([]byte, bool
 	// The full file-set walk, not just the treePath: a version whose
 	// file set the archive contract rejects has no artifacts at all,
 	// the pack included (REQ-proxy-direct-equivalence).
-	_, treePath, err := r.moduleFileSet(c.Hash.String(), subtree)
+	_, treePath, err := r.moduleFileSet(ctx, c.Hash.String(), subtree)
 	if err != nil {
 		return nil, false, fmt.Errorf("provenance for %s: %w", v, err)
 	}
-	rawTag, err := r.rawBody(ref.Hash())
+	rawTag, err := r.rawBody(h)
 	if err != nil {
 		return nil, false, fmt.Errorf("provenance for %s: %w", v, err)
 	}
