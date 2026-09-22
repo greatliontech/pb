@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-migrate-no-network-but-tidy"
-reason: "the migrate verb is specced ahead of its plan, docs/plans/migrate.md, whose chunks 2 to 7 build it"
-content_hash: "8ef5610682a3cf606752abd528d7f3d2e0408e90c1f407f695a90a44b35e92d5"
-source_hash: "5be0933ceffe7876e3dd41ceec865d8c113f636b2c2dc1fc315813e69d924058"
-lands { manual { condition: "the migrate plan's chunk landing the requirement binds it" } }

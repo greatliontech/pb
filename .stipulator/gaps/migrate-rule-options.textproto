@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-migrate-rule-options"
-reason: "the migrate verb is specced ahead of its plan, docs/plans/migrate.md, whose chunks 2 to 7 build it"
-content_hash: "897e03fdc851ba198762891b7b86e6bb3b6becbba39b14b071741a2a8de0d853"
-source_hash: "466dffe57479f29dc5dc728a677cc04b1a466ba21347e937d1557e3c6e93a792"
-lands { manual { condition: "the migrate plan's chunk landing the requirement binds it" } }
