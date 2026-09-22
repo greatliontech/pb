@@ -162,9 +162,15 @@ BSR modules the entry's files import, and holds:
 
 | BSR name | module path | imports |
 |---|---|---|
+| `buf.build/bufbuild/protovalidate` | `github.com/bufbuild/protovalidate/proto/protovalidate` | |
+| `buf.build/cncf/xds` | `github.com/cncf/xds` | `buf.build/envoyproxy/protoc-gen-validate` `buf.build/google/cel-spec` `buf.build/googleapis/googleapis` |
+| `buf.build/envoyproxy/envoy` | `github.com/envoyproxy/envoy/api` | `buf.build/cncf/xds` `buf.build/envoyproxy/protoc-gen-validate` `buf.build/googleapis/googleapis` `buf.build/opencensus/opencensus` `buf.build/opentelemetry/opentelemetry` `buf.build/prometheus/client-model` |
+| `buf.build/envoyproxy/protoc-gen-validate` | `github.com/bufbuild/protoc-gen-validate` | |
+| `buf.build/google/cel-spec` | `github.com/google/cel-spec/proto` | `buf.build/googleapis/googleapis` |
 | `buf.build/googleapis/googleapis` | `github.com/googleapis/googleapis` | |
 | `buf.build/grpc-ecosystem/grpc-gateway` | `github.com/grpc-ecosystem/grpc-gateway` | `buf.build/googleapis/googleapis` |
 | `buf.build/grpc/grpc` | `github.com/grpc/grpc-proto` | `buf.build/googleapis/googleapis` |
+| `buf.build/opencensus/opencensus` | `github.com/census-instrumentation/opencensus-proto/src` | |
 | `buf.build/opentelemetry/opentelemetry` | `github.com/open-telemetry/opentelemetry-proto` | |
 | `buf.build/prometheus/client-model` | `github.com/prometheus/client_model` | |
 

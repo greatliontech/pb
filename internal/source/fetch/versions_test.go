@@ -9,6 +9,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
 // Versions parses the proxy's advisory listing and falls through on
@@ -79,13 +80,16 @@ func TestVersionsFromOrigin(t *testing.T) {
 	}
 }
 
-// Declaredness for the listing namespace is judged at the origin's
-// default-branch head — the only state the origin can answer for. A
-// subtree module deleted at head therefore lists repository-level tags:
-// a deliberate limitation, bounded by the listing being advisory
-// (REQ-proxy-list-advisory) — a proposed version a module never
-// released fails loudly when actually resolved.
-func TestVersionsSubtreeDeletedAtHeadListsRepoTags(t *testing.T) {
+// Declaredness for the namespace is judged at the origin's
+// default-branch head — the only state the origin can answer for — and
+// a subtree absent there is no synthesized module: synthesis is the
+// judgment over a subtree that exists holding no module file
+// (REQ-resolve-synthesis). A subtree module deleted at head keeps its
+// own namespace: its listing is its own tags, its release resolves
+// through them, and the repository-level tag of a commit where it was
+// declared is the root's release, not here for it — never served as a
+// version the module never cut.
+func TestVersionsSubtreeDeletedAtHeadKeepsItsNamespace(t *testing.T) {
 	fx := newFixture(t)
 	old := fx.CommitFor(map[string]string{
 		"pb.yaml":     "module: example.com/m\n",
@@ -105,8 +109,14 @@ func TestVersionsSubtreeDeletedAtHeadListsRepoTags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Versions: %v", err)
 	}
-	if len(vs) != 1 || vs[0].String() != "v1.0.0" {
-		t.Fatalf("versions = %v, want the repository-level listing", vs)
+	if len(vs) != 1 || vs[0].String() != "v2.0.0" {
+		t.Fatalf("versions = %v, want the subtree's own listing", vs)
+	}
+	if mf, err := c.Module(ctx, "example.com/m/sub", vs[0]); err != nil || mf.Module != "example.com/m/sub" {
+		t.Fatalf("the deleted subtree at its own release: %+v, %v", mf, err)
+	}
+	if _, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); !errors.Is(err, proxy.ErrNotHere) {
+		t.Fatalf("the root's release served as the deleted subtree's: %v", err)
 	}
 }
 

@@ -32,12 +32,12 @@ func goldenTreeEntries(t testing.TB, f ObjectFormat) []TreeEntry {
 		return h
 	}
 	return []TreeEntry{
-		{Path: "pb.yaml", Blob: blob("module: example.com/m\n")},
-		{Path: "proto/v1/svc.proto", Blob: blob("syntax = \"proto3\";")},
-		{Path: "tools/gen.sh", Exec: true, Blob: blob("#!/bin/sh\n")},
-		{Path: "a.b", Blob: blob("x")},
-		{Path: "a/inner.txt", Blob: blob("inner")},
-		{Path: "a0", Blob: blob("zed")},
+		{Path: "pb.yaml", Hash: blob("module: example.com/m\n")},
+		{Path: "proto/v1/svc.proto", Hash: blob("syntax = \"proto3\";")},
+		{Path: "tools/gen.sh", Exec: true, Hash: blob("#!/bin/sh\n")},
+		{Path: "a.b", Hash: blob("x")},
+		{Path: "a/inner.txt", Hash: blob("inner")},
+		{Path: "a0", Hash: blob("zed")},
 	}
 }
 
@@ -83,7 +83,7 @@ func TestTreeHashGolden(t *testing.T) {
 		var protoOnly []TreeEntry
 		for _, e := range entries {
 			if rest, ok := strings.CutPrefix(e.Path, "proto/"); ok {
-				protoOnly = append(protoOnly, TreeEntry{Path: rest, Exec: e.Exec, Blob: e.Blob})
+				protoOnly = append(protoOnly, TreeEntry{Path: rest, Exec: e.Exec, Hash: e.Hash})
 			}
 		}
 		sub, err := TreeHash(f, protoOnly)
@@ -125,15 +125,15 @@ func TestTreeHashCompositionProperty(t *testing.T) {
 			}
 			exec := rapid.Bool().Draw(t, "exec")
 			rel := fmt.Sprintf("f%d.proto", i)
-			entries = append(entries, TreeEntry{Path: "sub/" + rel, Exec: exec, Blob: blob})
-			subEntries = append(subEntries, TreeEntry{Path: rel, Exec: exec, Blob: blob})
+			entries = append(entries, TreeEntry{Path: "sub/" + rel, Exec: exec, Hash: blob})
+			subEntries = append(subEntries, TreeEntry{Path: rel, Exec: exec, Hash: blob})
 		}
 		// One root-level file so the root tree has mixed entry kinds.
 		rootBlob, err := BlobHash(f, 1, strings.NewReader("r"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		entries = append(entries, TreeEntry{Path: "root.txt", Blob: rootBlob})
+		entries = append(entries, TreeEntry{Path: "root.txt", Hash: rootBlob})
 
 		root, err := TreeHash(f, entries)
 		if err != nil {
@@ -243,11 +243,11 @@ func TestVerifyTreeBinding(t *testing.T) {
 		h, _ := BlobHash(f, int64(len(body)), strings.NewReader(body))
 		return hex.EncodeToString(h)
 	}
-	aTree, err := TreeHash(f, []TreeEntry{{Path: "inner.txt", Blob: mustHex(t, blob("inner"))}})
+	aTree, err := TreeHash(f, []TreeEntry{{Path: "inner.txt", Hash: mustHex(t, blob("inner"))}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	toolsTree, err := TreeHash(f, []TreeEntry{{Path: "gen.sh", Exec: true, Blob: mustHex(t, blob("#!/bin/sh\n"))}})
+	toolsTree, err := TreeHash(f, []TreeEntry{{Path: "gen.sh", Exec: true, Hash: mustHex(t, blob("#!/bin/sh\n"))}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestVerifyTreeBinding(t *testing.T) {
 	var v1Entries []TreeEntry
 	for _, e := range entries {
 		if rest, ok := strings.CutPrefix(e.Path, "proto/v1/"); ok {
-			v1Entries = append(v1Entries, TreeEntry{Path: rest, Exec: e.Exec, Blob: e.Blob})
+			v1Entries = append(v1Entries, TreeEntry{Path: rest, Exec: e.Exec, Hash: e.Hash})
 		}
 	}
 	v1, err := TreeHash(f, v1Entries)
@@ -328,7 +328,7 @@ func TestBlobHashSizeMismatch(t *testing.T) {
 }
 
 func TestTreeHashRejectsBadBlobLength(t *testing.T) {
-	if _, err := TreeHash(SHA256, []TreeEntry{{Path: "a", Blob: make([]byte, 20)}}); !errors.Is(err, ErrObjectInvalid) {
+	if _, err := TreeHash(SHA256, []TreeEntry{{Path: "a", Hash: make([]byte, 20)}}); !errors.Is(err, ErrObjectInvalid) {
 		t.Fatalf("sha1-length blob under sha256: err = %v, want ErrObjectInvalid", err)
 	}
 	if _, err := TreeHash("md5", nil); !errors.Is(err, ErrObjectInvalid) {
@@ -464,8 +464,8 @@ func TestVerifyTreeBindingErrorClasses(t *testing.T) {
 		h, _ := BlobHash(f, int64(len(body)), strings.NewReader(body))
 		return hex.EncodeToString(h)
 	}
-	aTree, _ := TreeHash(f, []TreeEntry{{Path: "inner.txt", Blob: mustHex(t, blob("inner"))}})
-	toolsTree, _ := TreeHash(f, []TreeEntry{{Path: "gen.sh", Exec: true, Blob: mustHex(t, blob("#!/bin/sh\n"))}})
+	aTree, _ := TreeHash(f, []TreeEntry{{Path: "inner.txt", Hash: mustHex(t, blob("inner"))}})
+	toolsTree, _ := TreeHash(f, []TreeEntry{{Path: "gen.sh", Exec: true, Hash: mustHex(t, blob("#!/bin/sh\n"))}})
 	rootObj := rawTree(t,
 		[3]string{"100644", "a.b", blob("x")},
 		[3]string{"40000", "a", hex.EncodeToString(aTree)},
@@ -478,7 +478,7 @@ func TestVerifyTreeBindingErrorClasses(t *testing.T) {
 	var v1Entries []TreeEntry
 	for _, e := range entries {
 		if rest, ok := strings.CutPrefix(e.Path, "proto/v1/"); ok {
-			v1Entries = append(v1Entries, TreeEntry{Path: rest, Exec: e.Exec, Blob: e.Blob})
+			v1Entries = append(v1Entries, TreeEntry{Path: rest, Exec: e.Exec, Hash: e.Hash})
 		}
 	}
 	v1, _ := TreeHash(f, v1Entries)

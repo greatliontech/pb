@@ -3,6 +3,7 @@ package archive
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -654,24 +655,177 @@ func TestVerifyZipForeignOrder(t *testing.T) {
 	}
 }
 
-// A member whose attributes declare a non-regular type (symlink) is rejected
-// at verification: it could otherwise verify as a regular file carrying the
-// link target as content (REQ-archive-forbidden-entries).
-func TestZipSymlinkMemberRejected(t *testing.T) {
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
-	hdr := &zip.FileHeader{Name: "link", Method: zip.Store}
-	hdr.SetMode(0o777 | fs.ModeSymlink)
-	w, err := zw.CreateHeader(hdr)
+// A link and a submodule entry are carried by the container as git
+// stores them (REQ-archive-links-carried, REQ-archive-zip-mode): a link
+// member of Unix type link with the target as its bytes, a submodule
+// member of git's gitlink type with the recorded id as its bytes, each
+// verifying against the manifest that names it; a submodule member
+// holding no commit id, and a member of a type no file set holds, are
+// rejected (REQ-archive-zip); the files a consumer reads are the
+// regular ones, a link named like the module file being no module
+// file; extraction writes neither; and the tree hash recomputes over
+// the link's target and the submodule's id, in the id's format alone.
+func TestZipLinksCarried(t *testing.T) {
+	id := bytes.Repeat([]byte{0xab}, 20)
+	files := []File{
+		{Path: "a.proto", Body: strings.NewReader("syntax = \"proto3\";")},
+		{Path: "pb.yaml", Kind: KindLink, Body: strings.NewReader("../elsewhere/pb.yaml")},
+		{Path: "link.proto", Kind: KindLink, Body: strings.NewReader("a.proto")},
+		{Path: "vendor/sub", Kind: KindSubmodule, Body: bytes.NewReader(id)},
+	}
+	data, digest := writeZip(t, files)
+	want := []FileInfo{
+		file("a.proto", false, "syntax = \"proto3\";"),
+		{Path: "pb.yaml", Kind: KindLink, Size: 20, SHA256: sha256.Sum256([]byte("../elsewhere/pb.yaml"))},
+		{Path: "link.proto", Kind: KindLink, Size: 7, SHA256: sha256.Sum256([]byte("a.proto"))},
+		{Path: "vendor/sub", Kind: KindSubmodule, Submodule: id},
+	}
+	m, err := Manifest(want)
 	if err != nil {
 		t.Fatal(err)
 	}
-	w.Write([]byte("target"))
-	zw.Close()
-	m, _ := Manifest([]FileInfo{file("link", true, "target")})
-	_, verr := VerifyZip(bytes.NewReader(buf.Bytes()), int64(buf.Len()), Digest(m))
-	if !errors.Is(verr, ErrZipInvalid) || !strings.Contains(verr.Error(), "not a regular file") {
-		t.Fatalf("symlink member: err = %v, want non-regular rejection", verr)
+	if Digest(m) != digest {
+		t.Fatalf("digest %s, the manifest's %s", digest, Digest(m))
+	}
+	if !strings.Contains(string(m), "120000 "+hex.EncodeToString(want[2].SHA256[:])+" link.proto\n") || !strings.Contains(string(m), "160000 "+hex.EncodeToString(id)+" vendor/sub\n") {
+		t.Fatalf("manifest lines:\n%s", m)
+	}
+	infos, err := VerifyZip(bytes.NewReader(data), int64(len(data)), digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(infos) != 4 || infos[1].Kind != KindLink || infos[3].Kind != KindSubmodule || !bytes.Equal(infos[3].Submodule, id) {
+		t.Fatalf("verified %+v", infos)
+	}
+	// The container records the kinds in the attributes, each member
+	// made by the Unix host that makes them Unix attributes — what an
+	// independent reader keys on before reading any type bits.
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mem := range zr.File {
+		if mem.CreatorVersion>>8 != creatorUnix {
+			t.Errorf("%s: made by host %d, not Unix", mem.Name, mem.CreatorVersion>>8)
+		}
+		typ := mem.ExternalAttrs >> 16 & unixTypeMask
+		switch mem.Name {
+		case "link.proto", "pb.yaml":
+			if typ != unixTypeLink {
+				t.Errorf("%s: type %o", mem.Name, typ)
+			}
+		case "vendor/sub":
+			if typ != unixTypeSubmodule {
+				t.Errorf("%s: type %o", mem.Name, typ)
+			}
+		}
+	}
+	// The files a consumer reads.
+	got, err := ZipFiles(bytes.NewReader(data), int64(len(data)))
+	if err != nil || len(got) != 1 || string(got["a.proto"]) != "syntax = \"proto3\";" {
+		t.Fatalf("ZipFiles = %v %v", got, err)
+	}
+	if _, has, err := ZipFile(bytes.NewReader(data), int64(len(data)), "pb.yaml"); err != nil || has {
+		t.Fatalf("a link named like the module file read as one: %v %v", has, err)
+	}
+	// Extraction writes the regular file alone.
+	dir := scratchtest.Dir(t)
+	if err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), digest); err != nil {
+		t.Fatal(err)
+	}
+	var seen []string
+	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			seen = append(seen, filepath.ToSlash(strings.TrimPrefix(path, dir+string(filepath.Separator))))
+		}
+		return err
+	})
+	if len(seen) != 1 || seen[0] != "a.proto" {
+		t.Fatalf("extracted %v", seen)
+	}
+	if _, err := os.Lstat(filepath.Join(dir, "link.proto")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a link written: %v", err)
+	}
+	// The tree: the link's blob over its target, the submodule's id.
+	blobOf := func(body string) []byte {
+		h, err := BlobHash(SHA1, int64(len(body)), strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return h
+	}
+	blobA, blobL, blobP := blobOf("syntax = \"proto3\";"), blobOf("a.proto"), blobOf("../elsewhere/pb.yaml")
+	wantTree, err := TreeHash(SHA1, []TreeEntry{
+		{Path: "a.proto", Hash: blobA},
+		{Path: "pb.yaml", Kind: KindLink, Hash: blobP},
+		{Path: "link.proto", Kind: KindLink, Hash: blobL},
+		{Path: "vendor/sub", Kind: KindSubmodule, Hash: id},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotTree, err := ZipTreeHash(SHA1, bytes.NewReader(data), int64(len(data)))
+	if err != nil || !bytes.Equal(gotTree, wantTree) {
+		t.Fatalf("ZipTreeHash = %x %v, want %x", gotTree, err, wantTree)
+	}
+	if _, err := ZipTreeHash(SHA256, bytes.NewReader(data), int64(len(data))); !errors.Is(err, ErrObjectInvalid) {
+		t.Fatalf("a SHA-1 id recomputed in SHA-256: %v", err)
+	}
+	// A regular-file manifest for the same paths does not match: the
+	// kinds are in the digest.
+	plain, _ := Manifest([]FileInfo{want[0], file("pb.yaml", false, "../elsewhere/pb.yaml"), file("link.proto", false, "a.proto"), want[3]})
+	if Digest(plain) == digest {
+		t.Fatal("a link and a file of the same bytes digest alike")
+	}
+
+	// A submodule entry records a commit id or nothing: a body of any
+	// other length, shorter or longer, is no id.
+	for _, n := range []int{3, 19, 21, 31, 33, 40} {
+		body := bytes.Repeat([]byte{0xcd}, n)
+		if _, err := WriteZip(io.Discard, []File{{Path: "sub", Kind: KindSubmodule, Body: bytes.NewReader(body)}}); !errors.Is(err, ErrEntryInvalid) {
+			t.Fatalf("a submodule of %d bytes written: %v", n, err)
+		}
+	}
+	for _, n := range []int{20, 32} {
+		body := bytes.Repeat([]byte{0xcd}, n)
+		if _, err := WriteZip(io.Discard, []File{{Path: "sub", Kind: KindSubmodule, Body: bytes.NewReader(body)}}); err != nil {
+			t.Fatalf("a submodule of %d bytes refused: %v", n, err)
+		}
+	}
+
+	// Members the file set cannot hold, and a member no Unix host made.
+	raw := func(name string, creator uint16, attrs uint32, body []byte) []byte {
+		var buf bytes.Buffer
+		zw := zip.NewWriter(&buf)
+		hdr := &zip.FileHeader{Name: name, Method: zip.Store, CreatorVersion: creator << 8, ExternalAttrs: attrs}
+		w, err := zw.CreateHeader(hdr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w.Write(body)
+		zw.Close()
+		return buf.Bytes()
+	}
+	sock := raw("s", creatorUnix, 0o140000<<16, []byte("x"))
+	if _, _, err := DigestZip(bytes.NewReader(sock), int64(len(sock))); !errors.Is(err, ErrZipInvalid) || !strings.Contains(err.Error(), "neither") {
+		t.Fatalf("a socket member: %v", err)
+	}
+	short := raw("sub", creatorUnix, unixTypeSubmodule<<16, []byte("abc"))
+	if _, _, err := DigestZip(bytes.NewReader(short), int64(len(short))); !errors.Is(err, ErrZipInvalid) || !strings.Contains(err.Error(), "not a commit id") {
+		t.Fatalf("a submodule member of three bytes: %v", err)
+	}
+	// The high attribute bits of a member another host made are not
+	// Unix mode bits: whatever they hold, the member is a regular,
+	// non-executable file with its bytes as content.
+	for _, attrs := range []uint32{unixTypeLink<<16 | 0o777<<16, unixTypeSubmodule << 16, 0o100755 << 16, 0o140000 << 16} {
+		dos := raw("l", 0, attrs, []byte("a.proto"))
+		_, infos, err := DigestZip(bytes.NewReader(dos), int64(len(dos)))
+		if err != nil {
+			t.Fatalf("attributes %o under an MS-DOS host: %v", attrs>>16, err)
+		}
+		if want := file("l", false, "a.proto"); len(infos) != 1 || infos[0].Kind != KindFile || infos[0].Exec || infos[0].SHA256 != want.SHA256 {
+			t.Fatalf("attributes %o under an MS-DOS host read as %+v", attrs>>16, infos)
+		}
 	}
 }
 
@@ -775,7 +929,7 @@ func TestZipTreeHashMatchesEntryHashing(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			entries = append(entries, TreeEntry{Path: path, Exec: exec, Blob: blob})
+			entries = append(entries, TreeEntry{Path: path, Exec: exec, Hash: blob})
 		}
 		var buf bytes.Buffer
 		if _, err := WriteZip(&buf, files); err != nil {

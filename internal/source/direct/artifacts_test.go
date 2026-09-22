@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -165,7 +165,7 @@ func TestArchiveTreeBindingEquivalence(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		entries = append(entries, archive.TreeEntry{Path: fi.Path, Exec: fi.Exec, Blob: blob})
+		entries = append(entries, archive.TreeEntry{Path: fi.Path, Exec: fi.Exec, Hash: blob})
 	}
 	computed, err := archive.TreeHash(format, entries)
 	if err != nil {
@@ -176,39 +176,58 @@ func TestArchiveTreeBindingEquivalence(t *testing.T) {
 	}
 }
 
-func TestArchiveForbiddenEntries(t *testing.T) {
+// A link and a submodule entry under the module root are carried as
+// git stores them (REQ-archive-links-carried): the archive holds the
+// link's target and the submodule's recorded id, its digest names their
+// kinds, its tree hash binds to the origin commit's, and the module's
+// files are the regular ones alone.
+func TestArchiveCarriesLinks(t *testing.T) {
 	when := time.Date(2026, 7, 15, 10, 0, 0, 0, time.UTC)
-	cases := []struct {
-		name string
-		mode filemode.FileMode
-	}{
-		{"symbolic link", filemode.Symlink},
-		{"git submodule", filemode.Submodule},
+	f := newFixture(t)
+	sub := plumbing.NewHash(strings.Repeat("ab", 20))
+	root := f.Tree(
+		object.TreeEntry{Name: "a.proto", Mode: filemode.Regular, Hash: f.Blob("A\n")},
+		object.TreeEntry{Name: "link.proto", Mode: filemode.Symlink, Hash: f.Blob("a.proto")},
+		object.TreeEntry{Name: "vendor", Mode: filemode.Submodule, Hash: sub},
+	)
+	commit := f.CommitTree(root, "c", when)
+	f.Branch("main", commit)
+	f.Head("main")
+	repo := f.open()
+	var buf bytes.Buffer
+	digest, err := repo.Archive(context.Background(), &buf, commit.String(), "")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			f := newFixture(t)
-			target := f.Blob("elsewhere\n")
-			root := f.Tree(
-				object.TreeEntry{Name: "a.proto", Mode: filemode.Regular, Hash: f.Blob("A\n")},
-				object.TreeEntry{Name: "bad", Mode: c.mode, Hash: target},
-			)
-			commit := f.CommitTree(root, "c", when)
-			f.Branch("main", commit)
-			f.Head("main")
-			var buf bytes.Buffer
-			if _, err := f.open().Archive(context.Background(), &buf, commit.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
-				t.Fatalf("err = %v, want ErrForbiddenEntry", err)
-			}
-		})
+	data := buf.Bytes()
+	infos, err := archive.VerifyZip(bytes.NewReader(data), int64(len(data)), digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(infos) != 3 || infos[1].Kind != archive.KindLink || infos[2].Kind != archive.KindSubmodule || !bytes.Equal(infos[2].Submodule, sub.Bytes()) {
+		t.Fatalf("verified %+v", infos)
+	}
+	computed, err := archive.ZipTreeHash(archive.SHA1, bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCommit, err := repo.rawBody(commit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := archive.VerifyTreeBinding(archive.SHA1, rawCommit, "", nil, computed); err != nil {
+		t.Fatalf("tree binding over a link and a submodule: %v", err)
+	}
+	files, err := archive.ZipFiles(bytes.NewReader(data), int64(len(data)))
+	if err != nil || len(files) != 1 || string(files["a.proto"]) != "A\n" {
+		t.Fatalf("the module's files: %v %v", files, err)
 	}
 }
 
-// The verification half of REQ-archive-forbidden-entries is structural:
-// a file set cannot carry the symlink, so an archive derived from a
-// symlink-bearing tree can never recompute that tree's hash — the
-// binding fails instead of the entry being laundered away.
-func TestForbiddenEntryCannotLaunder(t *testing.T) {
+// A file set that drops a link cannot bind to the tree that holds it
+// (REQ-archive-tree-binding): carrying the link is what makes the
+// recompute exact.
+func TestLinkDroppedCannotBind(t *testing.T) {
 	when := time.Date(2026, 7, 15, 10, 0, 0, 0, time.UTC)
 	f := newFixture(t)
 	root := f.Tree(
@@ -224,7 +243,7 @@ func TestForbiddenEntryCannotLaunder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	computed, err := archive.TreeHash(archive.SHA1, []archive.TreeEntry{{Path: "a.proto", Blob: blob}})
+	computed, err := archive.TreeHash(archive.SHA1, []archive.TreeEntry{{Path: "a.proto", Hash: blob}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +252,7 @@ func TestForbiddenEntryCannotLaunder(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := archive.VerifyTreeBinding(archive.SHA1, rawCommit, "", nil, computed); err == nil {
-		t.Fatal("symlink-free file set bound to a symlink-bearing tree")
+		t.Fatal("a file set without the link bound to the tree holding it")
 	}
 }
 
@@ -359,15 +378,20 @@ func TestVerificationPackShapes(t *testing.T) {
 	})
 }
 
-// Wherever a symlink or submodule entry sits under the module root —
-// any depth, with or without regular siblings — archive creation
-// fails (REQ-archive-forbidden-entries).
-func TestForbiddenEntryProperty(t *testing.T) {
+// Wherever a link or submodule entry sits under the module root — any
+// depth, with or without regular siblings — the archive carries it and
+// its tree hash binds to the commit (REQ-archive-links-carried,
+// REQ-archive-tree-binding).
+func TestLinksCarriedProperty(t *testing.T) {
 	when := time.Date(2026, 7, 15, 10, 0, 0, 0, time.UTC)
 	rapid.Check(t, func(rt *rapid.T) {
 		f := newFixture(rt)
 		mode := rapid.SampledFrom([]filemode.FileMode{filemode.Symlink, filemode.Submodule}).Draw(rt, "mode")
-		entries := []object.TreeEntry{{Name: "bad", Mode: mode, Hash: f.Blob("x")}}
+		hash := f.Blob("x")
+		if mode == filemode.Submodule {
+			hash = plumbing.NewHash(rapid.StringMatching(`[0-9a-f]{40}`).Draw(rt, "id"))
+		}
+		entries := []object.TreeEntry{{Name: "carried", Mode: mode, Hash: hash}}
 		if rapid.Bool().Draw(rt, "sibling") {
 			entries = append([]object.TreeEntry{
 				{Name: "a.proto", Mode: filemode.Regular, Hash: f.Blob("A\n")},
@@ -384,9 +408,26 @@ func TestForbiddenEntryProperty(t *testing.T) {
 		c := f.CommitTree(tree, "c", when)
 		f.Branch("main", c)
 		f.Head("main")
+		repo := f.open()
 		var buf bytes.Buffer
-		if _, err := f.open().Archive(context.Background(), &buf, c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
-			rt.Fatal("forbidden entry survived: ", err)
+		digest, err := repo.Archive(context.Background(), &buf, c.String(), "")
+		if err != nil {
+			rt.Fatal(err)
+		}
+		data := buf.Bytes()
+		if _, err := archive.VerifyZip(bytes.NewReader(data), int64(len(data)), digest); err != nil {
+			rt.Fatal(err)
+		}
+		computed, err := archive.ZipTreeHash(archive.SHA1, bytes.NewReader(data), int64(len(data)))
+		if err != nil {
+			rt.Fatal(err)
+		}
+		rawCommit, err := repo.rawBody(c)
+		if err != nil {
+			rt.Fatal(err)
+		}
+		if err := archive.VerifyTreeBinding(archive.SHA1, rawCommit, "", nil, computed); err != nil {
+			rt.Fatal("the archive's tree does not bind: ", err)
 		}
 	})
 }
@@ -398,16 +439,21 @@ func TestForbiddenEntryProperty(t *testing.T) {
 // pure mapping is what makes the wiring observable; the limit itself
 // is the archive package's pinned domain).
 func TestFileSetInfos(t *testing.T) {
+	id := bytes.Repeat([]byte{1}, 20)
 	entries := []fileEntry{
 		{path: "a.proto", blob: &object.Blob{Size: 7}},
 		{path: "tool.sh", exec: true, blob: &object.Blob{Size: archive.MaxTotalSize}},
+		{path: "link", kind: archive.KindLink, blob: &object.Blob{Size: 3}},
+		{path: "sub", kind: archive.KindSubmodule, submodule: id},
 	}
 	infos := fileSetInfos(entries)
 	want := []archive.FileInfo{
 		{Path: "a.proto", Size: 7},
 		{Path: "tool.sh", Exec: true, Size: archive.MaxTotalSize},
+		{Path: "link", Kind: archive.KindLink, Size: 3},
+		{Path: "sub", Kind: archive.KindSubmodule, Submodule: id},
 	}
-	if !slices.Equal(infos, want) {
+	if !reflect.DeepEqual(infos, want) {
 		t.Fatalf("fileSetInfos = %+v, want %+v", infos, want)
 	}
 	if err := archive.ValidateFileSet(infos); !errors.Is(err, archive.ErrTooLarge) {
@@ -532,17 +578,17 @@ func TestArtifactFailures(t *testing.T) {
 			t.Fatalf("err = %v, want archive.ErrNestedModule", err)
 		}
 	})
-	t.Run("forbidden entry fails module file lookup too", func(t *testing.T) {
+	t.Run("a link named like the module file is no module file", func(t *testing.T) {
 		f := newFixture(t)
 		root := f.Tree(
-			object.TreeEntry{Name: "bad", Mode: filemode.Symlink, Hash: f.Blob("elsewhere")},
-			object.TreeEntry{Name: "pb.yaml", Mode: filemode.Regular, Hash: f.Blob("module: example.com/m\n")},
+			object.TreeEntry{Name: "a.proto", Mode: filemode.Regular, Hash: f.Blob("A\n")},
+			object.TreeEntry{Name: "pb.yaml", Mode: filemode.Symlink, Hash: f.Blob("../pb.yaml")},
 		)
 		c := f.CommitTree(root, "c", when)
 		f.Branch("main", c)
 		f.Head("main")
-		if _, _, err := f.open().ModuleFileBytes(context.Background(), c.String(), ""); !errors.Is(err, ErrForbiddenEntry) {
-			t.Fatalf("err = %v, want ErrForbiddenEntry", err)
+		if b, ok, err := f.open().ModuleFileBytes(context.Background(), c.String(), ""); err != nil || ok || b != nil {
+			t.Fatalf("a link read as the module file: %q %v %v", b, ok, err)
 		}
 	})
 	t.Run("nonstandard wire mode canonicalizes to regular", func(t *testing.T) {

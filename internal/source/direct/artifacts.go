@@ -28,19 +28,12 @@ import (
 // proxy protocol's; content derivation is the module archive
 // contract's.
 
-// ErrForbiddenEntry is wrapped when a module tree carries a symbolic
-// link or git submodule entry under the module root
-// (REQ-archive-forbidden-entries): the file set cannot represent it,
-// and silently dropping it would produce an archive that digests
-// cleanly yet can never tree-bind to the origin commit.
-var ErrForbiddenEntry = errors.New("forbidden entry under module root")
-
 // ErrNoModuleRoot is wrapped when a commit's tree has no directory at
 // the module's subtree path — an in-spec state consumers classify: a
-// subtree absent at a commit is not a declared module there
-// (REQ-resolve-synthesized-tags reads listings through it), while for
-// artifact construction against a resolved version it is simply a
-// failing walk.
+// subtree absent at head is no synthesized module and keeps its path's
+// tag namespace (REQ-resolve-synthesized-tags reads listings through
+// it), while for artifact construction against a resolved version it
+// is simply a failing walk.
 var ErrNoModuleRoot = errors.New("module root not present in commit tree")
 
 // commitObject looks up the full-hash commit a resolved version bound.
@@ -91,37 +84,36 @@ func (r *Repo) moduleRoot(c *object.Commit, subtree string) (*object.Tree, [][]b
 	}
 }
 
-// fileEntry is one regular file of the module root's tree: its
-// root-relative path, normalized executability, and blob.
+// fileEntry is one entry of the module root's tree: its root-relative
+// path, its kind, a file's normalized executability, and its blob — a
+// link's holding the target path — or, for a submodule entry, the
+// recorded commit id and no blob.
 type fileEntry struct {
-	path string
-	exec bool
-	blob *object.Blob
+	path      string
+	kind      archive.Kind
+	exec      bool
+	blob      *object.Blob
+	submodule []byte
 }
 
 // fileSet walks the module root tree into its file set
 // (REQ-archive-file-set): every regular file, path relative to the
 // root, mode normalized to the exec bit
-// (REQ-archive-mode-normalization). A symbolic link or submodule entry
-// fails the walk (REQ-archive-forbidden-entries). go-git's tree
-// decoder canonicalizes every wire mode onto Dir, Regular, Executable,
-// Symlink, or Submodule — nonstandard regular modes (like git's legacy
-// group-writable one) arrive here as Regular, and the final arm is the
-// submodule arm with no other mode able to reach it.
+// (REQ-archive-mode-normalization); a symbolic link as the blob git
+// stores its target in, never followed; a submodule entry as its
+// recorded commit id, never fetched (REQ-archive-links-carried).
+// go-git's tree decoder canonicalizes every wire mode onto Dir,
+// Regular, Executable, Symlink, or Submodule — nonstandard regular
+// modes (like git's legacy group-writable one) arrive here as Regular,
+// and the final arm is the submodule arm with no other mode able to
+// reach it.
 func (r *Repo) fileSet(tree *object.Tree) ([]fileEntry, error) {
 	var out []fileEntry
 	var walk func(prefix string, t *object.Tree) error
 	walk = func(prefix string, t *object.Tree) error {
 		for _, e := range t.Entries {
 			path := prefix + e.Name
-			switch e.Mode {
-			case filemode.Regular, filemode.Executable:
-				blob, err := object.GetBlob(r.r.Storer, e.Hash)
-				if err != nil {
-					return fmt.Errorf("reading blob %s at %q: %w", e.Hash, path, err)
-				}
-				out = append(out, fileEntry{path: path, exec: e.Mode == filemode.Executable, blob: blob})
-			case filemode.Dir:
+			if e.Mode == filemode.Dir {
 				sub, err := object.GetTree(r.r.Storer, e.Hash)
 				if err != nil {
 					return fmt.Errorf("reading tree %s at %q: %w", e.Hash, path, err)
@@ -129,11 +121,18 @@ func (r *Repo) fileSet(tree *object.Tree) ([]fileEntry, error) {
 				if err := walk(path+"/", sub); err != nil {
 					return err
 				}
-			case filemode.Symlink:
-				return fmt.Errorf("%w: %q is a symbolic link", ErrForbiddenEntry, path)
-			default:
-				return fmt.Errorf("%w: %q is a git submodule", ErrForbiddenEntry, path)
+				continue
 			}
+			kind, exec := entryKind(e.Mode)
+			if kind == archive.KindSubmodule {
+				out = append(out, fileEntry{path: path, kind: kind, submodule: e.Hash.Bytes()})
+				continue
+			}
+			blob, err := object.GetBlob(r.r.Storer, e.Hash)
+			if err != nil {
+				return fmt.Errorf("reading blob %s at %q: %w", e.Hash, path, err)
+			}
+			out = append(out, fileEntry{path: path, kind: kind, exec: exec, blob: blob})
 		}
 		return nil
 	}
@@ -143,13 +142,33 @@ func (r *Repo) fileSet(tree *object.Tree) ([]fileEntry, error) {
 	return out, nil
 }
 
+// entryKind is the file-set kind of a non-directory tree entry's mode,
+// and whether it is executable — the one reading the file-set walk and
+// the module-file question share, so that what the walk carries as a
+// regular file is what declares a module: a regular or executable
+// blob is a file, a symbolic link a link, and anything else a
+// submodule entry (the decoder's canonical modes leave no other).
+func entryKind(mode filemode.FileMode) (archive.Kind, bool) {
+	switch mode {
+	case filemode.Regular, filemode.Executable:
+		return archive.KindFile, mode == filemode.Executable
+	case filemode.Symlink:
+		return archive.KindLink, false
+	}
+	return archive.KindSubmodule, false
+}
+
 // fileSetInfos maps walked entries to the archive contract's file-set
 // description, sizes from blob metadata — available before any content
 // is read.
 func fileSetInfos(entries []fileEntry) []archive.FileInfo {
 	infos := make([]archive.FileInfo, len(entries))
 	for i, e := range entries {
-		infos[i] = archive.FileInfo{Path: e.path, Exec: e.exec, Size: e.blob.Size}
+		info := archive.FileInfo{Path: e.path, Kind: e.kind, Exec: e.exec, Submodule: e.submodule}
+		if e.blob != nil {
+			info.Size = e.blob.Size
+		}
+		infos[i] = info
 	}
 	return infos
 }
@@ -192,11 +211,15 @@ func (r *Repo) Archive(ctx context.Context, w io.Writer, commitHash, subtree str
 	}
 	files := make([]archive.File, 0, len(entries))
 	for _, e := range entries {
+		if e.kind == archive.KindSubmodule {
+			files = append(files, archive.File{Path: e.path, Kind: e.kind, Body: bytes.NewReader(e.submodule)})
+			continue
+		}
 		content, err := blobBytes(e.blob)
 		if err != nil {
 			return "", fmt.Errorf("reading blob at %q: %w", e.path, err)
 		}
-		files = append(files, archive.File{Path: e.path, Exec: e.exec, Body: bytes.NewReader(content)})
+		files = append(files, archive.File{Path: e.path, Kind: e.kind, Exec: e.exec, Body: bytes.NewReader(content)})
 	}
 	return archive.WriteZip(w, files)
 }
@@ -211,9 +234,52 @@ func blobBytes(blob *object.Blob) ([]byte, error) {
 	return io.ReadAll(rd)
 }
 
+// Rooted reports whether the module root at subtree exists at the
+// commit: nil, or ErrNoModuleRoot where the commit's tree has no
+// directory there.
+func (r *Repo) Rooted(ctx context.Context, commitHash, subtree string) error {
+	c, err := r.commitObject(ctx, commitHash)
+	if err != nil {
+		return err
+	}
+	_, _, err = r.moduleRoot(c, subtree)
+	return err
+}
+
+// Declared reports whether the module root at subtree holds a module
+// file at the commit — a regular file named so; a link named like one
+// is no module file (REQ-archive-links-carried) — the one input of the
+// tag-namespace decision (REQ-resolve-synthesized-tags), answered from
+// the root's own tree entry: the file set and its discipline are the
+// artifacts' concern, not the namespace's. ErrNoModuleRoot when the
+// subtree is absent at the commit.
+func (r *Repo) Declared(ctx context.Context, commitHash, subtree string) (bool, error) {
+	c, err := r.commitObject(ctx, commitHash)
+	if err != nil {
+		return false, err
+	}
+	root, _, err := r.moduleRoot(c, subtree)
+	if err != nil {
+		return false, err
+	}
+	e, err := root.FindEntry(module.ModuleFileName)
+	switch {
+	case errors.Is(err, object.ErrEntryNotFound):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("reading module root of %s: %w", c.Hash, err)
+	}
+	if e.Mode == filemode.Dir {
+		return false, nil
+	}
+	kind, _ := entryKind(e.Mode)
+	return kind == archive.KindFile, nil
+}
+
 // ModuleFileBytes returns the module file's bytes exactly as in the
 // module's file set, ok=false when the module is synthesized — the
-// root carries no module file, and a proxy answers not-here for its
+// root carries no module file, a link named like one being no file
+// (REQ-archive-links-carried), and a proxy answers not-here for its
 // .mod (REQ-proxy-not-found). The shared moduleFileSet walk enforces
 // the whole archive discipline, so a tree Archive rejects is never
 // partially served.
@@ -223,7 +289,7 @@ func (r *Repo) ModuleFileBytes(ctx context.Context, commitHash, subtree string) 
 		return nil, false, err
 	}
 	for _, e := range entries {
-		if e.path != module.ModuleFileName {
+		if e.path != module.ModuleFileName || e.kind != archive.KindFile {
 			continue
 		}
 		data, err := blobBytes(e.blob)

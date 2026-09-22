@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -307,6 +308,20 @@ func TestSizeLimit(t *testing.T) {
 	if _, err := Manifest([]FileInfo{{Path: "a", Size: -1}}); !errors.Is(err, ErrPathInvalid) {
 		t.Fatalf("negative size: err = %v, want ErrPathInvalid", err)
 	}
+	// A link's target counts as its content; a submodule entry carries
+	// none (REQ-archive-size-limit).
+	linked := []FileInfo{
+		{Path: "a", Size: MaxTotalSize - 1},
+		{Path: "l", Kind: KindLink, Size: 1},
+		{Path: "s", Kind: KindSubmodule, Submodule: bytes.Repeat([]byte{1}, 20)},
+	}
+	if _, err := Manifest(linked); err != nil {
+		t.Fatalf("a link at the limit: %v", err)
+	}
+	linked[1].Size = 2
+	if _, err := Manifest(linked); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("a link's target over the limit: err = %v, want ErrTooLarge", err)
+	}
 	// The limit is cumulative across the whole set, not per file or per
 	// adjacent pair.
 	cumulative := []FileInfo{
@@ -329,11 +344,42 @@ func TestSizeLimit(t *testing.T) {
 }
 
 func TestModeStrings(t *testing.T) {
-	if got := (FileInfo{Exec: false}).Mode(); got != "100644" {
-		t.Fatalf("plain mode = %q", got)
+	for _, c := range []struct {
+		info FileInfo
+		want string
+	}{
+		{FileInfo{Exec: false}, "100644"}, {FileInfo{Exec: true}, "100755"},
+		{FileInfo{Kind: KindLink}, "120000"}, {FileInfo{Kind: KindLink, Exec: true}, "120000"},
+		{FileInfo{Kind: KindSubmodule}, "160000"},
+	} {
+		if got := c.info.Mode(); got != c.want {
+			t.Errorf("%+v: mode %q, want %q", c.info, got, c.want)
+		}
 	}
-	if got := (FileInfo{Exec: true}).Mode(); got != "100755" {
-		t.Fatalf("exec mode = %q", got)
+}
+
+// An entry's kind is validated with the file set: a submodule entry
+// carries an id of one of git's two formats and no content, a file or
+// link no id, and a link below the root named like the module file is
+// no nested module (REQ-archive-links-carried).
+func TestEntryKinds(t *testing.T) {
+	id20, id32 := make([]byte, 20), make([]byte, 32)
+	for name, c := range map[string]struct {
+		files []FileInfo
+		err   error
+	}{
+		"submodule sha1":    {[]FileInfo{{Path: "s", Kind: KindSubmodule, Submodule: id20}}, nil},
+		"submodule sha256":  {[]FileInfo{{Path: "s", Kind: KindSubmodule, Submodule: id32}}, nil},
+		"submodule short":   {[]FileInfo{{Path: "s", Kind: KindSubmodule, Submodule: id20[:7]}}, ErrEntryInvalid},
+		"submodule sized":   {[]FileInfo{{Path: "s", Kind: KindSubmodule, Submodule: id20, Size: 1}}, ErrEntryInvalid},
+		"file with id":      {[]FileInfo{{Path: "f", Submodule: id20}}, ErrEntryInvalid},
+		"unknown kind":      {[]FileInfo{{Path: "f", Kind: 9}}, ErrEntryInvalid},
+		"link named module": {[]FileInfo{file("pb.yaml", false, "module: m\n"), {Path: "sub/pb.yaml", Kind: KindLink, Size: 10, SHA256: sha256.Sum256([]byte("../pb.yaml"))}}, nil},
+		"nested module":     {[]FileInfo{file("sub/pb.yaml", false, "module: m\n")}, ErrNestedModule},
+	} {
+		if err := ValidateFileSet(c.files); !errors.Is(err, c.err) {
+			t.Errorf("%s: %v, want %v", name, err, c.err)
+		}
 	}
 }
 

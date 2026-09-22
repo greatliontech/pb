@@ -30,10 +30,12 @@ module root. Its schema is outside this document's scope.
 contains no module file: its file set and include root are the subtree's,
 and it declares no dependencies.
 
-**file set** (term): The complete set of regular files under a module root
-at a given commit, each carrying a path relative to the module root, a
-file mode, and content bytes. Directories are represented only implicitly
-through paths; empty directories do not exist.
+**file set** (term): The complete set of entries under a module root at
+a given commit, each carrying a path relative to the module root and a
+mode: regular files, with content bytes; symbolic links, with the target
+path git stores as the link's content; submodule entries, with the
+commit id git records and no content. Directories are represented only
+implicitly through paths; empty directories do not exist.
 
 **canonical manifest** (term): The canonical textual listing of a file set
 from which the module digest is computed.
@@ -45,16 +47,21 @@ version: the SHA-256 hash of its canonical manifest, rendered as
 ## File set
 
 **REQ-archive-file-set** (structural): The file set of a module version
-MUST contain every regular file under the module root at the referenced
-commit — all files, not a filtered subset — and nothing else.
+MUST contain every entry under the module root at the referenced commit
+— every regular file, symbolic link and submodule entry, not a filtered
+subset — and nothing else.
 
-**REQ-archive-forbidden-entries** (invariant): A module tree containing a
-symbolic link or a git submodule entry under the module root is invalid:
-archive creation and archive verification MUST both fail on it.
-Verification's failure point is tree binding: a file set cannot carry
-the entry, so an archive that launders one away recomputes a different
-tree hash than the origin commit's — digest verification alone never
-sees the entry.
+**REQ-archive-links-carried** (invariant): A symbolic link and a
+submodule entry under the module root MUST be carried as git stores
+them and never followed nor fetched: a link as its target path for
+content, mode `120000`, no consumer reading the target as a path — a
+file reachable only through a link is no file of the module, a link
+named like the module file no module file; a submodule entry as the
+commit id git records for it, mode `160000`. Neither is materialized
+onto a filesystem (REQ-archive-no-exec-materialization); both exist in
+the file set for digest and git-tree fidelity, so that the tree hash
+of a module root holding either recomputes exactly
+(REQ-archive-tree-binding).
 
 **REQ-archive-nested-module** (invariant): A module tree containing a
 module file at any path strictly below the module root is invalid: archive
@@ -85,67 +92,85 @@ such directories on a case-insensitive filesystem, but no file entry is
 lost — within-directory basenames are fold-distinct by the rule above —
 and digest verification reads archive members, never the filesystem.
 
-**REQ-archive-mode-normalization** (wire): Each file's mode MUST be exactly
-`100755` when the file is executable and `100644` otherwise; no other mode
-exists in a file set.
+**REQ-archive-mode-normalization** (wire): Each entry's mode MUST be
+exactly `100755` when the entry is an executable file, `100644` for any
+other regular file, `120000` for a symbolic link and `160000` for a
+submodule entry; no other mode exists in a file set.
 
 **REQ-archive-size-limit** (behavior): A file set whose total content size
-exceeds 500 MiB MUST be rejected at creation and at verification.
+— a link's target counted as its content, a submodule entry carrying
+none — exceeds 500 MiB MUST be rejected at creation and at verification.
 
 ## Manifest and digest
 
 **REQ-archive-manifest** (wire): The canonical manifest of a file set MUST
 be exactly: the header line `pb-module-manifest/v1`, followed by one line
-per file in ascending raw-byte order of path, each line being
-`<mode> <sha256> <path>` — the file's mode, the lowercase hex SHA-256 of
-its content bytes, and its path, separated by single spaces — with every
-line terminated by a single `\n` and no other bytes present.
+per entry in ascending raw-byte order of path, each line being
+`<mode> <hash> <path>` — the entry's mode, its hash, and its path,
+separated by single spaces — with every line terminated by a single
+`\n` and no other bytes present. An entry's hash is the lowercase hex
+SHA-256 of its content bytes, a link's target being its content; a
+submodule entry's is the recorded commit id in lowercase hex.
 
 **REQ-archive-digest** (wire): The module digest MUST be the SHA-256 hash
 of the canonical manifest bytes, rendered as `pb1:` followed by 64
 lowercase hex digits.
 
 **REQ-archive-digest-purity** (invariant): The module digest MUST be a pure
-function of the file set — paths, modes, and content bytes. Two archives
-carrying the same file set have the same digest regardless of producer,
-archive encoding, compression, or transport.
+function of the file set — paths, modes, content bytes and recorded
+commit ids. Two archives carrying the same file set have the same digest
+regardless of producer, archive encoding, compression, or transport.
 
 ## Wire container
 
 **REQ-archive-zip** (wire): The wire form of a module version MUST be a ZIP
 archive whose member names are exactly the file set's paths — verification
 rejects an archive with a member outside the file set, a missing member, a
-duplicate member name, encryption, or a member using a compression method
-other than store or deflate, and ignores directory entries.
+duplicate member name, encryption, a member whose recorded type is none
+a file set holds, or a member using a compression method other than
+store or deflate, and ignores directory entries.
 
 **REQ-archive-zip-mode** (wire): Producers MUST record each member's mode
-in the ZIP Unix external attributes.
+in the ZIP Unix external attributes, the member's "version made by"
+field naming the Unix host — the attributes are Unix ones under no other
+host: a regular file's `100644` or `100755`; a link's `120000`, the
+member's bytes being the target path; a submodule entry's `160000`, the
+member's bytes being the recorded commit id.
 
 **REQ-archive-no-exec-materialization** (invariant): Tooling materializing
-archive contents onto a filesystem (cache extraction, export) MUST NOT
-mark any written file executable — the execute mode exists in the manifest
-solely for digest and git-tree fidelity, and module content is never
-executed; nothing in the toolchain runs a file that arrived in a module
-archive.
+archive contents onto a filesystem (cache extraction, export) MUST
+write neither an executable file, nor a symbolic link, nor a submodule
+entry — the execute mode, a link's target and a submodule's id exist
+in the manifest solely for digest and git-tree fidelity, module
+content is never executed, and a link may point anywhere; nothing in
+the toolchain runs a file that arrived in a module archive, and
+nothing follows a link one carries.
 
 **REQ-archive-zip-verification** (invariant): A consumer MUST accept a ZIP
 only after recomputing the canonical manifest from the extracted members —
-deriving each file's mode by normalizing the member's recorded attributes
-(any execute bit set means `100755`, otherwise `100644`) — and matching
-the manifest's digest against the expected module digest; the ZIP's own
-byte encoding carries no authority.
+deriving each member's mode by normalizing the member's recorded
+attributes (a member made by any host but Unix records no mode and is a
+regular file, `100644`; under the Unix host a link's type means
+`120000`, a submodule entry's `160000`, otherwise any execute bit set
+means `100755` and else `100644`), a submodule member's bytes read as
+the recorded id — and matching the manifest's digest against the
+expected module digest; the ZIP's own byte encoding carries no
+authority.
 
 ## Git tree binding
 
 **REQ-archive-tree-recompute** (behavior): For a git object format (SHA-1
 or SHA-256), the git tree hash of a file set MUST be recomputable from the
-canonical manifest's inputs alone, as follows: each file's blob hash is the
-object-format hash of `blob <decimal content length>\0` followed by the
-content bytes; each directory's tree object lists its immediate entries
-sorted by name, where a directory entry sorts as its name with `/`
-appended, each entry encoded as the ASCII octal mode without leading
-zeros (`100644`, `100755`, or `40000` for subdirectories), a space, the
-entry name, a NUL byte, and the raw hash of the entry's object; the
+canonical manifest's inputs alone, as follows: each file's or link's blob
+hash is the object-format hash of `blob <decimal content length>\0`
+followed by the content bytes, a link's target being its content; a
+submodule entry's hash is the recorded commit id itself, so a file set
+holding one recomputes in the format the id's length names and in no
+other; each directory's tree object lists its immediate entries sorted by
+name, where a directory entry sorts as its name with `/` appended, each
+entry encoded as the ASCII octal mode without leading zeros (`100644`,
+`100755`, `120000`, `160000`, or `40000` for subdirectories), a space,
+the entry name, a NUL byte, and the raw hash of the entry's object; the
 directory's tree hash is the object-format hash of
 `tree <decimal encoded length>\0` followed by the encoded entries.
 

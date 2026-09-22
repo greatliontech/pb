@@ -35,7 +35,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       into a bare repository kept in the module cache and reused, no
       default depth; googleapis, grpc-gateway and grpc verified and
       restored to the table
-- [ ] 9. Links carried: a module's file set records a symbolic link as
+- [x] 9. Links carried: a module's file set records a symbolic link as
       git's entry of mode 120000 over the target path and a submodule
       as mode 160000 over its recorded commit id, the tree hash
       recomputing exactly in the origin's object format, none ever

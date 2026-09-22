@@ -91,27 +91,31 @@ func BlobHash(f ObjectFormat, size int64, r io.Reader) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// TreeEntry is one file of a module tree: its path relative to the module
-// root, its executability, and its git blob hash in the tree's object
-// format.
+// TreeEntry is one entry of a module tree: its path relative to the
+// module root, its kind and a file's executability, and its hash in the
+// tree's object format — a file's or link's blob hash, a submodule's
+// recorded commit id.
 type TreeEntry struct {
 	Path string
+	Kind Kind
 	Exec bool
-	Blob []byte
+	Hash []byte
 }
 
-// TreeHash computes the git tree hash of the module root from its file
+// TreeHash computes the git tree hash of the module root from its
 // entries (REQ-archive-tree-recompute). Paths are assumed to satisfy the
 // file-set rules (validated relative paths, no collisions); the empty set
-// hashes to git's empty tree.
+// hashes to git's empty tree. Every hash must be the format's size: a
+// submodule's recorded id is copied, so a file set holding one
+// recomputes in the recorded format alone.
 func TreeHash(f ObjectFormat, entries []TreeEntry) ([]byte, error) {
 	hashSize, err := f.Size()
 	if err != nil {
 		return nil, err
 	}
 	for _, e := range entries {
-		if len(e.Blob) != hashSize {
-			return nil, fmt.Errorf("%w: blob hash for %q is %d bytes, want %d", ErrObjectInvalid, e.Path, len(e.Blob), hashSize)
+		if len(e.Hash) != hashSize {
+			return nil, fmt.Errorf("%w: hash for %q is %d bytes, want %d", ErrObjectInvalid, e.Path, len(e.Hash), hashSize)
 		}
 	}
 	return dirHash(f, entries)
@@ -132,14 +136,10 @@ func dirHash(f ObjectFormat, entries []TreeEntry) ([]byte, error) {
 	for _, e := range entries {
 		name, rest, nested := strings.Cut(e.Path, "/")
 		if nested {
-			subdirs[name] = append(subdirs[name], TreeEntry{Path: rest, Exec: e.Exec, Blob: e.Blob})
+			subdirs[name] = append(subdirs[name], TreeEntry{Path: rest, Kind: e.Kind, Exec: e.Exec, Hash: e.Hash})
 			continue
 		}
-		mode := "100644"
-		if e.Exec {
-			mode = "100755"
-		}
-		items = append(items, item{name: name, sortKey: name, mode: mode, hash: e.Blob})
+		items = append(items, item{name: name, sortKey: name, mode: modeString(e.Kind, e.Exec), hash: e.Hash})
 	}
 	for name, sub := range subdirs {
 		h, err := dirHash(f, sub)

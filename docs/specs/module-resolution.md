@@ -70,12 +70,16 @@ redirect.
 **REQ-resolve-release-tags** (wire): A tagged release of a module rooted
 at the repository root MUST correspond to a git tag named exactly the
 version; a declared module rooted at a subtree uses tags prefixed with
-the subtree path (`<subtree>/vX.Y.Z`).
+the subtree path (`<subtree>/vX.Y.Z`). Whether a subtree module is
+declared is judged at the origin's default-branch head, the only state
+the origin answers for; a subtree absent there is no synthesized module
+and keeps its subtree-prefixed namespace.
 
 **REQ-resolve-synthesized-tags** (behavior): A synthesized module MUST
-take its tagged releases from repository-level tags, falling back to the
-pseudo-version of the origin's default-branch head commit when no such
-tag exists.
+take its tagged releases from repository-level tags. A module of either
+kind holding no release tag in its namespace has the pseudo-version of
+the origin's default-branch head commit as its latest; a subtree absent
+at head has none, head being no version of it.
 
 **REQ-resolve-pseudo-commit** (invariant): A pseudo-version MUST resolve
 only to the commit whose hash and commit time it embeds; a pseudo-version

@@ -39,11 +39,25 @@ var (
 	ErrPathCollision = errors.New("path collision")
 	ErrTooLarge      = errors.New("file set exceeds size limit")
 	ErrNestedModule  = errors.New("module file below the module root")
+	ErrEntryInvalid  = errors.New("invalid file set entry")
 )
 
-// FileInfo describes one file of a module file set: its path relative to the
-// module root, whether it is executable, its content size, and the SHA-256 of
-// its content bytes.
+// Kind is what a file set entry is: a regular file, a symbolic link
+// carried as its target path, or a submodule entry carried as its
+// recorded commit id (REQ-archive-links-carried).
+type Kind uint8
+
+const (
+	KindFile Kind = iota
+	KindLink
+	KindSubmodule
+)
+
+// FileInfo describes one entry of a module file set: its path relative
+// to the module root, its kind, whether a file is executable, its
+// content size, and the SHA-256 of its content bytes — a link's target
+// path being its content — or, for a submodule entry, the recorded
+// commit id, which carries no content.
 //
 // Size and SHA256 are caller-declared: Manifest enforces the size limit
 // against declared sizes and never sees content bytes, so the caller must set
@@ -51,25 +65,48 @@ var (
 // Verification paths derive both from actual content, never from a
 // container's headers.
 type FileInfo struct {
-	Path   string
-	Exec   bool
-	Size   int64
-	SHA256 [32]byte
+	Path      string
+	Kind      Kind
+	Exec      bool
+	Size      int64
+	SHA256    [32]byte
+	Submodule []byte // the recorded commit id, for KindSubmodule
 }
 
-// Mode returns the file's canonical git mode string
+// Mode returns the entry's canonical git mode string
 // (REQ-archive-mode-normalization).
-func (f FileInfo) Mode() string {
-	if f.Exec {
+func (f FileInfo) Mode() string { return modeString(f.Kind, f.Exec) }
+
+// modeString is the canonical git mode of an entry of the kind, the
+// execute bit read for a regular file alone
+// (REQ-archive-mode-normalization).
+func modeString(kind Kind, exec bool) string {
+	switch kind {
+	case KindLink:
+		return "120000"
+	case KindSubmodule:
+		return "160000"
+	}
+	if exec {
 		return "100755"
 	}
 	return "100644"
 }
 
+// hashHex is the manifest's hash column: the content's SHA-256, or a
+// submodule's recorded id.
+func (f FileInfo) hashHex() string {
+	if f.Kind == KindSubmodule {
+		return hex.EncodeToString(f.Submodule)
+	}
+	return hex.EncodeToString(f.SHA256[:])
+}
+
 // Manifest validates the file set and renders its canonical manifest
-// (REQ-archive-manifest): the header line, then one "<mode> <sha256> <path>"
-// line per file in ascending raw-byte path order, each line LF-terminated.
-// The input slice is not modified.
+// (REQ-archive-manifest): the header line, then one "<mode> <hash> <path>"
+// line per entry in ascending raw-byte path order — the hash a file's
+// or link's content SHA-256, a submodule's recorded id — each line
+// LF-terminated. The input slice is not modified.
 func Manifest(files []FileInfo) ([]byte, error) {
 	if err := ValidateFileSet(files); err != nil {
 		return nil, err
@@ -84,7 +121,7 @@ func Manifest(files []FileInfo) ([]byte, error) {
 	for _, f := range sorted {
 		b.WriteString(f.Mode())
 		b.WriteByte(' ')
-		b.WriteString(hex.EncodeToString(f.SHA256[:]))
+		b.WriteString(f.hashHex())
 		b.WriteByte(' ')
 		b.WriteString(f.Path)
 		b.WriteByte('\n')
@@ -124,8 +161,22 @@ func ValidateFileSet(files []FileInfo) error {
 		// through here, so the nested-module invariant has one home
 		// (REQ-archive-nested-module). The root's own module file is
 		// the declared-module case, not nesting.
-		if strings.HasSuffix(f.Path, "/"+module.ModuleFileName) {
+		if f.Kind == KindFile && strings.HasSuffix(f.Path, "/"+module.ModuleFileName) {
 			return fmt.Errorf("%w: %q (repositories host modules as disjoint subtrees, never nested)", ErrNestedModule, f.Path)
+		}
+		switch f.Kind {
+		case KindFile, KindLink:
+			if f.Submodule != nil {
+				return fmt.Errorf("%w: %q carries a submodule id", ErrEntryInvalid, f.Path)
+			}
+		case KindSubmodule:
+			// A submodule entry carries the recorded id alone: no content,
+			// the id one of git's two object formats.
+			if f.Size != 0 || (len(f.Submodule) != 20 && len(f.Submodule) != 32) {
+				return fmt.Errorf("%w: submodule %q records an id of %d bytes", ErrEntryInvalid, f.Path, len(f.Submodule))
+			}
+		default:
+			return fmt.Errorf("%w: %q has kind %d", ErrEntryInvalid, f.Path, f.Kind)
 		}
 		fold := caseFold(f.Path)
 		if prev, clash := byFold[fold]; clash {

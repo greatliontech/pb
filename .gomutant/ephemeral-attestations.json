@@ -62,6 +62,18 @@
       "dirty": true
     },
     {
+      "editDigest": "cad2a0458d58028b000f5f50f8e29f2a5a88205ce242afeed0084b0c2cb5e43e",
+      "rawEditDigest": "cad2a0458d58028b000f5f50f8e29f2a5a88205ce242afeed0084b0c2cb5e43e",
+      "files": [
+        "internal/source/direct/artifacts.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/source/fetch",
+      "run": "TestLinkedModuleFileSynthesizes|TestExecutableModuleFileDeclares|TestSynthesizedSubtreeRelease",
+      "reason": "Equivalent by construction: entryKind hands every non-file, non-link mode — a directory's included — to its submodule arm, so kind == KindFile is already false for a directory entry named like the module file; the guard states the intent (a directory is no module file) rather than adding a decision, and no test can distinguish the two.",
+      "commit": "4bae92a4d171b77fd52fb40005b3df4bd8754f61",
+      "dirty": true
+    },
+    {
       "editDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "rawEditDigest": "dd6f7eecca3c80aaa5e2c1d627631edc3733e71bf2eea072ca4781fe4a94f979",
       "files": [

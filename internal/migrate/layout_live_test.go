@@ -25,11 +25,17 @@ import (
 // import path: the module's files must sit at the paths buf's users
 // import them by.
 var anchors = map[string]string{
-	"buf.build/googleapis/googleapis":       "google/api/annotations.proto",
-	"buf.build/grpc-ecosystem/grpc-gateway": "protoc-gen-openapiv2/options/annotations.proto",
-	"buf.build/grpc/grpc":                   "grpc/health/v1/health.proto",
-	"buf.build/opentelemetry/opentelemetry": "opentelemetry/proto/common/v1/common.proto",
-	"buf.build/prometheus/client-model":     "io/prometheus/client/metrics.proto",
+	"buf.build/bufbuild/protovalidate":         "buf/validate/validate.proto",
+	"buf.build/cncf/xds":                       "xds/core/v3/context_params.proto",
+	"buf.build/envoyproxy/envoy":               "envoy/config/core/v3/base.proto",
+	"buf.build/envoyproxy/protoc-gen-validate": "validate/validate.proto",
+	"buf.build/google/cel-spec":                "cel/expr/checked.proto",
+	"buf.build/opencensus/opencensus":          "opencensus/proto/trace/v1/trace.proto",
+	"buf.build/googleapis/googleapis":          "google/api/annotations.proto",
+	"buf.build/grpc-ecosystem/grpc-gateway":    "protoc-gen-openapiv2/options/annotations.proto",
+	"buf.build/grpc/grpc":                      "grpc/health/v1/health.proto",
+	"buf.build/opentelemetry/opentelemetry":    "opentelemetry/proto/common/v1/common.proto",
+	"buf.build/prometheus/client-model":        "io/prometheus/client/metrics.proto",
 }
 
 // TestDependencyLayouts verifies each dependency table entry's layout

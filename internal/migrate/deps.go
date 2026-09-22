@@ -24,11 +24,17 @@ type Entry struct {
 // name to its entry, each entry's layout verified at entry by
 // TestDependencyLayouts against the origins.
 var Dependencies = map[string]Entry{
-	"buf.build/googleapis/googleapis":       {Path: "github.com/googleapis/googleapis"},
-	"buf.build/grpc-ecosystem/grpc-gateway": {Path: "github.com/grpc-ecosystem/grpc-gateway", Deps: []string{"buf.build/googleapis/googleapis"}},
-	"buf.build/grpc/grpc":                   {Path: "github.com/grpc/grpc-proto", Deps: []string{"buf.build/googleapis/googleapis"}},
-	"buf.build/opentelemetry/opentelemetry": {Path: "github.com/open-telemetry/opentelemetry-proto"},
-	"buf.build/prometheus/client-model":     {Path: "github.com/prometheus/client_model"},
+	"buf.build/bufbuild/protovalidate":         {Path: "github.com/bufbuild/protovalidate/proto/protovalidate"},
+	"buf.build/cncf/xds":                       {Path: "github.com/cncf/xds", Deps: []string{"buf.build/envoyproxy/protoc-gen-validate", "buf.build/google/cel-spec", "buf.build/googleapis/googleapis"}},
+	"buf.build/envoyproxy/envoy":               {Path: "github.com/envoyproxy/envoy/api", Deps: []string{"buf.build/cncf/xds", "buf.build/envoyproxy/protoc-gen-validate", "buf.build/googleapis/googleapis", "buf.build/opencensus/opencensus", "buf.build/opentelemetry/opentelemetry", "buf.build/prometheus/client-model"}},
+	"buf.build/envoyproxy/protoc-gen-validate": {Path: "github.com/bufbuild/protoc-gen-validate"},
+	"buf.build/google/cel-spec":                {Path: "github.com/google/cel-spec/proto", Deps: []string{"buf.build/googleapis/googleapis"}},
+	"buf.build/googleapis/googleapis":          {Path: "github.com/googleapis/googleapis"},
+	"buf.build/grpc-ecosystem/grpc-gateway":    {Path: "github.com/grpc-ecosystem/grpc-gateway", Deps: []string{"buf.build/googleapis/googleapis"}},
+	"buf.build/grpc/grpc":                      {Path: "github.com/grpc/grpc-proto", Deps: []string{"buf.build/googleapis/googleapis"}},
+	"buf.build/opencensus/opencensus":          {Path: "github.com/census-instrumentation/opencensus-proto/src"},
+	"buf.build/opentelemetry/opentelemetry":    {Path: "github.com/open-telemetry/opentelemetry-proto"},
+	"buf.build/prometheus/client-model":        {Path: "github.com/prometheus/client_model"},
 }
 
 // Dep is a dependency replacement's target: the module path and, where

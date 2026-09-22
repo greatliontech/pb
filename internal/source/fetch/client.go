@@ -162,7 +162,27 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 	if err != nil {
 		return nil, err
 	}
-	commit, err := repo.ResolveVersion(ctx, v, o.Subtree)
+	// The version resolves in the namespace the listing names — a
+	// release through its tag there, a pseudo-version's base over the
+	// release tags there (REQ-resolve-pseudo-base).
+	at, err := c.atHead(ctx, repo, o)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := repo.ResolveVersion(ctx, v, at.namespace)
+	if err == nil && v.IsPseudo() {
+		// A pseudo-version names a commit on the consumer's own say,
+		// no claim of the origin's: where the module root is absent at
+		// that commit the origin has no artifact of any kind for it —
+		// not-here for info and archive alike, so the two never
+		// disagree — whereas a release tag over a commit lacking the
+		// root is the origin's claim and aborts below as any failing
+		// walk does.
+		err = repo.Rooted(ctx, commit.Hash, o.Subtree)
+		if errors.Is(err, direct.ErrNoModuleRoot) {
+			return nil, fmt.Errorf("%w: origin %s: %v", proxy.ErrNotHere, o.Repo, err)
+		}
+	}
 	switch {
 	case errors.Is(err, direct.ErrUnknownVersion), errors.Is(err, direct.ErrCommitAbsent):
 		// The origin does not have this version — the direct analog of a
@@ -197,7 +217,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		}
 		return buf.Bytes(), nil
 	case KindProv:
-		b, ok, err := repo.VerificationPack(ctx, v, o.Subtree)
+		b, ok, err := repo.VerificationPack(ctx, v, at.namespace)
 		if err != nil {
 			return nil, err
 		}

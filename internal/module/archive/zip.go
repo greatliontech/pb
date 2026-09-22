@@ -17,20 +17,68 @@ import (
 
 // ErrZipInvalid is wrapped by every wire-container rejection that is not a
 // digest mismatch: duplicate members, encryption, unsupported compression
-// methods, non-regular members, or unreadable member content.
+// methods, members of a kind no file set holds, or unreadable member
+// content.
 var ErrZipInvalid = errors.New("invalid module zip")
 
 // ErrDigestMismatch is wrapped when a zip's recomputed manifest digest does
 // not match the expected module digest (REQ-archive-zip-verification).
 var ErrDigestMismatch = errors.New("module digest mismatch")
 
-// File pairs a file's metadata with its content for producing the wire
-// container. Size and SHA256 in FileInfo are ignored by WriteZip — they are
-// derived from Body — so a producer cannot declare what it does not write.
+// File pairs an entry's metadata with its bytes for producing the wire
+// container: a file's content, a link's target path, a submodule's
+// recorded id — one Body for every kind, so an entry cannot carry two
+// contents. Sizes and hashes are derived from what is written, so a
+// producer cannot declare what it does not write.
 type File struct {
 	Path string
+	Kind Kind
 	Exec bool
 	Body io.Reader
+}
+
+// The Unix file type bits a member's kind rides in the external
+// attributes (REQ-archive-zip-mode): a link as git stores one, a
+// submodule as git's gitlink mode, which no filesystem type bears. The
+// attributes are Unix ones only under a "version made by" naming the
+// Unix host (APPNOTE 4.4.2.2): archive/zip's SetMode records it, the
+// submodule arm records it itself, and a reader takes no mode from a
+// member any other host made.
+const (
+	unixTypeMask      = 0o170000
+	unixTypeRegular   = 0o100000
+	unixTypeLink      = 0o120000
+	unixTypeSubmodule = 0o160000
+	creatorUnix       = 3
+)
+
+// memberMode is what a member's recorded attributes say of it: its kind
+// and, for a regular file, whether it is executable.
+type memberMode struct {
+	kind Kind
+	exec bool
+}
+
+// readMode derives a member's mode from its recorded attributes, the
+// one reading every consumer shares (REQ-archive-zip-verification): a
+// member no Unix host made records no mode and is a regular file; under
+// a Unix host, a regular file where the type bits are unset or regular,
+// executable when any execute bit is set, a link, a submodule, and no
+// other type.
+func readMode(m *zip.File) (memberMode, error) {
+	if m.CreatorVersion>>8 != creatorUnix {
+		return memberMode{kind: KindFile}, nil
+	}
+	mode := m.ExternalAttrs >> 16
+	switch mode & unixTypeMask {
+	case 0, unixTypeRegular:
+		return memberMode{kind: KindFile, exec: mode&0o111 != 0}, nil
+	case unixTypeLink:
+		return memberMode{kind: KindLink}, nil
+	case unixTypeSubmodule:
+		return memberMode{kind: KindSubmodule}, nil
+	}
+	return memberMode{}, fmt.Errorf("%w: member %q is neither a regular file, a symbolic link nor a submodule entry", ErrZipInvalid, m.Name)
 }
 
 // zipEpoch is the fixed member timestamp: member times are not part of the
@@ -39,12 +87,14 @@ type File struct {
 var zipEpoch = time.Date(1980, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // WriteZip writes the file set as a module zip (REQ-archive-zip): member
-// names are exactly the file paths, modes ride the Unix external attributes
-// (REQ-archive-zip-mode), members are deflate-compressed, entries are
-// written in ascending path order with a fixed timestamp. The file set is
-// validated (paths, collisions, size limit) and the module digest of the
-// written set is returned. On error, bytes already streamed to w are
-// garbage: the caller discards them.
+// names are exactly the file set's paths, modes ride the Unix external
+// attributes (REQ-archive-zip-mode) — a link's 120000 with its target as
+// the member's bytes, a submodule's 160000 with the recorded id as its
+// bytes — members are deflate-compressed, entries are written in
+// ascending path order with a fixed timestamp. The file set is validated
+// (paths, collisions, size limit) and the module digest of the written
+// set is returned. On error, bytes already streamed to w are garbage: the
+// caller discards them.
 func WriteZip(w io.Writer, files []File) (string, error) {
 	sorted := make([]File, len(files))
 	copy(sorted, files)
@@ -53,27 +103,53 @@ func WriteZip(w io.Writer, files []File) (string, error) {
 	zw := zip.NewWriter(w)
 	infos := make([]FileInfo, 0, len(sorted))
 	for _, f := range sorted {
-		mode := fs.FileMode(0o644)
-		if f.Exec {
-			mode = 0o755
-		}
 		hdr := &zip.FileHeader{
 			Name:     f.Path,
 			Method:   zip.Deflate,
 			Modified: zipEpoch,
 		}
-		hdr.SetMode(mode)
+		body := f.Body
+		info := FileInfo{Path: f.Path, Kind: f.Kind, Exec: f.Exec}
+		switch f.Kind {
+		case KindFile:
+			mode := fs.FileMode(0o644)
+			if f.Exec {
+				mode = 0o755
+			}
+			hdr.SetMode(mode)
+		case KindLink:
+			hdr.SetMode(fs.ModeSymlink | 0o777)
+		case KindSubmodule:
+			// The body is the recorded id, one of git's two object
+			// formats, and the member's bytes; the type bits alone ride
+			// the attributes, under the Unix host that makes them Unix
+			// attributes (SetMode knows no gitlink).
+			id, err := io.ReadAll(io.LimitReader(body, 33))
+			if err != nil {
+				return "", fmt.Errorf("reading submodule id of %q: %w", f.Path, err)
+			}
+			if len(id) != 20 && len(id) != 32 {
+				return "", fmt.Errorf("%w: submodule %q records an id of %d bytes", ErrEntryInvalid, f.Path, len(id))
+			}
+			hdr.ExternalAttrs = unixTypeSubmodule << 16
+			hdr.CreatorVersion = creatorUnix << 8
+			body, info.Submodule = bytes.NewReader(id), id
+		default:
+			return "", fmt.Errorf("%w: %q has kind %d", ErrEntryInvalid, f.Path, f.Kind)
+		}
 		mw, err := zw.CreateHeader(hdr)
 		if err != nil {
 			return "", fmt.Errorf("writing zip member %q: %w", f.Path, err)
 		}
 		h := sha256.New()
-		n, err := io.Copy(io.MultiWriter(mw, h), f.Body)
+		n, err := io.Copy(io.MultiWriter(mw, h), body)
 		if err != nil {
 			return "", fmt.Errorf("writing zip member %q: %w", f.Path, err)
 		}
-		info := FileInfo{Path: f.Path, Exec: f.Exec, Size: n}
-		copy(info.SHA256[:], h.Sum(nil))
+		if f.Kind != KindSubmodule {
+			info.Size = n
+			copy(info.SHA256[:], h.Sum(nil))
+		}
 		infos = append(infos, info)
 	}
 	m, err := Manifest(infos)
@@ -88,12 +164,13 @@ func WriteZip(w io.Writer, files []File) (string, error) {
 
 // VerifyZip recomputes the canonical manifest from the zip's members —
 // hashing actual content bytes, deriving each mode from the member's
-// recorded attributes (any execute bit means executable) — and accepts the
-// zip only when the manifest's digest equals expected
-// (REQ-archive-zip-verification). Directory entries are ignored; duplicate
-// member names, encrypted members, and compression methods other than store
-// or deflate are rejected (REQ-archive-zip). On success the verified file
-// set is returned in manifest order.
+// recorded attributes (a link, a submodule, else any execute bit means
+// executable) — and accepts the zip only when the manifest's digest
+// equals expected (REQ-archive-zip-verification). Directory entries are
+// ignored; duplicate member names, encrypted members, members of another
+// type, and compression methods other than store or deflate are rejected
+// (REQ-archive-zip). On success the verified file set is returned in
+// manifest order.
 func VerifyZip(r io.ReaderAt, size int64, expected string) ([]FileInfo, error) {
 	d, infos, err := DigestZip(r, size)
 	if err != nil {
@@ -112,8 +189,8 @@ func VerifyZip(r io.ReaderAt, size int64, expected string) ([]FileInfo, error) {
 // VerifyZip enforces an expectation over the same recomputation.
 func DigestZip(r io.ReaderAt, size int64) (string, []FileInfo, error) {
 	var infos []FileInfo
-	err := walkZip(r, size, func(m *zip.File) error {
-		info, err := hashMember(m)
+	err := walkZip(r, size, func(m *zip.File, mode memberMode) error {
+		info, err := hashMember(m, mode)
 		if err != nil {
 			return err
 		}
@@ -131,13 +208,14 @@ func DigestZip(r io.ReaderAt, size int64) (string, []FileInfo, error) {
 	return Digest(manifest), infos, nil
 }
 
-// walkZip iterates the zip's file members under the wire-container
-// discipline every consumer shares (REQ-archive-zip): directory entries are
-// skipped; duplicate member names, encrypted members, non-regular members,
-// and compression methods other than store or deflate are rejected. One
-// walker keeps the accepted member surface from drifting between the
-// digest, tree-hash, and member-read paths.
-func walkZip(r io.ReaderAt, size int64, fn func(*zip.File) error) error {
+// walkZip iterates the zip's members under the wire-container
+// discipline every consumer shares (REQ-archive-zip): directory entries
+// are skipped; duplicate member names, encrypted members, members of a
+// type no file set holds, and compression methods other than store or
+// deflate are rejected. One walker keeps the accepted member surface
+// from drifting between the digest, tree-hash, and member-read paths;
+// each member's mode is handed on with it.
+func walkZip(r io.ReaderAt, size int64, fn func(*zip.File, memberMode) error) error {
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrZipInvalid, err)
@@ -154,16 +232,14 @@ func walkZip(r io.ReaderAt, size int64, fn func(*zip.File) error) error {
 		if m.Flags&0x1 != 0 { // general-purpose bit 0: encrypted
 			return fmt.Errorf("%w: member %q is encrypted", ErrZipInvalid, m.Name)
 		}
-		if m.Mode()&fs.ModeType != 0 {
-			// A symlink (or any non-regular) member could otherwise verify
-			// as a regular file with the link target as content
-			// (REQ-archive-forbidden-entries: verification MUST fail).
-			return fmt.Errorf("%w: member %q is not a regular file", ErrZipInvalid, m.Name)
+		mode, err := readMode(m)
+		if err != nil {
+			return err
 		}
 		if m.Method != zip.Store && m.Method != zip.Deflate {
 			return fmt.Errorf("%w: member %q uses unsupported compression method %d", ErrZipInvalid, m.Name, m.Method)
 		}
-		if err := fn(m); err != nil {
+		if err := fn(m, mode); err != nil {
 			return err
 		}
 	}
@@ -193,22 +269,25 @@ func readMember(m *zip.File) ([]byte, error) {
 // ZipTreeHash recomputes the module root's git tree hash from the zip's
 // members in the given object format — the archive side of
 // REQ-archive-tree-binding for a consumer holding only the wire container:
-// each member's content is blob-hashed and the tree assembled per
+// each file's or link's content is blob-hashed, a submodule's recorded id
+// is the entry's hash, and the tree assembled per
 // REQ-archive-tree-recompute. The zip's digest acceptance is separate and
 // prior (VerifyZip); this recomputation trusts nothing about the container
 // beyond the shared member discipline.
 func ZipTreeHash(f ObjectFormat, r io.ReaderAt, size int64) ([]byte, error) {
 	var entries []TreeEntry
-	err := walkZip(r, size, func(m *zip.File) error {
+	err := walkZip(r, size, func(m *zip.File, mode memberMode) error {
 		b, err := readMember(m)
 		if err != nil {
 			return err
 		}
-		blob, err := BlobHash(f, int64(len(b)), bytes.NewReader(b))
-		if err != nil {
-			return err
+		hash := b
+		if mode.kind != KindSubmodule {
+			if hash, err = BlobHash(f, int64(len(b)), bytes.NewReader(b)); err != nil {
+				return err
+			}
 		}
-		entries = append(entries, TreeEntry{Path: m.Name, Exec: m.Mode()&0o111 != 0, Blob: blob})
+		entries = append(entries, TreeEntry{Path: m.Name, Kind: mode.kind, Exec: mode.exec, Hash: hash})
 		return nil
 	})
 	if err != nil {
@@ -217,13 +296,18 @@ func ZipTreeHash(f ObjectFormat, r io.ReaderAt, size int64) ([]byte, error) {
 	return TreeHash(f, entries)
 }
 
-// ZipFiles returns every member's content keyed by path — the whole
-// file set of an already-verified container, for consumers that walk
-// module content (import analysis). The total is bounded by
-// MaxTotalSize through the shared member discipline.
+// ZipFiles returns every regular file's content keyed by path — the
+// files of an already-verified container, for consumers that walk
+// module content (import analysis). A link or a submodule entry the
+// container carries is no file of the module: a file reachable only
+// through a link is never read (REQ-archive-links-carried). The total
+// is bounded by MaxTotalSize through the shared member discipline.
 func ZipFiles(r io.ReaderAt, size int64) (map[string][]byte, error) {
 	files := map[string][]byte{}
-	err := walkZip(r, size, func(m *zip.File) error {
+	err := walkZip(r, size, func(m *zip.File, mode memberMode) error {
+		if mode.kind != KindFile {
+			return nil
+		}
 		b, err := readMember(m)
 		if err != nil {
 			return err
@@ -237,14 +321,16 @@ func ZipFiles(r io.ReaderAt, size int64) (map[string][]byte, error) {
 	return files, nil
 }
 
-// ZipFile returns the content bytes of the named member, reporting whether
-// the zip has it. The name is matched exactly against member names — the
-// file-set path rules make the module file's spelling unique.
+// ZipFile returns the content bytes of the named regular file, reporting
+// whether the zip has one — a link or a submodule entry at the name is
+// no file, so a link named like the module file is no module file. The
+// name is matched exactly against member names — the file-set path rules
+// make the module file's spelling unique.
 func ZipFile(r io.ReaderAt, size int64, path string) ([]byte, bool, error) {
 	var content []byte
 	found := false
-	err := walkZip(r, size, func(m *zip.File) error {
-		if m.Name != path {
+	err := walkZip(r, size, func(m *zip.File, mode memberMode) error {
+		if m.Name != path || mode.kind != KindFile {
 			return nil
 		}
 		b, err := readMember(m)
@@ -260,7 +346,19 @@ func ZipFile(r io.ReaderAt, size int64, path string) ([]byte, bool, error) {
 	return content, found, nil
 }
 
-func hashMember(m *zip.File) (FileInfo, error) {
+func hashMember(m *zip.File, mode memberMode) (FileInfo, error) {
+	if mode.kind == KindSubmodule {
+		// The member's bytes are the recorded id, one of git's two
+		// object formats; the manifest carries the id, no content.
+		id, err := readMember(m)
+		if err != nil {
+			return FileInfo{}, err
+		}
+		if len(id) != 20 && len(id) != 32 {
+			return FileInfo{}, fmt.Errorf("%w: submodule member %q holds %d bytes, not a commit id", ErrZipInvalid, m.Name, len(id))
+		}
+		return FileInfo{Path: m.Name, Kind: KindSubmodule, Submodule: id}, nil
+	}
 	rc, err := m.Open()
 	if err != nil {
 		return FileInfo{}, fmt.Errorf("%w: opening member %q: %v", ErrZipInvalid, m.Name, err)
@@ -280,7 +378,8 @@ func hashMember(m *zip.File) (FileInfo, error) {
 	// the only acceptance criterion (REQ-archive-zip-verification).
 	info := FileInfo{
 		Path: m.Name,
-		Exec: m.Mode()&0o111 != 0,
+		Kind: mode.kind,
+		Exec: mode.exec,
 		Size: n,
 	}
 	copy(info.SHA256[:], h.Sum(nil))
@@ -288,12 +387,14 @@ func hashMember(m *zip.File) (FileInfo, error) {
 }
 
 // ExtractZip verifies the zip against expected and materializes the file
-// set under dir. A mid-extraction error leaves a partial tree under dir:
-// callers wanting atomicity extract into a fresh directory and rename.
-// No written file is executable and none is world-writable
-// (REQ-archive-no-exec-materialization): the execute mode exists in the
-// manifest solely for digest and git-tree fidelity, and module content is
-// never executed.
+// set's regular files under dir. A mid-extraction error leaves a partial
+// tree under dir: callers wanting atomicity extract into a fresh directory
+// and rename. No written file is executable and none is world-writable,
+// and no link nor submodule entry is written at all
+// (REQ-archive-no-exec-materialization): the execute mode, a link's
+// target and a submodule's id exist in the manifest solely for digest and
+// git-tree fidelity, module content is never executed, and a link may
+// point anywhere.
 func ExtractZip(dir string, r io.ReaderAt, size int64, expected string) error {
 	infos, err := VerifyZip(r, size, expected)
 	if err != nil {
@@ -309,8 +410,8 @@ func ExtractZip(dir string, r io.ReaderAt, size int64, expected string) error {
 	}
 	for _, m := range zr.File {
 		info, ok := byPath[m.Name]
-		if !ok {
-			continue // directory entry
+		if !ok || info.Kind != KindFile {
+			continue // a directory entry, a link or a submodule entry
 		}
 		dst := filepath.Join(dir, filepath.FromSlash(info.Path))
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
