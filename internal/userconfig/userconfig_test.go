@@ -27,7 +27,7 @@ func write(t *testing.T, content string) string {
 }
 
 // The settings are exactly the spec's, each bound to its environment
-// variable, the two path-valued ones marked as such.
+// variable, the three path-valued ones marked as such.
 func TestKeys(t *testing.T) {
 	want := map[Key]Setting{
 		"runner":      {Env: "PBRUNNER"},
@@ -36,11 +36,13 @@ func TestKeys(t *testing.T) {
 		"cache":       {Env: "PBCACHE", Path: true},
 		"trustedroot": {Env: "PBTRUSTEDROOT", Path: true},
 		"plugin-pull": {Env: "PBPLUGINPULL"},
+		"netrc":       {Env: "PBNETRC", Path: true},
+		"ssh":         {Env: "PBSSH"},
 	}
 	if !reflect.DeepEqual(Keys, want) {
 		t.Fatalf("Keys = %v", Keys)
 	}
-	if KeyRunner != "runner" || KeyProxy != "proxy" || KeyNoproxy != "noproxy" || KeyCache != "cache" || KeyTrustedRoot != "trustedroot" || KeyPluginPull != "plugin-pull" {
+	if KeyRunner != "runner" || KeyProxy != "proxy" || KeyNoproxy != "noproxy" || KeyCache != "cache" || KeyTrustedRoot != "trustedroot" || KeyPluginPull != "plugin-pull" || KeyNetrc != "netrc" || KeySSH != "ssh" {
 		t.Fatal("the key constants drifted from the spec's keys")
 	}
 }
@@ -80,7 +82,7 @@ func TestLoadFile(t *testing.T) {
 		t.Fatalf("an admissibility refusal is not matchable: %v", err)
 	}
 	for _, c := range []struct{ content, text string }{
-		{"runnr: docker\n", `unknown setting "runnr" (settings: cache, noproxy, plugin-pull, proxy, runner, trustedroot)`},
+		{"runnr: docker\n", `unknown setting "runnr" (settings: cache, netrc, noproxy, plugin-pull, proxy, runner, ssh, trustedroot)`},
 		{"runner: [docker]\n", "runner must be a non-empty string"},
 		{"runner: \"\"\n", "runner must be a non-empty string"},
 		{"runner: docker\nrunner: native\n", `mapping key "runner" already defined`},

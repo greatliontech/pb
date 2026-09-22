@@ -223,8 +223,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-probing"
-  content_hash: "80c854ea670bf6f04caec0771f4eadab6b908e6431b7fe99abbe87bd15707149"
-  source_hash: "daf0a5e442a29988fd7cd7a4a568e1d7cbb1dde2bc3ed65ed1b87b8c950966b3"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.Resolve"
   role: BINDING_ROLE_IMPLEMENTS
@@ -233,8 +233,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-probing"
-  content_hash: "80c854ea670bf6f04caec0771f4eadab6b908e6431b7fe99abbe87bd15707149"
-  source_hash: "daf0a5e442a29988fd7cd7a4a568e1d7cbb1dde2bc3ed65ed1b87b8c950966b3"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveProbingOrderAndFirstAnswer"
   role: BINDING_ROLE_TESTS
@@ -243,8 +243,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-probing"
-  content_hash: "80c854ea670bf6f04caec0771f4eadab6b908e6431b7fe99abbe87bd15707149"
-  source_hash: "daf0a5e442a29988fd7cd7a4a568e1d7cbb1dde2bc3ed65ed1b87b8c950966b3"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveNoOrigin"
   role: BINDING_ROLE_TESTS
@@ -343,8 +343,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-probing"
-  content_hash: "80c854ea670bf6f04caec0771f4eadab6b908e6431b7fe99abbe87bd15707149"
-  source_hash: "daf0a5e442a29988fd7cd7a4a568e1d7cbb1dde2bc3ed65ed1b87b8c950966b3"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.TestPrefixesGolden"
   role: BINDING_ROLE_TESTS
@@ -819,4 +819,204 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSynthesizedSubtreePseudoBeforeItsRoot"
   role: BINDING_ROLE_TESTS
   shape_hash: "69a790da797e6392bb13f4b7f6d4480eaa1d275469bde141b83299c43a4691c1"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.File.RoundTripper"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4069fa3214b3180569ee41e47b7b7f4d3ef6f42337fd2f9ad9e71ccd34c94647"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.File.ClientOptions"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "57e00409ad40961175aae0fe4cddad4a751df451e4cc2c020bbf5d5babe6cc79"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.TestRoundTripper"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5658c447dcf8c2f405feba6f9553929932fbce018306fc2596eb54e1466cdc02"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.TestRoundTripperRedirectByHost"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "959b3b363a579ff4aaa2560cf37c3e88834825adc215cc0bc02867a0e7c5303e"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.TestFetchPrivateOriginOverHTTPS"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "81cd9f5fa0a4fb45214416b4c7c341249fb4080719e2a2c5c8adfcf11d32cbf1"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestProxyCredentials"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "4f8dc0c300b3d6f65b2865f11d0428dd307c23b14b7aa4b354ff7385b851cfaf"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5276f068cb7a8ff0143cffcee3e9050a2680e9855df230d5e1f563e07e98474f"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.TestParseAndLookup"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a43cbcc1366511a062ea5cd977cbb75047077f48de1ac931071f378b6b989fff"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.TestLookupProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d8571d3fbfcc95300777e7aab5a40b1e55d2f1da0126603856e0680ebfa047f2"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-credentials"
+  content_hash: "959f2afb78d66822958490c7967397f166cd8224ac5dfd0f71c5a6cfcff0ff81"
+  source_hash: "b958f4dbb57c707d711a65e8424e81deda057020d4682fa55c384a653055d687"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/netrc.TestLoad"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b12986c2c005abf510dfd4949cec9770351e3b38647cd48f8d16685ea5900731"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.Resolve"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c29645a023423581a3016a6c5fc28f59b0b722284befc93f735b73aed8ffb842"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.SSHRepo"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a47b40612df2a4f9f897aacce281faaa235c9beb98145af291d1fa4956567135"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.SSHTransport"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ca12e7945b5d1e62b9dc75b7581a4387ec69c02a434c53ad48c25018e50e2229"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveSSHRoutesEveryArm"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a46c5e0092fcfdeb7aa00af4e506e76d308c0c5ff831fe92220fe9edcfa874ae"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.TestFetchPrivateOriginOverSSH"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0d93434e1f1b11ceb5b5cffdce9e33fc8f0dd6996920351095a2719906fcf3d0"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestClientPrivateOriginSettings"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1438b545550508fdf616d761bc10c5eec885ed2e0089967b388c56835bb09354"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-probing"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveSSHRoutesEveryArm"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a46c5e0092fcfdeb7aa00af4e506e76d308c0c5ff831fe92220fe9edcfa874ae"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveProbingFailsOnTheRunsOwnFault"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6cdf2cd9684d8e06675b1dda3b3081735f71f6017ec285138bcb62d04a6cfee1"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
+  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.probeFailed"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6a9e8fdadb0a06b566015e407c05dbb79e6ee1a2ca62c2ace5db9da5b690ce7a"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-probing"
+  content_hash: "d40605dbc198736a2fe68b6852baf625bbbdcfca1faf8f2ff061d8ebe8f9f012"
+  source_hash: "b82e20dd6c7ab8073a6c047382e6e862852f6db6dcd47a7beeb02aecbec61d2f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveProbingFailsOnTheRunsOwnFault"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6cdf2cd9684d8e06675b1dda3b3081735f71f6017ec285138bcb62d04a6cfee1"
 }

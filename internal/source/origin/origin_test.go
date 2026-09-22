@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v6/plumbing/transport"
+	"github.com/greatliontech/pb/internal/source"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -727,5 +730,98 @@ func TestVersionSegmentsFlowVerbatim(t *testing.T) {
 	}
 	if o2, ok := SplitVCS("example.com/r.git/foo/v2"); !ok || o2.Subtree != "foo/v2" {
 		t.Fatalf("SplitVCS dropped a version segment: %+v", o2)
+	}
+}
+
+// A module the ssh setting matches is reached over SSH whichever arm
+// resolves it (REQ-resolve-ssh): the `.git` prefix, a vanity redirect's
+// HTTPS declaration and a probed prefix are each spelled
+// ssh://git@<host>/<path>, and probing lists over SSH; a module no
+// pattern matches keeps HTTPS, and a pattern matches a leading segment
+// prefix as the noproxy grammar has it.
+func TestResolveSSHRoutesEveryArm(t *testing.T) {
+	ssh := []string{"corp.example.com", "example.com/private/*"}
+	f := &fakeProber{answer: map[string][]Ref{"ssh://git@example.com/private/a": nil, "https://example.com/pub/a": nil}}
+	pages := map[string]string{"example.com/private/v/x": meta("example.com/private/v", "https://forge.example/v.git")}
+	deps := Deps{Prober: f, Client: vanityClient(t, pages), SSH: ssh}
+	for _, tc := range []struct{ path, repo, subtree string }{
+		{"corp.example.com/r.git/sub", "ssh://git@corp.example.com/r.git", "sub"},
+		{"example.com/private/v/x", "ssh://git@forge.example/v.git", "x"},
+		{"example.com/private/a/b", "ssh://git@example.com/private/a", "b"},
+		{"example.com/pub/a/b", "https://example.com/pub/a", "b"},
+	} {
+		o, err := Resolve(context.Background(), deps, tc.path)
+		if err != nil || o.Repo != tc.repo || o.Subtree != tc.subtree {
+			t.Errorf("Resolve(%s) = %+v, %v; want %s %s", tc.path, o, err, tc.repo, tc.subtree)
+		}
+	}
+	want := []string{"ssh://git@example.com/private", "ssh://git@example.com/private/a", "https://example.com/pub", "https://example.com/pub/a"}
+	if fmt.Sprint(f.calls) != fmt.Sprint(want) {
+		t.Fatalf("probes = %v, want %v", f.calls, want)
+	}
+	// The HTTPS port is dropped — the SSH port is the OpenSSH
+	// configuration's or 22 — an IPv6 host keeps its brackets, and the
+	// path its escaping.
+	for in, want := range map[string]string{
+		"https://h.example:8443/o/r.git": "ssh://git@h.example/o/r.git",
+		"https://[::1]:8443/o/r":         "ssh://git@[::1]/o/r",
+		"https://h.example/o/a%20b":      "ssh://git@h.example/o/a%20b",
+	} {
+		if r, err := SSHRepo(in); err != nil || r != want {
+			t.Errorf("SSHRepo(%s) = %q, %v; want %s", in, r, err, want)
+		}
+	}
+	for _, bad := range []string{"http://h.example/r", "ssh://h.example/r", "https:///r"} {
+		if _, err := SSHRepo(bad); err == nil {
+			t.Errorf("SSHRepo(%q) accepted", bad)
+		}
+	}
+}
+
+// A prefix the run itself cannot reach — no agent, a host key no
+// known-hosts file holds — fails resolution at that prefix
+// (REQ-resolve-ssh), never reading as a prefix that does not answer:
+// probing stops there, and the error is the cause, not ErrNoOrigin. A
+// prefix refusing authentication is a prefix that does not answer — a
+// forge refuses an anonymous listing of a repository that does not
+// exist — so probing goes on, and where no prefix answers the refusal
+// is named.
+func TestResolveProbingFailsOnTheRunsOwnFault(t *testing.T) {
+	for name, cause := range map[string]error{
+		"no agent":         fmt.Errorf("reaching h: %w", source.ErrNoAgent),
+		"unknown host key": fmt.Errorf("ssh: handshake failed: %w", &knownhosts.KeyError{}),
+	} {
+		f := &fakeProber{errs: map[string]error{"https://example.com/a": cause}, answer: map[string][]Ref{"https://example.com/a/b": nil}}
+		_, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b/c")
+		if !errors.Is(err, cause) || errors.Is(err, ErrNoOrigin) {
+			t.Errorf("%s: %v", name, err)
+		}
+		if len(f.calls) != 1 {
+			t.Errorf("%s: probing went on: %v", name, f.calls)
+		}
+	}
+	// A prefix that merely does not answer, or refuses authentication
+	// as a forge does for a repository that does not exist, is passed
+	// over.
+	for name, cause := range map[string]error{
+		"not found":          errors.New("not found"),
+		"credential refused": fmt.Errorf("listing: %w", transport.ErrAuthenticationRequired),
+		"forbidden":          transport.ErrAuthorizationFailed,
+	} {
+		f := &fakeProber{errs: map[string]error{"https://example.com/a": cause}, answer: map[string][]Ref{"https://example.com/a/b": nil}}
+		if o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b/c"); err != nil || o.Repo != "https://example.com/a/b" {
+			t.Fatalf("%s at a shallower prefix: %+v, %v", name, o, err)
+		}
+	}
+	// No prefix answering and one refusing: no origin, the refusal named.
+	f := &fakeProber{errs: map[string]error{"https://example.com/a": transport.ErrAuthenticationRequired, "https://example.com/a/b": errors.New("not found")}}
+	_, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b")
+	if !errors.Is(err, ErrNoOrigin) || !strings.Contains(err.Error(), "refusing authentication") {
+		t.Fatalf("a refusal among the attempts: %v", err)
+	}
+	f = &fakeProber{errs: map[string]error{"https://example.com/a": errors.New("not found"), "https://example.com/a/b": errors.New("not found")}}
+	_, err = Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b")
+	if !errors.Is(err, ErrNoOrigin) || strings.Contains(err.Error(), "refusing authentication") {
+		t.Fatalf("no refusal among the attempts: %v", err)
 	}
 }

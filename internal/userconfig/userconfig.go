@@ -39,6 +39,8 @@ const (
 	KeyCache       Key = "cache"
 	KeyTrustedRoot Key = "trustedroot"
 	KeyPluginPull  Key = "plugin-pull"
+	KeyNetrc       Key = "netrc"
+	KeySSH         Key = "ssh"
 )
 
 // Setting is what the resolver knows of one setting beyond its key:
@@ -58,6 +60,8 @@ var Keys = map[Key]Setting{
 	KeyCache:       {Env: "PBCACHE", Path: true},
 	KeyTrustedRoot: {Env: "PBTRUSTEDROOT", Path: true},
 	KeyPluginPull:  {Env: "PBPLUGINPULL"},
+	KeyNetrc:       {Env: "PBNETRC", Path: true},
+	KeySSH:         {Env: "PBSSH"},
 }
 
 // Path is the user configuration file's location on this host; the

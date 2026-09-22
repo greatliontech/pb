@@ -105,7 +105,8 @@ rejected, not deferred for cost.
 
 Specced — `docs/specs/module-proxy.md` is authoritative (endpoints
 including `.mod` and `.prov`, escaping, fall-through, client verification,
-`PBPROXY`/`PBNOPROXY`). pbr implements the protocol as its proxy role.
+`PBPROXY`/`PBNOPROXY`; a private proxy or origin through the credential
+file and SSH, `PBNETRC`/`PBSSH`, per `module-resolution.md`). pbr implements the protocol as its proxy role.
 
 **No default proxy — default is `direct`** (decided after weighing the
 reverse). pbr.dev is the *recommended, one-line opt-in* public proxy, not a

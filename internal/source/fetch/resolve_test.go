@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/source/direct"
+	"github.com/greatliontech/pb/internal/source/netrc"
 	"github.com/greatliontech/pb/internal/source/origin"
 	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
@@ -796,6 +798,38 @@ func TestTwoOriginSnapshotsIndependent(t *testing.T) {
 		}
 		if len(vs) != 1 || vs[0].String() != "v1.0.0" {
 			t.Fatalf("%s versions = %v, want the fetch-time snapshot", path, vs)
+		}
+	}
+}
+
+// A proxy over HTTPS is sent the credential file's entry for its host,
+// a proxy over cleartext none (REQ-proxy-config, REQ-resolve-credentials):
+// the client's HTTP transport lends the entry by host and scheme.
+func TestProxyCredentials(t *testing.T) {
+	creds, err := netrc.Parse([]byte("machine " + fetchtest.ProxyHost + " login u password p\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, scheme := range []string{"https", "http"} {
+		fx := newFixture(t)
+		zip, _ := moduleZip(t, declaredFiles())
+		key := fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
+		sources, err := proxy.ParseSources(scheme + "://" + fetchtest.ProxyHost)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := fx.Client("proxy")
+		c.Sources = proxy.Config{Sources: sources}
+		c.HTTP = &http.Client{Transport: creds.RoundTripper(fx)}
+		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
+			t.Fatalf("%s: %v", scheme, err)
+		}
+		got := fx.Authorization[key]
+		if scheme == "https" && !strings.HasPrefix(got, "Basic ") {
+			t.Fatalf("the HTTPS proxy was sent %q", got)
+		}
+		if scheme == "http" && got != "" {
+			t.Fatalf("the cleartext proxy was sent %q", got)
 		}
 	}
 }

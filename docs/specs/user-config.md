@@ -13,10 +13,10 @@ named by a key in the user configuration file and by an environment
 variable, and for some settings by a flag of the verb it governs:
 `runner` / `PBRUNNER` / `--runner`, `proxy` / `PBPROXY`, `noproxy` /
 `PBNOPROXY`, `cache` / `PBCACHE`, `trustedroot` / `PBTRUSTEDROOT`,
-`plugin-pull` / `PBPLUGINPULL`. The key and the variable name one
-setting; their values have one grammar, the subject document's.
-`cache` and `trustedroot` are path-valued: their values name a
-filesystem path.
+`plugin-pull` / `PBPLUGINPULL`, `netrc` / `PBNETRC`, `ssh` / `PBSSH`.
+The key and the variable name one setting; their values have one
+grammar, the subject document's. `cache`, `trustedroot` and `netrc`
+are path-valued: their values name a filesystem path.
 
 **user configuration file** (term): The file `pb/config.yaml` under
 the platform's user configuration directory — on Unix

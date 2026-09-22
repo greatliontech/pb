@@ -49,10 +49,12 @@ type Fixture struct {
 	// Endpoints maps "host/path" keys
 	// ("proxy.test/example.com/m/@v/v1.0.0.zip") to response bytes;
 	// absent keys answer 404. Status overrides the answer for a key.
-	// Hits counts requests per key.
-	Endpoints map[string][]byte
-	Status    map[string]int
-	Hits      map[string]int
+	// Hits counts requests per key; Authorization keeps the last
+	// request's authorization header per key.
+	Endpoints     map[string][]byte
+	Status        map[string]int
+	Hits          map[string]int
+	Authorization map[string]string
 
 	// Subtrees maps module paths to their origin subtree; every module
 	// path resolves to the fixture repository unless ResolveOverride is
@@ -64,12 +66,13 @@ type Fixture struct {
 // New builds an empty fixture.
 func New(t *testing.T) *Fixture {
 	return &Fixture{
-		T:         t,
-		Repo:      gittest.New(t),
-		Endpoints: map[string][]byte{},
-		Status:    map[string]int{},
-		Hits:      map[string]int{},
-		Subtrees:  map[string]string{},
+		T:             t,
+		Repo:          gittest.New(t),
+		Endpoints:     map[string][]byte{},
+		Status:        map[string]int{},
+		Hits:          map[string]int{},
+		Authorization: map[string]string{},
+		Subtrees:      map[string]string{},
 	}
 }
 
@@ -77,6 +80,7 @@ func New(t *testing.T) *Fixture {
 func (fx *Fixture) RoundTrip(r *http.Request) (*http.Response, error) {
 	key := r.URL.Host + r.URL.Path
 	fx.Hits[key]++
+	fx.Authorization[key] = r.Header.Get("Authorization")
 	code, body := http.StatusNotFound, []byte(nil)
 	if c, ok := fx.Status[key]; ok {
 		code = c

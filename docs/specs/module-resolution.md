@@ -57,13 +57,68 @@ carries no cookie state in either direction.
 
 **REQ-resolve-probing** (behavior): Absent a `.git` segment and a vanity
 redirect, the repository split MUST be found by probing path prefixes in
-increasing length with `git ls-remote` over HTTPS, taking the first
+increasing length with `git ls-remote` over the module's transport —
+HTTPS, or SSH where REQ-resolve-ssh routes the module — taking the first
 prefix that answers as the repository; the probe result is not authority
 — every fetched artifact still verifies per its own contract. The bare
 hostname is never probed — a host answering reference listings at its
 root would silently capture every module path on it; a repository rooted
 at a bare host declares itself via a `.git` segment or a vanity
 redirect.
+
+## Private origins
+
+**credential file** (term): The file the `netrc` setting names
+(`user-config.md`), by default `.netrc` in the user's home directory
+— `_netrc` on Windows — in the netrc grammar: whitespace-separated
+tokens, a token between double quotes taken whole with `\"`, `\\`,
+`\n`, `\r` and `\t` escaped as curl reads them; `machine <host>`
+opening an entry for the host, `default` opening the fallback entry,
+`login <name>` and `password <secret>` filling the open entry,
+`account <name>` accepted and unused, `macdef <name>` opening a macro
+that runs through the next blank line and is skipped. An entry
+holding both a login and a password is a credential; one lacking
+either is none; the default entry is read and lent to no host — pb
+reaches the hosts a dependency graph names, not ones the user typed,
+and a credential for every host would go to any of them, as Go
+declines it for the same reason. A host is matched by name alone,
+case-insensitively, any port aside, the first entry naming it
+winning. The file absent at the default location, or a host with no
+home directory to derive that location from, is an empty one; a file
+a stated layer names that is absent or unreadable, and in any file a
+token the grammar does not name or a quote the line does not close,
+is an error naming the layer.
+
+**REQ-resolve-credentials** (behavior): Every request over HTTPS to a
+host the credential file holds a credential for — the discovery of a
+vanity redirect, a reference listing, an origin fetch, a proxy fetch
+(`module-proxy.md` REQ-proxy-config), a redirect's target by the
+target's own entry — MUST carry the credential as HTTP basic
+authorization, and no request over cleartext carries any: a credential
+goes to the host it names over a channel that hides it, or nowhere.
+
+**REQ-resolve-ssh** (behavior): A module the `ssh` setting matches —
+comma-separated glob patterns in the `noproxy` grammar
+(`module-proxy.md` REQ-proxy-config), one matching the module path or
+any leading segment prefix of it — MUST be reached over SSH: its
+origin, however resolved, is the HTTPS repository's host name and
+path spelled `ssh://git@<host name>/<path>`, the HTTPS port dropped —
+reference listings, probing and fetching alike, authenticated through
+the running SSH agent alone —
+no key file read, no password asked — as the user `git`, the host's
+key verified against the user's known hosts (`SSH_KNOWN_HOSTS`, else
+the user's and the system's known-hosts files) and the host and port
+as the user's OpenSSH client configuration maps them; a host whose key
+no known-hosts file holds, and a run with no agent to reach, each fail
+naming the cause — probing included: a prefix with no agent to reach
+or whose host the run cannot trust fails resolution there rather than
+reading as a prefix that does not answer, while a prefix refusing
+authentication is one that does not answer — a forge refuses an
+anonymous listing of a repository that does not exist — an HTTPS
+refusal named as such when no prefix answers, an SSH one carried in
+the attempt's own error. The setting
+routes transport alone: a matching module still consults the source
+list, and `noproxy` alone routes it to the origin.
 
 ## Versions
 

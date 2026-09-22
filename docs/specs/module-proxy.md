@@ -117,7 +117,10 @@ covers every module on that host. A malformed entry or pattern is a
 configuration error naming the layer the value came from, never a
 silent non-match. There is no default proxy: with no configuration,
 every fetch goes to the origin, and no party beyond the origin host is
-trusted for a first fetch.
+trusted for a first fetch. A request to a proxy over HTTPS carries the
+credential file's entry for the proxy's host (`module-resolution.md`
+REQ-resolve-credentials), so a private proxy is reached as a private
+origin is; a proxy over cleartext is sent none.
 
 **REQ-proxy-client-verification** (invariant): A client MUST NOT accept
 any artifact on transport trust: archives and module files are verified

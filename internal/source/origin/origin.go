@@ -22,20 +22,25 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 
+	"github.com/go-git/go-git/v6/plumbing/transport"
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/source"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // ErrNoOrigin is wrapped when no discovery mechanism yields a repository
 // for a module path.
 var ErrNoOrigin = errors.New("no origin found")
 
-// Origin is a resolved repository split: the HTTPS repository URL and the
-// module's subtree within it ("" for a module rooted at the repository
-// root).
+// Origin is a resolved repository split: the repository URL — HTTPS,
+// or SSH where the ssh setting routes the module (REQ-resolve-ssh) —
+// and the module's subtree within it ("" for a module rooted at the
+// repository root).
 type Origin struct {
 	Repo    string
 	Subtree string
@@ -150,13 +155,55 @@ func ReleaseTags(refs []Ref, subtree string) []Tag {
 	return out
 }
 
-// Deps carries the two effectful seams: reference listing and HTTPS
-// vanity discovery. Everything else in the package is pure. Both seams
-// are required — a nil seam panics at its first use rather than
-// carrying an error path for static miswiring of an internal package.
+// Deps carries the two effectful seams — reference listing and HTTPS
+// vanity discovery — and the ssh setting's patterns, the modules
+// reached over SSH (REQ-resolve-ssh). Everything else in the package
+// is pure. Both seams are required — a nil seam panics at its first
+// use rather than carrying an error path for static miswiring of an
+// internal package.
 type Deps struct {
 	Prober Prober
 	Client *http.Client
+	SSH    []string
+}
+
+// SSHRepo spells an HTTPS repository URL as the SSH one the same host
+// serves (REQ-resolve-ssh): ssh://git@<host name>/<path>, the HTTPS
+// port dropped — the SSH port is the OpenSSH configuration's for the
+// host, else 22 — and the path as escaped.
+func SSHRepo(httpsRepo string) (string, error) {
+	u, err := url.Parse(httpsRepo)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		return "", fmt.Errorf("spelling %q over SSH: not an HTTPS repository URL", httpsRepo)
+	}
+	host := u.Hostname()
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]"
+	}
+	return "ssh://git@" + host + u.EscapedPath(), nil
+}
+
+// probeFailed reports whether a prefix's listing failed for a reason
+// no other prefix can answer for — the run's own: no agent to
+// authenticate through, a host key no known-hosts file holds — so
+// probing on would misreport a module the run cannot reach as one
+// that does not exist. A host refusing authentication is not among
+// them: a forge answers an anonymous listing of a repository that
+// does not exist with a refusal, so that its private repositories
+// stay unknown, and a deeper prefix may well answer.
+func probeFailed(err error) bool {
+	var keyErr *knownhosts.KeyError
+	return errors.Is(err, source.ErrNoAgent) || errors.As(err, &keyErr)
+}
+
+// refused reports whether a prefix's listing was an HTTPS
+// authentication refusal: a prefix that does not answer, named as
+// such when no prefix answers, since the refusal may be the reason.
+// An SSH refusal has no sentinel of its own — the transport passes
+// the handshake's error through — and is carried in the attempt's
+// text alone.
+func refused(err error) bool {
+	return errors.Is(err, transport.ErrAuthenticationRequired) || errors.Is(err, transport.ErrAuthorizationFailed)
 }
 
 // Prober lists a repository's advertised references — the spec's `git
@@ -168,13 +215,28 @@ type Prober interface {
 
 // Resolve maps a module path to its origin, in the spec's precedence
 // order. The prober is consulted only when neither the `.git` rule nor a
-// vanity redirect decides (REQ-resolve-vanity's precedence clause).
+// vanity redirect decides (REQ-resolve-vanity's precedence clause). A
+// module the ssh setting matches is reached over SSH whichever arm
+// decides: the HTTPS repository each arm names — the `.git` prefix,
+// the vanity redirect's declaration, a probed prefix — is spelled as
+// the SSH one, and probing lists over it (REQ-resolve-ssh).
 func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
 	if err := module.ValidatePath(path); err != nil {
 		return Origin{}, err
 	}
+	ssh := source.MatchAny(deps.SSH, path)
+	transport := func(httpsRepo string) (string, error) {
+		if !ssh {
+			return httpsRepo, nil
+		}
+		return SSHRepo(httpsRepo)
+	}
 	if o, ok := SplitVCS(path); ok {
-		return o, nil
+		repo, err := transport(o.Repo)
+		if err != nil {
+			return Origin{}, err
+		}
+		return Origin{Repo: repo, Subtree: o.Subtree}, nil
 	}
 	if red, ok, err := discoverVanity(ctx, deps.Client, path); err != nil {
 		return Origin{}, err
@@ -185,23 +247,40 @@ func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
 			// segment-exact matching prefixes; fail closed regardless.
 			return Origin{}, fmt.Errorf("vanity prefix %q does not prefix %q", red.Prefix, path)
 		}
-		return Origin{Repo: red.Repo, Subtree: sub}, nil
+		repo, err := transport(red.Repo)
+		if err != nil {
+			return Origin{}, err
+		}
+		return Origin{Repo: repo, Subtree: sub}, nil
 	}
 	var attempts []string
+	anyRefused := false
 	for _, p := range prefixes(path) {
-		repo := "https://" + p
+		repo, err := transport("https://" + p)
+		if err != nil {
+			return Origin{}, err
+		}
 		if _, err := deps.Prober.List(ctx, repo); err != nil {
 			// A canceled or expired context is not evidence of absence:
 			// reporting ErrNoOrigin here would misclassify a repository
-			// that exists but was never reached.
+			// that exists but was never reached. Nor is the run's own
+			// failure to authenticate or to trust the host.
 			if ctxErr := ctx.Err(); ctxErr != nil {
 				return Origin{}, fmt.Errorf("probing %s: %w", repo, ctxErr)
 			}
+			if probeFailed(err) {
+				return Origin{}, fmt.Errorf("probing %s: %w", repo, err)
+			}
+			anyRefused = anyRefused || refused(err)
 			attempts = append(attempts, fmt.Sprintf("%s: %v", repo, err))
 			continue
 		}
 		sub, _ := subtreeOf(path, p)
 		return Origin{Repo: repo, Subtree: sub}, nil
+	}
+	if anyRefused {
+		return Origin{}, fmt.Errorf("%w for %s: no vanity redirect and no prefix answered a reference listing, one refusing authentication — a private repository needs a credential file entry or an ssh route (%s)",
+			ErrNoOrigin, path, strings.Join(attempts, "; "))
 	}
 	return Origin{}, fmt.Errorf("%w for %s: no vanity redirect and no prefix answered a reference listing (%s)",
 		ErrNoOrigin, path, strings.Join(attempts, "; "))

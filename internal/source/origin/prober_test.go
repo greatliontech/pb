@@ -22,7 +22,7 @@ func TestGitProberListsFixtureRepo(t *testing.T) {
 	g.Tag("v1.0.0", hash)
 	g.Head("main")
 
-	p := GitProber{clientOptions: g.ClientOptions()}
+	p := GitProber{ClientOptions: g.ClientOptions()}
 	refs, err := p.List(context.Background(), "file:///")
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func TestGitProberListsFixtureRepo(t *testing.T) {
 // answering. The loader is rooted at an empty filesystem holding no
 // repository at all, so no fixture builder applies.
 func TestGitProberListError(t *testing.T) {
-	p := GitProber{clientOptions: []client.Option{
+	p := GitProber{ClientOptions: []client.Option{
 		client.WithLoader(transport.NewFilesystemLoader(memfs.New(), false)),
 	}}
 	refs, err := p.List(context.Background(), "file:///")

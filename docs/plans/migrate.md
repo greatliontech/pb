@@ -45,7 +45,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       materialization amended); protovalidate,
       protoc-gen-validate, envoy and xds verified and restored,
       opencensus entering with envoy
-- [ ] 10. Private origins: HTTPS credentials for a host from the user's
+- [x] 10. Private origins: HTTPS credentials for a host from the user's
       .netrc, a proxy's host included, and SSH through the agent for
       `git@host:` origins (module-resolution.md, module-proxy.md and
       user-config.md amended)

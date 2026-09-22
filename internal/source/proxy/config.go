@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path"
 	"strings"
+
+	"github.com/greatliontech/pb/internal/source"
 )
 
 // ErrConfig is wrapped by every proxy configuration rejection
@@ -59,20 +60,12 @@ func ParseSources(list string) ([]Source, error) {
 }
 
 // ParseNoProxy parses the noproxy setting's value: comma-separated
-// glob patterns, each valid; an empty value is no pattern.
+// glob patterns in the shared grammar (source.ParsePatterns), each
+// valid; an empty value is no pattern.
 func ParseNoProxy(list string) ([]string, error) {
-	if list == "" {
-		return nil, nil
-	}
-	var patterns []string
-	for pat := range strings.SplitSeq(list, ",") {
-		if pat == "" {
-			return nil, fmt.Errorf("%w: the exclusion list carries an empty pattern", ErrConfig)
-		}
-		if err := checkPattern(pat); err != nil {
-			return nil, fmt.Errorf("%w: exclusion pattern %q: %v", ErrConfig, pat, err)
-		}
-		patterns = append(patterns, pat)
+	patterns, err := source.ParsePatterns(list, "exclusion")
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrConfig, err)
 	}
 	return patterns, nil
 }
@@ -103,44 +96,13 @@ func checkBaseURL(s string) error {
 	return nil
 }
 
-// checkPattern validates a glob eagerly with the matching engine
-// itself: path.Match validates the entire pattern on every call (Go
-// 1.16+), so a single probe is a complete validity oracle and the
-// pattern grammar has exactly one owner. matchPrefixPattern may then
-// discard Match errors — none can occur for a validated pattern.
-func checkPattern(pat string) error {
-	_, err := path.Match(pat, "")
-	return err
-}
-
 // SourcesFor returns the sources consulted for a module: a noproxy
 // match routes to the origin regardless of the source list
 // (REQ-proxy-config), even a list that is off. The unmatched case
 // returns the Config's own slice — callers read, never mutate.
 func (c Config) SourcesFor(modulePath string) []Source {
-	for _, pat := range c.NoProxy {
-		if matchPrefixPattern(pat, modulePath) {
-			return []Source{{Direct: true}}
-		}
+	if source.MatchAny(c.NoProxy, modulePath) {
+		return []Source{{Direct: true}}
 	}
 	return c.Sources
-}
-
-// matchPrefixPattern reports whether the glob matches the module path or
-// any leading segment prefix of it (REQ-proxy-config's matching rule);
-// path.Match's '*' never crosses a '/', so matching stays segment-wise.
-// Patterns are validated at parse, so a Match error cannot occur here
-// and reads as a non-match.
-func matchPrefixPattern(pattern, modulePath string) bool {
-	prefix := modulePath
-	for {
-		if ok, _ := path.Match(pattern, prefix); ok {
-			return true
-		}
-		i := strings.LastIndexByte(prefix, '/')
-		if i < 0 {
-			return false
-		}
-		prefix = prefix[:i]
-	}
 }

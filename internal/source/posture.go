@@ -10,9 +10,15 @@
 package source
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
+
+// ErrNoAgent is wrapped when an SSH origin is to be reached and no
+// agent is there to authenticate through (REQ-resolve-ssh): a
+// configuration failure of the run, never an origin's absence.
+var ErrNoAgent = errors.New("no SSH agent to authenticate through")
 
 // HTTPClient returns a shallow copy of base pinning the shared policy:
 // the copy keeps base's transport and timeout, carries no cookie jar —

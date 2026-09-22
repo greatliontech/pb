@@ -143,8 +143,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
-  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
+  content_hash: "02e6623f5001a43acd461b2d531c2748f51f4d71253fe90d14896b38c0bf8f27"
+  source_hash: "18ca37ca3d10284417d93af3bd6711500de6bc08ecd9093082622cbf46295701"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/proxy.ParseSources"
   role: BINDING_ROLE_IMPLEMENTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-proxy-config"
-  content_hash: "89cda7664c03061437be3829d689f7f55b22ddd325be0962a6745a576c3930e8"
-  source_hash: "eb96f4d926f43aea8d4a080d8fe8644ebaece96aaafede5bdf6a0253db806320"
+  content_hash: "02e6623f5001a43acd461b2d531c2748f51f4d71253fe90d14896b38c0bf8f27"
+  source_hash: "18ca37ca3d10284417d93af3bd6711500de6bc08ecd9093082622cbf46295701"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/proxy.ParseNoProxy"
   role: BINDING_ROLE_IMPLEMENTS

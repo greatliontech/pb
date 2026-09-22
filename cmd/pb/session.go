@@ -13,8 +13,10 @@ import (
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/source"
 	"github.com/greatliontech/pb/internal/source/direct"
 	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/source/netrc"
 	"github.com/greatliontech/pb/internal/source/origin"
 	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/userconfig"
@@ -127,7 +129,31 @@ func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 			return nil, p.Wrap(err)
 		}
 	}
-	httpClient := &http.Client{}
+	// The credential file (module-resolution.md, the credential file
+	// term): the default location absent — or nowhere, on a host with
+	// no home to derive it from — is empty, a stated one absent is
+	// refused naming its layer.
+	netrcValue := settings.Get(userconfig.KeyNetrc)
+	credentials := &netrc.File{}
+	if netrcValue.Stated() {
+		if credentials, err = netrc.Load(netrcValue.Value, false); err != nil {
+			return nil, netrcValue.Wrap(err)
+		}
+	} else if p, err := netrc.DefaultPath(); err == nil {
+		if credentials, err = netrc.Load(p, true); err != nil {
+			return nil, userconfig.Defaulted(p).Wrap(err)
+		}
+	}
+	sshValue := settings.Get(userconfig.KeySSH)
+	sshPatterns, err := source.ParsePatterns(sshValue.Value, "ssh")
+	if err != nil {
+		return nil, sshValue.Wrap(fmt.Errorf("invalid ssh setting: %w", err))
+	}
+	// One transport posture for every git operation — listings, probes
+	// and fetches: the credential file's source over HTTPS, the agent
+	// over SSH (REQ-resolve-credentials, REQ-resolve-ssh).
+	gitOptions := append(credentials.ClientOptions(), direct.SSHTransport())
+	httpClient := &http.Client{Transport: credentials.RoundTripper(nil)}
 	return &fetch.Client{
 		HTTP:        httpClient,
 		Sources:     proxy.Config{Sources: sources, NoProxy: patterns},
@@ -135,8 +161,8 @@ func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 		Lock:        &lockfile.File{}, // replaced by dep.Load with the root's lockfile
 		TrustedRoot: root,
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {
-			return origin.Resolve(ctx, origin.Deps{Prober: &origin.GitProber{}, Client: httpClient}, modPath)
+			return origin.Resolve(ctx, origin.Deps{Prober: &origin.GitProber{ClientOptions: gitOptions}, Client: httpClient, SSH: sshPatterns}, modPath)
 		},
-		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cache.Value, "vcs"))},
+		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cache.Value, "vcs")), ClientOptions: gitOptions},
 	}, nil
 }

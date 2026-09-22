@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -78,5 +79,63 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 	want := proxy.Config{Sources: []proxy.Source{{URL: "https://p.example"}}, NoProxy: []string{"corp.example.com"}}
 	if !reflect.DeepEqual(client.Sources, want) {
 		t.Fatalf("Sources = %+v, want %+v", client.Sources, want)
+	}
+}
+
+// The private-origin settings: a credential file a layer states must
+// exist and parse, refused naming the layer (module-resolution.md, the
+// credential file term); the default location absent is empty; the
+// ssh setting's patterns are refused naming the layer, and a module
+// they match resolves to an SSH origin through the assembled client
+// (REQ-resolve-ssh).
+func TestClientPrivateOriginSettings(t *testing.T) {
+	cacheHome := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", cacheHome)
+	var client *fetch.Client
+	assemble := func() error {
+		settings, err := userconfig.Load()
+		if err != nil {
+			return err
+		}
+		client, err = assembleClient(settings)
+		return err
+	}
+	p := plant(t, "netrc: creds\n")
+	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the user configuration file "+p+": netrc: open "+filepath.Join(filepath.Dir(p), "creds")) {
+		t.Fatalf("the file's absent credential file: %v", err)
+	}
+	bad := filepath.Join(t.TempDir(), "netrc")
+	os.WriteFile(bad, []byte("machine a.example port 1\n"), 0o600)
+	t.Setenv("PBNETRC", bad)
+	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the PBNETRC environment variable: invalid credential file: "+bad) {
+		t.Fatalf("the environment's malformed credential file: %v", err)
+	}
+	t.Setenv("PBNETRC", "")
+
+	plant(t, "# nothing stated\n")
+	t.Setenv("HOME", t.TempDir()) // no credential file at the default location
+	if err := assemble(); err != nil {
+		t.Fatalf("the default location absent: %v", err)
+	}
+	t.Setenv("HOME", "") // no home to derive the default location from
+	if err := assemble(); err != nil {
+		t.Fatalf("no home: %v", err)
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PBSSH", "corp.example.com,[")
+	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the PBSSH environment variable: invalid ssh setting: ssh pattern \"[\": syntax error in pattern") {
+		t.Fatalf("the environment's ssh patterns: %v", err)
+	}
+	t.Setenv("PBSSH", "corp.example.com")
+	if err := assemble(); err != nil {
+		t.Fatal(err)
+	}
+	o, err := client.ResolveOrigin(context.Background(), "corp.example.com/r.git/sub")
+	if err != nil || o.Repo != "ssh://git@corp.example.com/r.git" || o.Subtree != "sub" {
+		t.Fatalf("an ssh-routed module's origin: %+v, %v", o, err)
+	}
+	o, err = client.ResolveOrigin(context.Background(), "other.example.com/r.git")
+	if err != nil || o.Repo != "https://other.example.com/r.git" {
+		t.Fatalf("an unmatched module's origin: %+v, %v", o, err)
 	}
 }

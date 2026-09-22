@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"github.com/greatliontech/pb/internal/source"
 	"path"
 	"strings"
 	"testing"
@@ -133,8 +134,8 @@ func TestCheckPatternGolden(t *testing.T) {
 		"[é]":              true,  // valid multi-byte runes are members
 		"[a-é]":            true,
 	} {
-		if got := checkPattern(pat) == nil; got != valid {
-			t.Errorf("checkPattern(%q) valid=%v, want %v", pat, got, valid)
+		if got := source.CheckPattern(pat) == nil; got != valid {
+			t.Errorf("source.CheckPattern(%q) valid=%v, want %v", pat, got, valid)
 		}
 	}
 }
@@ -162,8 +163,8 @@ func TestCheckPatternConstructedValidityProperty(t *testing.T) {
 			b.WriteString(rapid.SampledFrom(valid).Draw(t, fmt.Sprint("p", i)))
 		}
 		pat := b.String()
-		if got := checkPattern(pat) == nil; got != wantValid {
-			t.Fatalf("checkPattern(%q) valid=%v, want %v", pat, got, wantValid)
+		if got := source.CheckPattern(pat) == nil; got != wantValid {
+			t.Fatalf("source.CheckPattern(%q) valid=%v, want %v", pat, got, wantValid)
 		}
 	})
 }
@@ -234,7 +235,7 @@ func TestCheckPatternSoundnessProperty(t *testing.T) {
 		alphabet := []byte(`ab*?[]^-\/.` + "\xff\xc3")
 		pat := string(rapid.SliceOfN(rapid.SampledFrom(alphabet), 0, 10).Draw(t, "pat"))
 		probe := string(rapid.SliceOfN(rapid.SampledFrom([]byte("ab./")), 0, 10).Draw(t, "probe"))
-		if err := checkPattern(pat); err != nil {
+		if err := source.CheckPattern(pat); err != nil {
 			return
 		}
 		if _, err := path.Match(pat, probe); err != nil {
