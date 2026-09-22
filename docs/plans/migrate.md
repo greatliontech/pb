@@ -53,7 +53,7 @@ workspace.md, check-rules.md (the lint file), generation.md.
       line scan collapsed onto one reader of a proto file's lexical
       structure, the migration's placed-or-displaced claim the
       checker's own reading
-- [ ] 12. The no-heuristic witness: a property over generated buf
+- [x] 12. The no-heuristic witness: a property over generated buf
       configurations whose scalars are marker tokens, every scalar of
       every emitted pb file drawn from the input, the tables, the
       ruleset or discovery (REQ-migrate-no-heuristic bound)

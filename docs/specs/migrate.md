@@ -385,7 +385,9 @@ a BSR is never consulted, and no buf file is fetched.
 **REQ-migrate-no-heuristic** (invariant): The verb MUST synthesize no
 value it was not given: a module path, a version, an option value or
 a plugin reference comes from the command line, the buf file, the
-tables or resolution, never from a guess; where none supplies it, the
+repository's `origin` remote, the tables, the ruleset or resolution,
+never from a guess — buf's defaults and pb's own file schemas being
+this document's constants, given by it; where none supplies it, the
 fact is unmapped. The tables and the replacements are the whole of
 the verb's knowledge of buf's names: pb reads no buf file after the
 verb ends and keeps no record of the migration but the report.

@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-migrate-no-heuristic"
-reason: "the migrate verb is specced ahead of its plan, docs/plans/migrate.md, whose chunks 2 to 7 build it"
-content_hash: "75fc9f159fe9d5fcb8295cb58e9fa2ac525ef4194cd7d59012e7ab732462aa4b"
-source_hash: "b93a170b0b3e08864e5e7ff4b641121a66d110a1b2cfe5a1121a996bd75814a3"
-lands { manual { condition: "the migrate plan's chunk landing the requirement binds it" } }

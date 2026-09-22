@@ -480,3 +480,13 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "7d6150c83e98ae31652ecc4e13a6b055f5987c6e851f0f4d699c5d9d34de8f9f"
 }
+
+bindings {
+  requirement_id: "REQ-migrate-no-heuristic"
+  content_hash: "d067f2e7e4d153fa040024d9612966da680fd756bbf8421345bb1783558fd4b5"
+  source_hash: "8a21a71f47a93b135342396ba9007de10bbb7917d5164196aa4654bf94df9e00"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestNoHeuristicProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "cc40f2770f4e19e499a550e7c52c68b8ab6c7341fa0b90280baf3d14cd9e4d91"
+}
