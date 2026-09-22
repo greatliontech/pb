@@ -20,6 +20,7 @@ import (
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/env1"
 	"github.com/greatliontech/pb/internal/check/rules"
+	protolines "github.com/greatliontech/pb/internal/proto/lines"
 )
 
 // ErrSource is wrapped when a checked file's source cannot be read.
@@ -135,77 +136,36 @@ func run(env *env1.Env, source, baseSource Source, rs []rules.Rule, population f
 	return r, nil
 }
 
-// text is a checked file's source scanned once: each line's bytes,
-// and the line comment it carries, if any, found past string literals
-// and block comments — a block comment spanning lines is tracked
-// across them — with whether the line holds anything outside a
-// comment, and whether it holds nothing at all: a line inside a
-// block comment spanning lines is the comment's, blank or not.
+// text is a checked file's source scanned once by its lexical
+// structure (internal/proto/lines): each line's span, the line
+// comment it carries, whether it holds code and whether it holds
+// nothing at all — the one reading the migration's placing of a
+// directive is a claim about.
 type text struct {
-	lines []line
+	src   string
+	lines []protolines.Line
 }
 
-type line struct {
-	bytes   string
-	comment string // the text after //, where the line has a line comment
-	has     bool
-	code    bool // anything outside a comment and whitespace
-	blank   bool // nothing at all, and not inside a block comment
-}
-
-// newText scans the source. Strings never span a line (the compiler
-// refuses one that does), so a quote resets at a line end; a block
-// comment runs until its close.
+// newText scans the source.
 func newText(data []byte) *text {
-	t := &text{}
-	var quote byte
-	block := false
-	src := string(data)
-	for start := 0; start < len(src); {
-		end := strings.IndexByte(src[start:], '\n')
-		if end < 0 {
-			end = len(src)
-		} else {
-			end += start
-		}
-		l := line{bytes: strings.TrimSuffix(src[start:end], "\r")}
-		l.blank = !block && strings.TrimSpace(l.bytes) == ""
-		quote = 0
-		for i := 0; i < len(l.bytes); i++ {
-			c := l.bytes[i]
-			switch {
-			case block:
-				if c == '*' && i+1 < len(l.bytes) && l.bytes[i+1] == '/' {
-					block = false
-					i++
-				}
-			case quote != 0:
-				if c == '\\' {
-					i++
-				} else if c == quote {
-					quote = 0
-				}
-			case c == '"' || c == '\'':
-				quote, l.code = c, true
-			case c == '/' && i+1 < len(l.bytes) && l.bytes[i+1] == '*':
-				block = true
-				i++
-			case c == '/' && i+1 < len(l.bytes) && l.bytes[i+1] == '/':
-				l.comment, l.has = l.bytes[i+2:], true
-				i = len(l.bytes)
-			case c != ' ' && c != '\t':
-				l.code = true
-			}
-		}
-		t.lines = append(t.lines, l)
-		start = end + 1
-	}
-	return t
+	return &text{src: string(data), lines: protolines.Scan(data)}
 }
 
-func (t *text) line(n int) (line, bool) { // n is 1-based
+// bytes is a line's text, its terminator aside.
+func (t *text) bytes(l protolines.Line) string { return t.src[l.Start:l.End] }
+
+// comment is a line's comment text after the `//`, and whether it has
+// one.
+func (t *text) comment(l protolines.Line) (string, bool) {
+	if l.Comment < 0 {
+		return "", false
+	}
+	return t.src[l.Comment+2 : l.End], true
+}
+
+func (t *text) line(n int) (protolines.Line, bool) { // n is 1-based
 	if n < 1 || n > len(t.lines) {
-		return line{}, false
+		return protolines.Line{}, false
 	}
 	return t.lines[n-1], true
 }
@@ -221,15 +181,16 @@ func (t *text) column(line0, col0 int) int {
 	if !ok {
 		return col0 + 1
 	}
+	b := t.bytes(l)
 	col, points := 0, 0
-	for i := 0; i < len(l.bytes); i++ {
+	for i := 0; i < len(b); i++ {
 		if col >= col0 {
 			break
 		}
 		switch {
-		case l.bytes[i] == '\t':
+		case b[i] == '\t':
 			col += 8 - col%8
-		case utf8.RuneStart(l.bytes[i]):
+		case utf8.RuneStart(b[i]):
 			col++
 		default:
 			continue
@@ -255,13 +216,14 @@ func (t *text) suppresses(n int, r rules.Rule, shared map[string][]string) (bool
 		if !ok {
 			break
 		}
-		if at != n && (l.code || l.blank) {
+		if at != n && (l.Code || l.Blank) {
 			break
 		}
-		if !l.has {
+		comment, has := t.comment(l)
+		if !has {
 			continue
 		}
-		word, ok := ignoreWord(l.comment)
+		word, ok := ignoreWord(comment)
 		if !ok {
 			continue
 		}

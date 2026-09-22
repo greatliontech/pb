@@ -265,9 +265,9 @@ func TestLineComment(t *testing.T) {
 	}
 	for _, c := range cases {
 		tx := newText([]byte(c.src))
-		l := tx.lines[len(tx.lines)-1]
-		if l.has != c.ok || l.comment != c.comment {
-			t.Errorf("%q: %q has=%v", c.src, l.comment, l.has)
+		comment, has := tx.comment(tx.lines[len(tx.lines)-1])
+		if has != c.ok || comment != c.comment {
+			t.Errorf("%q: %q has=%v", c.src, comment, has)
 		}
 	}
 	// A line holds code where anything stands outside a comment: a
@@ -281,19 +281,19 @@ func TestLineComment(t *testing.T) {
 	} {
 		tx := newText([]byte(src))
 		l := tx.lines[len(tx.lines)-1]
-		if l.code != want[0] || l.blank != want[1] {
-			t.Errorf("%q: code=%v blank=%v", src, l.code, l.blank)
+		if l.Code != want[0] || l.Blank != want[1] {
+			t.Errorf("%q: code=%v blank=%v", src, l.Code, l.Blank)
 		}
 	}
 	// Inside a block comment spanning lines, a // is no comment.
 	tx := newText([]byte("/* opens\n // inside\n */ string a = 1;\n"))
-	if tx.lines[1].has || tx.lines[2].has {
+	if tx.lines[1].Comment >= 0 || tx.lines[2].Comment >= 0 {
 		t.Errorf("a // inside a block comment read as a comment: %+v", tx.lines)
 	}
 	// A string resets at the line end, so an unbalanced quote never
 	// swallows the next line; CRLF endings are stripped.
 	tx = newText([]byte("string a = 1 [(o) = \"unterminated;\r\n// pb:ignore X\r\n"))
-	if l := tx.lines[1]; !l.has || l.code || l.comment != " pb:ignore X" {
+	if l := tx.lines[1]; l.Comment < 0 || l.Code || tx.bytes(l) != "// pb:ignore X" {
 		t.Errorf("after an unbalanced quote: %+v", l)
 	}
 	for comment, want := range map[string]string{" pb:ignore X": "X", "pb:ignore X reason here": "X", "  pb:ignore   X  ": "X", " pb:ignore": "", " pb:ignoreX": "", " see pb:ignore X": "", " pb:ignore X, Y": "X,"} {

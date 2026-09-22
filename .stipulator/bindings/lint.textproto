@@ -210,3 +210,33 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "be6d391c613136bc87590ded4a03268cbea30a12109fec44f29c37a7222de04d"
 }
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "5ddf9786a0b437d8a58fae6b5542bc42a9d4ee317cd1571dd48a5f4591c78918"
+  source_hash: "43f7c3564399b943d8fa8f0b420f4790f4081c456daf2fad9643c1fde82bfa7a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/lines.Scan"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ee905c7c342ddfb6b12090827d2ddc71293b9405e1aca0b81f437b0b21e412cd"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "5ddf9786a0b437d8a58fae6b5542bc42a9d4ee317cd1571dd48a5f4591c78918"
+  source_hash: "43f7c3564399b943d8fa8f0b420f4790f4081c456daf2fad9643c1fde82bfa7a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/lines.TestScanGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "49f3c766bcf1f152178b246a5bfd2faede4f35e9e2327654cdac534c900597c6"
+}
+
+bindings {
+  requirement_id: "REQ-lint-suppression"
+  content_hash: "5ddf9786a0b437d8a58fae6b5542bc42a9d4ee317cd1571dd48a5f4591c78918"
+  source_hash: "43f7c3564399b943d8fa8f0b420f4790f4081c456daf2fad9643c1fde82bfa7a"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/lines.TestScanProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "053948a3bfa957f97428f0a44fb407d84fa4844f6525f85b185cc06e39899202"
+}

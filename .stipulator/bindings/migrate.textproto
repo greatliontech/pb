@@ -460,3 +460,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "78437e29bc5cc3365912d5089ec2489dc03bb05ecf637d124d059cb9941aa0d3"
 }
+
+bindings {
+  requirement_id: "REQ-migrate-comments"
+  content_hash: "d2458ab2ac8ec566f26eecfdc25c0515894c3779d86d4134906b509022d0bbba"
+  source_hash: "c1aa874ee352ca947fa1153fb0c46bcd6641407e53b8fa8c3c0fb03600689894"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/lines.Scan"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ee905c7c342ddfb6b12090827d2ddc71293b9405e1aca0b81f437b0b21e412cd"
+}
+
+bindings {
+  requirement_id: "REQ-migrate-comments"
+  content_hash: "d2458ab2ac8ec566f26eecfdc25c0515894c3779d86d4134906b509022d0bbba"
+  source_hash: "c1aa874ee352ca947fa1153fb0c46bcd6641407e53b8fa8c3c0fb03600689894"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.declaresNothing"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "7d6150c83e98ae31652ecc4e13a6b055f5987c6e851f0f4d699c5d9d34de8f9f"
+}
