@@ -9,10 +9,8 @@ import (
 	"strings"
 
 	git "github.com/go-git/go-git/v6"
-	"github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
-	"github.com/go-git/go-git/v6/storage/memory"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/source/origin"
 )
@@ -211,7 +209,7 @@ func (r *Repo) roots(ctx context.Context) ([]plumbing.Hash, error) {
 			continue
 		}
 		h := plumbing.NewHash(ref.Hash)
-		if _, err := r.hist.Object(plumbing.AnyObject, h); errors.Is(err, plumbing.ErrObjectNotFound) && r.remote != nil {
+		if _, err := r.hist.Object(plumbing.AnyObject, h); errors.Is(err, plumbing.ErrObjectNotFound) && r.origin != nil {
 			if err := r.probeRef(ctx, ref.Name, h); err != nil {
 				return nil, err
 			}
@@ -234,7 +232,10 @@ func (r *Repo) roots(ctx context.Context) ([]plumbing.Hash, error) {
 }
 
 // probeRef fetches a listed ref the history lacks by its name, at
-// depth one and unfiltered, into a repository thrown away after: the
+// depth one and unfiltered, into a repository thrown away after — on
+// the store's filesystem beside the two kept, one directory per
+// probe, where a pack of any size is indexed within a bounded
+// memory, never in memory: the
 // history is never fetched at a depth, so a moved ref's commit must
 // not leave a shallow boundary in it. What arrives decides: the
 // listing's object absent, the origin moved the ref; a non-commit,
@@ -243,13 +244,11 @@ func (r *Repo) roots(ctx context.Context) ([]plumbing.Hash, error) {
 // of every head and tag should have held — reported, never patched
 // in.
 func (r *Repo) probeRef(ctx context.Context, name string, h plumbing.Hash) error {
-	probe, err := git.Init(memory.NewStorage())
+	dir := openProbe()
+	defer closeProbe(r.origin.dir, dir)
+	probe, _, remote, err := openStore(r.origin.dir, ".", dir, r.origin.remote.Config().URLs[0])
 	if err != nil {
-		return err
-	}
-	remote, err := probe.CreateRemote(&config.RemoteConfig{Name: remoteName, URLs: r.remote.Config().URLs})
-	if err != nil {
-		return err
+		return fmt.Errorf("opening the probe's repository: %w", err)
 	}
 	if err := r.fetchListed(ctx, remote, probe, name, h); err != nil {
 		return err

@@ -26,7 +26,16 @@
 // depth stands in for a decision's need: an origin the size of
 // googleapis is listed for nothing, its head fetched for one commit's
 // tree, and its history — thirteen thousand commits, a few megabytes
-// without their trees — reached only for a pseudo-version.
+// without their trees — reached only for a pseudo-version. An origin
+// refusing the filter sends the whole history, trees and blobs with
+// it; every fetch lands in a repository on the store's filesystem,
+// the probe's throwaway one included, where go-git indexes a pack of
+// any size within a delta base cache budget and one chain step (the
+// fork pinned in go.mod carries that bound, upstream's parser having
+// held every resolved object until the pack was parsed; a repository
+// in memory, parsing the stream as it arrives, holds the pack
+// decoded), so the whole fetch costs time and disk, never the
+// process.
 //
 // An origin's repositories are held by one process at a time: the
 // lock beside them is taken at opening and kept for the process,
@@ -49,6 +58,7 @@ import (
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
+	"github.com/go-git/go-billy/v6/util"
 	git "github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing"
@@ -79,10 +89,12 @@ type Fetcher struct {
 const remoteName = "origin"
 
 // The layout of an origin's directory in the store (dep-verbs.md, the
-// module cache term): the two repositories and the lock.
+// module cache term): the two repositories and the lock, and a
+// probe's repository while a probe runs.
 const (
 	snapshotsDir = "snapshots"
 	historyDir   = "history"
+	probeDir     = "probe" // the prefix of a probe's directory, numbered per probe
 	lockName     = "lock"
 )
 
@@ -110,6 +122,10 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 	if err := hold(ctx, store, dir); err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
 	}
+	origin, err := store.Chroot(dir)
+	if err != nil {
+		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
+	}
 	snap, snapSt, remote, err := openStore(store, dir, snapshotsDir, repoURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
@@ -122,8 +138,13 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: listing refs: %w", repoURL, err)
 	}
+	// Probe repositories a crashed run left behind go now: this
+	// process holds the origin, so none is in use.
+	if err := clearProbes(origin); err != nil {
+		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
+	}
 	repo := newRepo(snap, snapSt, hist, listed)
-	repo.remote, repo.histRemote, repo.client = remote, histRemote, f.ClientOptions
+	repo.origin = &connection{remote: remote, histRemote: histRemote, client: f.ClientOptions, dir: origin}
 	if len(repo.hashes) == 0 {
 		return nil, fmt.Errorf("fetching %s: the origin advertises no ref", repoURL)
 	}
@@ -258,12 +279,10 @@ func openStore(store billy.Filesystem, dir, name, repoURL string) (*git.Reposito
 // changes cost, never results. Not safe for concurrent use, matching
 // the single-threaded resolution pipeline above it.
 type Repo struct {
-	r          *git.Repository // the snapshots: each needed commit with its tree, at depth one
-	st         *filesystem.Storage
-	hist       *git.Repository // the history: the commit graph, no tree or blob, never shallow
-	remote     *git.Remote     // nil for a repository opened in place, every object present
-	histRemote *git.Remote
-	client     []client.Option
+	r      *git.Repository // the snapshots: each needed commit with its tree, at depth one
+	st     *filesystem.Storage
+	hist   *git.Repository // the history: the commit graph, no tree or blob, never shallow
+	origin *connection     // nil for a repository opened in place, every object present
 
 	listed     []*plumbing.Reference    // the origin's advertised refs, peeled entries appended
 	hashes     map[string]plumbing.Hash // the listing's hash refs by name
@@ -283,6 +302,67 @@ type Repo struct {
 	indexed bool
 
 	ancestry map[string]map[string]bool // commit hash -> reachability set
+}
+
+// connection is what a Repo opened over an origin fetches with: the
+// two repositories' remotes, the transport client's options, and the
+// origin's directory in the store, where a probe's repository lives
+// while a probe runs. A Repo opened in place has none, and fetches
+// nothing.
+type connection struct {
+	remote     *git.Remote
+	histRemote *git.Remote
+	client     []client.Option
+	dir        billy.Filesystem
+}
+
+// probes names the probes this process runs, each in a directory of
+// its own, so two repositories over one origin in one process — the
+// lock is the process's — never share one: a counter for the names,
+// and the names in flight, which clearing an origin's residue leaves
+// alone.
+var probes = struct {
+	sync.Mutex
+	count uint64
+	inUse map[string]bool
+}{inUse: map[string]bool{}}
+
+// openProbe takes a probe directory's name and marks it in flight.
+func openProbe() string {
+	probes.Lock()
+	defer probes.Unlock()
+	probes.count++
+	name := fmt.Sprintf("%s-%d", probeDir, probes.count)
+	probes.inUse[name] = true
+	return name
+}
+
+// closeProbe removes a probe's directory and its mark.
+func closeProbe(dir billy.Filesystem, name string) {
+	probes.Lock()
+	defer probes.Unlock()
+	delete(probes.inUse, name)
+	_ = util.RemoveAll(dir, name)
+}
+
+// clearProbes removes the probe repositories an origin's directory
+// holds from runs that ended mid-probe, leaving this process's own
+// probes in flight.
+func clearProbes(dir billy.Filesystem) error {
+	entries, err := dir.ReadDir(".")
+	if err != nil {
+		return err
+	}
+	probes.Lock()
+	defer probes.Unlock()
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), probeDir) && !probes.inUse[e.Name()] {
+			if err := util.RemoveAll(dir, e.Name()); err != nil {
+				return fmt.Errorf("clearing %s: %w", e.Name(), err)
+			}
+		}
+	}
+	return nil
 }
 
 // newRepo builds a Repo over its repositories and a listing: the
@@ -318,7 +398,7 @@ func (r *Repo) fetch(ctx context.Context, remote *git.Remote, depth int, filter 
 		Filter:        filter,
 		Tags:          plumbing.NoTags,
 		Force:         true,
-		ClientOptions: r.client,
+		ClientOptions: r.origin.client,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) && !errors.Is(err, transport.ErrNoChange) {
 		return err
@@ -338,14 +418,14 @@ func (r *Repo) fetchOne(ctx context.Context, remote *git.Remote, spec config.Ref
 // after: a tag the origin moved since the listing is reported, never
 // read as what the listing named.
 func (r *Repo) ensureTag(ctx context.Context, name string) error {
-	if r.remote == nil || r.fetchedTags[name] {
+	if r.origin == nil || r.fetchedTags[name] {
 		return nil
 	}
 	h, ok := r.hashes[name]
 	if !ok {
 		return nil
 	}
-	if err := r.fetchListed(ctx, r.remote, r.r, name, h); err != nil {
+	if err := r.fetchListed(ctx, r.origin.remote, r.r, name, h); err != nil {
 		return err
 	}
 	r.fetchedTags[name] = true
@@ -390,7 +470,7 @@ func (r *Repo) headCommit() (plumbing.Hash, error) {
 // snapshots at depth one: by the branch's name where HEAD is
 // symbolic, by its hash where the origin advertises the commit alone.
 func (r *Repo) ensureHead(ctx context.Context) error {
-	if r.remote == nil || r.headFetched {
+	if r.origin == nil || r.headFetched {
 		return nil
 	}
 	h, err := r.headCommit()
@@ -401,7 +481,7 @@ func (r *Repo) ensureHead(ctx context.Context) error {
 		if err := r.ensureCommit(ctx, h); err != nil {
 			return fmt.Errorf("fetching the origin's HEAD: %w", err)
 		}
-	} else if err := r.fetchListed(ctx, r.remote, r.r, r.headBranch.String(), h); err != nil {
+	} else if err := r.fetchListed(ctx, r.origin.remote, r.r, r.headBranch.String(), h); err != nil {
 		return fmt.Errorf("fetching the origin's HEAD: %w", err)
 	}
 	r.headFetched = true
@@ -416,13 +496,13 @@ const commitRef = "refs/pb/commit"
 // hash — its tree with it — where the origin serves commits by hash,
 // as an artifact of a commit resolved before or named outright needs.
 func (r *Repo) ensureCommit(ctx context.Context, h plumbing.Hash) error {
-	if r.remote == nil {
+	if r.origin == nil {
 		return nil
 	}
 	if _, err := r.r.CommitObject(h); err == nil {
 		return nil
 	}
-	if err := r.fetchOne(ctx, r.remote, config.RefSpec("+"+h.String()+":"+commitRef)); err != nil {
+	if err := r.fetchOne(ctx, r.origin.remote, config.RefSpec("+"+h.String()+":"+commitRef)); err != nil {
 		return fmt.Errorf("fetching commit %s: %w", h, err)
 	}
 	return nil
@@ -431,7 +511,7 @@ func (r *Repo) ensureCommit(ctx context.Context, h plumbing.Hash) error {
 // ensureHistory fetches the commit graph into the history once per
 // opening.
 func (r *Repo) ensureHistory(ctx context.Context) error {
-	if r.remote == nil || r.historyFetched {
+	if r.origin == nil || r.historyFetched {
 		return nil
 	}
 	if err := r.fetchHistory(ctx); err != nil {
@@ -447,9 +527,9 @@ func (r *Repo) ensureHistory(ctx context.Context) error {
 // fetched at a depth, so it is never shallow.
 func (r *Repo) fetchHistory(ctx context.Context) error {
 	specs := []config.RefSpec{"+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"}
-	err := r.fetch(ctx, r.histRemote, 0, packp.FilterTreeDepth(0), specs...)
+	err := r.fetch(ctx, r.origin.histRemote, 0, packp.FilterTreeDepth(0), specs...)
 	if errors.Is(err, transport.ErrFilterNotSupported) {
-		err = r.fetch(ctx, r.histRemote, 0, "", specs...)
+		err = r.fetch(ctx, r.origin.histRemote, 0, "", specs...)
 	}
 	return err
 }

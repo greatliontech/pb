@@ -1,10 +1,17 @@
 package direct
 
 import (
+	"bytes"
+	"compress/zlib"
 	"context"
+	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -18,8 +25,14 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/osfs"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/cache"
+	"github.com/go-git/go-git/v6/plumbing/format/config"
+	"github.com/go-git/go-git/v6/plumbing/format/packfile"
+	packutil "github.com/go-git/go-git/v6/plumbing/format/packfile/util"
 	"github.com/go-git/go-git/v6/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v6/plumbing/transport"
+	"github.com/go-git/go-git/v6/storage/filesystem"
+	gogitbinary "github.com/go-git/go-git/v6/utils/binary"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/testing/gittest"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
@@ -361,9 +374,20 @@ func TestFetchMovedSinceListing(t *testing.T) {
 func TestFetchHistoryRoots(t *testing.T) {
 	ctx := context.Background()
 	c := newChain(t)
-	repo, err := Fetcher{ClientOptions: c.ClientOptions()}.Fetch(ctx, "file:///")
+	// The store on disk, as the module cache's is; a probe's
+	// repository a crashed run left behind is cleared at opening.
+	store := osfs.New(scratchtest.Dir(t))
+	sum := sha256.Sum256([]byte("file:///"))
+	stale := filepath.Join(hex.EncodeToString(sum[:]), probeDir+"-stale")
+	if err := store.MkdirAll(stale, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	repo, err := Fetcher{ClientOptions: c.ClientOptions(), Store: store}.Fetch(ctx, "file:///")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if _, err := store.Stat(stale); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("a stale probe after the opening: %v", err)
 	}
 	if err := repo.ensureHistory(ctx); err != nil {
 		t.Fatal(err)
@@ -388,6 +412,16 @@ func TestFetchHistoryRoots(t *testing.T) {
 	}
 	if _, err := repo.hist.BlobObject(blob); err != nil {
 		t.Fatalf("the blob kept in the history after the probe: %v", err)
+	}
+	// The probe's repository is gone with the probe.
+	entries, err := repo.origin.dir.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), probeDir) {
+			t.Fatalf("the probe's repository %s outlived the probe", e.Name())
+		}
 	}
 	// The blob tag, a release by name, seeds no base: the head's
 	// pseudo-version derives its base from v1.1.0 beside it.
@@ -563,4 +597,141 @@ func TestFetchCorruptStoreFailsLoudly(t *testing.T) {
 	if _, err := again.ResolveVersion(ctx, mustV(t, "v1.0.0"), ""); err == nil || errors.Is(err, ErrUnknownVersion) {
 		t.Fatalf("a fetch over broken ref storage: %v", err)
 	}
+}
+
+// peakHeap samples the live heap every interval while fn runs and
+// reports its largest growth over the heap before fn, collecting
+// before every sample so garbage counts for nothing — an interval
+// short enough to see the peak, long enough that the collections do
+// not starve fn. The heap is the process's: the measure holds while
+// no test in this package runs in parallel.
+func peakHeap(interval time.Duration, fn func()) int64 {
+	runtime.GC()
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	base := ms.HeapAlloc
+	var peak int64
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		for {
+			runtime.GC()
+			runtime.ReadMemStats(&ms)
+			if g := int64(ms.HeapAlloc) - int64(base); g > peak {
+				peak = g
+			}
+			select {
+			case <-done:
+				return
+			case <-time.After(interval):
+			}
+		}
+	}()
+	fn()
+	close(done)
+	<-finished
+	return peak
+}
+
+// A pack written into the store is indexed within a memory bounded
+// independently of its decoded size (REQ-proxy-direct-fetch): the
+// fetch path hands the arriving pack to the storage's pack writer,
+// whose close builds the index by parsing it. A pack of 320 versions
+// of a megabyte file, each a delta on the one before, decodes to
+// 320 MiB, three times go-git's delta base cache budget; indexing it
+// grows the live heap by less than the budget and a fixed allowance
+// — one chain step, the pack writer's buffers, the index's tables —
+// where the parser that held every resolved object grows it by the
+// pack.
+func TestPackIndexBounded(t *testing.T) {
+	const versions, size = 320, 1 << 20
+	const budget = packfile.DefaultDeltaBaseCacheLimit
+	if versions*size < 3*budget {
+		t.Fatalf("a pack of %d decoded bytes cannot witness a budget of %d", versions*size, budget)
+	}
+	pack, last := buildVersionsPack(t, versions, size)
+
+	st := filesystem.NewStorage(osfs.New(scratchtest.Dir(t)), cache.NewObjectLRU(cache.MiByte))
+	var indexErr error
+	growth := peakHeap(20*time.Millisecond, func() {
+		w, err := st.PackfileWriter()
+		if err != nil {
+			indexErr = err
+			return
+		}
+		if _, err := w.Write(pack); err != nil {
+			indexErr = err
+			return
+		}
+		indexErr = w.Close()
+	})
+	if indexErr != nil {
+		t.Fatal(indexErr)
+	}
+	if _, err := st.EncodedObject(plumbing.BlobObject, last); err != nil {
+		t.Fatalf("the last version after indexing: %v", err)
+	}
+	if growth > budget+48<<20 {
+		t.Fatalf("the live heap grew by %d bytes indexing a pack of %d decoded bytes under a budget of %d", growth, versions*size, budget)
+	}
+}
+
+// buildVersionsPack returns a pack of one base blob and versions
+// OFS-deltas, each a version of the base on the one before — the
+// base's bytes with a distinct line appended — and the last
+// version's hash.
+func buildVersionsPack(t *testing.T, versions, size int) ([]byte, plumbing.Hash) {
+	t.Helper()
+	rnd := rand.New(rand.NewPCG(9, 10))
+	body := make([]byte, size)
+	for i := range body {
+		body[i] = byte('a' + rnd.UintN(26))
+	}
+	blobHash := func(content []byte) plumbing.Hash {
+		h := plumbing.NewHasher(config.SHA1, plumbing.BlobObject, int64(len(content)))
+		_, _ = h.Write(content)
+		return h.Sum()
+	}
+	header := func(w io.Writer, typ plumbing.ObjectType, n int64) {
+		first := byte(typ)<<4 | byte(n&0x0F)
+		rest := uint(n >> 4)
+		if rest != 0 {
+			first |= 0x80
+		}
+		_, _ = w.Write([]byte{first})
+		if rest != 0 {
+			_ = packutil.EncodeLEB128ToWriter(w, rest)
+		}
+	}
+	payload := func(w io.Writer, b []byte) {
+		zw := zlib.NewWriter(w)
+		_, _ = zw.Write(b)
+		_ = zw.Close()
+	}
+
+	var buf bytes.Buffer
+	sum := sha1.New()
+	w := io.MultiWriter(&buf, sum)
+	_, _ = w.Write([]byte("PACK"))
+	_ = binary.Write(w, binary.BigEndian, uint32(2))
+	_ = binary.Write(w, binary.BigEndian, uint32(versions+1))
+
+	prev := body
+	prevOffset := int64(buf.Len())
+	header(w, plumbing.BlobObject, int64(len(prev)))
+	payload(w, prev)
+	var last plumbing.Hash
+	for i := 0; i < versions; i++ {
+		next := append(append([]byte{}, body...), []byte(fmt.Sprintf("\nversion %d\n", i))...)
+		last = blobHash(next)
+		delta := packfile.DiffDelta(prev, next)
+		offset := int64(buf.Len())
+		header(w, plumbing.OFSDeltaObject, int64(len(delta)))
+		_ = gogitbinary.WriteVariableWidthInt(w, offset-prevOffset)
+		payload(w, delta)
+		prev, prevOffset = next, offset
+	}
+	_, _ = buf.Write(sum.Sum(nil))
+	return buf.Bytes(), last
 }

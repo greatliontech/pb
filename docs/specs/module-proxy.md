@@ -169,8 +169,10 @@ lacks after the fetch is fetched by its name into a repository
 thrown away after, never into the history: a non-commit it names
 is kept in the history and names no root, a commit the origin no
 longer serves under the name fails the fetch. No fixed depth stands in for a
-decision's need. The repositories are a fetch cache, never a source
-of truth: every artifact built from them verifies as
+decision's need. Every fetch, the probe's included, is indexed
+within a memory bounded independently of the pack's decoded size,
+so an origin's history costs time and disk, never the process. The
+repositories are a fetch cache, never a source of truth: every artifact built from them verifies as
 REQ-proxy-client-verification has it. An origin's repositories are
 held by one process at a time, the lock beside them taken at opening
 and held to the process's end, another run waiting at its opening
