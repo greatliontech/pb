@@ -23,7 +23,7 @@ REQ-verify-signature-kind, REQ-verify-pinned-key)
       parsed and validated — every key's fingerprint against the key,
       every rule fingerprint against the keyring, `plugins` rules
       refusing `keys` — and carried in the policy's decision
-- [ ] 5. pb: the lockfile's `git-pinned-key` record read, written,
+- [x] 5. pb: the lockfile's `git-pinned-key` record read, written,
       validated and held to the downgrade guard; the fixed-point and
       fuzz grammars extended to it
 - [ ] 6. pb: evaluation in the fetch client — under a rule naming keys
