@@ -15,7 +15,7 @@ REQ-verify-signature-kind, REQ-verify-pinned-key)
       them over the raw bytes, no transparency, the outcome naming the
       key's kind and fingerprint; the synthetic sigstore gains an SSH
       key pair and the builder that signs a tag with it
-- [ ] 3. gitprov: the OpenPGP arm over the maintained OpenPGP fork —
+- [x] 3. gitprov: the OpenPGP arm over the maintained OpenPGP fork —
       armored public keys by fingerprint, the same contract; the
       synthetic sigstore gains an OpenPGP key pair and its builder; the
       pinned-key-signatures issue closes
