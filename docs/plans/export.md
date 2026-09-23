@@ -3,7 +3,7 @@
 Spec: docs/specs/export.md; docs/specs/module-archive.md
 (REQ-archive-no-exec-materialization)
 
-- [ ] 1. compile: the import closure of a compiled build and the
+- [x] 1. compile: the import closure of a compiled build and the
       provider index exposed — one source for which module provides
       a path, the ambiguity rule's, and for the reachable set,
       well-known paths never among them
