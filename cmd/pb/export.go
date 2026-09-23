@@ -14,6 +14,7 @@ import (
 // the working tree names it, and as given for the report.
 func exportCmd() *cobra.Command {
 	var all bool
+	var exclude []string
 	cmd := &cobra.Command{
 		Use: "export <dir>", Short: "materialize the workspace's protobuf sources as one include tree", Args: cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -25,10 +26,11 @@ func exportCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return dep.Export(c.Context(), s, dir, args[0], dep.ExportOptions{All: all}, os.Stdout)
+			return dep.Export(c.Context(), s, dir, args[0], dep.ExportOptions{All: all, Exclude: exclude}, os.Stdout)
 		},
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "every protobuf file of every module of the build, not the import closure alone")
+	cmd.Flags().StringArrayVar(&exclude, "exclude", nil, "MODULE: write none of this build-list module's files, the consumer supplying it at the pinned version; repeatable")
 	return cmd
 }
 

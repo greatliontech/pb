@@ -300,3 +300,33 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "f613ee5a6e29412c49cb5fad4671726d6e408e4ce87fbb5fea1e066b6755b848"
 }
+
+bindings {
+  requirement_id: "REQ-export-exclusion"
+  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
+  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Export"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6c892be3b659a400754e57774ae5af84ad1d6818c8a5d4c89690e1aa6c14e27f"
+}
+
+bindings {
+  requirement_id: "REQ-export-exclusion"
+  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
+  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestExportExclusion"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e2c1204ac0ee358d92be922955fe51e9644252e3db0d093c8cca8757d56a02c6"
+}
+
+bindings {
+  requirement_id: "REQ-export-exclusion"
+  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
+  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestExportProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "8ef690df7a3197ac31e380b357149163b87a1bc1e1ae5829e5e1e4c83f587ac9"
+}

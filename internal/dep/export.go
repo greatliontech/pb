@@ -7,13 +7,16 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/go-git/go-billy/v6/util"
 
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/proto/compile"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // ExportOptions are the export verb's flags (export.md).
@@ -21,17 +24,25 @@ type ExportOptions struct {
 	// All exports every protobuf file of every module of the build,
 	// not the import closure alone (REQ-export-selection).
 	All bool
+	// Exclude names build-list modules whose files are not written —
+	// and nothing else: the closure is computed over the whole build,
+	// so what an excluded module's files import is written whenever
+	// its own module is not excluded (REQ-export-exclusion). A path
+	// naming no build-list module, naming a workspace module, or
+	// given twice fails the export before anything is written.
+	Exclude []string
 }
 
 // Export is the export verb (export.md): the build compiled as
 // generation compiles it (REQ-export-build), the import closure or,
 // under All, every file of every module selected (REQ-export-selection),
+// the excluded modules' files then set aside (REQ-export-exclusion),
 // the selected paths of every module held together to the archive's
 // path and case-collision rules (REQ-export-layout), and the tree
 // written whole into dir — each file at its import path, a regular
 // file whatever its source's mode or kind (REQ-export-materialization)
-// — then the report, one line per module in build order and one for
-// the whole (REQ-export-report).
+// — then the report, one line per module in build order, an excluded
+// module's saying so, and one for the whole (REQ-export-report).
 //
 // dir is the output directory as the session's working tree names it;
 // symbolic links on the way are resolved here, and the tree is written
@@ -44,9 +55,28 @@ func Export(ctx context.Context, s *Session, dir, given string, opts ExportOptio
 	if err != nil {
 		return fmt.Errorf("export: %w", err)
 	}
+	// A path given twice or naming a workspace module is refused before
+	// the build is resolved, the workspace known already; whether a path
+	// names a module of the build needs the build list.
+	for i, e := range opts.Exclude {
+		if slices.Contains(opts.Exclude[:i], e) {
+			return fmt.Errorf("export: --exclude %s given twice", e)
+		}
+		if slices.ContainsFunc(s.Root.Modules, func(m workspace.Module) bool { return m.File.Module == e }) {
+			return fmt.Errorf("export: --exclude %s names a workspace module, whose files are the export's subject", e)
+		}
+	}
 	_, mods, err := s.Modules(ctx)
 	if err != nil {
 		return err
+	}
+	excluded := make([]bool, len(mods))
+	for _, e := range opts.Exclude {
+		i := slices.IndexFunc(mods, func(m modfiles.Module) bool { return m.Path == e })
+		if i < 0 {
+			return fmt.Errorf("export: --exclude %s names no module of the build", e)
+		}
+		excluded[i] = true
 	}
 	compiled, err := compile.Compile(ctx, mods)
 	if err != nil {
@@ -74,6 +104,12 @@ func Export(ctx context.Context, s *Session, dir, given string, opts ExportOptio
 				return fmt.Errorf("export: %s is reached by the compile but provided by no module", p)
 			}
 			selected[i] = append(selected[i], p)
+		}
+	}
+	// Exclusion prunes what is written, never what was walked.
+	for i := range selected {
+		if excluded[i] {
+			selected[i] = nil
 		}
 	}
 	var paths []string
@@ -107,6 +143,10 @@ func Export(ctx context.Context, s *Session, dir, given string, opts ExportOptio
 	}
 	total := 0
 	for i, m := range mods {
+		if excluded[i] {
+			fmt.Fprintf(out, "%s: excluded\n", m.Label())
+			continue
+		}
 		fmt.Fprintf(out, "%s: %d file(s)\n", m.Label(), len(selected[i]))
 		total += len(selected[i])
 	}

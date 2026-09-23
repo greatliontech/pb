@@ -322,6 +322,82 @@ func TestExportCollision(t *testing.T) {
 	}
 }
 
+// An exclusion removes the named module's files from what is written
+// and nothing else: what its files import is written when its own
+// module is not excluded, an exclusion the closure never reaches
+// removes nothing, each is reported with its version; a path naming
+// no build-list module, a workspace module, or given twice fails the
+// export before anything is written (REQ-export-exclusion).
+func TestExportExclusion(t *testing.T) {
+	fx := exportFixture(t)
+	var out strings.Builder
+	if err := Export(ctx, fx.session(t, "."), "out", "out", ExportOptions{Exclude: []string{"example.com/m3", "example.com/m1"}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	got := tree(t, fx.ws, "out")
+	want := []string{"a.proto", "m2/deep.proto", "z.proto"}
+	if !equalStrings(keys(got), want) {
+		t.Fatalf("tree = %v, want %v", keys(got), want)
+	}
+	wantOut := "example.com/a: 2 file(s)\nexample.com/m1@v1.0.0: excluded\nexample.com/m2@v1.0.0: 1 file(s)\nexample.com/m3@v1.0.0: excluded\nexported 3 file(s) to out\n"
+	if out.String() != wantOut {
+		t.Fatalf("report = %q, want %q", out.String(), wantOut)
+	}
+	// Under --all the same modules are set aside.
+	out.Reset()
+	if err := Export(ctx, fx.session(t, "."), "all", "all", ExportOptions{All: true, Exclude: []string{"example.com/m1"}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if got := keys(tree(t, fx.ws, "all")); !equalStrings(got, []string{"a.proto", "m2/deep.proto", "m3/never.proto", "z.proto"}) {
+		t.Fatalf("tree = %v", got)
+	}
+	if !strings.Contains(out.String(), "example.com/m1@v1.0.0: excluded\n") || !strings.HasSuffix(out.String(), "exported 4 file(s) to all\n") {
+		t.Fatalf("report = %q", out.String())
+	}
+	// Refusals, on a fresh workspace: a workspace module or a path
+	// given twice is refused before the build is resolved (no pin
+	// written); a path naming no module of the build needs the build
+	// list, so its refusal follows the pins.
+	fx = exportFixture(t)
+	for _, c := range []struct {
+		exclude  []string
+		want     string
+		resolves bool
+	}{
+		{[]string{"example.com/a"}, "--exclude example.com/a names a workspace module", false},
+		{[]string{"example.com/m1", "example.com/m2", "example.com/m1"}, "--exclude example.com/m1 given twice", false},
+		{[]string{"example.com/nope"}, "--exclude example.com/nope names no module of the build", true},
+	} {
+		out.Reset()
+		if err := Export(ctx, fx.session(t, "."), "refused", "refused", ExportOptions{Exclude: c.exclude}, &out); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Fatalf("%v: %v", c.exclude, err)
+		}
+		if _, err := fx.ws.Stat("refused"); !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("%v: written despite the refusal", c.exclude)
+		}
+		if _, err := fx.ws.Stat("pb.lock"); (err == nil) != c.resolves {
+			t.Fatalf("%v: the build resolved before the refusal: %v", c.exclude, err)
+		}
+		if out.String() != "" {
+			t.Fatalf("%v: reported %q", c.exclude, out.String())
+		}
+	}
+	// A synthesized module is excluded like any other, by its path.
+	fx = newDepOn(t, osfs.New(t.TempDir()), map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/repo/synth: v1.0.0\n"),
+		"a/a.proto": "syntax = \"proto3\";\npackage a;\nimport \"synth/s.proto\";\nmessage A { synth.S s = 1; }\n",
+	})
+	fx.serve(t, "example.com/repo/synth", "v1.0.0", map[string]string{"synth/s.proto": "syntax = \"proto3\";\npackage synth;\nmessage S {}\n"})
+	out.Reset()
+	if err := Export(ctx, fx.session(t, "."), "out", "out", ExportOptions{Exclude: []string{"example.com/repo/synth"}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if got := keys(tree(t, fx.ws, "out")); !equalStrings(got, []string{"a.proto"}) || out.String() != "example.com/a: 1 file(s)\nexample.com/repo/synth@v1.0.0: excluded\nexported 1 file(s) to out\n" {
+		t.Fatalf("synthesized: %v %q", got, out.String())
+	}
+}
+
 // A build that fails to compile — an unsatisfied import, an import
 // path two modules provide — fails the export in either mode with
 // nothing written (REQ-export-build).
@@ -383,9 +459,11 @@ func TestExportLandsWholeOrNot(t *testing.T) {
 // For any served module — its files regular, executable, links named
 // like protobuf files, submodule entries — an export writes exactly its
 // regular protobuf files, none executable, none a link, a copy of a
-// well-known path never, and two exports are byte-identical, report
-// included (REQ-export-materialization, REQ-export-determinism,
-// module-archive.md REQ-archive-no-exec-materialization).
+// well-known path never, none at all when the module is excluded,
+// and two exports are byte-identical, report included
+// (REQ-export-materialization, REQ-export-exclusion,
+// REQ-export-determinism, module-archive.md
+// REQ-archive-no-exec-materialization).
 func TestExportProperty(t *testing.T) {
 	rapid.Check(t, func(rt *rapid.T) {
 		n := rapid.IntRange(1, 6).Draw(rt, "n")
@@ -420,12 +498,22 @@ func TestExportProperty(t *testing.T) {
 			"a/a.proto": want["a.proto"],
 		})
 		fx.Endpoint("example.com/m", "v1.0.0", "zip", zip.String())
+		// Excluded, sometimes: then the workspace file alone is written
+		// and the module is reported as excluded.
+		opts := ExportOptions{All: true}
+		if rapid.Bool().Draw(rt, "exclude") {
+			opts.Exclude = []string{"example.com/m"}
+			want = map[string]string{"a.proto": want["a.proto"]}
+		}
 		var out1, out2 strings.Builder
-		if err := Export(ctx, fx.session(t, "."), "out1", "out", ExportOptions{All: true}, &out1); err != nil {
+		if err := Export(ctx, fx.session(t, "."), "out1", "out", opts, &out1); err != nil {
 			rt.Fatal(err)
 		}
-		if err := Export(ctx, fx.session(t, "."), "out2", "out", ExportOptions{All: true}, &out2); err != nil {
+		if err := Export(ctx, fx.session(t, "."), "out2", "out", opts, &out2); err != nil {
 			rt.Fatal(err)
+		}
+		if excluded := strings.Contains(out1.String(), "example.com/m@v1.0.0: excluded\n"); excluded != (opts.Exclude != nil) {
+			rt.Fatalf("report = %q", out1.String())
 		}
 		got1, got2 := tree(t, fx.ws, "out1"), tree(t, fx.ws, "out2")
 		if !equalStrings(keys(got1), keys(want)) {
