@@ -6,11 +6,11 @@ docs/specs/module-lockfile.md (REQ-lock-pinned-key-record), gitprov
 docs/specs/verification.md ("Pinned-key signatures":
 REQ-verify-signature-kind, REQ-verify-pinned-key)
 
-- [x] 1. gitprov: the signature's kind selected by its PEM block type,
+- [x] 1. gitprov: the signature's kind selected by its armor label,
       gitsign's CMS verified as today and every other kind, or an
       unknown one, failing closed at selection; the embedded-proof
       probe answering for a CMS signature alone
-- [ ] 2. gitprov: the SSH arm — pinned OpenSSH public keys by
+- [x] 2. gitprov: the SSH arm — pinned OpenSSH public keys by
       fingerprint, the signature git writes verified against exactly
       them over the raw bytes, no transparency, the outcome naming the
       key's kind and fingerprint; the synthetic sigstore gains an SSH
