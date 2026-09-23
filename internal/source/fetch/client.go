@@ -273,7 +273,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		}
 		return buf.Bytes(), nil
 	case KindProv:
-		b, ok, err := repo.VerificationPack(ctx, v, namespace)
+		b, ok, err := repo.VerificationPack(ctx, v, namespace, o.Subtree)
 		if err != nil {
 			return nil, err
 		}

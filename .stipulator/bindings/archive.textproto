@@ -540,3 +540,33 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "38d5d268fe6b26aab0880eb13288be0f8b05573e623f85b205613bbc84e7dca3"
 }
+
+bindings {
+  requirement_id: "REQ-archive-links-carried"
+  content_hash: "90e08ab7268bce69bb9de178cc8b2c6ba675b439148c1bc5952b973ec29bd23e"
+  source_hash: "904fd97df5164b936938de598063c126b578e6dc9bd0b0f51be4d9af78efe282"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/archive.IsModuleFile"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9e9103668b0dc8b1f6dc2bc15dc9691fcf3cbf163ee47338d3b20655a565ae3f"
+}
+
+bindings {
+  requirement_id: "REQ-archive-links-carried"
+  content_hash: "90e08ab7268bce69bb9de178cc8b2c6ba675b439148c1bc5952b973ec29bd23e"
+  source_hash: "904fd97df5164b936938de598063c126b578e6dc9bd0b0f51be4d9af78efe282"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/archive.TestZipModuleFileKinds"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b970b1d933b5776e996b3a770fc047a3345823ae7c40fc2f10ed2e6b4aa3ac50"
+}
+
+bindings {
+  requirement_id: "REQ-archive-links-carried"
+  content_hash: "90e08ab7268bce69bb9de178cc8b2c6ba675b439148c1bc5952b973ec29bd23e"
+  source_hash: "904fd97df5164b936938de598063c126b578e6dc9bd0b0f51be4d9af78efe282"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/archive.ZipModuleFile"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ac85339c3863a163f0f953dfcb8278fd09d66bd6fb5f0f9f49930fa1323c36a3"
+}

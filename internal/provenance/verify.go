@@ -21,20 +21,26 @@ import (
 var ErrNoTransparency = errors.New("provenance: evidence carries no embedded transparency proof")
 
 // Subject identifies what accepted evidence must vouch for: the version
-// being resolved and the module root's path within the repository (""
-// at the root). The expected tag name follows
-// REQ-resolve-release-tags: the version itself at the root, prefixed
-// with the subtree path for a subtree module.
+// being resolved, the tag namespace that names it, and the module
+// root's path within the repository ("" at the root). The namespace
+// and the root are two things (REQ-resolve-release-tags): a module
+// declared at the tagged commit is named by its subtree's own tag, so
+// the namespace is the subtree; a synthesized subtree is named by the
+// repository's tag, the namespace "", while its root is still the
+// subtree the tree binding walks to. The expected tag name is the
+// version itself in the repository's namespace, prefixed with the
+// namespace otherwise.
 type Subject struct {
-	Version version.Version
-	Subtree string
+	Version   version.Version
+	Namespace string
+	Subtree   string
 }
 
 func (s Subject) tagName() string {
-	if s.Subtree == "" {
+	if s.Namespace == "" {
 		return s.Version.String()
 	}
-	return s.Subtree + "/" + s.Version.String()
+	return s.Namespace + "/" + s.Version.String()
 }
 
 // Verify verifies one git-signed-tag evidence object against the

@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-tag-binding"
-  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
-  source_hash: "4c8cb1cb7f59f3490da6f9c6d6b9eb6f606d99200b23240a072dfc9d1fe4e375"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance.Verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-tag-binding"
-  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
-  source_hash: "4c8cb1cb7f59f3490da6f9c6d6b9eb6f606d99200b23240a072dfc9d1fe4e375"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance.TestVerify"
   role: BINDING_ROLE_TESTS
@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-tag-binding"
-  content_hash: "1aa54f5187b557bbeb5fea7710894e75bc3e7a1680e02aea37b71e99afed4adc"
-  source_hash: "4c8cb1cb7f59f3490da6f9c6d6b9eb6f606d99200b23240a072dfc9d1fe4e375"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance.TestVerifyBindingFailsClosedUnderCorruption"
   role: BINDING_ROLE_TESTS
@@ -529,4 +529,54 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
   shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSubtreeEvidenceBindsToTheNamingTag"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c8063ec0510a70040f6896b94b99597742322b183adcc3f8eda55de4e1ef7d9a"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.TestVerificationPackSynthesizedSubtree"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "312e080e3c77d0a1447895d3a24885692f5124c8c580f44761658b5ed95581a4"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.verifyEvidence"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ee2c9e798847f8a5208c02b48a21bba2f2f88ba93328a543b8814663a2c4e77a"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.Repo.VerificationPack"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "6c06a4a8199fa7467ca5137288428a5be68ca08b166490414417d1e3c7685a4d"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSynthesizedSubtreeEvidenceThroughTheOrigin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a6d86b3aa28fc2186a79133227de13bd691d751cf5922715c86f03a1389ef14f"
 }

@@ -97,7 +97,7 @@ func TestVerify(t *testing.T) {
 	t.Run("happy: subtree module walks the treePath", func(t *testing.T) {
 		tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), sigstoretest.TagOptions{})
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{fx.rawRoot}}
-		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot())
+		vi, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Namespace: "mod", Subtree: "mod"}, fx.modTree, id, s.TrustedRoot())
 		if err != nil {
 			t.Fatalf("Verify(subtree) = %v, want nil", err)
 		}
@@ -159,7 +159,7 @@ func TestVerify(t *testing.T) {
 	t.Run("rejected: subtree tag without the subtree prefix", func(t *testing.T) {
 		tag := s.SignedTag(t, tagPayload(fx.commitHash, "v2.0.0"), sigstoretest.TagOptions{})
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{fx.rawRoot}}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil ||
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Namespace: "mod", Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil ||
 			!strings.Contains(err.Error(), "does not name") {
 			t.Fatalf("Verify = %v, want tag-name rejection", err)
 		}
@@ -216,7 +216,7 @@ func TestVerify(t *testing.T) {
 		bad[0] ^= 0x01
 		tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), sigstoretest.TagOptions{})
 		ev := Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit, TreePath: [][]byte{bad}}
-		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil {
+		if _, err := Verify(ctx, ev, Subject{Version: v(t, "v2.0.0"), Namespace: "mod", Subtree: "mod"}, fx.modTree, id, s.TrustedRoot()); err == nil {
 			t.Fatal("Verify = nil, want tree-walk rejection for tampered treePath")
 		}
 	})
@@ -302,7 +302,7 @@ func TestVerifyBindingFailsClosedUnderCorruption(t *testing.T) {
 	fx := newFixture(t)
 	id := s.Identity()
 	tag := s.SignedTag(t, tagPayload(fx.commitHash, "mod/v2.0.0"), sigstoretest.TagOptions{})
-	sub := Subject{Version: v(t, "v2.0.0"), Subtree: "mod"}
+	sub := Subject{Version: v(t, "v2.0.0"), Namespace: "mod", Subtree: "mod"}
 
 	genuine, err := Verify(ctx, Evidence{Format: archive.SHA1, Tag: tag, Commit: fx.rawCommit,
 		TreePath: [][]byte{fx.rawRoot}}, sub, fx.modTree, id, s.TrustedRoot())

@@ -206,7 +206,7 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 			continue
 		}
 		if pin.Modfile != "" {
-			mb, has, err := archive.ZipFile(bytes.NewReader(b), int64(len(b)), module.ModuleFileName)
+			mb, has, err := archive.ZipModuleFile(bytes.NewReader(b), int64(len(b)))
 			if err != nil || !has {
 				mismatches = append(mismatches, fmt.Sprintf("%s@%s: pinned module file missing from cached archive", pin.Path, pin.Version))
 				continue

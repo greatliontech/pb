@@ -215,3 +215,96 @@ func (fx *fixture) originOverride(repoURL string) {
 		return origin.Origin{Repo: repoURL, Subtree: fx.Subtrees[modPath]}, nil
 	}
 }
+
+// A synthesized subtree's release is the repository's tag, and its
+// evidence is the repository's signed tag with the tree path to the
+// subtree (REQ-prov-tag-binding, REQ-resolve-release-tags): a proxy
+// serving that pack verifies and the pin records it; a declared
+// subtree's evidence is its own tag's, the repository's tag over the
+// same commit naming no version of it and rejected as tampering.
+func TestSubtreeEvidenceBindsToTheNamingTag(t *testing.T) {
+	signer := provtest.New(t)
+	synthesized := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	declared := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/pb.yaml": "module: example.com/m/sub\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	for _, tc := range []struct {
+		name    string
+		files   map[string]string
+		tagName string
+		tamper  func(zip map[string]string) // the archive a proxy serves, altered
+		want    string                      // "" for accepted, else the rejection's text
+	}{
+		{"synthesized, the repository's tag", synthesized, "v1.0.0", nil, ""},
+		{"declared, its own tag", declared, "sub/v1.0.0", nil, ""},
+		{"declared, the repository's tag", declared, "v1.0.0", nil, "does not name"},
+		// The archive decides the namespace and is itself bound: a module
+		// file stripped or added changes the subtree's tree, so the tag
+		// the altered archive points at never binds.
+		{"declared, the module file stripped, the repository's tag", declared, "v1.0.0", func(z map[string]string) { delete(z, "pb.yaml") }, "git tree mismatch"},
+		{"synthesized, a module file added, the subtree's tag", synthesized, "sub/v1.0.0", func(z map[string]string) { z["pb.yaml"] = "module: example.com/m/sub\n" }, "git tree mismatch"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fx := newFixture(t)
+			tree := fx.TreeFor(fx.Repo, tc.files)
+			commit := fx.Repo.CommitTree(tree, "release", gitWhen)
+			subFiles := map[string]string{}
+			for p, text := range tc.files {
+				if rest, ok := strings.CutPrefix(p, "sub/"); ok {
+					subFiles[rest] = text
+				}
+			}
+			if tc.tamper != nil {
+				tc.tamper(subFiles)
+			}
+			zip, _ := moduleZip(t, subFiles)
+			fx.Endpoint("example.com/m/sub", "v1.0.0", "zip", string(zip))
+			if mod, ok := subFiles["pb.yaml"]; ok {
+				fx.Endpoint("example.com/m/sub", "v1.0.0", "mod", mod)
+			}
+			tag := signer.SignedTag(t, tagPayload(commit, tc.tagName), sigstoretest.TagOptions{})
+			env := envelope(t, "sha1", tag, fx.Repo.Raw(plumbing.CommitObject, commit), [][]byte{fx.Repo.Raw(plumbing.TreeObject, tree)})
+			fx.Endpoint("example.com/m/sub", "v1.0.0", "prov", string(env))
+			fx.Subtrees["example.com/m/sub"] = "sub"
+			c := fx.Client("proxy")
+			c.Policy = &trust.Policy{Modules: []trust.Rule{{Prefix: "example.com/m", Require: trust.RequireProvenance, Identity: &trust.IdentityRule{SAN: provtest.Subject, Issuer: provtest.Issuer}}}}
+			c.TrustedRoot = signer.TrustedRoot()
+			_, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0"))
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("Module: %v", err)
+				}
+				if pin, _ := c.Lock.Module("example.com/m/sub", "v1.0.0"); pin.Provenance.SAN != provtest.Subject {
+					t.Fatalf("the pin's provenance: %+v", pin.Provenance)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("want a rejection at %q: %v", tc.want, err)
+			}
+		})
+	}
+}
+
+// Through the origin, a synthesized subtree's release under the
+// repository's signed tag verifies and is pinned: the pack the direct
+// source renders carries that tag with the tree path to the subtree
+// (REQ-prov-tag-binding, REQ-proxy-direct-equivalence).
+func TestSynthesizedSubtreeEvidenceThroughTheOrigin(t *testing.T) {
+	signer := provtest.New(t)
+	fx := newFixture(t)
+	tree := fx.TreeFor(fx.Repo, map[string]string{"pb.yaml": "module: example.com/m\n", "sub/s.proto": "syntax = \"proto3\";\n"})
+	commit := fx.Repo.CommitTree(tree, "release", gitWhen)
+	tag := fx.Repo.TagObject(signer.SignedTag(t, tagPayload(commit, "v1.0.0"), sigstoretest.TagOptions{}))
+	fx.Repo.Ref("refs/tags/v1.0.0", tag)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	c := fx.Client("direct")
+	c.Policy = &trust.Policy{Modules: []trust.Rule{{Prefix: "example.com/m", Require: trust.RequireProvenance, Identity: &trust.IdentityRule{SAN: provtest.Subject, Issuer: provtest.Issuer}}}}
+	c.TrustedRoot = signer.TrustedRoot()
+	if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil || mf.Module != "example.com/m/sub" {
+		t.Fatalf("Module: %+v, %v", mf, err)
+	}
+	if pin, _ := c.Lock.Module("example.com/m/sub", "v1.0.0"); pin.Provenance.SAN != provtest.Subject {
+		t.Fatalf("the pin's provenance: %+v", pin.Provenance)
+	}
+}

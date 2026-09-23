@@ -95,6 +95,13 @@ func (r *Repo) Blob(content string) plumbing.Hash {
 	return r.raw(plumbing.BlobObject, content)
 }
 
+// TagObject writes a raw annotated tag object as given — one a signer
+// produced, signature and all — and returns its hash; the caller
+// points a ref at it.
+func (r *Repo) TagObject(raw []byte) plumbing.Hash {
+	return r.raw(plumbing.TagObject, string(raw))
+}
+
 func (r *Repo) raw(typ plumbing.ObjectType, body string) plumbing.Hash {
 	eo := r.St.NewEncodedObject()
 	eo.SetType(typ)

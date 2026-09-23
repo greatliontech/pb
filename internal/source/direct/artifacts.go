@@ -264,7 +264,7 @@ func (r *Repo) Declared(ctx context.Context, commitHash, subtree string) (bool, 
 		return false, nil
 	}
 	kind, _ := entryKind(e.Mode)
-	return kind == archive.KindFile, nil
+	return archive.IsModuleFile(module.ModuleFileName, kind), nil
 }
 
 // ModuleFileBytes returns the module file's bytes exactly as in the
@@ -280,7 +280,7 @@ func (r *Repo) ModuleFileBytes(ctx context.Context, commitHash, subtree string) 
 		return nil, false, err
 	}
 	for _, e := range entries {
-		if e.path != module.ModuleFileName || e.kind != archive.KindFile {
+		if !archive.IsModuleFile(e.path, e.kind) {
 			continue
 		}
 		data, err := blobBytes(e.blob)
@@ -303,22 +303,26 @@ func InfoJSON(v version.Version, c origin.Commit) ([]byte, error) {
 }
 
 // VerificationPack renders a version's provenance envelope when
-// git-signed-tag evidence exists: the module's release tag is an
-// annotated tag object carrying a signature and naming a commit.
+// git-signed-tag evidence exists: the tag naming the version — in the
+// namespace resolution judged it in, the subtree's own for a module
+// declared at the tagged commit, the repository's for one synthesized
+// there (REQ-resolve-release-tags) — is an annotated tag object
+// carrying a signature and naming a commit, and the tree path walks
+// that commit to the module root at subtree, whichever tag named it.
 // ok=false is in-spec absence — a pseudo-version (no tag names it), a
 // lightweight tag, an unsigned tag object, or a tag not directly
 // referencing a commit — for which a proxy answers not-here on .prov
 // (REQ-proxy-not-found). Base64 uses the standard padded alphabet with
 // no whitespace: the canonical wire spelling
 // (REQ-proxy-prov-envelope).
-func (r *Repo) VerificationPack(ctx context.Context, v version.Version, subtree string) ([]byte, bool, error) {
+func (r *Repo) VerificationPack(ctx context.Context, v version.Version, namespace, subtree string) ([]byte, bool, error) {
 	if v.IsPseudo() {
 		return nil, false, nil
 	}
-	if err := r.ensureTag(ctx, tagRefName(v, subtree)); err != nil {
+	if err := r.ensureTag(ctx, tagRefName(v, namespace)); err != nil {
 		return nil, false, fmt.Errorf("provenance for %s: %w", v, err)
 	}
-	h, err := r.tagHash(v, subtree)
+	h, err := r.tagHash(v, namespace)
 	if err != nil {
 		return nil, false, err
 	}

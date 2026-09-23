@@ -28,6 +28,23 @@ import (
 // Returns the accepted record, whether one was accepted, and how many
 // objects were skipped.
 func (c *Client) verifyEvidence(ctx context.Context, subtree string, v version.Version, zip []byte, evidence []provenance.Evidence, id gitprov.Identity, accept func(lockfile.Provenance) bool) (lockfile.Provenance, bool, int, error) {
+	// The tag that names the version is the subtree's own where the
+	// module is declared at the tagged commit and the repository's
+	// where it is synthesized there (REQ-resolve-release-tags,
+	// REQ-prov-tag-binding) — and the archive, the subtree at that
+	// commit, shows which: a module file at its root or none.
+	namespace := ""
+	if subtree != "" {
+		// The zip was verified before this: its error arm is
+		// unreachable here.
+		_, declared, err := archive.ZipModuleFile(bytes.NewReader(zip), int64(len(zip)))
+		if err != nil {
+			return lockfile.Provenance{}, false, 0, err
+		}
+		if declared {
+			namespace = subtree
+		}
+	}
 	trees := map[archive.ObjectFormat][]byte{}
 	skipped := 0
 	for _, ev := range evidence {
@@ -40,7 +57,7 @@ func (c *Client) verifyEvidence(ctx context.Context, subtree string, v version.V
 			}
 			trees[ev.Format] = tree
 		}
-		vi, err := provenance.Verify(ctx, ev, provenance.Subject{Version: v, Subtree: subtree}, tree, id, c.TrustedRoot)
+		vi, err := provenance.Verify(ctx, ev, provenance.Subject{Version: v, Namespace: namespace, Subtree: subtree}, tree, id, c.TrustedRoot)
 		switch {
 		case err == nil:
 			rec, err := provenance.Record(ev, vi)

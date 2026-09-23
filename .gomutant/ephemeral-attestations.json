@@ -2,6 +2,18 @@
   "version": 2,
   "attestations": [
     {
+      "editDigest": "0f1e4ee300fe96488fa7d8c121f1cb8db231453dfc4b11dd1ad41d2396a7aa58",
+      "rawEditDigest": "0f1e4ee300fe96488fa7d8c121f1cb8db231453dfc4b11dd1ad41d2396a7aa58",
+      "files": [
+        "internal/source/fetch/evidence.go"
+      ],
+      "testPkg": "github.com/greatliontech/pb/internal/source/fetch",
+      "run": "TestSubtreeEvidenceBindsToTheNamingTag|TestAcceptedEvidenceRecorded",
+      "reason": "Equivalent by construction: the zip reaching verifyEvidence was digest-verified (first use) or pin-verified (reverify) over the same member walk, and ZipTreeHash walks it again inside this function before any evidence is judged, so a container ZipModuleFile would refuse has already failed or fails there; the arm cannot be reached with a different outcome.",
+      "commit": "2a3a596228879990a8dc8d55f7d840231d11b601",
+      "dirty": true
+    },
+    {
       "editDigest": "1eeead3ed72645ef4f0bb28be9b49934f16195feb546cc0bd16d084d70b57d3d",
       "rawEditDigest": "1eeead3ed72645ef4f0bb28be9b49934f16195feb546cc0bd16d084d70b57d3d",
       "files": [

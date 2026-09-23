@@ -321,16 +321,15 @@ func ZipFiles(r io.ReaderAt, size int64) (map[string][]byte, error) {
 	return files, nil
 }
 
-// ZipFile returns the content bytes of the named regular file, reporting
-// whether the zip has one — a link or a submodule entry at the name is
-// no file, so a link named like the module file is no module file. The
-// name is matched exactly against member names — the file-set path rules
-// make the module file's spelling unique.
-func ZipFile(r io.ReaderAt, size int64, path string) ([]byte, bool, error) {
+// ZipModuleFile returns the module file's bytes from the container and
+// whether it holds one (IsModuleFile): the archive's own answer to
+// whether the module it carries is declared at its root, and the
+// declaration's bytes as the file set holds them.
+func ZipModuleFile(r io.ReaderAt, size int64) ([]byte, bool, error) {
 	var content []byte
 	found := false
 	err := walkZip(r, size, func(m *zip.File, mode memberMode) error {
-		if m.Name != path || mode.kind != KindFile {
+		if !IsModuleFile(m.Name, mode.kind) {
 			return nil
 		}
 		b, err := readMember(m)

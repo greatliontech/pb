@@ -73,6 +73,16 @@ type FileInfo struct {
 	Submodule []byte // the recorded commit id, for KindSubmodule
 }
 
+// IsModuleFile reports whether an entry of the kind at the path is the
+// module file: a regular file named so at the root — a link or a
+// submodule entry named like it being no module file
+// (REQ-archive-links-carried). The one reading a repository's tree, a
+// file set and a container share, so what declares a module is decided
+// once.
+func IsModuleFile(path string, kind Kind) bool {
+	return path == module.ModuleFileName && kind == KindFile
+}
+
 // Mode returns the entry's canonical git mode string
 // (REQ-archive-mode-normalization).
 func (f FileInfo) Mode() string { return modeString(f.Kind, f.Exec) }

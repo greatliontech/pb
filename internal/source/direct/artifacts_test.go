@@ -113,7 +113,7 @@ func TestArchiveTreeBindingEquivalence(t *testing.T) {
 	f := newArtifactFixture(t)
 	repo := f.fetch()
 
-	pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "sub/mod")
+	pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "sub/mod", "sub/mod")
 	if err != nil || !ok {
 		t.Fatalf("pack ok=%v err=%v", ok, err)
 	}
@@ -316,7 +316,7 @@ func TestVerificationPackShapes(t *testing.T) {
 	repo := f.fetch()
 
 	t.Run("signed tag yields the evidence verbatim", func(t *testing.T) {
-		pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "")
+		pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", "")
 		if err != nil || !ok {
 			t.Fatalf("ok=%v err=%v", ok, err)
 		}
@@ -351,28 +351,28 @@ func TestVerificationPackShapes(t *testing.T) {
 		}
 	})
 	t.Run("unsigned annotated tag has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v2.0.0"), ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v2.0.0"), "", ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("lightweight tag has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v3.0.0"), ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v3.0.0"), "", ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("pseudo-version has no evidence", func(t *testing.T) {
 		v := mustPseudo(t, nil, f.when, f.c.String())
-		if _, ok, err := repo.VerificationPack(context.Background(), v, ""); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), v, "", ""); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("signed tag naming a non-commit has no evidence", func(t *testing.T) {
-		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "obj"); ok || err != nil {
+		if _, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "obj", "obj"); ok || err != nil {
 			t.Fatalf("ok=%v err=%v, want absent", ok, err)
 		}
 	})
 	t.Run("unknown version errors", func(t *testing.T) {
-		if _, _, err := repo.VerificationPack(context.Background(), mustParse(t, "v9.9.9"), ""); !errors.Is(err, ErrUnknownVersion) {
+		if _, _, err := repo.VerificationPack(context.Background(), mustParse(t, "v9.9.9"), "", ""); !errors.Is(err, ErrUnknownVersion) {
 			t.Fatalf("err = %v, want ErrUnknownVersion", err)
 		}
 	})
@@ -621,7 +621,7 @@ func TestVerificationPackFailures(t *testing.T) {
 	t.Run("symbolic tag ref resolves through", func(t *testing.T) {
 		f := newArtifactFixture(t)
 		f.Symref("refs/tags/v9.0.0", "refs/tags/v1.0.0")
-		pack, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v9.0.0"), "")
+		pack, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v9.0.0"), "", "")
 		if err != nil || !ok || len(pack) == 0 {
 			t.Fatalf("ok=%v err=%v", ok, err)
 		}
@@ -632,7 +632,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTagSHA256("v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		_, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "")
+		_, ok, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", "")
 		if err != nil || !ok {
 			t.Fatalf("ok=%v err=%v, want evidence", ok, err)
 		}
@@ -643,7 +643,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.Ref("refs/tags/v1.0.0", f.CorruptObject(plumbing.TagObject, "not a decodable tag object"))
-		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading tag object") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", ""); err == nil || !strings.Contains(err.Error(), "reading tag object") {
 			t.Fatalf("err = %v, want a loud tag decode failure", err)
 		}
 	})
@@ -657,7 +657,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); !errors.Is(err, archive.ErrNestedModule) {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", ""); !errors.Is(err, archive.ErrNestedModule) {
 			t.Fatalf("err = %v, want archive.ErrNestedModule", err)
 		}
 	})
@@ -667,7 +667,7 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("nope/v1.0.0", c, plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "nope", "nope"); err == nil || !strings.Contains(err.Error(), "not a directory") {
 			t.Fatalf("err = %v, want a module-root failure", err)
 		}
 	})
@@ -677,8 +677,32 @@ func TestVerificationPackFailures(t *testing.T) {
 		f.Branch("main", c)
 		f.Head("main")
 		f.SignedTag("v1.0.0", plumbing.NewHash(strings.Repeat("cd", 20)), plumbing.CommitObject, when, fakeSig)
-		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
+		if _, _, err := f.open().VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", ""); err == nil || !strings.Contains(err.Error(), "reading commit") {
 			t.Fatalf("err = %v, want a loud absent-commit failure", err)
 		}
 	})
+}
+
+// A synthesized subtree's pack carries the repository's signed tag
+// with the tree path to the subtree (REQ-prov-tag-binding): the tag
+// looked up in the namespace that named the version, the tree walked
+// to the module root; the subtree's own namespace names no such
+// version.
+func TestVerificationPackSynthesizedSubtree(t *testing.T) {
+	f := newArtifactFixture(t)
+	repo := f.fetch()
+	pack, ok, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "", "dir")
+	if err != nil || !ok {
+		t.Fatalf("pack ok=%v err=%v", ok, err)
+	}
+	env, err := proxy.ParseEnvelope(pack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(env.GitSignedTags) != 1 || len(env.GitSignedTags[0].TreePath) != 1 {
+		t.Fatalf("evidence = %+v", env)
+	}
+	if _, _, err := repo.VerificationPack(context.Background(), mustParse(t, "v1.0.0"), "dir", "dir"); !errors.Is(err, ErrUnknownVersion) {
+		t.Fatalf("the subtree's own namespace: %v", err)
+	}
 }

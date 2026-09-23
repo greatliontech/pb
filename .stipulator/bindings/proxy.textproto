@@ -388,7 +388,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.Repo.VerificationPack"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "e030a5c2290e229b33ed03359b1aaaf2783fa3e43c2e911447aca0fd132d5acc"
+  shape_hash: "6c06a4a8199fa7467ca5137288428a5be68ca08b166490414417d1e3c7685a4d"
 }
 
 bindings {
@@ -659,4 +659,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source.ParsePatterns"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "4ea4aec52373cd8c4d8b1493c5789b0e7664b626c6e71108338a08718401b61e"
+}
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  source_hash: "302f0f983d5e46f78b52b3da99ce164afcf633acf96a3c54c88e85311bb58091"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSynthesizedSubtreeEvidenceThroughTheOrigin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a6d86b3aa28fc2186a79133227de13bd691d751cf5922715c86f03a1389ef14f"
 }

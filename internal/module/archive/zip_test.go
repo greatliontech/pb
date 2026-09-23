@@ -725,7 +725,7 @@ func TestZipLinksCarried(t *testing.T) {
 	if err != nil || len(got) != 1 || string(got["a.proto"]) != "syntax = \"proto3\";" {
 		t.Fatalf("ZipFiles = %v %v", got, err)
 	}
-	if _, has, err := ZipFile(bytes.NewReader(data), int64(len(data)), "pb.yaml"); err != nil || has {
+	if _, has, err := ZipModuleFile(bytes.NewReader(data), int64(len(data))); err != nil || has {
 		t.Fatalf("a link named like the module file read as one: %v %v", has, err)
 	}
 	// Extraction writes the regular file alone.
@@ -950,32 +950,22 @@ func TestZipTreeHashMatchesEntryHashing(t *testing.T) {
 	})
 }
 
-// ZipFile reads exactly the named member's bytes, reports absence without
-// error, and propagates the shared member discipline.
-func TestZipFile(t *testing.T) {
+// ZipModuleFile reads exactly the module file's bytes, reports absence
+// without error, and propagates the shared member discipline.
+func TestZipModuleFile(t *testing.T) {
 	data, _ := writeZip(t, sampleFiles())
 	r := bytes.NewReader(data)
 
-	b, ok, err := ZipFile(r, int64(len(data)), "pb.yaml")
+	b, ok, err := ZipModuleFile(r, int64(len(data)))
 	if err != nil || !ok {
-		t.Fatalf("ZipFile(pb.yaml) = ok=%v, err=%v", ok, err)
+		t.Fatalf("ZipModuleFile = ok=%v, err=%v", ok, err)
 	}
 	if string(b) != "module: example.com/m\n" {
-		t.Fatalf("ZipFile(pb.yaml) = %q", b)
-	}
-
-	if _, ok, err := ZipFile(r, int64(len(data)), "absent.proto"); err != nil || ok {
-		t.Fatalf("ZipFile(absent) = ok=%v, err=%v, want absent without error", ok, err)
-	}
-
-	// A member named like a directory prefix of a real member is not that
-	// member: matching is exact.
-	if _, ok, err := ZipFile(r, int64(len(data)), "proto"); err != nil || ok {
-		t.Fatalf("ZipFile(proto) = ok=%v, err=%v, want absent", ok, err)
+		t.Fatalf("ZipModuleFile = %q", b)
 	}
 
 	dup := duplicateMemberZip(t)
-	if _, _, err := ZipFile(bytes.NewReader(dup), int64(len(dup)), "pb.yaml"); !errors.Is(err, ErrZipInvalid) {
+	if _, _, err := ZipModuleFile(bytes.NewReader(dup), int64(len(dup))); !errors.Is(err, ErrZipInvalid) {
 		t.Fatalf("duplicate-member zip: err = %v, want ErrZipInvalid", err)
 	}
 	if _, err := ZipTreeHash(SHA1, bytes.NewReader(dup), int64(len(dup))); !errors.Is(err, ErrZipInvalid) {
@@ -1020,5 +1010,35 @@ func TestDigestZipComputes(t *testing.T) {
 	}
 	if _, err := VerifyZip(bytes.NewReader(data), int64(len(data)), "pb1:"+strings.Repeat("0", 64)); !errors.Is(err, ErrDigestMismatch) {
 		t.Fatalf("VerifyZip with wrong expectation: err = %v, want ErrDigestMismatch", err)
+	}
+}
+
+// A container declares a module by a regular member named like the
+// module file at its root — executable or not — and by nothing else: a
+// link named so is no module file (REQ-archive-links-carried), and the
+// predicate names the root alone, a module file below it being the
+// nesting the container refuses.
+func TestZipModuleFileKinds(t *testing.T) {
+	for name, tc := range map[string]struct {
+		files []File
+		want  bool
+	}{
+		"regular":                   {[]File{{Path: "pb.yaml", Body: strings.NewReader("module: m\n")}}, true},
+		"executable":                {[]File{{Path: "pb.yaml", Exec: true, Body: strings.NewReader("module: m\n")}}, true},
+		"a link":                    {[]File{{Path: "pb.yaml", Kind: KindLink, Body: strings.NewReader("../pb.yaml")}}, false},
+		"none":                      {[]File{{Path: "a.proto", Body: strings.NewReader("syntax = \"proto3\";")}}, false},
+		"below the root, no module": {[]File{{Path: "sub/a.proto", Body: strings.NewReader("syntax = \"proto3\";")}}, false},
+	} {
+		data, _ := writeZip(t, tc.files)
+		b, has, err := ZipModuleFile(bytes.NewReader(data), int64(len(data)))
+		if err != nil || has != tc.want || has && string(b) != "module: m\n" {
+			t.Errorf("%s: module file %q, %v, %v", name, b, has, err)
+		}
+	}
+	// A module file below the root is nesting, which the container
+	// refuses before any reading; the predicate itself names the root
+	// alone.
+	if IsModuleFile("sub/pb.yaml", KindFile) || !IsModuleFile("pb.yaml", KindFile) || IsModuleFile("pb.yaml", KindLink) {
+		t.Fatal("IsModuleFile drifted from the root's regular file")
 	}
 }

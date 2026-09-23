@@ -54,7 +54,7 @@ func (c *Client) pinnedModule(ctx context.Context, modPath string, v version.Ver
 		if err != nil {
 			return nil, err
 		}
-		if _, has, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), module.ModuleFileName); err != nil {
+		if _, has, err := archive.ZipModuleFile(bytes.NewReader(zip), int64(len(zip))); err != nil {
 			return nil, err
 		} else if has {
 			return nil, fmt.Errorf("%w: %s@%s archive declares a module file but the pin records none", lockfile.ErrPinMismatch, modPath, v)
@@ -167,7 +167,7 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	if err != nil {
 		return nil, err
 	}
-	mb, hasMod, err := archive.ZipFile(bytes.NewReader(zip), int64(len(zip)), module.ModuleFileName)
+	mb, hasMod, err := archive.ZipModuleFile(bytes.NewReader(zip), int64(len(zip)))
 	if err != nil {
 		return nil, err
 	}

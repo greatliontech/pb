@@ -39,11 +39,18 @@ certificate. Evidence with no embedded transparency proof is
 unverifiable and treated as absent.
 
 **REQ-prov-tag-binding** (invariant): Accepted `git-signed-tag` evidence
-MUST bind to what it vouches for: the tag names the version being
-resolved, the tag references the commit in the pack, and the archive's
-recomputed tree hash matches that commit's tree at the module root per
-the archive contract. Evidence failing any binding step is rejected, not
-ignored.
+MUST bind to what it vouches for, in three steps: the tag names the
+version being resolved; the tag references the commit in the pack;
+and the archive's recomputed tree hash matches that commit's tree at
+the module root per the archive contract. The tag that names a
+version is the one `module-resolution.md` REQ-resolve-release-tags
+names — the subtree's own for a module declared at the tagged commit,
+the repository's for one synthesized there — which the archive itself
+shows by a module file at its root or none, and the module root is
+the subtree whichever tag named the version. Evidence binds to the
+one tag it carries and attests no uniqueness: that a version has one
+naming tag is resolution's check at the origin. Evidence failing any
+binding step is rejected, not ignored.
 
 **REQ-prov-origin-consistency** (behavior): Absent an explicit identity
 rule, a verified identity MUST be accepted only when it verifiably
