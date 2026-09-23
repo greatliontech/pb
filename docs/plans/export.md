@@ -7,7 +7,7 @@ Spec: docs/specs/export.md; docs/specs/module-archive.md
       provider index exposed — one source for which module provides
       a path, the ambiguity rule's, and for the reachable set,
       well-known paths never among them
-- [ ] 2. dep, cmd: the export over the loaded file sets — the closure
+- [x] 2. dep, cmd: the export over the loaded file sets — the closure
       by default, every file under `--all`, the exported paths held to
       the archive's path rules and case-collision rule across modules,
       its size limit and nesting rule aside, the tree written whole into a
