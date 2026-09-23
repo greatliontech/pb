@@ -40,7 +40,7 @@ and `provenance` (the provenance record). No other keys exist.
 **REQ-lock-provenance-record** (wire): A provenance record other than
 `none` MUST carry `type`, the evidence type, then the type's own
 fields, then `identity`, with `san` and `issuer` strings naming the
-verified Fulcio identity. A `git-signed-tag` record carries
+verified Fulcio identity — a pinned-key record `key` in its place. A `git-signed-tag` record carries
 `objectFormat` (`sha1` or `sha256`) and `object`, the hex git hash of
 the signed object. An `image-signature` record — a sigstore signature
 over the plugin entry's digest (`provenance.md`) — carries no field of
@@ -56,8 +56,12 @@ module entry's evidence accepted under a trust-policy rule naming
 pinned keys (`provenance.md`, REQ-prov-pinned-key-eval) — MUST carry
 `objectFormat` and `object` as a `git-signed-tag` record does, then
 `key`, with `kind` (`openpgp` or `ssh`) and `fingerprint` naming the
-pinned key that verified the signature, in place of `identity`. It
-belongs to a module entry alone. Lands: the pinned-key plan.
+pinned key that verified the signature, in place of `identity` —
+the fingerprint spelled as the kind spells it (`provenance.md`,
+REQ-prov-pinned-keys-schema: an OpenPGP key's uppercase hex, forty
+digits for a version 4 key and sixty-four for a version 6 one; an
+SSH key's `SHA256:` and forty-three base64 digits). It belongs to a
+module entry alone.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the plugin identity as written in generation configuration, without

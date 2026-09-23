@@ -132,15 +132,16 @@ contain `keyring`, a list of pinned keys `{kind, fingerprint, key}`,
 and a `modules` rule `keys`, a non-empty list of fingerprints beside
 or in place of `identity`, under these rules: `kind` is `openpgp` or
 `ssh`; `fingerprint` is the key's fingerprint as its kind spells it —
-an OpenPGP key's the primary key's fingerprint as uppercase hex, an
-SSH key's OpenSSH's `SHA256:` form; `key` is the public key in full —
-an armored OpenPGP public key block holding one key, or an OpenSSH
-public key line — as the verifier reads it (gitprov's own contract),
-and a key whose fingerprint is not the entry's `fingerprint` is a
-schema violation; a rule's fingerprint naming no keyring entry is a
-schema violation, as is a fingerprint listed twice in the keyring or
-in a rule; and `plugins` rules carry no `keys`, image signatures being
-sigstore's alone.
+an OpenPGP key's the primary key's fingerprint as uppercase hex, forty
+digits for a version 4 key and sixty-four for a version 6 one, an SSH
+key's OpenSSH's `SHA256:` form of forty-three base64 digits; `key` is
+the public key in full — an armored OpenPGP public key block holding
+one key, or an OpenSSH public key line — as the verifier reads it
+(gitprov's own contract), and a key whose fingerprint is not the
+entry's `fingerprint` is a schema violation; a rule's fingerprint
+naming no keyring entry is a schema violation, as is a fingerprint
+listed twice in the keyring or in a rule; and `plugins` rules carry no
+`keys`, image signatures being sigstore's alone.
 
 **REQ-prov-pinned-key-eval** (behavior): Under a rule naming `keys`, a
 subject's git-signed-tag evidence MUST verify offline against exactly

@@ -583,8 +583,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-pinned-keys-schema"
-  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
-  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  content_hash: "e2927e7e6e54e9ce0a139a668580fe19882598251a042f58a05ca2bf80abe0c0"
+  source_hash: "49a5f98d17ff3589103f96f75ecfe36e478ed8239a9d7eeef0950860d89f62cf"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -593,8 +593,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-pinned-keys-schema"
-  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
-  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  content_hash: "e2927e7e6e54e9ce0a139a668580fe19882598251a042f58a05ca2bf80abe0c0"
+  source_hash: "49a5f98d17ff3589103f96f75ecfe36e478ed8239a9d7eeef0950860d89f62cf"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.parseKeyring"
   role: BINDING_ROLE_IMPLEMENTS
@@ -603,8 +603,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-pinned-keys-schema"
-  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
-  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  content_hash: "e2927e7e6e54e9ce0a139a668580fe19882598251a042f58a05ca2bf80abe0c0"
+  source_hash: "49a5f98d17ff3589103f96f75ecfe36e478ed8239a9d7eeef0950860d89f62cf"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.parseRules"
   role: BINDING_ROLE_IMPLEMENTS
@@ -613,8 +613,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-pinned-keys-schema"
-  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
-  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  content_hash: "e2927e7e6e54e9ce0a139a668580fe19882598251a042f58a05ca2bf80abe0c0"
+  source_hash: "49a5f98d17ff3589103f96f75ecfe36e478ed8239a9d7eeef0950860d89f62cf"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestParseKeyring"
   role: BINDING_ROLE_TESTS
@@ -623,8 +623,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-pinned-keys-schema"
-  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
-  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  content_hash: "e2927e7e6e54e9ce0a139a668580fe19882598251a042f58a05ca2bf80abe0c0"
+  source_hash: "49a5f98d17ff3589103f96f75ecfe36e478ed8239a9d7eeef0950860d89f62cf"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestEvaluateCarriesTheGoverningRulesKeys"
   role: BINDING_ROLE_TESTS

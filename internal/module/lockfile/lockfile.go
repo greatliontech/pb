@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -52,16 +53,54 @@ const (
 	// plugin image's digest: the record carries the identity alone,
 	// the entry's digest being what was signed.
 	ProvenanceImageSignature = "image-signature"
+	// ProvenanceGitPinnedKey is a signed git tag over the module's
+	// commit accepted under a trust-policy rule naming pinned keys:
+	// the record carries the signed object and, in place of an
+	// identity, the kind and fingerprint of the pinned key that
+	// verified it (REQ-lock-pinned-key-record).
+	ProvenanceGitPinnedKey = "git-pinned-key"
 )
 
-// Provenance is a lockfile provenance record (REQ-lock-provenance-record).
-// The zero value is the literal `none`.
+// Provenance is a lockfile provenance record (REQ-lock-provenance-record,
+// REQ-lock-pinned-key-record). The zero value is the literal `none`.
+// A record names a verified Fulcio identity (SAN and Issuer) or a
+// pinned key (KeyKind and KeyFingerprint), as its type says, never
+// both.
 type Provenance struct {
-	Type         string // ProvenanceGitSignedTag or ProvenanceImageSignature
-	ObjectFormat string // git-signed-tag: "sha1" or "sha256"
-	Object       string // git-signed-tag: hex git hash of the signed object
-	SAN          string
-	Issuer       string
+	Type           string // ProvenanceGitSignedTag, ProvenanceGitPinnedKey or ProvenanceImageSignature
+	ObjectFormat   string // git-signed-tag, git-pinned-key: "sha1" or "sha256"
+	Object         string // git-signed-tag, git-pinned-key: hex git hash of the signed object
+	SAN            string // git-signed-tag, image-signature
+	Issuer         string // git-signed-tag, image-signature
+	KeyKind        string // git-pinned-key: "openpgp" or "ssh"
+	KeyFingerprint string // git-pinned-key: the pinned key's fingerprint as its kind spells it
+}
+
+// recordShape is what a record of a type names beside its type
+// (REQ-lock-provenance-record, REQ-lock-pinned-key-record): a signed
+// git object or none, and a key or an identity. The one table the
+// check, the writer and the reader read, so no two of them re-derive
+// the rule.
+type recordShape struct {
+	signsObject bool
+	namesKey    bool
+	article     string
+}
+
+var recordShapes = map[string]recordShape{
+	ProvenanceGitSignedTag:   {signsObject: true, article: "a"},
+	ProvenanceGitPinnedKey:   {signsObject: true, namesKey: true, article: "a"},
+	ProvenanceImageSignature: {article: "an"},
+}
+
+// Fingerprint spellings by key kind (provenance.md
+// REQ-prov-pinned-keys-schema): an OpenPGP primary key's uppercase
+// hex, forty digits for a version 4 key and sixty-four for a version
+// 6 one; an SSH key's OpenSSH SHA256 form — the prefix and forty-three
+// unpadded base64 digits.
+var fingerprintSpellings = map[string]*regexp.Regexp{
+	"openpgp": regexp.MustCompile(`^(?:[0-9A-F]{40}|[0-9A-F]{64})$`),
+	"ssh":     regexp.MustCompile(`^SHA256:[A-Za-z0-9+/]{43}$`),
 }
 
 // ModulePin is one module entry (REQ-lock-entry).
@@ -155,20 +194,22 @@ func checkHashRef(prefix, d string) error {
 	return nil
 }
 
-// checkProvenance validates a record against the evidence type its
-// entry kind admits (REQ-lock-provenance-record).
-func checkProvenance(p Provenance, admitted string) error {
+// checkProvenance validates a record against the evidence types its
+// entry kind admits (REQ-lock-provenance-record,
+// REQ-lock-pinned-key-record): a module entry a git-signed-tag or a
+// git-pinned-key record, a plugin entry an image-signature one.
+func checkProvenance(p Provenance, admitted ...string) error {
 	if p == (Provenance{}) {
 		return nil
 	}
-	if p.Type != ProvenanceGitSignedTag && p.Type != ProvenanceImageSignature {
+	shape, known := recordShapes[p.Type]
+	if !known {
 		return fmt.Errorf("unknown provenance type %q", p.Type)
 	}
-	if p.Type != admitted {
-		return fmt.Errorf("provenance type %q is not this entry's (%s)", p.Type, admitted)
+	if !slices.Contains(admitted, p.Type) {
+		return fmt.Errorf("provenance type %q is not this entry's (%s)", p.Type, strings.Join(admitted, " or "))
 	}
-	switch p.Type {
-	case ProvenanceGitSignedTag:
+	if shape.signsObject {
 		var hexLen int
 		switch p.ObjectFormat {
 		case "sha1":
@@ -181,10 +222,30 @@ func checkProvenance(p Provenance, admitted string) error {
 		if !hexOK(p.Object, hexLen) {
 			return fmt.Errorf("object %q is not %d lowercase hex digits", p.Object, hexLen)
 		}
-	case ProvenanceImageSignature:
-		if p.ObjectFormat != "" || p.Object != "" {
-			return fmt.Errorf("an %s record names no signed object", ProvenanceImageSignature)
+	} else if p.ObjectFormat != "" || p.Object != "" {
+		return fmt.Errorf("%s %s record names no signed object", shape.article, p.Type)
+	}
+	if shape.namesKey {
+		if p.SAN != "" || p.Issuer != "" {
+			return fmt.Errorf("%s %s record names a key, not an identity", shape.article, p.Type)
 		}
+		if p.KeyKind == "" && p.KeyFingerprint == "" {
+			return errors.New("key needs a kind and a fingerprint")
+		}
+		spelling, ok := fingerprintSpellings[p.KeyKind]
+		if !ok {
+			return fmt.Errorf("unknown key kind %q", p.KeyKind)
+		}
+		if p.KeyFingerprint == "" {
+			return errors.New("key needs a fingerprint")
+		}
+		if !spelling.MatchString(p.KeyFingerprint) {
+			return fmt.Errorf("fingerprint %q is not spelled as %s spells one", p.KeyFingerprint, p.KeyKind)
+		}
+		return nil
+	}
+	if p.KeyKind != "" || p.KeyFingerprint != "" {
+		return fmt.Errorf("%s %s record names an identity, not a key", shape.article, p.Type)
 	}
 	if p.SAN == "" || p.Issuer == "" {
 		return errors.New("identity needs both san and issuer")
@@ -218,7 +279,7 @@ func checkModulePin(m ModulePin) error {
 			return fmt.Errorf("modfile: %v", err)
 		}
 	}
-	if err := checkProvenance(m.Provenance, ProvenanceGitSignedTag); err != nil {
+	if err := checkProvenance(m.Provenance, ProvenanceGitSignedTag, ProvenanceGitPinnedKey); err != nil {
 		return fmt.Errorf("module %q: %v", m.Path, err)
 	}
 	return nil
@@ -400,17 +461,25 @@ func pinsOf(f *File) File {
 
 // writeProvenance writes a pin's provenance record: `none` where it
 // has none, else its type and, for a signed tag, the object, then the
-// identity.
+// identity — or, for a pinned key, the key.
 func writeProvenance(w *contractfile.Writer, p Provenance) {
 	if p == (Provenance{}) {
 		w.Literal("provenance", "none")
 		return
 	}
+	shape := recordShapes[p.Type]
 	w.Mapping("provenance", func() {
 		w.Literal("type", p.Type)
-		if p.Type == ProvenanceGitSignedTag {
+		if shape.signsObject {
 			w.Literal("objectFormat", p.ObjectFormat)
 			w.Literal("object", p.Object)
+		}
+		if shape.namesKey {
+			w.Mapping("key", func() {
+				w.Literal("kind", p.KeyKind)
+				w.Literal("fingerprint", p.KeyFingerprint)
+			})
+			return
 		}
 		w.Mapping("identity", func() {
 			w.Literal("san", p.SAN)
@@ -446,11 +515,22 @@ type rawIdentity struct {
 	Issuer rawScalar `yaml:"issuer"`
 }
 
+type rawKey struct {
+	Kind        rawScalar `yaml:"kind"`
+	Fingerprint rawScalar `yaml:"fingerprint"`
+}
+
+// rawProvenance's optional parts are pointers, so a part written and
+// empty (`key: {}`, `objectFormat: ""`) reads as written; the node
+// records the keys written beside, so a part written with no value
+// does too. A record naming a part its type does not is invalid
+// whatever the part holds.
 type rawProvenance struct {
-	Type         rawScalar   `yaml:"type"`
-	ObjectFormat rawScalar   `yaml:"objectFormat"`
-	Object       rawScalar   `yaml:"object"`
-	Identity     rawIdentity `yaml:"identity"`
+	Type         rawScalar    `yaml:"type"`
+	ObjectFormat *rawScalar   `yaml:"objectFormat"`
+	Object       *rawScalar   `yaml:"object"`
+	Identity     *rawIdentity `yaml:"identity"`
+	Key          *rawKey      `yaml:"key"`
 }
 
 // provNode captures the provenance value's raw YAML fragment
@@ -458,36 +538,79 @@ type rawProvenance struct {
 // map[string]any type-coercion detour: a digits-only object hash stays a
 // string, and identity values are preserved byte-faithfully.
 type provNode struct {
-	set bool
-	rec rawProvenance
+	set     bool
+	rec     rawProvenance
+	present map[string]bool // the record's keys as written, a null value included
 }
 
 func (p *provNode) UnmarshalYAML(b []byte) error {
 	p.set = true
-	if strings.TrimSpace(string(b)) == "none" {
-		// The zero record is the none record; no separate flag needed.
+	// The spelled none, quoted or not — one escape-free quote layer is
+	// spelling, as for every scalar (REQ-lock-acceptance). The zero
+	// record is the none record; no separate flag needed.
+	var scalar rawScalar
+	if err := scalar.UnmarshalYAML(b); err == nil && scalar == "none" {
 		return nil
 	}
 	if err := yaml.UnmarshalWithOptions(b, &p.rec, yaml.Strict()); err != nil {
 		return fmt.Errorf("provenance is neither none nor a record: %v", err)
 	}
-	if p.rec == (rawProvenance{}) {
-		// The zero record must never masquerade as the spelled none: an
-		// empty or degenerate record mapping is a mangled lockfile, and
-		// reading it as unsigned would erase provenance silently.
+	// Which parts the record writes, whatever they hold: a part written
+	// with no value (`key:`) is written, and the typed decode leaves
+	// its pointer nil.
+	var keys map[string]any
+	if err := yaml.Unmarshal(b, &keys); err != nil {
+		return fmt.Errorf("provenance is neither none nor a record: %v", err)
+	}
+	p.present = map[string]bool{}
+	for k := range keys {
+		p.present[k] = true
+	}
+	// A record names its type: a record mapping naming none — empty,
+	// or holding parts alone — is a mangled lockfile, and reading it
+	// as the spelled none would erase provenance silently.
+	if len(p.present) == 0 {
 		return errors.New("provenance record is empty")
+	}
+	if p.rec.Type == "" {
+		return errors.New("provenance record names no type")
 	}
 	return nil
 }
 
+// record is the provenance record the node holds, its parts each
+// present only where its type names them (REQ-lock-provenance-record):
+// a part written and empty is still written.
 func (p *provNode) record() (Provenance, error) {
 	if !p.set {
 		return Provenance{}, errors.New("missing provenance")
 	}
-	return Provenance{
-		Type: string(p.rec.Type), ObjectFormat: string(p.rec.ObjectFormat), Object: string(p.rec.Object),
-		SAN: string(p.rec.Identity.SAN), Issuer: string(p.rec.Identity.Issuer),
-	}, nil
+	r := p.rec
+	rec := Provenance{Type: string(r.Type)}
+	if shape, known := recordShapes[rec.Type]; known {
+		if !shape.signsObject && (p.present["objectFormat"] || p.present["object"]) {
+			return Provenance{}, fmt.Errorf("%s %s record names no signed object", shape.article, rec.Type)
+		}
+		if shape.namesKey && p.present["identity"] {
+			return Provenance{}, fmt.Errorf("%s %s record names a key, not an identity", shape.article, rec.Type)
+		}
+		if !shape.namesKey && p.present["key"] {
+			return Provenance{}, fmt.Errorf("%s %s record names an identity, not a key", shape.article, rec.Type)
+		}
+	}
+	if r.ObjectFormat != nil {
+		rec.ObjectFormat = string(*r.ObjectFormat)
+	}
+	if r.Object != nil {
+		rec.Object = string(*r.Object)
+	}
+	if r.Identity != nil {
+		rec.SAN, rec.Issuer = string(r.Identity.SAN), string(r.Identity.Issuer)
+	}
+	if r.Key != nil {
+		rec.KeyKind, rec.KeyFingerprint = string(r.Key.Kind), string(r.Key.Fingerprint)
+	}
+	return rec, nil
 }
 
 // Version and Ref are free-string facts and decode via rawScalar so no
@@ -788,6 +911,11 @@ func CheckProvenanceTransition(old, new Provenance) error {
 	}
 	if old.SAN != new.SAN || old.Issuer != new.Issuer {
 		return fmt.Errorf("%w: identity %q/%q would become %q/%q", ErrProvenanceDowngrade, old.SAN, old.Issuer, new.SAN, new.Issuer)
+	}
+	if old.KeyKind != new.KeyKind || old.KeyFingerprint != new.KeyFingerprint {
+		// A pinned key is the record's identity: another key is another
+		// signer.
+		return fmt.Errorf("%w: pinned key %s %s would become %s %s", ErrProvenanceDowngrade, old.KeyKind, old.KeyFingerprint, new.KeyKind, new.KeyFingerprint)
 	}
 	if old.Object != new.Object || old.ObjectFormat != new.ObjectFormat {
 		// A different signed object for the same (path, version) means the

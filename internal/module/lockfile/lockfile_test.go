@@ -21,10 +21,17 @@ var goldenProv = Provenance{
 	Issuer: "https://token.actions.githubusercontent.com",
 }
 
+var goldenPinned = Provenance{
+	Type: "git-pinned-key", ObjectFormat: "sha256",
+	Object:  strings.Repeat("cd", 32),
+	KeyKind: "ssh", KeyFingerprint: "SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM",
+}
+
 func goldenFile() *File {
 	return &File{
 		Modules: []ModulePin{
 			{Path: "example.com/b", Version: "v0.1.0", Digest: "pb1:" + strings.Repeat("22", 32), Provenance: Provenance{}},
+			{Path: "example.com/c", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: goldenPinned},
 			{Path: "example.com/a", Version: "v1.2.3", Digest: "pb1:" + strings.Repeat("11", 32), Modfile: "sha256:" + strings.Repeat("33", 32), Provenance: goldenProv},
 			{Path: "example.com/a", Version: "v1.0.0", Modfile: "sha256:" + strings.Repeat("44", 32), Provenance: Provenance{}},
 		},
@@ -59,6 +66,16 @@ modules:
     version: v0.1.0
     digest: pb1:` + "2222222222222222222222222222222222222222222222222222222222222222" + `
     provenance: none
+  - path: example.com/c
+    version: v2.0.0
+    digest: pb1:` + "8888888888888888888888888888888888888888888888888888888888888888" + `
+    provenance:
+      type: git-pinned-key
+      objectFormat: sha256
+      object: cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+      key:
+        kind: ssh
+        fingerprint: SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM
 plugins:
   - ref: ghcr.io/acme/protoc-gen-x:v2
     scheme: oci
@@ -81,17 +98,34 @@ func TestEncodeGolden(t *testing.T) {
 	}
 }
 
+// The spelled none in one escape-free quote layer is the none record
+// (REQ-lock-acceptance), as every scalar admits one.
+func TestParseQuotedNone(t *testing.T) {
+	for _, spelling := range []string{`"none"`, `'none'`, "none"} {
+		f, err := Parse([]byte("version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: " + spelling + "\n"))
+		if err != nil {
+			t.Fatalf("Parse(provenance: %s) = %v, want nil", spelling, err)
+		}
+		if f.Modules[0].Provenance != (Provenance{}) {
+			t.Fatalf("Parse(provenance: %s) = %+v, want none", spelling, f.Modules[0].Provenance)
+		}
+	}
+}
+
 func TestParseGoldenRoundTrip(t *testing.T) {
 	f, err := Parse([]byte(goldenEncoded))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(f.Modules) != 3 || len(f.Plugins) != 2 {
+	if len(f.Modules) != 4 || len(f.Plugins) != 2 {
 		t.Fatalf("parsed %d modules, %d plugins", len(f.Modules), len(f.Plugins))
 	}
 	pin, ok := f.Module("example.com/a", "v1.2.3")
 	if !ok || pin.Provenance != goldenProv {
 		t.Fatalf("rich pin lost: %+v", pin)
+	}
+	if pin, ok := f.Module("example.com/c", "v2.0.0"); !ok || pin.Provenance != goldenPinned {
+		t.Fatalf("pinned-key pin lost: %+v", pin)
 	}
 	if _, ok := f.Plugin("ghcr.io/acme/protoc-gen-x:v2", SchemeOCI); !ok {
 		t.Fatalf("oci plugin pin lost")
@@ -131,6 +165,26 @@ func TestParseRejections(t *testing.T) {
 		{"bad object format", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: md5\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "unknown object format"},
 		{"short object", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha256\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "not 64 lowercase hex"},
 		{"missing identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n", "san and issuer"},
+		{"pinned key without a key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n", "key needs a kind and a fingerprint"},
+		{"pinned key with an empty key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key: {}\n", "key needs a kind and a fingerprint"},
+		{"pinned key with an ssh fingerprint spelled as openpgp's", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: 91EDFEA1C6643EA64EC693516EA5914F2DADE816\n", "is not spelled as ssh spells one"},
+		{"pinned key with an openpgp fingerprint in lowercase", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: openpgp\n        fingerprint: 91edfea1c6643ea64ec693516ea5914f2dade816\n", "is not spelled as openpgp spells one"},
+		{"pinned key with an identity's issuer alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM\n      identity:\n        issuer: y\n", "names a key, not an identity"},
+		{"pinned key with an empty identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM\n      identity: {}\n", "names a key, not an identity"},
+		{"signed tag with a key's fingerprint alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        fingerprint: f\n", "names an identity, not a key"},
+		{"signed tag with a null key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n", "names an identity, not a key"},
+		{"signed tag with an empty key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key: {}\n", "names an identity, not a key"},
+		{"image signature with a key", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: image-signature\n      identity:\n        san: x\n        issuer: y\n      key:\n        kind: ssh\n        fingerprint: f\n", "an image-signature record names an identity, not a key"},
+		{"image signature with an empty object format", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: image-signature\n      objectFormat: \"\"\n      identity:\n        san: x\n        issuer: y\n", "an image-signature record names no signed object"},
+		{"pinned key of an unknown kind", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: x509\n        fingerprint: f\n", `unknown key kind "x509"`},
+		{"pinned key without a fingerprint", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n", "key needs a fingerprint"},
+		{"pinned key with a fingerprint of no spelling", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: -x\n", `fingerprint "-x" is not spelled as ssh spells one`},
+		{"pinned key with an openpgp fingerprint of neither length", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: openpgp\n        fingerprint: " + strings.Repeat("AB", 24) + "\n", "is not spelled as openpgp spells one"},
+		{"pinned key beside an identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: f\n      identity:\n        san: x\n        issuer: y\n", "names a key, not an identity"},
+		{"pinned key without an object", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      key:\n        kind: ssh\n        fingerprint: f\n", "unknown object format"},
+		{"signed tag with a key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        kind: ssh\n        fingerprint: f\n", "names an identity, not a key"},
+		{"pinned key on a plugin entry", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: f\n", `provenance type "git-pinned-key" is not this entry's (image-signature)`},
+		{"image signature on a module entry", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: image-signature\n      identity:\n        san: x\n        issuer: y\n", `is not this entry's (git-signed-tag or git-pinned-key)`},
 		{"duplicate module pin", "version: 1\nmodules:\n" + mod + mod, "duplicate module pin"},
 		{"space in version", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1 .0\n    provenance: none\n", "version \"v1 .0\" is not plain-scalar safe"},
 		{"trailing colon version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"v1:\"\n    provenance: none\n", "not plain-scalar safe"},
@@ -144,6 +198,12 @@ func TestParseRejections(t *testing.T) {
 		{"non-quote escape in double-quoted version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"a\\nb\"\n    provenance: none\n", "contains escapes"},
 		{"empty san value", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san:\n        issuer: y\n", "san and issuer"},
 		{"empty provenance record", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: {}\n", "provenance record is empty"},
+		{"none spelled with an escape", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: \"non\\u0065\"\n", "neither none nor a record"},
+		{"record of an empty identity alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      identity: {}\n", "provenance record names no type"},
+		{"record of an empty object format alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      objectFormat: \"\"\n", "provenance record names no type"},
+		{"record of an empty key alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      key: {}\n", "provenance record names no type"},
+		{"record of empty parts and no type", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      object: \"\"\n      identity: {}\n", "provenance record names no type"},
+		{"record of an empty type", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: \"\"\n      identity:\n        san: x\n        issuer: y\n", "provenance record names no type"},
 		{"null key defeating strict decode", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      null: x\n", "mapping keys are strings"},
 		{"null key at top level", "version: 1\nnull: x\nmodules:\n" + mod, "mapping keys are strings"},
 		{"plugin digest in ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b@sha256:" + strings.Repeat("11", 32) + "\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "carries a digest"},
@@ -313,6 +373,26 @@ func TestProvenanceTransition(t *testing.T) {
 	if err := CheckProvenanceTransition(goldenProv, refmt); !errors.Is(err, ErrProvenanceDowngrade) || !strings.Contains(err.Error(), "signed object") {
 		t.Fatalf("format-only change must be explicit: %v", err)
 	}
+	// A pinned key is the record's identity (REQ-lock-pinned-key-record):
+	// another key, or an identity in its place, is another signer.
+	if err := CheckProvenanceTransition(goldenPinned, goldenPinned); err != nil {
+		t.Fatalf("same pinned-key record: %v", err)
+	}
+	otherKey := goldenPinned
+	otherKey.KeyFingerprint = "SHA256:qJf90eocttnD82cEmd3HjozFS3VFv2VfFEZPKsGOxRc"
+	if err := CheckProvenanceTransition(goldenPinned, otherKey); !errors.Is(err, ErrProvenanceDowngrade) || !strings.Contains(err.Error(), "pinned key") {
+		t.Fatalf("key change: %v", err)
+	}
+	otherKind := goldenPinned
+	otherKind.KeyKind = "openpgp"
+	if err := CheckProvenanceTransition(goldenPinned, otherKind); !errors.Is(err, ErrProvenanceDowngrade) || !strings.Contains(err.Error(), "pinned key") {
+		t.Fatalf("kind change: %v", err)
+	}
+	toIdentity := goldenProv
+	toIdentity.ObjectFormat, toIdentity.Object = goldenPinned.ObjectFormat, goldenPinned.Object
+	if err := CheckProvenanceTransition(goldenPinned, toIdentity); !errors.Is(err, ErrProvenanceDowngrade) || !strings.Contains(err.Error(), "evidence type") {
+		t.Fatalf("pinned key to identity: %v", err)
+	}
 }
 
 // Fixed-point property: for any generated pin set, Encode is order-
@@ -357,10 +437,25 @@ func TestFixedPointProperty(t *testing.T) {
 				pin.Modfile = "sha256:" + hex64("modfile")
 			}
 			if rapid.Bool().Draw(t, "hasProv") {
-				pin.Provenance = Provenance{
-					Type: "git-signed-tag", ObjectFormat: "sha256", Object: hex64("obj"),
-					SAN:    plain("san", printable),
-					Issuer: plain("issuer", printable),
+				if rapid.Bool().Draw(t, "pinnedKey") {
+					// The fingerprint in its kind's spelling, the whole
+					// of each grammar drawn.
+					kind := rapid.SampledFrom([]string{"openpgp", "ssh"}).Draw(t, "kind")
+					digits := rapid.SampledFrom([]int{40, 64}).Draw(t, "pgpfplen")
+					fingerprint := strings.ToUpper(string(rapid.SliceOfN(rapid.SampledFrom([]rune(hexes)), digits, digits).Draw(t, "pgpfp")))
+					if kind == "ssh" {
+						fingerprint = "SHA256:" + string(rapid.SliceOfN(rapid.SampledFrom([]rune(alnum+"+/")), 43, 43).Draw(t, "sshfp"))
+					}
+					pin.Provenance = Provenance{
+						Type: "git-pinned-key", ObjectFormat: "sha256", Object: hex64("obj"),
+						KeyKind: kind, KeyFingerprint: fingerprint,
+					}
+				} else {
+					pin.Provenance = Provenance{
+						Type: "git-signed-tag", ObjectFormat: "sha256", Object: hex64("obj"),
+						SAN:    plain("san", printable),
+						Issuer: plain("issuer", printable),
+					}
 				}
 			}
 			f.Modules = append(f.Modules, pin)
@@ -435,6 +530,7 @@ func slicesClone[T any](s []T) []T {
 // emission reparses to an equal pin set.
 func FuzzParse(f *testing.F) {
 	f.Add([]byte(goldenEncoded))
+	f.Add([]byte("version: 1\nmodules:\n  - path: example.com/c\n    version: v2.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: openpgp\n        fingerprint: 91EDFEA1C6643EA64EC693516EA5914F2DADE816\n"))
 	f.Add([]byte("version: 1\nmodules:\n"))
 	f.Add([]byte("{}"))
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -490,6 +586,8 @@ func TestPinsOnlyStructural(t *testing.T) {
 		structural.FieldOf[string]("Object"),
 		structural.FieldOf[string]("SAN"),
 		structural.FieldOf[string]("Issuer"),
+		structural.FieldOf[string]("KeyKind"),
+		structural.FieldOf[string]("KeyFingerprint"),
 	)
 }
 
