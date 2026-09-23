@@ -90,7 +90,7 @@ func CompileFiles(ctx context.Context, mods []modfiles.Module, i int, files []st
 // or every module's for a negative i — checked for satisfaction
 // first.
 func compileTargets(ctx context.Context, mods []modfiles.Module, i int, targets []string) (*Result, error) {
-	views, err := importcheck.Views(mods, func(m modfiles.Module, _ string) string { return moduleLabel(m) })
+	views, err := importcheck.Views(mods, func(m modfiles.Module, _ string) string { return m.Label() })
 	if err != nil {
 		return nil, err
 	}
@@ -122,13 +122,6 @@ func compileTargets(ctx context.Context, mods []modfiles.Module, i int, targets 
 	return &Result{Files: files}, nil
 }
 
-func moduleLabel(m modfiles.Module) string {
-	if m.Local {
-		return m.Path
-	}
-	return m.Path + "@" + m.Version
-}
-
 // Providers maps every import path the build provides to the index in
 // mods of its one provider, failing on any path with two providers
 // (REQ-gen-compile: pb never picks a provider by heuristic). Well-known
@@ -142,7 +135,7 @@ func Providers(mods []modfiles.Module) (map[string]int, error) {
 	providers := map[string][]string{}
 	for i, m := range mods {
 		for _, p := range m.Protos() {
-			providers[p] = append(providers[p], moduleLabel(m))
+			providers[p] = append(providers[p], m.Label())
 			index[p] = i
 		}
 	}

@@ -90,6 +90,12 @@ func workingTree() (billy.Filesystem, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	// The directory as the filesystem names it: a working directory
+	// reached through a symbolic link is spelled by the link, which
+	// a tree bound at the root refuses to follow out of itself.
+	if cwd, err = filepath.EvalSymlinks(cwd); err != nil {
+		return nil, "", err
+	}
 	return osfs.New("/"), strings.TrimPrefix(filepath.ToSlash(cwd), "/"), nil
 }
 

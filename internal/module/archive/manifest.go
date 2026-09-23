@@ -154,15 +154,7 @@ func Digest(manifest []byte) string {
 // an invalid version fails before serving or materializing anything.
 func ValidateFileSet(files []FileInfo) error {
 	var total int64
-	byFold := make(map[string]string, len(files))
-	// dirFolds maps the case-folded form of every implied directory prefix
-	// to one original spelling. A file whose folded path hits it cannot
-	// coexist with that directory: byte-identical means a git tree cannot
-	// represent the pair (breaking tree-hash recomputation,
-	// REQ-archive-tree-recompute), fold-equal means a case-insensitive
-	// filesystem cannot extract it (REQ-archive-case-collision).
-	dirFolds := make(map[string]string)
-
+	c := newCollisions(len(files))
 	for _, f := range files {
 		if err := validatePath(f.Path); err != nil {
 			return err
@@ -188,17 +180,8 @@ func ValidateFileSet(files []FileInfo) error {
 		default:
 			return fmt.Errorf("%w: %q has kind %d", ErrEntryInvalid, f.Path, f.Kind)
 		}
-		fold := caseFold(f.Path)
-		if prev, clash := byFold[fold]; clash {
-			if prev == f.Path {
-				return fmt.Errorf("%w: duplicate path %q", ErrPathCollision, f.Path)
-			}
-			return fmt.Errorf("%w: %q and %q are equal under case folding (REQ-archive-case-collision)", ErrPathCollision, prev, f.Path)
-		}
-		byFold[fold] = f.Path
-
-		for prefix := parentDir(f.Path); prefix != ""; prefix = parentDir(prefix) {
-			dirFolds[caseFold(prefix)] = prefix
+		if err := c.add(f.Path); err != nil {
+			return err
 		}
 
 		if f.Size < 0 {
@@ -213,14 +196,95 @@ func ValidateFileSet(files []FileInfo) error {
 	}
 	// Second pass in input order, so the named offender is deterministic.
 	for _, f := range files {
-		if dir, isDir := dirFolds[caseFold(f.Path)]; isDir {
-			if dir == f.Path {
-				return fmt.Errorf("%w: %q is both a file and a directory", ErrPathCollision, f.Path)
-			}
-			return fmt.Errorf("%w: file %q and directory %q are equal under case folding (REQ-archive-case-collision)", ErrPathCollision, f.Path, dir)
+		if err := c.dirClash(f.Path); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// ValidatePaths holds a set of file paths to the path rules and the
+// case-collision rule alone (REQ-archive-path-rules,
+// REQ-archive-case-collision): what an export tree asks of every
+// module's exported paths taken together, the size limit and the
+// nesting rule being a module's own (export.md REQ-export-layout).
+// Paths are judged in the order given, so the named offender is
+// deterministic; a collision is a *CollisionError naming the paths.
+func ValidatePaths(paths []string) error {
+	c := newCollisions(len(paths))
+	for _, p := range paths {
+		if err := validatePath(p); err != nil {
+			return err
+		}
+		if err := c.add(p); err != nil {
+			return err
+		}
+	}
+	for _, p := range paths {
+		if err := c.dirClash(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CollisionError is two file paths of one file set that cannot
+// coexist (REQ-archive-case-collision): equal under case folding, or
+// the first a file fold-equal to a directory the second's path
+// implies. It unwraps to ErrPathCollision.
+type CollisionError struct {
+	Paths  [2]string
+	reason string
+}
+
+func (e *CollisionError) Error() string { return ErrPathCollision.Error() + ": " + e.reason }
+func (e *CollisionError) Unwrap() error { return ErrPathCollision }
+
+// collisions tracks a file set's paths under case folding: a path
+// fold-equal to a recorded one is refused at add, a path fold-equal to a
+// directory prefix another implies at dirClash — byte-identical means a
+// git tree cannot represent the pair (breaking tree-hash recomputation,
+// REQ-archive-tree-recompute), fold-equal means a case-insensitive
+// filesystem cannot hold it (REQ-archive-case-collision).
+type collisions struct {
+	byFold   map[string]string     // folded path → one original spelling
+	dirFolds map[string]impliedDir // folded implied directory → one original spelling and the file implying it
+}
+
+// impliedDir is a directory some file's path implies, and that file.
+type impliedDir struct{ dir, file string }
+
+func newCollisions(n int) *collisions {
+	return &collisions{byFold: make(map[string]string, n), dirFolds: map[string]impliedDir{}}
+}
+
+func (c *collisions) add(p string) error {
+	fold := caseFold(p)
+	if prev, clash := c.byFold[fold]; clash {
+		if prev == p {
+			return &CollisionError{Paths: [2]string{prev, p}, reason: fmt.Sprintf("duplicate path %q", p)}
+		}
+		return &CollisionError{Paths: [2]string{prev, p}, reason: fmt.Sprintf("%q and %q are equal under case folding (REQ-archive-case-collision)", prev, p)}
+	}
+	c.byFold[fold] = p
+	for prefix := parentDir(p); prefix != ""; prefix = parentDir(prefix) {
+		c.dirFolds[caseFold(prefix)] = impliedDir{dir: prefix, file: p}
+	}
+	return nil
+}
+
+// dirClash refuses a path fold-equal to a directory another path
+// implies; the error names the two files, the directory's implier
+// second, so a caller can say whose files cannot coexist.
+func (c *collisions) dirClash(p string) error {
+	d, isDir := c.dirFolds[caseFold(p)]
+	if !isDir {
+		return nil
+	}
+	if d.dir == p {
+		return &CollisionError{Paths: [2]string{p, d.file}, reason: fmt.Sprintf("%q is both a file and a directory (of %q)", p, d.file)}
+	}
+	return &CollisionError{Paths: [2]string{p, d.file}, reason: fmt.Sprintf("file %q and directory %q (of %q) are equal under case folding (REQ-archive-case-collision)", p, d.dir, d.file)}
 }
 
 func parentDir(p string) string {

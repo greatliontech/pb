@@ -434,3 +434,35 @@ func TestCaseFoldCollisionProperty(t *testing.T) {
 		}
 	})
 }
+
+// A set of paths from several modules is held to the path rules and
+// the case-collision rule alone: an invalid path, two paths equal under
+// case folding, and a file where another path implies a directory are
+// refused naming the paths, the offender the first in the given order;
+// the size limit and the nesting rule are not applied
+// (REQ-archive-path-rules, REQ-archive-case-collision, export.md
+// REQ-export-layout).
+func TestValidatePaths(t *testing.T) {
+	if err := ValidatePaths([]string{"a/b.proto", "c.proto", "a/pb.yaml", "A/d.proto"}); err != nil {
+		t.Fatalf("a valid set, a nested module file among it: %v", err)
+	}
+	if err := ValidatePaths([]string{"ok.proto", "bad:name.proto"}); !errors.Is(err, ErrPathInvalid) {
+		t.Fatalf("invalid path: %v", err)
+	}
+	var c *CollisionError
+	err := ValidatePaths([]string{"m1/types.proto", "x.proto", "M1/types.proto"})
+	if !errors.As(err, &c) || c.Paths != [2]string{"m1/types.proto", "M1/types.proto"} || !errors.Is(err, ErrPathCollision) {
+		t.Fatalf("case fold: %v", err)
+	}
+	err = ValidatePaths([]string{"x.proto", "x.proto/y.proto"})
+	if !errors.As(err, &c) || c.Paths != [2]string{"x.proto", "x.proto/y.proto"} {
+		t.Fatalf("file and directory: %v", err)
+	}
+	err = ValidatePaths([]string{"D/y.proto", "d"})
+	if !errors.As(err, &c) || c.Paths != [2]string{"d", "D/y.proto"} || !strings.Contains(err.Error(), `directory "D"`) {
+		t.Fatalf("file and folded directory: %v", err)
+	}
+	if err := ValidatePaths([]string{"a.proto", "a.proto"}); !errors.As(err, &c) || c.Paths != [2]string{"a.proto", "a.proto"} {
+		t.Fatalf("duplicate: %v", err)
+	}
+}

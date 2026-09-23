@@ -82,16 +82,20 @@ the bytes generation compiles, written as regular files whatever the
 working copy's modes.
 
 **REQ-export-output** (behavior): The output directory, a required
-argument, MUST be absent or an empty directory when the export begins
-and lie, with symbolic links resolved, outside every workspace
-module's directory — files under one are that module's on the next
-load, so the tree of a single-module workspace, whose module
-directory is the workspace root (`workspace.md` REQ-work-default),
-lands outside the project — and the tree lands whole or not at all:
-written in full into a temporary sibling of its destination and moved
-into place last, a failure removing the sibling and leaving the
-destination as the export found it, an interruption leaving at most
-the sibling, which no later export reads.
+argument, MUST be absent or an empty directory when the export begins,
+its parent directory existing, and lie, with symbolic links resolved
+and a path through a dangling link refused, outside every workspace
+module's directory — judged by the directory's identity, not its
+spelling: files under one are that module's on the next load, so the
+tree of a single-module workspace, whose module directory is the
+workspace root (`workspace.md` REQ-work-default), lands outside the
+project — and the tree lands whole or not at all: written in full into
+a temporary sibling of its destination and moved into place by one
+rename, an empty destination removed just before it, a failure
+removing the sibling and leaving the destination as the export found
+it, an interruption leaving at most the sibling, which no later
+export reads, and, when interrupted between the removal and the move,
+the empty destination absent.
 
 **REQ-export-report** (behavior): An export MUST report on standard
 output one line per module of the build in build order — workspace

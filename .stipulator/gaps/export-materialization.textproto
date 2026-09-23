@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-export-materialization"
-reason: "the export verb is specified ahead of its plan; the clause lands with the export plan (docs/plans/export.md)"
-content_hash: "97d2bea08d04563c71cf8dc3a563315ac08ad440cafeb2eb8fdc7cd7f5e0ee4e"
-source_hash: "64a553dd17ddbab1db8a194f9aedd8b9e872cf44e2de1ad7f49144205d1fa6e9"
-lands { manual { condition: "the export plan lands the clause and binds its implementation and witnesses" } }

@@ -9,14 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/greatliontech/pb/internal/module"
-	"github.com/greatliontech/pb/internal/testing/scratchtest"
 
 	"pgregory.net/rapid"
 )
@@ -325,58 +321,6 @@ func TestZipHostilePaths(t *testing.T) {
 	}
 }
 
-// Extraction materializes content with no execute bit and no world-writable
-// mode, regardless of the manifest mode (REQ-archive-no-exec-materialization).
-func TestExtractNoExec(t *testing.T) {
-	dir := scratchtest.Dir(t)
-	data, digest := writeZip(t, sampleFiles())
-	if err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), digest); err != nil {
-		t.Fatalf("ExtractZip: %v", err)
-	}
-	var seen int
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-		seen++
-		st, err := os.Stat(path)
-		if err != nil {
-			return err
-		}
-		if st.Mode()&0o111 != 0 {
-			t.Errorf("%s extracted executable (mode %v)", path, st.Mode())
-		}
-		if st.Mode()&0o002 != 0 {
-			t.Errorf("%s extracted world-writable (mode %v)", path, st.Mode())
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if seen != 3 {
-		t.Fatalf("extracted %d files, want 3", seen)
-	}
-	got, err := os.ReadFile(filepath.Join(dir, "tools", "gen.sh"))
-	if err != nil || string(got) != "#!/bin/sh\n" {
-		t.Fatalf("extracted content mismatch: %q, %v", got, err)
-	}
-}
-
-// Extraction refuses a zip that fails verification: nothing is written.
-func TestExtractRefusesBadDigest(t *testing.T) {
-	dir := scratchtest.Dir(t)
-	data, _ := writeZip(t, sampleFiles())
-	err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), "pb1:0000000000000000000000000000000000000000000000000000000000000000")
-	if !errors.Is(err, ErrDigestMismatch) {
-		t.Fatalf("err = %v, want ErrDigestMismatch", err)
-	}
-	entries, _ := os.ReadDir(dir)
-	if len(entries) != 0 {
-		t.Fatalf("extraction wrote %d entries despite failed verification", len(entries))
-	}
-}
-
 // FuzzVerifyZip drives the byte-parsing surface with arbitrary containers:
 // it must never panic, and it must never accept bytes against an
 // unsatisfiable digest.
@@ -409,50 +353,6 @@ func FuzzVerifyZip(f *testing.F) {
 			if merr != nil || Digest(m) != digest {
 				t.Fatalf("accepted zip whose verified set does not reproduce the digest")
 			}
-		}
-	})
-}
-
-// Property: extraction of any generated file set materializes every file
-// non-executable and non-world-writable, whatever the manifest modes say.
-func TestExtractNoExecProperty(t *testing.T) {
-	root := scratchtest.Dir(t)
-	seq := 0
-	rapid.Check(t, func(t *rapid.T) {
-		n := rapid.IntRange(1, 8).Draw(t, "n")
-		var files []File
-		for i := range n {
-			files = append(files, File{
-				Path: fmt.Sprintf("d%d/f%d.proto", rapid.IntRange(0, 2).Draw(t, "dir"), i),
-				Exec: rapid.Bool().Draw(t, "exec"),
-				Body: strings.NewReader(rapid.StringN(0, 32, -1).Draw(t, "body")),
-			})
-		}
-		var buf bytes.Buffer
-		digest, err := WriteZip(&buf, files)
-		if err != nil {
-			t.Fatalf("WriteZip: %v", err)
-		}
-		seq++
-		dir := filepath.Join(root, fmt.Sprintf("case%d", seq))
-		if err := ExtractZip(dir, bytes.NewReader(buf.Bytes()), int64(buf.Len()), digest); err != nil {
-			t.Fatalf("ExtractZip: %v", err)
-		}
-		err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
-				return err
-			}
-			st, err := os.Stat(path)
-			if err != nil {
-				return err
-			}
-			if st.Mode()&0o111 != 0 || st.Mode()&0o002 != 0 {
-				t.Fatalf("%s extracted with mode %v", path, st.Mode())
-			}
-			return nil
-		})
-		if err != nil {
-			t.Fatal(err)
 		}
 	})
 }
@@ -728,24 +628,6 @@ func TestZipLinksCarried(t *testing.T) {
 	if _, has, err := ZipModuleFile(bytes.NewReader(data), int64(len(data))); err != nil || has {
 		t.Fatalf("a link named like the module file read as one: %v %v", has, err)
 	}
-	// Extraction writes the regular file alone.
-	dir := scratchtest.Dir(t)
-	if err := ExtractZip(dir, bytes.NewReader(data), int64(len(data)), digest); err != nil {
-		t.Fatal(err)
-	}
-	var seen []string
-	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			seen = append(seen, filepath.ToSlash(strings.TrimPrefix(path, dir+string(filepath.Separator))))
-		}
-		return err
-	})
-	if len(seen) != 1 || seen[0] != "a.proto" {
-		t.Fatalf("extracted %v", seen)
-	}
-	if _, err := os.Lstat(filepath.Join(dir, "link.proto")); !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("a link written: %v", err)
-	}
 	// The tree: the link's blob over its target, the submodule's id.
 	blobOf := func(body string) []byte {
 		h, err := BlobHash(SHA1, int64(len(body)), strings.NewReader(body))
@@ -826,45 +708,6 @@ func TestZipLinksCarried(t *testing.T) {
 		if want := file("l", false, "a.proto"); len(infos) != 1 || infos[0].Kind != KindFile || infos[0].Exec || infos[0].SHA256 != want.SHA256 {
 			t.Fatalf("attributes %o under an MS-DOS host read as %+v", attrs>>16, infos)
 		}
-	}
-}
-
-// writeMember refuses bytes that differ from the verified FileInfo: the
-// extraction pass re-reads the container, and that second read carries no
-// authority of its own.
-func TestWriteMemberVerifiesBytes(t *testing.T) {
-	data, _ := writeZip(t, sampleFiles())
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var m *zip.File
-	for _, f := range zr.File {
-		if f.Name == "pb.yaml" {
-			m = f
-		}
-	}
-	dir := scratchtest.Dir(t)
-	good := file("pb.yaml", false, "module: example.com/m\n")
-
-	if err := writeMember(filepath.Join(dir, "ok"), m, good); err != nil {
-		t.Fatalf("matching info: %v", err)
-	}
-	got, _ := os.ReadFile(filepath.Join(dir, "ok"))
-	if string(got) != "module: example.com/m\n" {
-		t.Fatalf("extracted content %q", got)
-	}
-
-	wrongHash := good
-	wrongHash.SHA256[0] ^= 0xff
-	if err := writeMember(filepath.Join(dir, "h"), m, wrongHash); !errors.Is(err, ErrZipInvalid) {
-		t.Fatalf("wrong hash: err = %v, want ErrZipInvalid", err)
-	}
-
-	wrongSize := good
-	wrongSize.Size--
-	if err := writeMember(filepath.Join(dir, "s"), m, wrongSize); !errors.Is(err, ErrZipInvalid) {
-		t.Fatalf("wrong size: err = %v, want ErrZipInvalid", err)
 	}
 }
 

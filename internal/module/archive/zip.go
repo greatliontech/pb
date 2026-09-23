@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -383,71 +381,4 @@ func hashMember(m *zip.File, mode memberMode) (FileInfo, error) {
 	}
 	copy(info.SHA256[:], h.Sum(nil))
 	return info, nil
-}
-
-// ExtractZip verifies the zip against expected and materializes the file
-// set's regular files under dir. A mid-extraction error leaves a partial
-// tree under dir: callers wanting atomicity extract into a fresh directory
-// and rename. No written file is executable and none is world-writable,
-// and no link nor submodule entry is written at all
-// (REQ-archive-no-exec-materialization): the execute mode, a link's
-// target and a submodule's id exist in the manifest solely for digest and
-// git-tree fidelity, module content is never executed, and a link may
-// point anywhere.
-func ExtractZip(dir string, r io.ReaderAt, size int64, expected string) error {
-	infos, err := VerifyZip(r, size, expected)
-	if err != nil {
-		return err
-	}
-	zr, err := zip.NewReader(r, size)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrZipInvalid, err)
-	}
-	byPath := make(map[string]FileInfo, len(infos))
-	for _, info := range infos {
-		byPath[info.Path] = info
-	}
-	for _, m := range zr.File {
-		info, ok := byPath[m.Name]
-		if !ok || info.Kind != KindFile {
-			continue // a directory entry, a link or a submodule entry
-		}
-		dst := filepath.Join(dir, filepath.FromSlash(info.Path))
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return err
-		}
-		if err := writeMember(dst, m, info); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// writeMember materializes one verified member, hashing while writing and
-// refusing to keep bytes that differ from the verified FileInfo — extraction
-// re-reads the container, and that second read carries no more authority
-// than the first (REQ-archive-zip-verification).
-func writeMember(dst string, m *zip.File, info FileInfo) error {
-	rc, err := m.Open()
-	if err != nil {
-		return fmt.Errorf("%w: opening member %q: %v", ErrZipInvalid, info.Path, err)
-	}
-	defer rc.Close()
-	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	h := sha256.New()
-	n, err := io.Copy(io.MultiWriter(f, h), io.LimitReader(rc, info.Size+1))
-	if err != nil {
-		f.Close()
-		return fmt.Errorf("extracting %q: %w", info.Path, err)
-	}
-	var sum [32]byte
-	copy(sum[:], h.Sum(nil))
-	if n != info.Size || sum != info.SHA256 {
-		f.Close()
-		return fmt.Errorf("%w: member %q changed between verification and extraction", ErrZipInvalid, info.Path)
-	}
-	return f.Close()
 }

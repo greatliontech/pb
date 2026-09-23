@@ -61,6 +61,16 @@ type Module struct {
 	Synthesized bool
 }
 
+// Label names the module as reports and errors spell it: a build-list
+// module with its selected version, a workspace module by its path
+// alone, which has no version.
+func (m Module) Label() string {
+	if m.Local {
+		return m.Path
+	}
+	return m.Path + "@" + m.Version
+}
+
 // Protos returns the module's files of the build in sorted order: every
 // path of Files but a well-known one, which the toolchain answers for
 // in every compile and no module provides (REQ-gen-compile). Every
