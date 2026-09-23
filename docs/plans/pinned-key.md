@@ -26,7 +26,7 @@ REQ-verify-signature-kind, REQ-verify-pinned-key)
 - [x] 5. pb: the lockfile's `git-pinned-key` record read, written,
       validated and held to the downgrade guard; the fixed-point and
       fuzz grammars extended to it
-- [ ] 6. pb: evaluation in the fetch client — under a rule naming keys
+- [x] 6. pb: evaluation in the fetch client — under a rule naming keys
       the evidence verified against exactly them, naming keys
       requiring them, either evidence under keys beside identity — the
       accepted key recorded, and a pinned record re-verified on
