@@ -9,7 +9,7 @@ REQ-gen-request-determinism)
       request built over the order the compile hands it; the
       descriptor set assembled from it fresh per call, every
       reachable file's descriptor as the request carries it
-- [ ] 2. atomicfile: a file lands at the mode asked for — 0644 less
+- [x] 2. atomicfile: a file lands at the mode asked for — 0644 less
       the umask, created so rather than changed to — for every writer:
       the module
       cache, the lockfile and module files, generated files, the
