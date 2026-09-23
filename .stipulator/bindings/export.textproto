@@ -1,0 +1,32 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.BindingSet
+
+bindings {
+  requirement_id: "REQ-export-selection"
+  content_hash: "4a430f41e0f852b6cec0e75c230dbaa173f85732e3a80e977e37234cafe2519a"
+  source_hash: "7f3b1a29d611c4df250def67d5ee11be34366938763402df1d1c46b1c6979735"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.Result.Closure"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "dce3b4cf1c9309b315d65611bb75dcb745648472b4ed9ebdcb54aa62d2610f19"
+}
+
+bindings {
+  requirement_id: "REQ-export-selection"
+  content_hash: "4a430f41e0f852b6cec0e75c230dbaa173f85732e3a80e977e37234cafe2519a"
+  source_hash: "7f3b1a29d611c4df250def67d5ee11be34366938763402df1d1c46b1c6979735"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestClosure"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "99d1289b9aed368f04c17629e1cbf23c28866dd0a02e39258254442b7c296fd1"
+}
+
+bindings {
+  requirement_id: "REQ-export-selection"
+  content_hash: "4a430f41e0f852b6cec0e75c230dbaa173f85732e3a80e977e37234cafe2519a"
+  source_hash: "7f3b1a29d611c4df250def67d5ee11be34366938763402df1d1c46b1c6979735"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestClosureProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "a9cec563b886a38d94c229367b099118f51982b6f0fa47646b09e8b8e34a35b2"
+}

@@ -11,34 +11,6 @@ import (
 	"pgregory.net/rapid"
 )
 
-// The well-known set is exactly the toolchain's embedded sources: the
-// classic types and compiler/plugin.proto are in; go_features.proto is
-// deliberately out (protobuf installations do not ship it — it resolves
-// through modules); nothing outside google/protobuf is ever in.
-func TestWellKnownGolden(t *testing.T) {
-	for path, want := range map[string]bool{
-		"google/protobuf/timestamp.proto":       true,
-		"google/protobuf/descriptor.proto":      true,
-		"google/protobuf/any.proto":             true,
-		"google/protobuf/compiler/plugin.proto": true,
-		"google/protobuf/go_features.proto":     false,
-		"google/protobuf/nonexistent.proto":     false,
-		"example.com/x.proto":                   false,
-		"timestamp.proto":                       false,
-		"":                                      false,
-		// Directories open successfully on an embedded FS but are not
-		// importable source files.
-		"google":                   false,
-		"google/protobuf":          false,
-		"google/protobuf/compiler": false,
-		".":                        false,
-	} {
-		if got := WellKnown(path); got != want {
-			t.Errorf("WellKnown(%q) = %v, want %v", path, got, want)
-		}
-	}
-}
-
 func TestImportsGolden(t *testing.T) {
 	src := []byte(`// import "not/this.proto"
 syntax = "proto3";
@@ -216,7 +188,7 @@ func TestCheckCompletenessProperty(t *testing.T) {
 		for _, m := range mods {
 			for f, imps := range m.Files {
 				for _, imp := range imps {
-					satisfied := WellKnown(imp) || provided[imp]
+					satisfied := modfiles.WellKnown(imp) || provided[imp]
 					if satisfied == reported[Unsatisfied{Module: m.Path, File: f, Import: imp}] {
 						t.Fatalf("import %q of %s %s: satisfied=%v reported=%v",
 							imp, m.Path, f, satisfied, !satisfied)

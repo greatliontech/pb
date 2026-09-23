@@ -126,7 +126,7 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 		var carry []string
 		require := func(from string, imports []string) error {
 			for _, imp := range imports {
-				if importcheck.WellKnown(imp) {
+				if modfiles.WellKnown(imp) {
 					continue
 				}
 				p, ok := provider[imp]

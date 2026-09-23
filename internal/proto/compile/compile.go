@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/wellknownimports"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/greatliontech/pb/internal/proto/importcheck"
@@ -108,8 +109,9 @@ func compileTargets(ctx context.Context, mods []modfiles.Module, i int, targets 
 	c := protocompile.Compiler{
 		// The composite consults module sources first and the embedded
 		// well-known set as fallback; the spec's well-known-first
-		// precedence is enforced by providerIndex's filter (well-known
-		// paths never enter the index), not by the wrapper.
+		// precedence holds because a well-known path never enters the
+		// index (a module's copy is no file of the build,
+		// modfiles.Module.Protos), not by the wrapper.
 		Resolver:       wellknownimports.WithStandardImports(byteResolver(sources)),
 		SourceInfoMode: protocompile.SourceInfoStandard,
 	}
@@ -127,20 +129,21 @@ func moduleLabel(m modfiles.Module) string {
 	return m.Path + "@" + m.Version
 }
 
-// providerIndex maps every import path to its one provider's bytes,
-// failing on any path with two providers. Well-known paths are the
-// toolchain's and never enter the index (REQ-gen-compile: resolved
-// first, never looked up in modules).
-func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {
-	sources := map[string][]byte{}
+// Providers maps every import path the build provides to the index in
+// mods of its one provider, failing on any path with two providers
+// (REQ-gen-compile: pb never picks a provider by heuristic). Well-known
+// paths are the toolchain's and never enter the map — resolved first,
+// never looked up in modules — a module's copy of one being no file
+// of the build (modfiles.Module.Protos). The one answer to which
+// module a path belongs to: the compiler's sources and an export's
+// tree both read it.
+func Providers(mods []modfiles.Module) (map[string]int, error) {
+	index := map[string]int{}
 	providers := map[string][]string{}
-	for _, m := range mods {
+	for i, m := range mods {
 		for _, p := range m.Protos() {
-			if importcheck.WellKnown(p) {
-				continue
-			}
 			providers[p] = append(providers[p], moduleLabel(m))
-			sources[p] = m.Files[p]
+			index[p] = i
 		}
 	}
 	// Sorted key iteration makes the report deterministic by
@@ -154,7 +157,50 @@ func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {
 	if len(amb) > 0 {
 		return nil, &AmbiguousError{Paths: amb}
 	}
+	return index, nil
+}
+
+// providerIndex maps every import path to its one provider's bytes,
+// over Providers.
+func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {
+	index, err := Providers(mods)
+	if err != nil {
+		return nil, err
+	}
+	sources := make(map[string][]byte, len(index))
+	for p, i := range index {
+		sources[p] = mods[i].Files[p]
+	}
 	return sources, nil
+}
+
+// Closure returns the import closure of a compiled result (export.md,
+// the import closure term): every compiled file — the workspace
+// modules' under Compile, the given files' under CompileFiles — and
+// every file one imports, transitively, across the build's modules;
+// the well-known imports, the toolchain's, never among them and never
+// walked into; sorted, each path once.
+func (r *Result) Closure() []string {
+	seen := map[string]bool{}
+	var walk func(f protoreflect.FileDescriptor)
+	walk = func(f protoreflect.FileDescriptor) {
+		if seen[f.Path()] {
+			return
+		}
+		seen[f.Path()] = true
+		imports := f.Imports()
+		for i := 0; i < imports.Len(); i++ {
+			imp := imports.Get(i)
+			if modfiles.WellKnown(imp.Path()) {
+				continue
+			}
+			walk(imp.FileDescriptor)
+		}
+	}
+	for _, f := range r.Files {
+		walk(f)
+	}
+	return slices.Sorted(maps.Keys(seen))
 }
 
 // byteResolver serves module sources by import path; anything else is

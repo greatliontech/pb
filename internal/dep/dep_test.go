@@ -1421,9 +1421,12 @@ func newCheck(t *testing.T, lint string) *depFixture {
 			"  string ok = 3;\n" +
 			"}\n",
 		"a/vendor/v.proto": "syntax = \"proto3\";\npackage a.vendor;\nmessage V {\n  string Vendored = 1;\n}\n",
-		"b/pb.yaml":        ws("example.com/b", "  example.com/a: v0.0.1\n"),
-		"b/b.proto":        "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n}\n",
-		"house/pb.yaml":    ws("example.com/house", ""),
+		// A workspace copy of a well-known path: no file of the build,
+		// so neither checked nor paired (REQ-gen-compile).
+		"a/google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\nmessage Empty {\n  string NotChecked = 1;\n}\n",
+		"b/pb.yaml":                     ws("example.com/b", "  example.com/a: v0.0.1\n"),
+		"b/b.proto":                     "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n}\n",
+		"house/pb.yaml":                 ws("example.com/house", ""),
 		"house/house.rules.yaml": "celEnv: 1\nrules:\n" +
 			"  - id: FIELD_NAMES\n    kind: lint\n    target: field\n    severity: error\n    tags: [naming]\n    cel: case(field.name, 'snake') == field.name\n    message: field names are snake_case\n" +
 			"  - id: MESSAGE_COUNT\n    kind: lint\n    target: set\n    severity: warning\n    cel: messages(files).size() < 3\n    message: too many messages\n" +
@@ -1566,6 +1569,8 @@ func TestBreaking(t *testing.T) {
 	fx.serve(t, "example.com/a", "v0.9.0", map[string]string{
 		"pb.yaml": ws("example.com/a", ""),
 		"a.proto": "syntax = \"proto3\";\npackage a;\n\nmessage Thing {\n  string BadName = 1;\n  string Other = 2;\n  int32 ok = 3;\n  string gone = 4;\n}\n",
+		// The base's copy of a well-known path pairs with nothing.
+		"google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\nmessage Empty {\n  string NotChecked = 1;\n  string gone_too = 2;\n}\n",
 	})
 	fx.serve(t, "example.com/b", "v0.9.0", map[string]string{
 		"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"),
@@ -1662,6 +1667,37 @@ func TestBreaking(t *testing.T) {
 	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    ref: HEAD\n")
 	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "no repository source is wired") {
 		t.Fatalf("no repo source: %v", err)
+	}
+}
+
+// A module whose only protobuf file is a copy of a well-known path
+// holds no file of the build: nothing to pair, no base materialized,
+// nothing pinned — while a sibling with files is paired as ever
+// (REQ-break-base-materialized, REQ-gen-compile).
+func TestBreakingSkipsModuleWithoutFilesOfTheBuild(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":                       "use:\n  - a\n  - b\n  - house\n",
+		"pb.lint.yaml":                  "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.9.0\n",
+		"a/pb.yaml":                     ws("example.com/a", ""),
+		"a/google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\nmessage Empty {}\n",
+		"b/pb.yaml":                     ws("example.com/b", ""),
+		"b/b.proto":                     "syntax = \"proto3\";\npackage b;\nmessage B {\n  string kept = 1;\n}\n",
+		"house/pb.yaml":                 ws("example.com/house", ""),
+		"house/house.rules.yaml":        "celEnv: 1\nrules:\n  - id: FIELD_GONE\n    kind: breaking\n    target: field\n    severity: error\n    cel: new != null\n    message: field removed\n",
+	})
+	// b's base is served and equal; none is served for a, so
+	// materializing one for a would fail.
+	fx.serve(t, "example.com/b", "v0.9.0", map[string]string{
+		"pb.yaml": ws("example.com/b", ""),
+		"b.proto": "syntax = \"proto3\";\npackage b;\nmessage B {\n  string kept = 1;\n}\n",
+	})
+	var out, diag strings.Builder
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err != nil || out.String() != "" || diag.String() != "" {
+		t.Fatalf("Breaking: %v %q %q", err, out.String(), diag.String())
+	}
+	lock := fx.read(t, "pb.lock")
+	if !strings.Contains(lock, "example.com/b") || strings.Contains(lock, "example.com/a") {
+		t.Fatalf("pins = %q: b's base pinned, none for a", lock)
 	}
 }
 

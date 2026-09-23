@@ -200,3 +200,13 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "2894878a907df9ea31df6b830b29c247b7440db3c068adc465147a2efe4ebde2"
 }
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
+  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBreakingSkipsModuleWithoutFilesOfTheBuild"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "67a4f41dbc4dad0afb3af4abd4b4a5aec70ac1c8db772976e7a7b517866ab493"
+}

@@ -1,69 +1,22 @@
 // Package importcheck checks protobuf import satisfaction across a build
 // list (REQ-resolve-unsatisfied-imports): every import of every module's
 // files must be a well-known import — the toolchain's embedded
-// google/protobuf sources — or name a file some build-list module
-// provides; anything else fails, naming the importing module, the
-// importing file, and the unsatisfied import path.
-//
-// The well-known set is probed through the same embedded resolver the
-// compiler will read from (wellknownimports), so membership can never
-// drift from what compilation actually serves. The set is pinned by the
-// protocompile version alone: the descriptor-registry alternative
-// (protocompile.WithStandardImports) was rejected because its content
-// follows the linked protobuf-go runtime version and drops the extension
-// declarations only source retains.
+// google/protobuf sources, modfiles.WellKnown — or name a file some
+// build-list module provides; anything else fails, naming the importing
+// module, the importing file, and the unsatisfied import path.
 package importcheck
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"slices"
 	"strings"
 
-	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
-	"github.com/bufbuild/protocompile/wellknownimports"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
-
-// errNotEmbedded is the base resolver's constant answer, so the probe
-// falls through to the embedded well-known sources alone.
-var errNotEmbedded = errors.New("not an embedded well-known import")
-
-// wellKnownProbe builds the membership probe: constructed per call —
-// cheap wrapper allocations, no I/O — so the package holds no mutable
-// state.
-func wellKnownProbe() protocompile.Resolver {
-	return wellknownimports.WithStandardImports(
-		protocompile.ResolverFunc(func(string) (protocompile.SearchResult, error) {
-			return protocompile.SearchResult{}, errNotEmbedded
-		}),
-	)
-}
-
-// WellKnown reports whether path names a well-known import: one of the
-// toolchain's embedded google/protobuf source files. The set is the
-// protobuf installation's — google/protobuf/go_features.proto is not
-// shipped with it and resolves through modules like any other import.
-func WellKnown(path string) bool {
-	res, err := wellKnownProbe().FindFileByPath(path)
-	if err != nil {
-		return false
-	}
-	// embed.FS.Open succeeds on directories, and the resolver returns the
-	// handle unread — but a well-known import is a readable source file,
-	// so membership requires the first byte (or a clean EOF) to prove it.
-	var b [1]byte
-	_, rerr := res.Source.Read(b[:])
-	if c, ok := res.Source.(io.Closer); ok {
-		c.Close()
-	}
-	return rerr == nil || rerr == io.EOF
-}
 
 // Imports returns the import paths a protobuf source file declares —
 // plain, public, and weak alike, since each must resolve to compile.
@@ -165,7 +118,7 @@ func CheckRequirers(modules, requirers []Module) error {
 	for _, m := range requirers {
 		for f, imports := range m.Files {
 			for _, imp := range imports {
-				if WellKnown(imp) || provided[imp] {
+				if modfiles.WellKnown(imp) || provided[imp] {
 					continue
 				}
 				missing = append(missing, Unsatisfied{Module: m.Path, File: f, Import: imp})

@@ -3,6 +3,7 @@ package compile
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -170,6 +171,14 @@ func TestWellKnownNeverShadowed(t *testing.T) {
 	if empty == nil || empty.Messages().ByName("Empty").Fields().Len() != 0 {
 		t.Fatal("module copy shadowed the toolchain's well-known file")
 	}
+	// The module's copy is no file of the build: not compiled as a
+	// target, so neither generated for nor exported.
+	if len(res.Files) != 1 || res.Files[0].Path() != "a.proto" {
+		t.Fatalf("compiled %v, want a.proto alone", res.Files)
+	}
+	if got := res.Closure(); !slices.Equal(got, []string{"a.proto"}) {
+		t.Fatalf("Closure = %v, want a.proto alone", got)
+	}
 }
 
 // Property: output order is module order then sorted path, for any
@@ -239,4 +248,170 @@ func TestCompileFiles(t *testing.T) {
 	if _, err := CompileFiles(context.Background(), []modfiles.Module{twice}, 0, []string{"x/m.proto"}); err == nil {
 		t.Fatal("a file outside the targets with an unsatisfied import passed")
 	}
+}
+
+// The provider index names each path's one module by its position and
+// skips a module's copy of a well-known path (REQ-gen-compile); two
+// providers of one path are the ambiguity Compile refuses.
+func TestProviders(t *testing.T) {
+	mods := []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{
+			"a/a.proto":                   "syntax = \"proto3\";\n",
+			"google/protobuf/empty.proto": "syntax = \"proto3\";\n",
+		}),
+		mod("example.com/m1", "v1.0.0", false, map[string]string{
+			"m1/types.proto": "syntax = \"proto3\";\n",
+		}),
+	}
+	index, err := Providers(mods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]int{"a/a.proto": 0, "m1/types.proto": 1}
+	if !maps.Equal(index, want) {
+		t.Fatalf("Providers = %v, want %v", index, want)
+	}
+	mods = append(mods, mod("example.com/m2", "v1.0.0", false, map[string]string{"m1/types.proto": "syntax = \"proto3\";\n"}))
+	var amb *AmbiguousError
+	if _, err := Providers(mods); !errors.As(err, &amb) || len(amb.Paths) != 1 || amb.Paths[0].Path != "m1/types.proto" {
+		t.Fatalf("Providers over two providers = %v", err)
+	}
+}
+
+// The closure of a compiled build is every workspace file and every
+// file one reaches through imports, across modules, transitively — a
+// file no workspace file reaches is absent, a well-known import is
+// absent and its own imports are not walked — sorted, each once
+// (export.md, the import closure term).
+func TestClosure(t *testing.T) {
+	mods := []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{
+			"a/a.proto": "syntax = \"proto3\";\npackage a;\nimport \"google/protobuf/timestamp.proto\";\nimport \"m1/types.proto\";\nmessage A { google.protobuf.Timestamp t = 1; m1.T m = 2; }\n",
+			"a/z.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/types.proto\";\nimport \"google/protobuf/go_features.proto\";\n",
+			// A workspace copy of a well-known path: the toolchain's
+			// answers for it, and it is no file of the closure.
+			"google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\n",
+		}),
+		mod("example.com/m1", "v1.0.0", false, map[string]string{
+			"m1/types.proto":  "syntax = \"proto3\";\npackage m1;\nimport \"m2/deep.proto\";\nmessage T { m2.D d = 1; }\n",
+			"m1/unused.proto": "syntax = \"proto3\";\npackage m1;\n",
+		}),
+		mod("example.com/m2", "v1.0.0", false, map[string]string{
+			"m2/deep.proto": "syntax = \"proto3\";\npackage m2;\nimport \"google/protobuf/duration.proto\";\nmessage D { google.protobuf.Duration d = 1; }\n",
+		}),
+		mod("example.com/m3", "v1.0.0", false, map[string]string{
+			"m3/never.proto": "syntax = \"proto3\";\npackage m3;\n",
+		}),
+		// go_features.proto is no well-known import: it resolves
+		// through modules and is exported like any file
+		// (module-resolution.md, the well-known imports term).
+		mod("example.com/features", "v1.0.0", false, map[string]string{
+			"google/protobuf/go_features.proto": "syntax = \"proto3\";\npackage pb;\n",
+		}),
+	}
+	res, err := Compile(ctx, mods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"a/a.proto", "a/z.proto", "google/protobuf/go_features.proto", "m1/types.proto", "m2/deep.proto"}
+	if got := res.Closure(); !slices.Equal(got, want) {
+		t.Fatalf("Closure = %v, want %v", got, want)
+	}
+}
+
+// For every build the closure holds each workspace file, is closed
+// under imports less the well-known ones, holds no well-known path
+// and nothing the provider index does not name, and is sorted without
+// repetition.
+func TestClosureProperty(t *testing.T) {
+	rapid.Check(t, func(rt *rapid.T) {
+		n := rapid.IntRange(1, 7).Draw(rt, "n")
+		names := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z]{1,5}\.proto`), n, n, rapid.ID[string]).Draw(rt, "names")
+		// Imports point only at later names, so the graph is acyclic;
+		// a well-known import may join any file.
+		imports := map[string][]string{}
+		for i, nm := range names {
+			var imps []string
+			for _, later := range names[i+1:] {
+				if rapid.Bool().Draw(rt, "edge "+nm+"->"+later) {
+					imps = append(imps, later)
+				}
+			}
+			if rapid.Bool().Draw(rt, "wkt "+nm) {
+				imps = append(imps, "google/protobuf/empty.proto")
+			}
+			imports[nm] = imps
+		}
+		// The first name is the workspace's; the rest split over two
+		// external modules by a coin.
+		local, m1, m2 := map[string]string{}, map[string]string{}, map[string]string{}
+		for i, nm := range names {
+			var b strings.Builder
+			b.WriteString("syntax = \"proto3\";\n")
+			for _, imp := range imports[nm] {
+				b.WriteString("import \"" + imp + "\";\n")
+			}
+			switch {
+			case i == 0:
+				local[nm] = b.String()
+			case rapid.Bool().Draw(rt, "m1 "+nm):
+				m1[nm] = b.String()
+			default:
+				m2[nm] = b.String()
+			}
+		}
+		// A workspace copy of a well-known path, sometimes: no file of
+		// the build, so no member of the closure.
+		if rapid.Bool().Draw(rt, "local wkt") {
+			local["google/protobuf/empty.proto"] = "syntax = \"proto3\";\n"
+		}
+		mods := []modfiles.Module{mod("example.com/a", "", true, local), mod("example.com/m1", "v1.0.0", false, m1), mod("example.com/m2", "v1.0.0", false, m2)}
+		res, err := Compile(ctx, mods)
+		if err != nil {
+			rt.Fatal(err)
+		}
+		index, err := Providers(mods)
+		if err != nil {
+			rt.Fatal(err)
+		}
+		got := res.Closure()
+		if !slices.IsSorted(got) || len(got) != len(slices.Compact(slices.Clone(got))) {
+			rt.Fatalf("closure not sorted or repeating: %v", got)
+		}
+		in := map[string]bool{}
+		for _, p := range got {
+			in[p] = true
+		}
+		for _, p := range got {
+			if modfiles.WellKnown(p) {
+				rt.Fatalf("well-known %s in the closure", p)
+			}
+			if _, ok := index[p]; !ok {
+				rt.Fatalf("%s in the closure names no provider", p)
+			}
+			for _, imp := range imports[p] {
+				if !modfiles.WellKnown(imp) && !in[imp] {
+					rt.Fatalf("%s imports %s, absent from the closure %v", p, imp, got)
+				}
+			}
+		}
+		for p := range local {
+			if !in[p] && !modfiles.WellKnown(p) {
+				rt.Fatalf("workspace file %s absent from the closure %v", p, got)
+			}
+		}
+		// Minimal: every member is a workspace file or imported by a
+		// member — nothing unreached joins.
+		importedBy := map[string]bool{}
+		for _, p := range got {
+			for _, imp := range imports[p] {
+				importedBy[imp] = true
+			}
+		}
+		for _, p := range got {
+			if _, isLocal := local[p]; !isLocal && !importedBy[p] {
+				rt.Fatalf("%s in the closure, reached by no workspace file: %v", p, got)
+			}
+		}
+	})
 }

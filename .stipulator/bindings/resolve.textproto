@@ -456,16 +456,6 @@ bindings {
   content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
   source_hash: "ea65d9efa6aadc8dd0556b0fbc9c38d1deab80e486cdbc2b099b945ded7a578b"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proto/importcheck.WellKnown"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "6725dbdae72d626b53a7851e1755dffe95c44a144ead1271054b0749b8691178"
-}
-
-bindings {
-  requirement_id: "REQ-resolve-unsatisfied-imports"
-  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
-  source_hash: "ea65d9efa6aadc8dd0556b0fbc9c38d1deab80e486cdbc2b099b945ded7a578b"
-  backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckGolden"
   role: BINDING_ROLE_TESTS
   shape_hash: "e6cd35d33ee008f96df71f12db43e2ba3f244b942b337dfc9a6a652832b5a585"
@@ -479,16 +469,6 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/proto/importcheck.TestCheckUnsatisfied"
   role: BINDING_ROLE_TESTS
   shape_hash: "d63de45803c9da35fc92777a85140ed17b7522a19938969951da1db5d363f33e"
-}
-
-bindings {
-  requirement_id: "REQ-resolve-unsatisfied-imports"
-  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
-  source_hash: "ea65d9efa6aadc8dd0556b0fbc9c38d1deab80e486cdbc2b099b945ded7a578b"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/proto/importcheck.TestWellKnownGolden"
-  role: BINDING_ROLE_TESTS
-  shape_hash: "44421eadceccdc88ccbf68669e11490114c3c540da20ae235f48038c0072f8c5"
 }
 
 bindings {
@@ -1089,4 +1069,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/direct.TestResolveTagNamingNonCommitIsNoRelease"
   role: BINDING_ROLE_TESTS
   shape_hash: "6a87a9de187bdb5e64144b653e3ed77d7e5517ea5d0be3f226fe57427660953b"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  source_hash: "ea65d9efa6aadc8dd0556b0fbc9c38d1deab80e486cdbc2b099b945ded7a578b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.WellKnown"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "04bf78eb7ce478b005b8bad4ba3d15c47cbe661f31ce724b4390aa12f2c168bd"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-unsatisfied-imports"
+  content_hash: "9caa2e3e4eb99ee457c95f6ced636209b175d2fab226641bcfadb1b2f61c186a"
+  source_hash: "ea65d9efa6aadc8dd0556b0fbc9c38d1deab80e486cdbc2b099b945ded7a578b"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/modfiles.TestWellKnownGolden"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c86bdb1d29f4ffc379206056177ff875cb1d7a6133947c43fc7ef2972ff7df12"
 }

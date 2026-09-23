@@ -171,3 +171,50 @@ func TestLoadErrors(t *testing.T) {
 		t.Fatal("bad archive accepted")
 	}
 }
+
+// The well-known set is exactly the toolchain's embedded sources: the
+// classic types and compiler/plugin.proto are in; go_features.proto is
+// deliberately out (protobuf installations do not ship it — it resolves
+// through modules); nothing outside google/protobuf is ever in.
+func TestWellKnownGolden(t *testing.T) {
+	for path, want := range map[string]bool{
+		"google/protobuf/timestamp.proto":       true,
+		"google/protobuf/descriptor.proto":      true,
+		"google/protobuf/any.proto":             true,
+		"google/protobuf/compiler/plugin.proto": true,
+		"google/protobuf/go_features.proto":     false,
+		"google/protobuf/nonexistent.proto":     false,
+		"example.com/x.proto":                   false,
+		"timestamp.proto":                       false,
+		"":                                      false,
+		// Directories open successfully on an embedded FS but are not
+		// importable source files.
+		"google":                   false,
+		"google/protobuf":          false,
+		"google/protobuf/compiler": false,
+		".":                        false,
+	} {
+		if got := WellKnown(path); got != want {
+			t.Errorf("WellKnown(%q) = %v, want %v", path, got, want)
+		}
+	}
+}
+
+// A module's copy of a well-known path is loaded but is no file of the
+// build: Protos leaves it out, and every enumeration reads Protos
+// (REQ-gen-compile).
+func TestProtosExcludeWellKnown(t *testing.T) {
+	m := Module{Path: "example.com/a", Files: map[string][]byte{
+		"b.proto":                           []byte("syntax = \"proto3\";\n"),
+		"google/protobuf/empty.proto":       []byte("syntax = \"proto3\";\n"),
+		"google/protobuf/go_features.proto": []byte("syntax = \"proto3\";\n"),
+		"a.proto":                           []byte("syntax = \"proto3\";\n"),
+	}}
+	want := []string{"a.proto", "b.proto", "google/protobuf/go_features.proto"}
+	if got := m.Protos(); !slices.Equal(got, want) {
+		t.Fatalf("Protos = %v, want %v", got, want)
+	}
+	if len(m.Files) != 4 {
+		t.Fatalf("Files changed: %d", len(m.Files))
+	}
+}

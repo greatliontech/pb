@@ -272,7 +272,7 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		// A module under check with no protobuf files has nothing to
 		// pair and needs no base; nor does one whose selection enables
 		// no breaking rule.
-		if !m.Local || len(m.Files) == 0 || len(run.rulesOf(m.Dir)) == 0 {
+		if !m.Local || len(m.Protos()) == 0 || len(run.rulesOf(m.Dir)) == 0 {
 			continue
 		}
 		base, err := breaking.Materialize(ctx, run.lint.Breaking.Base, breaking.Module{Path: m.Path, Dir: m.Dir}, sources)
@@ -301,11 +301,9 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 			}
 			return nil, fmt.Errorf("%s is no file of the base %s", p, base.Label)
 		}
-		oldChecked := make([]string, 0, len(base.Files))
-		for p := range base.Files {
-			oldChecked = append(oldChecked, p)
-		}
-		report, err := eval.Breaking(env, oldChecked, m.Protos(), run.source, baseSource, run.rulesOf(m.Dir))
+		// The base's files of the build, as the module under check's:
+		// the one enumeration, a copy of a well-known path in neither.
+		report, err := eval.Breaking(env, baseMods[i].Protos(), m.Protos(), run.source, baseSource, run.rulesOf(m.Dir))
 		if err != nil {
 			return fmt.Errorf("breaking: %s: %w", m.Path, err)
 		}

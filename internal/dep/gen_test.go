@@ -83,10 +83,13 @@ func respBytes(t *testing.T, files map[string]string) []byte {
 func genFixture(t *testing.T, genYaml string) (*depFixture, *Session) {
 	t.Helper()
 	fx := newDep(t, map[string]string{
-		"pb.work":     "use:\n  - a\n",
-		"a/pb.yaml":   ws("example.com/a", ""),
-		"a/x.proto":   "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
-		"pb.gen.yaml": genYaml,
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", ""),
+		"a/x.proto": "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
+		// A workspace copy of a well-known path is no file to generate
+		// for (REQ-gen-compile): the request names x.proto alone.
+		"a/google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\n",
+		"pb.gen.yaml":                   genYaml,
 	})
 	return fx, fx.session(t, ".")
 }
