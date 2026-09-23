@@ -6,7 +6,7 @@ docs/specs/module-lockfile.md (REQ-lock-pinned-key-record), gitprov
 docs/specs/verification.md ("Pinned-key signatures":
 REQ-verify-signature-kind, REQ-verify-pinned-key)
 
-- [ ] 1. gitprov: the signature's kind selected by its PEM block type,
+- [x] 1. gitprov: the signature's kind selected by its PEM block type,
       gitsign's CMS verified as today and every other kind, or an
       unknown one, failing closed at selection; the embedded-proof
       probe answering for a CMS signature alone
