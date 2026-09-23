@@ -138,7 +138,7 @@ member's bytes being the target path; a submodule entry's `160000`, the
 member's bytes being the recorded commit id.
 
 **REQ-archive-no-exec-materialization** (invariant): Tooling materializing
-archive contents onto a filesystem (cache extraction, export) MUST
+archive contents onto a filesystem (export) MUST
 write neither an executable file, nor a symbolic link, nor a submodule
 entry — the execute mode, a link's target and a submodule's id exist
 in the manifest solely for digest and git-tree fidelity, module

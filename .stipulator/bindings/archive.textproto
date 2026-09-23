@@ -263,8 +263,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-archive-no-exec-materialization"
-  content_hash: "ea378ab5236effd673c04ad6d8b82f71a09c556748ac72b65d169c31497366f8"
-  source_hash: "ba0ce8fb0f872e4fb9faefa2641b8d78ee6edd5f005cda8cc03e3bcc5ce0f1a8"
+  content_hash: "7b50e87c175e730a896fa8f2800dfc819d61e789132510691d8dd53df3b372fd"
+  source_hash: "61ed45d8d07ad4a8c34b0e0beb82965ce053d7aa4f893425f4861e6786610de6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.ExtractZip"
   role: BINDING_ROLE_IMPLEMENTS
@@ -273,8 +273,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-archive-no-exec-materialization"
-  content_hash: "ea378ab5236effd673c04ad6d8b82f71a09c556748ac72b65d169c31497366f8"
-  source_hash: "ba0ce8fb0f872e4fb9faefa2641b8d78ee6edd5f005cda8cc03e3bcc5ce0f1a8"
+  content_hash: "7b50e87c175e730a896fa8f2800dfc819d61e789132510691d8dd53df3b372fd"
+  source_hash: "61ed45d8d07ad4a8c34b0e0beb82965ce053d7aa4f893425f4861e6786610de6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.TestExtractNoExecProperty"
   role: BINDING_ROLE_TESTS
@@ -283,8 +283,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-archive-no-exec-materialization"
-  content_hash: "ea378ab5236effd673c04ad6d8b82f71a09c556748ac72b65d169c31497366f8"
-  source_hash: "ba0ce8fb0f872e4fb9faefa2641b8d78ee6edd5f005cda8cc03e3bcc5ce0f1a8"
+  content_hash: "7b50e87c175e730a896fa8f2800dfc819d61e789132510691d8dd53df3b372fd"
+  source_hash: "61ed45d8d07ad4a8c34b0e0beb82965ce053d7aa4f893425f4861e6786610de6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.TestExtractNoExec"
   role: BINDING_ROLE_TESTS
