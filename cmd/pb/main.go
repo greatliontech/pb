@@ -44,6 +44,7 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(depCmd())
 	root.AddCommand(generateCmd())
 	root.AddCommand(exportCmd())
+	root.AddCommand(buildCmd())
 	root.AddCommand(lintCmd())
 	root.AddCommand(breakingCmd())
 	root.AddCommand(migrateCmd())

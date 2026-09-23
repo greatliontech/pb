@@ -340,3 +340,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "3ab5e2b85827b30d3da71fda14961f0155ac6a7e578ec060b9559f982ba42799"
 }
+
+bindings {
+  requirement_id: "REQ-export-output"
+  content_hash: "56ecbbd4493fbf1ec38e1feca9504daf811915f96a1847f7629edebe702e7352"
+  source_hash: "8b2117757861f83a2b5d449b4aa5fff0ef3586571f39086d7b61288750dde772"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.outputPath"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9c33705428afad9173faecc93b93c0a2f1f047f06abdf859037cc5c33b930b01"
+}
+
+bindings {
+  requirement_id: "REQ-export-output"
+  content_hash: "56ecbbd4493fbf1ec38e1feca9504daf811915f96a1847f7629edebe702e7352"
+  source_hash: "8b2117757861f83a2b5d449b4aa5fff0ef3586571f39086d7b61288750dde772"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.parentDirectory"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4926f73431133287a3e0b05a4bf5c9a35b12f03d7d54615f73bdc9a4fc8f477a"
+}

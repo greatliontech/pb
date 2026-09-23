@@ -36,7 +36,8 @@ func exportCmd() *cobra.Command {
 
 // treePath is an output path as the working tree names it: absolute,
 // rooted as workingTree roots the tree; symbolic links on the way are
-// the export's own to resolve and judge (REQ-export-output).
+// the verb's own to resolve and judge (REQ-export-output,
+// REQ-build-output).
 func treePath(p string) (string, error) {
 	abs, err := filepath.Abs(p)
 	if err != nil {

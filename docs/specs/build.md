@@ -46,7 +46,8 @@ and nothing else — no compiler version, no timestamp, no environment.
 A resolved build with no protobuf file yields an empty set.
 
 **REQ-build-output** (behavior): The output file, a required argument
-whose parent directory exists, MUST be written whole: the set in
+whose parent directory exists — symbolic links on the way resolved, a
+dangling one refused — MUST be written whole: the set in
 protobuf deterministic serialization, written to a temporary sibling
 and moved into place as a regular, non-executable file at the mode a
 created file gets — `0644` less the process's umask — a regular file

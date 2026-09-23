@@ -166,7 +166,10 @@ func Export(ctx context.Context, s *Session, dir, given string, opts ExportOptio
 // is refused as the module's own; the parent exists; and the
 // directory is absent, or empty — a symbolic link, a file or a
 // non-empty directory is refused. The resolved path is returned: the
-// one judged is the one written.
+// one judged is the one written. The link resolution and the parent's
+// judgment are shared with the build (outputPath), the containment
+// rule judged between them so a path inside a module is refused as
+// such whether or not its parent exists.
 func (s *Session) exportTarget(dir string) (string, error) {
 	resolved, err := s.resolveLinks(dir)
 	if err != nil {
@@ -196,10 +199,8 @@ func (s *Session) exportTarget(dir string) (string, error) {
 			break
 		}
 	}
-	if parent := path.Dir(resolved); parent != "." {
-		if fi, err := s.WS.Stat(parent); err != nil || !fi.IsDir() {
-			return "", fmt.Errorf("the parent directory of %s does not exist", dir)
-		}
+	if err := s.parentDirectory(resolved, dir); err != nil {
+		return "", err
 	}
 	fi, err := s.WS.Lstat(resolved)
 	switch {
@@ -220,6 +221,43 @@ func (s *Session) exportTarget(dir string) (string, error) {
 		return "", fmt.Errorf("%s exists and is not empty", dir)
 	}
 	return resolved, nil
+}
+
+// outputPath is an output path as a verb writes it: the symbolic
+// links among its ancestors resolved (resolveLinks), and its parent
+// an existing directory (parentDirectory) — the build's judgment
+// whole, the export's around its containment rule (REQ-export-output,
+// REQ-build-output). The last component is left to the verb's own
+// judgment.
+func (s *Session) outputPath(p string) (string, error) {
+	resolved, err := s.resolveLinks(p)
+	if err != nil {
+		return "", err
+	}
+	if err := s.parentDirectory(resolved, p); err != nil {
+		return "", err
+	}
+	return resolved, nil
+}
+
+// parentDirectory requires the parent of resolved to be an existing
+// directory, given the path as the user spelled it: absence, a
+// non-directory and any other failure told apart.
+func (s *Session) parentDirectory(resolved, given string) error {
+	parent := path.Dir(resolved)
+	if parent == "." {
+		return nil
+	}
+	fi, err := s.WS.Stat(parent)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return fmt.Errorf("the parent directory of %s does not exist", given)
+	case err != nil:
+		return fmt.Errorf("the parent directory of %s: %w", given, err)
+	case !fi.IsDir():
+		return fmt.Errorf("the parent of %s is not a directory", given)
+	}
+	return nil
 }
 
 // resolveLinks follows every symbolic link among dir's ancestors, the

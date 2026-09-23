@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-build-determinism"
-reason: "the build verb is specified ahead of its plan; the clause lands with the build plan (docs/plans/build.md)"
-content_hash: "0384e27ee01536811f411a074ca152852f18fefb75b014032ef81987ba185849"
-source_hash: "18e9e8bffa4ac9ea71f9068ae993a9cec7d5752d6b61dd282fd9d3a3e3d47a51"
-lands { manual { condition: "the build plan lands the clause and binds its implementation and witnesses" } }

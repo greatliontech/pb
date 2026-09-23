@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-build-output"
-  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
-  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/atomicfile.Write"
   role: BINDING_ROLE_IMPLEMENTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-build-output"
-  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
-  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/atomicfile.TestWrite"
   role: BINDING_ROLE_TESTS
@@ -103,10 +103,190 @@ bindings {
 
 bindings {
   requirement_id: "REQ-build-output"
-  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
-  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/atomicfile.TestWriteModeOnDisk"
   role: BINDING_ROLE_TESTS
   shape_hash: "9663b4858d498e446b51aff5051fcaa4243f3b54e0472df0669cc9f08f3f1df0"
+}
+
+bindings {
+  requirement_id: "REQ-build-compile"
+  content_hash: "8f53c91c8f06c8ceb4dca53b2f6c92e79e82177c19d27d7b0c5b10a5abbe3a45"
+  source_hash: "d200314a2d12d24cb1432ff877db0f518647342176a105e065198dabb1dfd4f1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9eb5a9335e006a98da4c61db9727f988c7abf391a408f636a75efc16d1c8731b"
+}
+
+bindings {
+  requirement_id: "REQ-build-compile"
+  content_hash: "8f53c91c8f06c8ceb4dca53b2f6c92e79e82177c19d27d7b0c5b10a5abbe3a45"
+  source_hash: "d200314a2d12d24cb1432ff877db0f518647342176a105e065198dabb1dfd4f1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildWritesTheSet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c2a6c4714d2d08c5301537245b664219301cdcf09d40c801b39371c5f1e17736"
+}
+
+bindings {
+  requirement_id: "REQ-build-compile"
+  content_hash: "8f53c91c8f06c8ceb4dca53b2f6c92e79e82177c19d27d7b0c5b10a5abbe3a45"
+  source_hash: "d200314a2d12d24cb1432ff877db0f518647342176a105e065198dabb1dfd4f1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildFailure"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c3739fdc676348f0a11eed916aeeaf6ef30275b4cdf842446500e9bfe302f2cc"
+}
+
+bindings {
+  requirement_id: "REQ-build-set"
+  content_hash: "5cb172af1ac4c8b42c0d35ae32f83039da04303a2ddf1362bb400baa7e82dffa"
+  source_hash: "efe7c9d0621d0e3fd1ef8951788fd24e21ce91563c870dd63c397ab18f0286dc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9eb5a9335e006a98da4c61db9727f988c7abf391a408f636a75efc16d1c8731b"
+}
+
+bindings {
+  requirement_id: "REQ-build-set"
+  content_hash: "5cb172af1ac4c8b42c0d35ae32f83039da04303a2ddf1362bb400baa7e82dffa"
+  source_hash: "efe7c9d0621d0e3fd1ef8951788fd24e21ce91563c870dd63c397ab18f0286dc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildWritesTheSet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c2a6c4714d2d08c5301537245b664219301cdcf09d40c801b39371c5f1e17736"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9eb5a9335e006a98da4c61db9727f988c7abf391a408f636a75efc16d1c8731b"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.buildTarget"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "8ee4111bfe82015cb7b01229c1405f18915bc271decd5a07031d6907df1008dc"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.buildCmd"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a5009f0dbaeee34b88a7259d26c07dcc8052144810967ce52a8f6a13e6646cff"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildRefusals"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "29561826720f5a40744386625df416e828069754f3f55096a3a9cfb4ddb01fb1"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildWritesTheSet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c2a6c4714d2d08c5301537245b664219301cdcf09d40c801b39371c5f1e17736"
+}
+
+bindings {
+  requirement_id: "REQ-build-report"
+  content_hash: "306065e9558967d3493cbb282f069c5a9a640d41d8ace82a6db6c65742a992e4"
+  source_hash: "f38e9d2d66055469d1f686c0702f6670e2b59767548c9280b56916bbd9bf2152"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9eb5a9335e006a98da4c61db9727f988c7abf391a408f636a75efc16d1c8731b"
+}
+
+bindings {
+  requirement_id: "REQ-build-report"
+  content_hash: "306065e9558967d3493cbb282f069c5a9a640d41d8ace82a6db6c65742a992e4"
+  source_hash: "f38e9d2d66055469d1f686c0702f6670e2b59767548c9280b56916bbd9bf2152"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildWritesTheSet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c2a6c4714d2d08c5301537245b664219301cdcf09d40c801b39371c5f1e17736"
+}
+
+bindings {
+  requirement_id: "REQ-build-determinism"
+  content_hash: "0384e27ee01536811f411a074ca152852f18fefb75b014032ef81987ba185849"
+  source_hash: "18e9e8bffa4ac9ea71f9068ae993a9cec7d5752d6b61dd282fd9d3a3e3d47a51"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Build"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9eb5a9335e006a98da4c61db9727f988c7abf391a408f636a75efc16d1c8731b"
+}
+
+bindings {
+  requirement_id: "REQ-build-determinism"
+  content_hash: "0384e27ee01536811f411a074ca152852f18fefb75b014032ef81987ba185849"
+  source_hash: "18e9e8bffa4ac9ea71f9068ae993a9cec7d5752d6b61dd282fd9d3a3e3d47a51"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildDeterminism"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "8be6fd88b0c4c18d3c2c15a26a1a5667c520aaa1333d163a2b6b3cd2626f2d83"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.outputPath"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "9c33705428afad9173faecc93b93c0a2f1f047f06abdf859037cc5c33b930b01"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildThroughLinks"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5b9b66bc8e62e4c575ffe1e44f4d4f4c2f11e170ea17e9e972074f30a5f13953"
+}
+
+bindings {
+  requirement_id: "REQ-build-set"
+  content_hash: "5cb172af1ac4c8b42c0d35ae32f83039da04303a2ddf1362bb400baa7e82dffa"
+  source_hash: "efe7c9d0621d0e3fd1ef8951788fd24e21ce91563c870dd63c397ab18f0286dc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBuildEmptySet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "cf7169fb5e3525f0b6904ec92c71ebada0d536166022ed321e12cc891da55fec"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "c57bbefbdb234c772f3d2518b72ab8d0868c14f45134b215cac39424ed78a14d"
+  source_hash: "3b9e983f32dca9b4e8be8b9943a3d132db8435cd61f7e325ca1ccef3611b6fe9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.parentDirectory"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "4926f73431133287a3e0b05a4bf5c9a35b12f03d7d54615f73bdc9a4fc8f477a"
 }

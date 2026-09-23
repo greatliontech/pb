@@ -258,6 +258,10 @@ func TestExportTargetRefusals(t *testing.T) {
 	if err := Export(ctx, fx.session(t, "."), "absent/out", "absent/out", ExportOptions{}, &out); err == nil || !strings.Contains(err.Error(), "parent directory of absent/out does not exist") {
 		t.Fatalf("an absent parent: %v", err)
 	}
+	// Inside a module and with no parent: the containment rule speaks.
+	if err := Export(ctx, fx.session(t, "."), "a/nope/out", "a/nope/out", ExportOptions{}, &out); err == nil || !strings.Contains(err.Error(), "inside the workspace module example.com/a") {
+		t.Fatalf("inside the module, parent absent: %v", err)
+	}
 	if got := names(t, fx.ws, "."); strings.Join(got, ",") != "a,absaway,alias,away,dangling,deep,elsewhere,elsewhere2,file,full,link,pb.lock,pb.work,up" {
 		t.Fatalf("after refusals the root holds %v", got)
 	}
