@@ -65,18 +65,20 @@ from an unrelated repository or issuer is rejected.
 
 ## Trust policy
 
-**REQ-prov-trust-schema** (wire): The trust policy file MUST contain, each
-optional: `default` (`allow-unsigned`, the default, or
+**REQ-prov-trust-schema** (wire): The trust policy file MUST contain,
+each optional: `default` (`allow-unsigned`, the default, or
 `require-provenance`); `modules`, a list of rules `{prefix, require,
-identity: {san, issuer}}` matched against module paths; and `plugins`, a
-list of rules of the same shape matched against the repository part of
-OCI references — any `:tag` or `@digest` stripped before matching, since
-a prefix scopes repositories, not versions. Rule prefixes within a list
-are unique: the longest-match rule presupposes one governing rule, and a
-duplicate prefix is a schema violation, not a tie to break. `san` is a
-glob pattern (full-input, `/`-separated component semantics: `*` and `?`
-within a component, `**` written as a complete component matching zero
-or more components, character classes and alternatives, backslash
+identity: {san, issuer}}` — and `keys`, per
+REQ-prov-pinned-keys-schema — matched against module paths; and
+`plugins`, a list of rules `{prefix, require, identity}`, the same
+shape less `keys`, matched against the repository part of OCI
+references — any `:tag` or `@digest` stripped before matching, since a
+prefix scopes repositories, not versions. Rule prefixes within a list
+are unique: the longest-match rule presupposes one governing rule, and
+a duplicate prefix is a schema violation, not a tie to break. `san` is
+a glob pattern (full-input, `/`-separated component semantics: `*` and
+`?` within a component, `**` written as a complete component matching
+zero or more components, character classes and alternatives, backslash
 quoting); `issuer` is an exact string.
 
 **REQ-prov-exec-policy** (wire): The trust policy file MAY additionally
@@ -127,15 +129,18 @@ nothing up.
 
 **REQ-prov-pinned-keys-schema** (wire): The trust policy file MAY
 contain `keyring`, a list of pinned keys `{kind, fingerprint, key}`,
-and a `modules` rule `keys`, a list of fingerprints beside or in
-place of `identity`, under these rules: `kind` is `openpgp` or `ssh`;
-`fingerprint` is the key's fingerprint as its kind spells it; `key`
-is the public key in full — an armored OpenPGP public key block, or
-an OpenSSH public key line — and a key whose fingerprint is not the
-entry's `fingerprint` is a schema violation; a rule's fingerprint
-naming no keyring entry is a schema violation; and `plugins` rules
-carry no `keys`, image signatures being sigstore's alone. Lands: the
-pinned-key plan.
+and a `modules` rule `keys`, a non-empty list of fingerprints beside
+or in place of `identity`, under these rules: `kind` is `openpgp` or
+`ssh`; `fingerprint` is the key's fingerprint as its kind spells it —
+an OpenPGP key's the primary key's fingerprint as uppercase hex, an
+SSH key's OpenSSH's `SHA256:` form; `key` is the public key in full —
+an armored OpenPGP public key block holding one key, or an OpenSSH
+public key line — as the verifier reads it (gitprov's own contract),
+and a key whose fingerprint is not the entry's `fingerprint` is a
+schema violation; a rule's fingerprint naming no keyring entry is a
+schema violation, as is a fingerprint listed twice in the keyring or
+in a rule; and `plugins` rules carry no `keys`, image signatures being
+sigstore's alone.
 
 **REQ-prov-pinned-key-eval** (behavior): Under a rule naming `keys`, a
 subject's git-signed-tag evidence MUST verify offline against exactly

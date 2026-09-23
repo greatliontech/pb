@@ -1,7 +1,9 @@
 // Package trust parses and evaluates the trust policy file
 // (pb.trust.yaml) — the resolution root's statement of which provenance
-// evidence is required and which identities are accepted, for modules
-// and plugin images alike (REQ-prov-trust-schema, REQ-prov-policy-eval).
+// evidence is required and which identities, or which pinned keys,
+// are accepted, for modules and plugin images alike
+// (REQ-prov-trust-schema, REQ-prov-pinned-keys-schema,
+// REQ-prov-policy-eval).
 // Parsing goes through the YAML AST so the accepted surface is the
 // schema's, not the parser's, exactly as the other contract files do.
 // The file's execution block is this package's too: the sandbox tier
@@ -27,6 +29,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml/ast"
+	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/contractfile"
 	"github.com/greatliontech/pb/internal/plugin"
 )
@@ -53,14 +56,19 @@ type IdentityRule struct {
 
 // Rule is one trust policy rule. Prefix is matched segment-aware
 // against module paths (modules list) or OCI references (plugins
-// list); the empty prefix matches every subject. Require and Identity
-// are each optional: an unset Require falls back to the policy default,
-// and an unset Identity leaves identity acceptance to the
-// origin-consistency default.
+// list); the empty prefix matches every subject. Require, Identity
+// and Keys are each optional: an unset Require falls back to the
+// policy default, an unset Identity leaves identity acceptance to the
+// origin-consistency default, and Keys — the pinned keys a modules
+// rule names, resolved from the policy's keyring at parse, in the
+// rule's order, each fingerprint once (REQ-prov-pinned-keys-schema) —
+// are what the evaluator holds a git signature to
+// (REQ-prov-pinned-key-eval); a plugins rule names none.
 type Rule struct {
 	Prefix   string
 	Require  Mode          // "" = inherit the policy default
 	Identity *IdentityRule // nil = origin-consistency default
+	Keys     []gitprov.PinnedKey
 }
 
 // Vocabulary re-exported for callers already naming it through this
@@ -169,9 +177,12 @@ type Policy struct {
 var ErrInvalid = errors.New("invalid trust policy")
 
 // Parse decodes and validates a trust policy (REQ-prov-trust-schema,
-// REQ-prov-exec-policy): the document a mapping of default, modules,
-// plugins and execution, each optional; an empty document the empty
-// policy.
+// REQ-prov-pinned-keys-schema, REQ-prov-exec-policy): the document a
+// mapping of default, modules, plugins, keyring and execution, each
+// optional; an empty document the empty policy. A modules rule's keys
+// name keyring entries by fingerprint, wherever in the document the
+// keyring stands, and are resolved onto the rule once the whole
+// document is read.
 func Parse(data []byte) (*Policy, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
@@ -183,10 +194,15 @@ func Parse(data []byte) (*Policy, error) {
 		// policy.
 		return p, nil
 	}
-	rules := func(field string, into *[]Rule) contractfile.Field {
+	keyring := map[string]gitprov.PinnedKey{}
+	var moduleKeys [][]string
+	rules := func(field string, into *[]Rule, keys *[][]string) contractfile.Field {
 		return contractfile.Field{Name: field, Read: func(n ast.Node) error {
-			rs, err := parseRules(n, field)
+			rs, ks, err := parseRules(n, field, keys != nil)
 			*into = rs
+			if keys != nil {
+				*keys = ks
+			}
 			return err
 		}}
 	}
@@ -196,8 +212,13 @@ func Parse(data []byte) (*Policy, error) {
 			p.Default = m
 			return err
 		}},
-		rules("modules", &p.Modules),
-		rules("plugins", &p.Plugins),
+		rules("modules", &p.Modules, &moduleKeys),
+		rules("plugins", &p.Plugins, nil),
+		contractfile.Field{Name: "keyring", Read: func(n ast.Node) error {
+			ks, err := parseKeyring(n)
+			keyring = ks
+			return err
+		}},
 		contractfile.Field{Name: "execution", Read: func(n ast.Node) error {
 			exec, err := parseExecution(n)
 			if err != nil {
@@ -210,7 +231,68 @@ func Parse(data []byte) (*Policy, error) {
 	if err != nil {
 		return nil, err
 	}
+	for i, fps := range moduleKeys {
+		named := map[string]bool{}
+		for _, fp := range fps {
+			k, ok := keyring[fp]
+			if !ok {
+				return nil, fmt.Errorf("%w: modules[%d].keys: fingerprint %q names no keyring entry", ErrInvalid, i, fp)
+			}
+			if named[fp] {
+				return nil, fmt.Errorf("%w: modules[%d].keys: fingerprint %q listed twice", ErrInvalid, i, fp)
+			}
+			named[fp] = true
+			p.Modules[i].Keys = append(p.Modules[i].Keys, k)
+		}
+	}
 	return p, nil
+}
+
+// parseKeyring reads the keyring: a list of pinned keys, each its
+// kind, its fingerprint and the key in full — the key parsed by the
+// verifier that will use it, and its fingerprint as that verifier
+// derives it, which the entry's must equal — keyed by fingerprint,
+// each once (REQ-prov-pinned-keys-schema).
+func parseKeyring(n ast.Node) (map[string]gitprov.PinnedKey, error) {
+	keys := map[string]gitprov.PinnedKey{}
+	err := contractfile.Sequence(n, "keyring", ErrInvalid, func(i int, kn ast.Node) error {
+		where := fmt.Sprintf("keyring[%d]", i)
+		var kind, fingerprint, key string
+		err := contractfile.Mapping(kn, where, ErrInvalid,
+			requiredLine(where, "kind", &kind),
+			requiredLine(where, "fingerprint", &fingerprint),
+			contractfile.Field{Name: "key", Required: true, Read: func(n ast.Node) error {
+				s, ok := contractfile.String(n)
+				if !ok || s == "" {
+					return fmt.Errorf("%w: %s.key must be text", ErrInvalid, where)
+				}
+				key = s
+				return nil
+			}},
+		)
+		if err != nil {
+			return err
+		}
+		if kind != string(gitprov.OpenPGP) && kind != string(gitprov.SSH) {
+			return fmt.Errorf("%w: %s.kind: %q is neither openpgp nor ssh", ErrInvalid, where, kind)
+		}
+		k, err := gitprov.ParsePinnedKey(gitprov.SignatureKind(kind), key)
+		if err != nil {
+			return fmt.Errorf("%w: %s.key: %v", ErrInvalid, where, err)
+		}
+		if k.Fingerprint() != fingerprint {
+			return fmt.Errorf("%w: %s.fingerprint: %q is not the key's, which is %q", ErrInvalid, where, fingerprint, k.Fingerprint())
+		}
+		if _, dup := keys[fingerprint]; dup {
+			return fmt.Errorf("%w: %s: fingerprint %q listed twice", ErrInvalid, where, fingerprint)
+		}
+		keys[fingerprint] = k
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
 }
 
 func parseMode(n ast.Node, field string) (Mode, error) {
@@ -226,13 +308,35 @@ func parseMode(n ast.Node, field string) (Mode, error) {
 }
 
 // parseRules reads a rules list: each entry prefix, require and
-// identity, prefixes unique within the list.
-func parseRules(n ast.Node, field string) ([]Rule, error) {
+// identity — and keys, a list of keyring fingerprints, where the list
+// admits them (the modules list; a plugins rule carries none, image
+// signatures being sigstore's alone) — prefixes unique within the
+// list. The fingerprints are returned beside the rules, resolved by
+// the caller once the keyring is read.
+func parseRules(n ast.Node, field string, admitKeys bool) ([]Rule, [][]string, error) {
 	seen := map[string]bool{}
 	rules := []Rule{}
+	var keys [][]string
 	err := contractfile.Sequence(n, field, ErrInvalid, func(i int, rn ast.Node) error {
 		where := fmt.Sprintf("%s[%d]", field, i)
 		var r Rule
+		var fps []string
+		keysField := contractfile.Field{Name: "keys", Read: func(n ast.Node) error {
+			if !admitKeys {
+				return fmt.Errorf("%w: %s: a plugins rule carries no keys, image signatures being sigstore's alone", ErrInvalid, where)
+			}
+			list, err := contractfile.Strings(n, where+".keys", ErrInvalid)
+			if err != nil {
+				return err
+			}
+			// An empty list would read as no keys at all, and a rule
+			// naming keys requires them: the list names at least one.
+			if len(list) == 0 {
+				return fmt.Errorf("%w: %s.keys must name at least one keyring entry", ErrInvalid, where)
+			}
+			fps = list
+			return nil
+		}}
 		err := contractfile.Mapping(rn, where, ErrInvalid,
 			contractfile.Field{Name: "prefix", Read: func(n ast.Node) error {
 				s, ok := contractfile.Line(n)
@@ -252,6 +356,7 @@ func parseRules(n ast.Node, field string) ([]Rule, error) {
 				r.Identity = id
 				return err
 			}},
+			keysField,
 		)
 		if err != nil {
 			return err
@@ -264,12 +369,13 @@ func parseRules(n ast.Node, field string) ([]Rule, error) {
 		}
 		seen[r.Prefix] = true
 		rules = append(rules, r)
+		keys = append(keys, fps)
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return rules, nil
+	return rules, keys, nil
 }
 
 // parseExecution reads the execution block (REQ-prov-exec-policy).
@@ -472,28 +578,34 @@ func parseTimeout(s string) (time.Duration, error) {
 // required, each one line of text.
 func parseIdentity(n ast.Node, field string) (*IdentityRule, error) {
 	id := &IdentityRule{}
-	line := func(name string, into *string) contractfile.Field {
-		return contractfile.Field{Name: name, Required: true, Read: func(n ast.Node) error {
-			s, ok := contractfile.Line(n)
-			if !ok || s == "" {
-				return fmt.Errorf("%w: %s.%s must be one non-empty line of text", ErrInvalid, field, name)
-			}
-			*into = s
-			return nil
-		}}
-	}
-	if err := contractfile.Mapping(n, field, ErrInvalid, line("san", &id.SAN), line("issuer", &id.Issuer)); err != nil {
+	if err := contractfile.Mapping(n, field, ErrInvalid, requiredLine(field, "san", &id.SAN), requiredLine(field, "issuer", &id.Issuer)); err != nil {
 		return nil, err
 	}
 	return id, nil
 }
 
+// requiredLine is a required field holding one non-empty line of
+// text, read into the string.
+func requiredLine(where, name string, into *string) contractfile.Field {
+	return contractfile.Field{Name: name, Required: true, Read: func(n ast.Node) error {
+		s, ok := contractfile.Line(n)
+		if !ok || s == "" {
+			return fmt.Errorf("%w: %s.%s must be one non-empty line of text", ErrInvalid, where, name)
+		}
+		*into = s
+		return nil
+	}}
+}
+
 // Decision is the policy's verdict for one subject: whether provenance
-// is required, and the explicit identity rule when one governs (nil
-// leaves identity acceptance to the origin-consistency default).
+// is required, the explicit identity rule when one governs (nil
+// leaves identity acceptance to the origin-consistency default), and
+// the pinned keys the governing rule names, in its order (none for a
+// plugin, or a rule naming none).
 type Decision struct {
 	Require  bool
 	Identity *IdentityRule
+	Keys     []gitprov.PinnedKey
 }
 
 // EvaluateModule applies the modules rules to a module path
@@ -538,13 +650,15 @@ func (p *Policy) evaluate(rules []Rule, subject string) Decision {
 	}
 	mode := p.Default
 	var id *IdentityRule
+	var keys []gitprov.PinnedKey
 	if best != nil {
 		if best.Require != "" {
 			mode = best.Require
 		}
 		id = best.Identity
+		keys = best.Keys
 	}
-	return Decision{Require: mode == RequireProvenance, Identity: id}
+	return Decision{Require: mode == RequireProvenance, Identity: id, Keys: keys}
 }
 
 // prefixMatches reports whether prefix governs subject at path-segment

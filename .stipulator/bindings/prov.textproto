@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-trust-schema"
-  content_hash: "7e00d054657779d2a720c71e3c6d98f0b78ee0f77d4930f405142a56e70493e9"
-  source_hash: "2f1373af398921e9c9372adae4efb0e18ba1ef2cb4fe3efdaed5ee8a34376a50"
+  content_hash: "fc230ea61c29bd0451e87e09b419a6dbe08cf6d8248b8d5e49d7df94ca453452"
+  source_hash: "6dc5e19c93933e7f7327f687ed188bb5dcf4f7cf1cee8f67e5de1c83e041eb67"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-trust-schema"
-  content_hash: "7e00d054657779d2a720c71e3c6d98f0b78ee0f77d4930f405142a56e70493e9"
-  source_hash: "2f1373af398921e9c9372adae4efb0e18ba1ef2cb4fe3efdaed5ee8a34376a50"
+  content_hash: "fc230ea61c29bd0451e87e09b419a6dbe08cf6d8248b8d5e49d7df94ca453452"
+  source_hash: "6dc5e19c93933e7f7327f687ed188bb5dcf4f7cf1cee8f67e5de1c83e041eb67"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestParse"
   role: BINDING_ROLE_TESTS
@@ -579,4 +579,64 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSynthesizedSubtreeEvidenceThroughTheOrigin"
   role: BINDING_ROLE_TESTS
   shape_hash: "a6d86b3aa28fc2186a79133227de13bd691d751cf5922715c86f03a1389ef14f"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-keys-schema"
+  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
+  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.Parse"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "d382afa2099ae790e8daa99e6a5b4342028803235d28d8390a949a777613a42b"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-keys-schema"
+  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
+  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.parseKeyring"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "ac99cd91d260c55950921beda74f7bd448bf7cf13de0b53067f33f6df74519d0"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-keys-schema"
+  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
+  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.parseRules"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "0b84ecd4cf55d5a98fc4679caa18280899d76a6d9fcc29096ef8660ee4b4a170"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-keys-schema"
+  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
+  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestParseKeyring"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "0f908e7f09fd97c39025e18f9319e8498e1cf665d1b2779c780ccd2d0abd8a1e"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-keys-schema"
+  content_hash: "aabafb1d0cdaded165b94646a06063dc593f9051f53f11c07a27e47dee723c88"
+  source_hash: "417f7e3499e5b35960b89f5e08aaee876176035f0676e348c77250476de1f3a9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestEvaluateCarriesTheGoverningRulesKeys"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "fc3bfc3a80bb8bbc435e4ac71b08c107c403e6f123aff4a880731ec214a012c3"
+}
+
+bindings {
+  requirement_id: "REQ-prov-policy-eval"
+  content_hash: "eb809e6d6d9b099fe1fcdf81dac716f3040580cc7e986cfdaeecb63bc5e8ac17"
+  source_hash: "fd2b0f99f0ef250c465839e17cb5469c2ca6b86963b3e9e2807a53b68c1459ff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestEvaluateCarriesTheGoverningRulesKeys"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "fc3bfc3a80bb8bbc435e4ac71b08c107c403e6f123aff4a880731ec214a012c3"
 }
