@@ -6,7 +6,6 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
-| [pinned-key-provenance](pinned-key-provenance.md) | the pinned-key trust tier is specced and not built: gitprov's OpenPGP and SSH arms against caller-pinned keys, then pb's keyring, rules, evaluation and lockfile record | the pinned-key plan opened, this doc its seed |
 | [image-facts-as-a-sum](image-facts-as-a-sum.md) | an image's rootfs-or-reference union is checked by the runner's spec check; a sum shape would make it unrepresentable at the producers | a third world beyond an export and a daemon reference reaches plugin.Image or runner.Spec |
 | [mutation-record-ledger-names-old-packages](mutation-record-ledger-names-old-packages.md) | the mutation record's ledger and candidate positions keep the pre-move package names, which no retarget rewrites; the relation between a historic record and its re-measurement under the new name is lost to a reader | gomutant's retarget issue resolved with its ledger arm |
 | [archive-extraction-evidence-machine-local](archive-extraction-evidence-machine-local.md) | the scratch namespace declared, the campaign measures; ExtractZip/writeMember records stay machine-local on a `/` input classification and open reachability in the analysis layer | gomutant serves the records as repo evidence: three issues filed there and in gofresh, awaiting triage |
