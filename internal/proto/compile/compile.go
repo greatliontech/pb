@@ -19,8 +19,10 @@ import (
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/wellknownimports"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
@@ -167,33 +169,73 @@ func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {
 	return sources, nil
 }
 
+// Topological returns every file reachable from files in topological
+// order — dependencies before importers, each file's imports visited
+// in declaration order, the files themselves as roots in the order
+// given — each once, the well-known imports among them. The one walk
+// over a compiled result: the plugin request's proto_file
+// (generation.md REQ-gen-request), the descriptor set (build.md
+// REQ-build-set) and the export's closure all read it. The order is a
+// pure function of the file set (REQ-gen-request-determinism).
+func Topological(files linker.Files) []protoreflect.FileDescriptor {
+	var order []protoreflect.FileDescriptor
+	seen := map[string]bool{}
+	var visit func(fd protoreflect.FileDescriptor)
+	visit = func(fd protoreflect.FileDescriptor) {
+		if seen[fd.Path()] {
+			return
+		}
+		seen[fd.Path()] = true
+		imports := fd.Imports()
+		for i := 0; i < imports.Len(); i++ {
+			visit(imports.Get(i).FileDescriptor)
+		}
+		order = append(order, fd)
+	}
+	for _, f := range files {
+		visit(f)
+	}
+	return order
+}
+
+// Topological is the result's files in topological order, Topological
+// over them.
+func (r *Result) Topological() []protoreflect.FileDescriptor {
+	return Topological(r.Files)
+}
+
 // Closure returns the import closure of a compiled result (export.md,
 // the import closure term): every compiled file — the workspace
 // modules' under Compile, the given files' under CompileFiles — and
 // every file one imports, transitively, across the build's modules;
-// the well-known imports, the toolchain's, never among them and never
-// walked into; sorted, each path once.
+// the well-known imports, the toolchain's, never among them: the
+// topological order less those, sorted, each path once. A well-known
+// file imports well-known files alone, so leaving them out of the
+// order leaves out nothing else.
 func (r *Result) Closure() []string {
-	seen := map[string]bool{}
-	var walk func(f protoreflect.FileDescriptor)
-	walk = func(f protoreflect.FileDescriptor) {
-		if seen[f.Path()] {
-			return
-		}
-		seen[f.Path()] = true
-		imports := f.Imports()
-		for i := 0; i < imports.Len(); i++ {
-			imp := imports.Get(i)
-			if modfiles.WellKnown(imp.Path()) {
-				continue
-			}
-			walk(imp.FileDescriptor)
+	var paths []string
+	for _, fd := range r.Topological() {
+		if !modfiles.WellKnown(fd.Path()) {
+			paths = append(paths, fd.Path())
 		}
 	}
-	for _, f := range r.Files {
-		walk(f)
+	slices.Sort(paths)
+	return paths
+}
+
+// DescriptorSet returns the compiled schema as a descriptor set
+// (build.md REQ-build-set): every reachable file in topological
+// order, each descriptor converted fresh from the linked result —
+// full options, source-retention options among them, and the source
+// information the compiler recorded — the sources' declared options
+// and no override, and nothing else. Fresh per call: a caller that
+// rewrites options, as a plugin request does, rewrites its own copy.
+func (r *Result) DescriptorSet() *descriptorpb.FileDescriptorSet {
+	set := &descriptorpb.FileDescriptorSet{}
+	for _, fd := range r.Topological() {
+		set.File = append(set.File, protodesc.ToFileDescriptorProto(fd))
 	}
-	return slices.Sorted(maps.Keys(seen))
+	return set
 }
 
 // byteResolver serves module sources by import path; anything else is

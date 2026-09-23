@@ -330,3 +330,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "8ef690df7a3197ac31e380b357149163b87a1bc1e1ae5829e5e1e4c83f587ac9"
 }
+
+bindings {
+  requirement_id: "REQ-export-selection"
+  content_hash: "4a430f41e0f852b6cec0e75c230dbaa173f85732e3a80e977e37234cafe2519a"
+  source_hash: "7f3b1a29d611c4df250def67d5ee11be34366938763402df1d1c46b1c6979735"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestDescriptorSetProperty"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "3ab5e2b85827b30d3da71fda14961f0155ac6a7e578ec060b9559f982ba42799"
+}

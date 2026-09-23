@@ -13,18 +13,24 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 	"pgregory.net/rapid"
 )
 
 var ctx = context.Background()
 
-func compileMods(t testing.TB, mods []modfiles.Module) linker.Files {
+func compileMods(t testing.TB, mods []modfiles.Module) *compile.Result {
 	t.Helper()
 	res, err := compile.Compile(ctx, mods)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return res.Files
+	return res
+}
+
+// build is Build over a compiled result's own order.
+func build(res *compile.Result, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
+	return Build(res.Topological(), res.Files, overrides, opt)
 }
 
 func mod(path, ver string, local bool, files map[string]string) modfiles.Module {
@@ -38,14 +44,14 @@ func mod(path, ver string, local bool, files map[string]string) modfiles.Module 
 // The standard fixture: workspace module a (two files, BOTH importing
 // the dependency — the diamond makes deduplication observable in
 // proto_file), external m1 carrying custom FileOptions extensions.
-func fixture(t testing.TB) linker.Files {
+func fixture(t testing.TB) *compile.Result {
 	return compileMods(t, []modfiles.Module{
 		mod("example.com/a", "", true, map[string]string{
 			"a/a.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/m1.proto\";\nimport \"google/protobuf/empty.proto\";\nmessage A { m1.M m = 1; google.protobuf.Empty e = 2; }\n",
-			"a/b.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/m1.proto\";\nmessage B { m1.M m = 1; }\n",
+			"a/b.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/m1.proto\";\noption (m1.src_opt) = \"kept\";\nmessage B { m1.M m = 1; }\n",
 		}),
 		mod("example.com/m1", "v1.0.0", false, map[string]string{
-			"m1/m1.proto": "syntax = \"proto2\";\npackage m1;\nimport \"google/protobuf/descriptor.proto\";\nextend google.protobuf.FileOptions { optional string my_opt = 50001; optional Conf my_conf = 50002; }\nmessage First { message Deep { extend google.protobuf.FileOptions { optional string deep_opt = 50005; } } }\nextend google.protobuf.MessageOptions { optional string msg_opt = 50001; }\nextend google.protobuf.FileOptions { optional Kinds kinds = 50003; }\nmessage Kinds { optional int32 i32 = 1; optional sint32 s32 = 2; optional uint32 u32 = 3; optional uint64 u64 = 4; optional float f32 = 5; optional double f64 = 6; optional bytes by = 7; optional bool bl = 8; repeated string rep = 9; map<string,string> mp = 10; }\nmessage Wrapper { extend google.protobuf.FileOptions { optional string nested_opt = 50004; } }\nmessage Conf { optional int64 n = 1; optional bool b = 2; }\nmessage M {}\n",
+			"m1/m1.proto": "syntax = \"proto2\";\npackage m1;\nimport \"google/protobuf/descriptor.proto\";\nextend google.protobuf.FileOptions { optional string my_opt = 50001; optional Conf my_conf = 50002; optional string src_opt = 50006 [retention = RETENTION_SOURCE]; }\nmessage First { message Deep { extend google.protobuf.FileOptions { optional string deep_opt = 50005; } } }\nextend google.protobuf.MessageOptions { optional string msg_opt = 50001; }\nextend google.protobuf.FileOptions { optional Kinds kinds = 50003; }\nmessage Kinds { optional int32 i32 = 1; optional sint32 s32 = 2; optional uint32 u32 = 3; optional uint64 u64 = 4; optional float f32 = 5; optional double f64 = 6; optional bytes by = 7; optional bool bl = 8; repeated string rep = 9; map<string,string> mp = 10; }\nmessage Wrapper { extend google.protobuf.FileOptions { optional string nested_opt = 50004; } }\nmessage Conf { optional int64 n = 1; optional bool b = 2; }\nmessage M {}\n",
 		}),
 	})
 }
@@ -56,7 +62,7 @@ func fixture(t testing.TB) linker.Files {
 // set (REQ-gen-request).
 func TestBuildShape(t *testing.T) {
 	files := fixture(t)
-	req, err := Build(files, nil, "paths=source_relative")
+	req, err := build(files, nil, "paths=source_relative")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,8 +95,13 @@ func TestBuildShape(t *testing.T) {
 	if req.CompilerVersion != nil {
 		t.Fatal("compiler_version set; the request carries nothing the spec does not name")
 	}
+	// A source-retention option is not stripped (REQ-gen-request).
+	b := req.GetProtoFile()[pos["a/b.proto"]]
+	if bb, _ := proto.Marshal(b.GetOptions()); !strings.Contains(string(bb), "kept") {
+		t.Fatalf("the source-retention option was stripped: %v", b.GetOptions())
+	}
 	// An empty opt yields no parameter field at all.
-	req2, err := Build(files, nil, "")
+	req2, err := build(files, nil, "")
 	if err != nil || req2.Parameter != nil {
 		t.Fatalf("empty opt: %v %v", req2.Parameter, err)
 	}
@@ -115,7 +126,7 @@ func fileOpts(t *testing.T, req interface {
 // (REQ-gen-overrides-declarative).
 func TestOverridesApply(t *testing.T) {
 	files := fixture(t)
-	req, err := Build(files, []genfile.Override{
+	req, err := build(files, []genfile.Override{
 		{Files: "a/*.proto", Option: "go_package", Value: "example.com/gen/first"},
 		{Files: "a/a.proto", Option: "go_package", Value: "example.com/gen/second"},
 		{Files: "**/*.proto", Option: "java_multiple_files", Value: "true"},
@@ -170,11 +181,11 @@ func TestOverridesApply(t *testing.T) {
 // converts fresh descriptors (REQ-gen-request-determinism).
 func TestBuildIsolation(t *testing.T) {
 	files := fixture(t)
-	withOv, err := Build(files, []genfile.Override{{Files: "a/a.proto", Option: "go_package", Value: "example.com/leaky"}}, "")
+	withOv, err := build(files, []genfile.Override{{Files: "a/a.proto", Option: "go_package", Value: "example.com/leaky"}}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	clean, err := Build(files, nil, "")
+	clean, err := build(files, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,14 +200,40 @@ func TestBuildIsolation(t *testing.T) {
 // Two Builds over the same inputs yield byte-identical requests, and
 // the topological order is a pure function of the file set
 // (REQ-gen-request-determinism).
-func TestBuildDeterminism(t *testing.T) {
-	files := fixture(t)
-	ov := []genfile.Override{{Files: "**", Option: "go_package", Value: "example.com/x"}}
-	a, err := Build(files, ov, "p=1")
+// The request's proto_file, with no override, is the compiled
+// result's descriptor set file for file: the schema a plugin is handed
+// is the schema a build writes (REQ-gen-request, build.md
+// REQ-build-set) — the well-known files with their options and source
+// information among them; and a file to generate the order lacks is
+// refused rather than carried as nothing.
+func TestRequestCarriesTheDescriptorSet(t *testing.T) {
+	res := fixture(t)
+	req, err := build(res, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := Build(files, ov, "p=1")
+	set := res.DescriptorSet()
+	if !proto.Equal(&descriptorpb.FileDescriptorSet{File: req.GetProtoFile()}, set) {
+		t.Fatal("proto_file differs from the descriptor set")
+	}
+	for _, f := range set.File {
+		if f.GetSourceCodeInfo() == nil {
+			t.Fatalf("%s carries no source information", f.GetName())
+		}
+	}
+	if _, err := Build(res.Topological()[:1], res.Files, nil, ""); err == nil || !strings.Contains(err.Error(), "not in the compiled order") {
+		t.Fatalf("a file outside the order: %v", err)
+	}
+}
+
+func TestBuildDeterminism(t *testing.T) {
+	files := fixture(t)
+	ov := []genfile.Override{{Files: "**", Option: "go_package", Value: "example.com/x"}}
+	a, err := build(files, ov, "p=1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := build(files, ov, "p=1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,8 +247,8 @@ func TestBuildDeterminism(t *testing.T) {
 		// are unordered); shuffle the top-level Files slice instead and
 		// require the same proto_file order modulo the generated files'
 		// positions.
-		perm := rapid.Permutation(slices.Clone([]linker.File(files))).Draw(rt, "perm")
-		req, err := Build(perm, nil, "")
+		perm := linker.Files(rapid.Permutation(slices.Clone([]linker.File(files.Files))).Draw(rt, "perm"))
+		req, err := Build(compile.Topological(perm), perm, nil, "")
 		if err != nil {
 			rt.Fatal(err)
 		}
@@ -250,7 +287,7 @@ func TestOverrideKindMatrix(t *testing.T) {
 	for opt, v := range good {
 		ovs = append(ovs, genfile.Override{Files: "a/b.proto", Option: opt, Value: v})
 	}
-	req, err := Build(files, ovs, "")
+	req, err := build(files, ovs, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +338,7 @@ func TestOverrideKindMatrix(t *testing.T) {
 	bad["(m1.kinds).i32+range"] = ""
 	delete(bad, "(m1.kinds).i32+range")
 	for opt, v := range bad {
-		if _, err := Build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: v}}, ""); err == nil {
+		if _, err := build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: v}}, ""); err == nil {
 			t.Errorf("%s=%q accepted", opt, v)
 		}
 	}
@@ -310,12 +347,12 @@ func TestOverrideKindMatrix(t *testing.T) {
 		"(m1.kinds).u32": "4294967296",
 		"(m1.kinds).f32": "3.5e38",
 	} {
-		if _, err := Build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: v}}, ""); err == nil {
+		if _, err := build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: v}}, ""); err == nil {
 			t.Errorf("%s=%q accepted beyond the bit width", opt, v)
 		}
 	}
 	for _, opt := range []string{"(m1.kinds).rep", "(m1.kinds).mp"} {
-		_, err := Build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: "a"}}, "")
+		_, err := build(files, []genfile.Override{{Files: "a/b.proto", Option: opt, Value: "a"}}, "")
 		if err == nil || !strings.Contains(err.Error(), "repeated and map options are not overridable") {
 			t.Errorf("%s: err = %v, want the repeated-and-map refusal", opt, err)
 		}
@@ -347,7 +384,7 @@ func TestOverrideFailures(t *testing.T) {
 		{"features message", genfile.Override{Files: "a/a.proto", Option: "features", Value: "x"}, "not overridable"},
 	}
 	for _, tc := range cases {
-		_, err := Build(files, []genfile.Override{tc.o}, "")
+		_, err := build(files, []genfile.Override{tc.o}, "")
 		if err == nil || !strings.Contains(err.Error(), tc.wants) {
 			t.Errorf("%s: err = %v, want %q", tc.name, err, tc.wants)
 		}

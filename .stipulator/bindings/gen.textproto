@@ -148,7 +148,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genrequest.Build"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "afb4a237ca780f7291f59a6e96cc0f02f78bdda556fb2df86a95fe4cc9076e24"
+  shape_hash: "b9a58c041212834dc5cb22003634f2d7f459b676b4867fdce09bac410fae934a"
 }
 
 bindings {
@@ -199,16 +199,6 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugin/genrequest.TestOverrideFailures"
   role: BINDING_ROLE_TESTS
   shape_hash: "93ba45cfa932db16da5601f4b674fa456c9aa7172356003348a5dce5e39092bf"
-}
-
-bindings {
-  requirement_id: "REQ-gen-request-determinism"
-  content_hash: "ae04f84654b792d28f075d326e46b23462be1cd4b436b5fc7abdf7ebbe231c4d"
-  source_hash: "770178953addd8e9b2eff56129df7e4fd9b16bcf0642cb9cbe92a81f7aeb8dd3"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/plugin/genrequest.topological"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "a3b43e5303a28ca2c898aeafcba1281cff392951ee7f28970cc3d6af48835666"
 }
 
 bindings {
@@ -449,4 +439,34 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/proto/modfiles.TestProtosExcludeWellKnown"
   role: BINDING_ROLE_TESTS
   shape_hash: "64032ab3c383464976249f30626a7e48ca63a386aeb8227b852e520a9de713dc"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request-determinism"
+  content_hash: "ae04f84654b792d28f075d326e46b23462be1cd4b436b5fc7abdf7ebbe231c4d"
+  source_hash: "770178953addd8e9b2eff56129df7e4fd9b16bcf0642cb9cbe92a81f7aeb8dd3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.Topological"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "051e708d429da6f18e6d79b5c3e939e352aaabf46c9de67f838148fdd6782a5c"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request"
+  content_hash: "3c6ffe1b8f6b5e9e950c2f97b98fa4d018626b6fcaa3e70db235ef6e3a6f512e"
+  source_hash: "5a4816b88e42aa96ce2b6f49fee3e0674b0c61c2b2afb0dc5048a10dbe21dabe"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/proto/compile.TestTopological"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "8ceab281e8b13eedfdfaf6f3f685304322793940dc6a58cd92d0e6a93106bb22"
+}
+
+bindings {
+  requirement_id: "REQ-gen-request"
+  content_hash: "3c6ffe1b8f6b5e9e950c2f97b98fa4d018626b6fcaa3e70db235ef6e3a6f512e"
+  source_hash: "5a4816b88e42aa96ce2b6f49fee3e0674b0c61c2b2afb0dc5048a10dbe21dabe"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/genrequest.TestRequestCarriesTheDescriptorSet"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "482fb5d6ab52d287fe3cce0a98d1f372f392d2f7ce6d4d1ff0cfded56a36fcd1"
 }

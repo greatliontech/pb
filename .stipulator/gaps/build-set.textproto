@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-build-set"
-reason: "the build verb is specified ahead of its plan; the clause lands with the build plan (docs/plans/build.md)"
-content_hash: "5cb172af1ac4c8b42c0d35ae32f83039da04303a2ddf1362bb400baa7e82dffa"
-source_hash: "efe7c9d0621d0e3fd1ef8951788fd24e21ce91563c870dd63c397ab18f0286dc"
-lands { manual { condition: "the build plan lands the clause and binds its implementation and witnesses" } }

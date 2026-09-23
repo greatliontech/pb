@@ -1,12 +1,13 @@
 // Package genrequest builds a plugin's CodeGeneratorRequest from a
 // compiled build (generation.md REQ-gen-request) with declared option
 // overrides applied first (REQ-gen-overrides-declarative). The request
-// is a pure function of the compiled descriptor set, the applied
-// overrides, and the entry's parameter string
-// (REQ-gen-request-determinism): no compiler version, no timestamps,
-// no environment — an input the spec does not name never enters. Each
-// call converts descriptors fresh from the compiled set, so one
-// entry's overrides never leak into another's request.
+// is a pure function of the compiled descriptor set — its topological
+// order the compile's, handed in — the applied overrides, and the
+// entry's parameter string (REQ-gen-request-determinism): no compiler
+// version, no timestamps, no environment — an input the spec does not
+// name never enters. Each call converts descriptors fresh from the
+// compiled set, so one entry's overrides never leak into another's
+// request.
 package genrequest
 
 import (
@@ -26,11 +27,25 @@ import (
 
 // Build returns the request for one generation entry over the compiled
 // workspace files (REQ-gen-request): file_to_generate in compile
-// order, proto_file topological with imports visited in declaration
-// order, source_file_descriptors the generated files' descriptors,
-// and opt as the parameter verbatim.
-func Build(files linker.Files, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
-	order, protos := topological(files)
+// order, proto_file in the order given — the compile's topological
+// order over files, dependencies before importers, imports visited in
+// declaration order — source_file_descriptors the generated files'
+// descriptors, and opt as the parameter verbatim. Each descriptor is
+// converted fresh from the linked file, so this entry's overrides
+// touch this request alone.
+func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
+	protos := make(map[string]*descriptorpb.FileDescriptorProto, len(order))
+	for _, fd := range order {
+		protos[fd.Path()] = protodesc.ToFileDescriptorProto(fd)
+	}
+	// The order is the compile's over these files, one fact handed in
+	// twice across the domain boundary: a file the order lacks would
+	// leave a nil descriptor in the request.
+	for _, f := range files {
+		if protos[f.Path()] == nil {
+			return nil, fmt.Errorf("genrequest: %s is a file to generate but not in the compiled order", f.Path())
+		}
+	}
 	if err := applyOverrides(order, protos, overrides, extensionResolver(order)); err != nil {
 		return nil, err
 	}
@@ -48,33 +63,6 @@ func Build(files linker.Files, overrides []genfile.Override, opt string) (*plugi
 		req.SourceFileDescriptors = append(req.SourceFileDescriptors, protos[f.Path()])
 	}
 	return req, nil
-}
-
-// topological returns every file reachable from files — dependencies
-// before importers, each file's imports visited in declaration order —
-// with a freshly converted FileDescriptorProto per file. The order is
-// a pure function of the file set.
-func topological(files linker.Files) ([]protoreflect.FileDescriptor, map[string]*descriptorpb.FileDescriptorProto) {
-	var order []protoreflect.FileDescriptor
-	protos := map[string]*descriptorpb.FileDescriptorProto{}
-	seen := map[string]bool{}
-	var visit func(fd protoreflect.FileDescriptor)
-	visit = func(fd protoreflect.FileDescriptor) {
-		if seen[fd.Path()] {
-			return
-		}
-		seen[fd.Path()] = true
-		imps := fd.Imports()
-		for i := 0; i < imps.Len(); i++ {
-			visit(imps.Get(i).FileDescriptor)
-		}
-		order = append(order, fd)
-		protos[fd.Path()] = protodesc.ToFileDescriptorProto(fd)
-	}
-	for _, f := range files {
-		visit(f)
-	}
-	return order, protos
 }
 
 // extensionResolver indexes every extension declaration reachable in

@@ -10,6 +10,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
+	"google.golang.org/protobuf/proto"
 	"pgregory.net/rapid"
 )
 
@@ -412,6 +413,196 @@ func TestClosureProperty(t *testing.T) {
 			if _, isLocal := local[p]; !isLocal && !importedBy[p] {
 				rt.Fatalf("%s in the closure, reached by no workspace file: %v", p, got)
 			}
+		}
+	})
+}
+
+// The topological order holds every reachable file once, the
+// well-known imports among them, dependencies before importers,
+// imports visited in declaration order, the roots in the order given
+// (REQ-gen-request, build.md REQ-build-set).
+func TestTopological(t *testing.T) {
+	mods := []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{
+			"a/a.proto": "syntax = \"proto3\";\npackage a;\nimport \"m1/types.proto\";\nimport \"google/protobuf/timestamp.proto\";\nmessage A { m1.T m = 1; google.protobuf.Timestamp t = 2; }\n",
+			"a/z.proto": "syntax = \"proto3\";\npackage a;\nimport \"google/protobuf/empty.proto\";\nimport \"m1/types.proto\";\n",
+			// api.proto imports well-known files of its own: the walk
+			// goes through them, the closure never holds them.
+			"a/y.proto": "syntax = \"proto3\";\npackage a;\nimport \"google/protobuf/api.proto\";\nmessage Y { google.protobuf.Api api = 1; }\n",
+		}),
+		mod("example.com/m1", "v1.0.0", false, map[string]string{
+			"m1/types.proto": "syntax = \"proto3\";\npackage m1;\nimport \"m2/deep.proto\";\nmessage T { m2.D d = 1; }\n",
+		}),
+		mod("example.com/m2", "v1.0.0", false, map[string]string{
+			"m2/deep.proto": "syntax = \"proto3\";\npackage m2;\nmessage D {}\n",
+		}),
+	}
+	res, err := Compile(ctx, mods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, fd := range res.Topological() {
+		got = append(got, fd.Path())
+	}
+	want := []string{"m2/deep.proto", "m1/types.proto", "google/protobuf/timestamp.proto", "a/a.proto", "google/protobuf/source_context.proto", "google/protobuf/any.proto", "google/protobuf/type.proto", "google/protobuf/api.proto", "a/y.proto", "google/protobuf/empty.proto", "a/z.proto"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("Topological = %v, want %v", got, want)
+	}
+	if got := res.Closure(); !slices.Equal(got, []string{"a/a.proto", "a/y.proto", "a/z.proto", "m1/types.proto", "m2/deep.proto"}) {
+		t.Fatalf("Closure = %v", got)
+	}
+}
+
+// The descriptor set is the topological order's descriptors, each
+// carrying its options and source information, converted fresh per
+// call so a caller's rewrite touches its own copy alone
+// (build.md REQ-build-set).
+func TestDescriptorSet(t *testing.T) {
+	mods := []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{
+			"a/a.proto": "syntax = \"proto3\";\npackage a;\noption go_package = \"example.com/a;a\";\nimport \"google/protobuf/empty.proto\";\n// A is documented.\nmessage A { google.protobuf.Empty e = 1; }\n",
+		}),
+	}
+	res, err := Compile(ctx, mods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A source-retention option is kept, where protoc would strip it.
+	retained := []modfiles.Module{
+		mod("example.com/r", "", true, map[string]string{
+			"r/r.proto": "syntax = \"proto3\";\npackage r;\nimport \"o/o.proto\";\noption (o.src_opt) = \"kept\";\n",
+		}),
+		mod("example.com/o", "v1.0.0", false, map[string]string{
+			"o/o.proto": "syntax = \"proto2\";\npackage o;\nimport \"google/protobuf/descriptor.proto\";\nextend google.protobuf.FileOptions { optional string src_opt = 50010 [retention = RETENTION_SOURCE]; }\n",
+		}),
+	}
+	rres, err := Compile(ctx, retained)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rset := rres.DescriptorSet()
+	r := rset.File[len(rset.File)-1]
+	if rb, _ := proto.Marshal(r.GetOptions()); r.GetName() != "r/r.proto" || !strings.Contains(string(rb), "kept") {
+		t.Fatalf("the source-retention option was stripped: %v", r.GetOptions())
+	}
+	set := res.DescriptorSet()
+	if len(set.File) != 2 || set.File[0].GetName() != "google/protobuf/empty.proto" || set.File[1].GetName() != "a/a.proto" {
+		t.Fatalf("set files: %v", set.File)
+	}
+	// A well-known file's descriptor is as complete as any: its
+	// options and its source information carried.
+	if wk := set.File[0]; wk.GetOptions().GetGoPackage() == "" || wk.GetSourceCodeInfo() == nil {
+		t.Fatalf("the well-known file's descriptor is stripped: %v", wk)
+	}
+	a := set.File[1]
+	if a.GetOptions().GetGoPackage() != "example.com/a;a" {
+		t.Fatalf("options: %v", a.GetOptions())
+	}
+	if a.GetSourceCodeInfo() == nil || len(a.GetSourceCodeInfo().GetLocation()) == 0 {
+		t.Fatal("source information missing")
+	}
+	var documented bool
+	for _, loc := range a.GetSourceCodeInfo().GetLocation() {
+		if strings.Contains(loc.GetLeadingComments(), "A is documented") {
+			documented = true
+		}
+	}
+	if !documented {
+		t.Fatal("the comment is not in the source information")
+	}
+	// Fresh per call.
+	a.Options.GoPackage = nil
+	if res.DescriptorSet().File[1].GetOptions().GetGoPackage() != "example.com/a;a" {
+		t.Fatal("a rewrite reached the next call's set")
+	}
+}
+
+// For every build the descriptor set's files are the topological
+// order's, each reachable file once with the well-known imports among
+// them, the closure is that order less the well-known imports sorted,
+// and two sets serialize byte-identically (build.md REQ-build-set,
+// REQ-build-determinism).
+func TestDescriptorSetProperty(t *testing.T) {
+	rapid.Check(t, func(rt *rapid.T) {
+		n := rapid.IntRange(1, 6).Draw(rt, "n")
+		names := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z]{1,5}\.proto`), n, n, rapid.ID[string]).Draw(rt, "names")
+		files := map[string]string{}
+		for i, nm := range names {
+			var b strings.Builder
+			b.WriteString("syntax = \"proto3\";\n")
+			for _, later := range names[i+1:] {
+				if rapid.Bool().Draw(rt, "edge "+nm+"->"+later) {
+					b.WriteString("import \"" + later + "\";\n")
+				}
+			}
+			if rapid.Bool().Draw(rt, "wkt "+nm) {
+				b.WriteString("import \"google/protobuf/empty.proto\";\n")
+			}
+			files[nm] = b.String()
+		}
+		// The first name is the workspace's and any other may be, so
+		// the roots are several; the rest split over two external
+		// modules by a coin, so a file may be reached only through an
+		// external module.
+		local, m1, m2 := map[string]string{}, map[string]string{}, map[string]string{}
+		for i, nm := range names {
+			switch {
+			case i == 0 || rapid.Bool().Draw(rt, "local "+nm):
+				local[nm] = files[nm]
+			case rapid.Bool().Draw(rt, "m1 "+nm):
+				m1[nm] = files[nm]
+			default:
+				m2[nm] = files[nm]
+			}
+		}
+		mods := []modfiles.Module{mod("example.com/a", "", true, local), mod("example.com/m1", "v1.0.0", false, m1), mod("example.com/m2", "v1.0.0", false, m2)}
+		res, err := Compile(ctx, mods)
+		if err != nil {
+			rt.Fatal(err)
+		}
+		order := res.Topological()
+		set := res.DescriptorSet()
+		if len(set.File) != len(order) {
+			rt.Fatalf("set holds %d files, the order %d", len(set.File), len(order))
+		}
+		inOrder := map[string]bool{}
+		for _, fd := range order {
+			inOrder[fd.Path()] = true
+		}
+		for _, f := range res.Files {
+			if !inOrder[f.Path()] {
+				rt.Fatalf("root %s absent from the order", f.Path())
+			}
+		}
+		seen := map[string]bool{}
+		var closure []string
+		for i, fd := range order {
+			if set.File[i].GetName() != fd.Path() {
+				rt.Fatalf("set[%d] = %s, order %s", i, set.File[i].GetName(), fd.Path())
+			}
+			if seen[fd.Path()] {
+				rt.Fatalf("%s twice in the order", fd.Path())
+			}
+			seen[fd.Path()] = true
+			imports := fd.Imports()
+			for j := 0; j < imports.Len(); j++ {
+				if !seen[imports.Get(j).Path()] {
+					rt.Fatalf("%s before its import %s", fd.Path(), imports.Get(j).Path())
+				}
+			}
+			if !modfiles.WellKnown(fd.Path()) {
+				closure = append(closure, fd.Path())
+			}
+		}
+		slices.Sort(closure)
+		if got := res.Closure(); !slices.Equal(got, closure) {
+			rt.Fatalf("Closure = %v, the order less the well-known %v", got, closure)
+		}
+		a, _ := proto.MarshalOptions{Deterministic: true}.Marshal(set)
+		b, _ := proto.MarshalOptions{Deterministic: true}.Marshal(res.DescriptorSet())
+		if !slices.Equal(a, b) {
+			rt.Fatal("two sets of one result differ")
 		}
 	})
 }

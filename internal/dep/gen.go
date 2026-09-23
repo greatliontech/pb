@@ -177,7 +177,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	// The one way past a tier refusal (REQ-plugin-min-tier).
 	const lowerFloorHint = "lower the floor explicitly in the trust policy's execution block to accept a weaker tier"
 	for i, entry := range gf.Plugins {
-		req, err := genrequest.Build(compiled.Files, gf.Overrides, entry.Opt)
+		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry.Opt)
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
 		}
