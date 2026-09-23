@@ -19,7 +19,7 @@ REQ-verify-signature-kind, REQ-verify-pinned-key)
       armored public keys by fingerprint, the same contract; the
       synthetic sigstore gains an OpenPGP key pair and its builder; the
       pinned-key-signatures issue closes
-- [ ] 4. pb: the trust policy's `keyring` and a modules rule's `keys`
+- [x] 4. pb: the trust policy's `keyring` and a modules rule's `keys`
       parsed and validated — every key's fingerprint against the key,
       every rule fingerprint against the keyring, `plugins` rules
       refusing `keys` — and carried in the policy's decision
