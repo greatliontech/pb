@@ -15,13 +15,13 @@ while the tree does another.
 | module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `provenance/image`, `provenance/image/discover`, `provenance/image/evidence`, `provenance/trust` |
 | source | module-proxy.md, module-resolution.md (path resolution and private origins) | `source`, `source/netrc`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
-| proto | generation.md (the compile half), module-resolution.md (the import satisfaction half), export.md (the import closure), check-rules.md (the reading of a source's lines its suppression clause takes) | `proto/modfiles`, `proto/compile`, `proto/importcheck`, `proto/lines` |
+| proto | generation.md (the compile half), module-resolution.md (the import satisfaction half), export.md (the import closure), build.md (the descriptor set), check-rules.md (the reading of a source's lines its suppression clause takes) | `proto/modfiles`, `proto/compile`, `proto/importcheck`, `proto/lines` |
 | user configuration | user-config.md | `userconfig` |
 | plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
 | check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
 | migrate | migrate.md | `migrate`, `migrate/bufconfig` |
 | driver | module-resolution.md | `resolve` |
-| verbs | dep-verbs.md, check-rules.md §Verbs, export.md | `dep`, `cmd/pb` |
+| verbs | dep-verbs.md, check-rules.md §Verbs, export.md, build.md | `dep`, `cmd/pb` |
 
 The rows are the order, top to bottom. Source, proto and plugin stand
 level: none imports another, in either direction. The plugin
