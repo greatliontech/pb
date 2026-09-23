@@ -12,32 +12,40 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/util"
 )
 
-// Write writes data to name atomically. On error the temporary file is
+// Write writes data to name atomically, the file landing at perm less
+// the process's umask — created so, as any file is, never changed to
+// — a file already there replaced. On error the temporary file is
 // removed best-effort and the target is untouched.
-func Write(fs billy.Filesystem, name, tmpPrefix string, data []byte) error {
-	dir := billyDir(name)
-	tmp, err := fs.TempFile(dir, tmpPrefix)
+func Write(fsys billy.Filesystem, name, tmpPrefix string, perm fs.FileMode, data []byte) error {
+	tmpName, err := sibling(name, tmpPrefix)
 	if err != nil {
 		return err
 	}
-	tmpName := tmp.Name()
+	// A temporary file made by the filesystem's own temp-file call
+	// would be owner-only whatever perm says; created here, it carries
+	// perm as the creation default, the umask applied by the system.
+	tmp, err := fsys.OpenFile(tmpName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
+	if err != nil {
+		return err
+	}
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
-		fs.Remove(tmpName)
+		fsys.Remove(tmpName)
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		fs.Remove(tmpName)
+		fsys.Remove(tmpName)
 		return err
 	}
-	if err := fs.Rename(tmpName, name); err != nil {
-		fs.Remove(tmpName)
+	if err := fsys.Rename(tmpName, name); err != nil {
+		fsys.Remove(tmpName)
 		return err
 	}
 	return nil
@@ -68,11 +76,10 @@ func WriteDir(fsys billy.Filesystem, name, tmpPrefix string, fill func(dir strin
 	if err != nil {
 		return err
 	}
-	var suffix [8]byte
-	if _, err := rand.Read(suffix[:]); err != nil {
+	tmp, err := sibling(name, tmpPrefix)
+	if err != nil {
 		return err
 	}
-	tmp := path.Join(billyDir(name), tmpPrefix+hex.EncodeToString(suffix[:]))
 	if err := fsys.MkdirAll(tmp, 0o755); err != nil {
 		return err
 	}
@@ -130,4 +137,14 @@ func emptyDestination(fsys billy.Filesystem, name string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("%s is not an empty directory", name)
 	}
 	return fi, nil
+}
+
+// sibling names a temporary beside name: its directory, the prefix
+// and a random suffix no other writer picks.
+func sibling(name, tmpPrefix string) (string, error) {
+	var suffix [8]byte
+	if _, err := rand.Read(suffix[:]); err != nil {
+		return "", err
+	}
+	return path.Join(billyDir(name), tmpPrefix+hex.EncodeToString(suffix[:])), nil
 }

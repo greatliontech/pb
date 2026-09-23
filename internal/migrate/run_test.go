@@ -3,6 +3,7 @@ package migrate
 import (
 	"context"
 	"errors"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 	"strings"
 	"testing"
 
@@ -273,28 +274,6 @@ func TestRunComments(t *testing.T) {
 	}
 }
 
-// failingFS is a working tree whose reads of one path and whose
-// temporary files in one directory fail: what a failing rewrite or
-// write looks like to the verb.
-type failingFS struct {
-	billy.Filesystem
-	failOpen, failTempDir string
-}
-
-func (f failingFS) Open(name string) (billy.File, error) {
-	if name == f.failOpen {
-		return nil, errors.New("unreadable")
-	}
-	return f.Filesystem.Open(name)
-}
-
-func (f failingFS) TempFile(dir, prefix string) (billy.File, error) {
-	if dir == f.failTempDir {
-		return nil, errors.New("no temporary file")
-	}
-	return f.Filesystem.TempFile(dir, prefix)
-}
-
 // From the first write on the report is printed whatever fails, the
 // files written so far named and the cause wrapped: a write failing
 // after the first file, a proto file unreadable at the rewrite; a
@@ -311,17 +290,17 @@ func TestRunAfterWriteFailures(t *testing.T) {
 	var out strings.Builder
 	// The second module file's write fails: the first is reported
 	// written, nothing after, the cause named.
-	inv.WS, inv.Out = failingFS{Filesystem: base(), failTempDir: "b"}, &out
+	inv.WS, inv.Out = &fetchtest.ErrFS{Filesystem: base(), FailCreateDir: "b", PutFailAfter: -1}, &out
 	err := Run(context.Background(), inv)
-	if err == nil || !strings.Contains(err.Error(), "the files are written; writing b/pb.yaml: no temporary file") || !strings.HasSuffix(out.String(), "a/pb.yaml -> written\n") {
+	if err == nil || !strings.Contains(err.Error(), "the files are written; writing b/pb.yaml: injected storage fault") || !strings.HasSuffix(out.String(), "a/pb.yaml -> written\n") {
 		t.Fatalf("a failing write: %v\n%s", err, out.String())
 	}
 	// A proto file unreadable at the rewrite: the files are reported
 	// written, the cause named after them.
 	out.Reset()
-	inv.WS = failingFS{Filesystem: base(), failOpen: "a/x.proto"}
+	inv.WS = &fetchtest.ErrFS{Filesystem: base(), FailOpenSuffix: "a/x.proto", PutFailAfter: -1}
 	err = Run(context.Background(), inv)
-	if err == nil || !strings.Contains(err.Error(), "the files are written; the comments' rewriting failed: reading a/x.proto: unreadable") || !strings.HasSuffix(out.String(), "pb.lint.yaml -> written\n") {
+	if err == nil || !strings.Contains(err.Error(), "the files are written; the comments' rewriting failed: reading a/x.proto: injected storage fault") || !strings.HasSuffix(out.String(), "pb.lint.yaml -> written\n") {
 		t.Fatalf("a failing rewrite: %v\n%s", err, out.String())
 	}
 	// A symbolic link to a proto file stays a link, its target as it

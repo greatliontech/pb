@@ -12,6 +12,8 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"os"
+	"path"
 	"slices"
 	"sort"
 	"strings"
@@ -202,8 +204,10 @@ func (fx *Fixture) TreeFor(r *gittest.Repo, files map[string]string) plumbing.Ha
 var ErrInjected = errors.New("injected storage fault")
 
 // ErrFS injects storage faults: each flag fails one operation class,
-// suffix variants scope the fault to matching names, and PutFailAfter
-// fails TempFile only after that many successes.
+// suffix variants scope the fault to matching names; a creation is an
+// open that may create (O_CREATE), which FailCreate fails every time,
+// FailCreateDir fails in one directory, and PutFailAfter fails after
+// that many successes.
 type ErrFS struct {
 	billy.Filesystem
 	FailOpen       bool
@@ -211,13 +215,14 @@ type ErrFS struct {
 	FailStatSuffix string
 	FailReadBody   bool
 	FailMkdirAll   bool
-	FailTempFile   bool
+	FailCreate     bool
+	FailCreateDir  string
 	FailRename     bool
 	FailRenameSfx  string
 	FailWrite      bool
 	FailClose      bool
-	PutFailAfter   int // -1 = never; N fails the (N+1)th TempFile
-	tempFiles      int
+	PutFailAfter   int // -1 = never; N fails the (N+1)th creation
+	creations      int
 }
 
 // FailStat fails Stat for names with the suffix.
@@ -253,21 +258,34 @@ func (e *ErrFS) Rename(from, to string) error {
 	return e.Filesystem.Rename(from, to)
 }
 
-func (e *ErrFS) TempFile(dir, prefix string) (billy.File, error) {
-	if e.FailTempFile {
-		return nil, ErrInjected
+// OpenFile that may create meets the creation faults; any other open
+// passes through.
+func (e *ErrFS) OpenFile(name string, flag int, perm fs.FileMode) (billy.File, error) {
+	if flag&os.O_CREATE == 0 {
+		return e.Filesystem.OpenFile(name, flag, perm)
 	}
-	if e.PutFailAfter >= 0 {
-		if e.tempFiles >= e.PutFailAfter {
-			return nil, ErrInjected
-		}
-		e.tempFiles++
+	if err := e.creation(name); err != nil {
+		return nil, err
 	}
-	f, err := e.Filesystem.TempFile(dir, prefix)
+	f, err := e.Filesystem.OpenFile(name, flag, perm)
 	if err != nil {
 		return nil, err
 	}
 	return &errFile{File: f, failWrite: e.FailWrite, failClose: e.FailClose}, nil
+}
+
+// creation is the fault a file's creation meets, if any.
+func (e *ErrFS) creation(name string) error {
+	if e.FailCreate || (e.FailCreateDir != "" && path.Dir(name) == e.FailCreateDir) {
+		return ErrInjected
+	}
+	if e.PutFailAfter >= 0 {
+		if e.creations >= e.PutFailAfter {
+			return ErrInjected
+		}
+		e.creations++
+	}
+	return nil
 }
 
 type errFile struct {

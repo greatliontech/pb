@@ -729,7 +729,7 @@ func TestSessionAndVerbFaults(t *testing.T) {
 
 	t.Run("init stat fault surfaces", func(t *testing.T) {
 		fx := newDep(t, nil)
-		efs := &fetchtest.ErrFS{Filesystem: fx.ws, PutFailAfter: -1, FailTempFile: true}
+		efs := &fetchtest.ErrFS{Filesystem: fx.ws, PutFailAfter: -1, FailCreate: true}
 		if err := Init(efs, "m", "example.com/m"); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
@@ -793,7 +793,7 @@ func TestSaveLockChangeDiscipline(t *testing.T) {
 			"pb.work":   "use:\n  - a\n",
 			"a/pb.yaml": ws("example.com/a", ""),
 		})
-		efs := &fetchtest.ErrFS{Filesystem: fx2.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
+		efs := &fetchtest.ErrFS{Filesystem: fx2.ws, FailRename: true, FailCreate: true, PutFailAfter: -1}
 		s, err := Load(Config{WS: efs, Dir: ".", Client: fx2.client("proxy")})
 		if err != nil {
 			t.Fatal(err)
@@ -812,7 +812,7 @@ func TestSaveLockChangeDiscipline(t *testing.T) {
 		if err := Graph(ctx, s3, &bytes.Buffer{}); err != nil {
 			t.Fatal(err)
 		}
-		s3.WS = &fetchtest.ErrFS{Filesystem: fx3.ws, FailRename: true, FailTempFile: true, PutFailAfter: -1}
+		s3.WS = &fetchtest.ErrFS{Filesystem: fx3.ws, FailRename: true, FailCreate: true, PutFailAfter: -1}
 		if err := s3.SaveLock(); err != nil {
 			t.Fatalf("no-change save touched the tree: %v", err)
 		}

@@ -243,7 +243,7 @@ func Run(ctx context.Context, d Invocation) error {
 		return nil
 	}
 	for _, f := range files {
-		if err := atomicfile.Write(d.WS, path.Join(d.Dir, f.name), ".pb-", f.data); err != nil {
+		if err := atomicfile.Write(d.WS, path.Join(d.Dir, f.name), ".pb-", 0o644, f.data); err != nil {
 			return report(fmt.Errorf("writing %s: %w", f.name, err))
 		}
 		facts = append(facts, mapped(f.name, "written"))
@@ -336,7 +336,7 @@ func rewriteComments(ws billy.Filesystem, dir string, l *Layout) ([]Fact, error)
 				continue
 			}
 			if r.Rewritten > 0 {
-				if err := atomicfile.Write(ws, p, ".pb-", r.Text); err != nil {
+				if err := atomicfile.Write(ws, p, ".pb-", 0o644, r.Text); err != nil {
 					return facts, fmt.Errorf("writing %s: %w", name, err)
 				}
 				facts = append(facts, mapped(name, fmt.Sprintf("%d suppression comments rewritten to pb:ignore", r.Rewritten)))

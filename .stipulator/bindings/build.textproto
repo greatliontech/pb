@@ -80,3 +80,33 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "482fb5d6ab52d287fe3cce0a98d1f372f392d2f7ce6d4d1ff0cfded56a36fcd1"
 }
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
+  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/atomicfile.Write"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "313bc7f10be329b86159ab3ecd62d0a0897cf8da2e4e42156b9f43937d013774"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
+  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/atomicfile.TestWrite"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "81309015e0f0b4bef99c5c8515ab3666f38656e0c076eba0e6b09f2c09a96eb4"
+}
+
+bindings {
+  requirement_id: "REQ-build-output"
+  content_hash: "169a63ff18e2b3a5ed4eff731a9ba1f7547e3392d6f836612b77ad2fb9ba7903"
+  source_hash: "c8b178b81af04ecb1fa12dff3701edda86817ff424b1a6f7d67514b6164fa405"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/atomicfile.TestWriteModeOnDisk"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "9663b4858d498e446b51aff5051fcaa4243f3b54e0472df0669cc9f08f3f1df0"
+}

@@ -37,7 +37,7 @@ func TestCacheStorageFaultsSurface(t *testing.T) {
 		fs   errFS
 	}{
 		{"mkdirall", errFS{FailMkdirAll: true, PutFailAfter: -1}},
-		{"tempfile", errFS{FailTempFile: true, PutFailAfter: -1}},
+		{"create", errFS{FailCreate: true, PutFailAfter: -1}},
 		{"write", errFS{FailWrite: true, PutFailAfter: -1}},
 		{"close", errFS{FailClose: true, PutFailAfter: -1}},
 		{"rename", errFS{FailRename: true, PutFailAfter: -1}},

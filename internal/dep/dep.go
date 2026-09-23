@@ -169,7 +169,7 @@ func (s *Session) SaveLock() error {
 
 // writeFile writes bytes atomically through the shared discipline.
 func writeFile(ws billy.Filesystem, name string, data []byte) error {
-	return atomicfile.Write(ws, name, ".pb-", data)
+	return atomicfile.Write(ws, name, ".pb-", 0o644, data)
 }
 
 // Init writes a canonical module file declaring modulePath in dir

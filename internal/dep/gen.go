@@ -270,9 +270,9 @@ func (s *Session) writeGenerated(entry genfile.Plugin, resp *pluginpb.CodeGenera
 	}
 	for _, f := range resp.GetFile() {
 		// billy filesystems create missing parent directories on file
-		// creation (TempFile included), so the write needs no MkdirAll.
+		// creation, so the write needs no MkdirAll.
 		target := path.Join(outDir, f.GetName())
-		if err := atomicfile.Write(s.WS, target, ".pb-gen-", []byte(f.GetContent())); err != nil {
+		if err := atomicfile.Write(s.WS, target, ".pb-gen-", 0o644, []byte(f.GetContent())); err != nil {
 			return 0, err
 		}
 	}

@@ -125,7 +125,7 @@ func (s Store) Save(digest v1.Hash, carriers []image.Carrier) error {
 	if err != nil {
 		return fmt.Errorf("evidence: %w", err)
 	}
-	if err := atomicfile.Write(osfs.New(s.Dir), filepath.Join(digest.Algorithm, digest.Hex+".json"), ".keep-", raw); err != nil {
+	if err := atomicfile.Write(osfs.New(s.Dir), filepath.Join(digest.Algorithm, digest.Hex+".json"), ".keep-", 0o644, raw); err != nil {
 		return fmt.Errorf("evidence: %w", err)
 	}
 	return nil

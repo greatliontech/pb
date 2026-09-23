@@ -67,7 +67,7 @@ func (c *Cache) Put(modPath string, v version.Version, kind string, data []byte)
 	if err := c.FS.MkdirAll(path.Dir(p), 0o755); err != nil {
 		return fmt.Errorf("fetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
-	if err := atomicfile.Write(c.FS, p, ".put-", data); err != nil {
+	if err := atomicfile.Write(c.FS, p, ".put-", 0o644, data); err != nil {
 		return fmt.Errorf("fetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}
 	return nil
