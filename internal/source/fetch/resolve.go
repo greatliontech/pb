@@ -54,7 +54,7 @@ func (c *Client) Module(ctx context.Context, modPath string, v version.Version) 
 // (REQ-lock-no-silent-downgrade): the record, not the policy's current
 // patterns, is what re-verification holds it to.
 func (c *Client) pinGoverned(modPath string, v version.Version, pin lockfile.ModulePin) (*gitprov.PinnedKey, error) {
-	if pin.Provenance.Type != lockfile.ProvenanceGitPinnedKey {
+	if !lockfile.NamesKey(pin.Provenance) {
 		return nil, nil
 	}
 	key, ok := c.pinnedKeyOf(modPath, pin.Provenance)

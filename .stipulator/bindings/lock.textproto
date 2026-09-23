@@ -550,3 +550,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "dca6223aea3760bd2fe3b3fd36ebeb8499cc08f318e850c44fb3ec3d3fd9bc11"
 }
+
+bindings {
+  requirement_id: "REQ-lock-pinned-key-record"
+  content_hash: "f6fb7ab4efaf9604bfa40bd25420d0e9095752e4640fd4d1e257030d6d35d661"
+  source_hash: "d4a8ccd6f1a6e5f6cf2da46b30701b2be740b7ccbaf11a521eb05d923a6e04a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.NamesKey"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "2604aed764e8e70f14f8750f619d029f7fa9c8fb861b5cdca8b9e8f9f6d4aa2c"
+}
+
+bindings {
+  requirement_id: "REQ-lock-pinned-key-record"
+  content_hash: "f6fb7ab4efaf9604bfa40bd25420d0e9095752e4640fd4d1e257030d6d35d661"
+  source_hash: "d4a8ccd6f1a6e5f6cf2da46b30701b2be740b7ccbaf11a521eb05d923a6e04a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestNamesKey"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7858eba573e6c9d5784e936b737c31181e20a99618ca917a1e642c9a736c9700"
+}

@@ -247,12 +247,17 @@ func declaredPlugins(s *Session) (map[string]bool, error) {
 	return refs, nil
 }
 
-// provenanceSpelling is a record as the update reports it: none, or
-// the type and both halves of the identity, so a change of either
-// half reads as the change it is.
+// provenanceSpelling is a lockfile record as the update reports one:
+// none, or the evidence type and what vouched — an identity's SAN and
+// issuer, or a pinned key's kind and fingerprint
+// (REQ-lock-pinned-key-record). It is total over every record the
+// lockfile defines, whichever entries a caller reports.
 func provenanceSpelling(p lockfile.Provenance) string {
 	if p == (lockfile.Provenance{}) {
 		return "none"
+	}
+	if lockfile.NamesKey(p) {
+		return p.Type + " " + p.KeyKind + " " + p.KeyFingerprint
 	}
 	return p.Type + " " + p.SAN + " by " + p.Issuer
 }

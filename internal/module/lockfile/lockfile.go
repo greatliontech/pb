@@ -76,6 +76,12 @@ type Provenance struct {
 	KeyFingerprint string // git-pinned-key: the pinned key's fingerprint as its kind spells it
 }
 
+// NamesKey reports whether a record names a pinned key in place of an
+// identity (REQ-lock-pinned-key-record): what vouched for it is its
+// key's kind and fingerprint, not a SAN and issuer. A function rather
+// than a method: the record is pins-only data (REQ-lock-pins-only).
+func NamesKey(p Provenance) bool { return recordShapes[p.Type].namesKey }
+
 // recordShape is what a record of a type names beside its type
 // (REQ-lock-provenance-record, REQ-lock-pinned-key-record): a signed
 // git object or none, and a key or an identity. The one table the

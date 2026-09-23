@@ -343,6 +343,19 @@ func TestUpdatePlugin(t *testing.T) {
 	}
 }
 
+// A record names a key exactly where its type has one in an identity's
+// place (REQ-lock-pinned-key-record).
+func TestNamesKey(t *testing.T) {
+	for _, rec := range []Provenance{{}, goldenProv, {Type: ProvenanceImageSignature, SAN: "x", Issuer: "y"}} {
+		if NamesKey(rec) {
+			t.Fatalf("%+v names a key", rec)
+		}
+	}
+	if !NamesKey(goldenPinned) {
+		t.Fatalf("%+v names no key", goldenPinned)
+	}
+}
+
 func TestProvenanceTransition(t *testing.T) {
 	none := Provenance{}
 	if err := CheckProvenanceTransition(none, goldenProv); err != nil {

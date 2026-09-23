@@ -320,3 +320,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "a84025872ced090301fbe28f34f1d7260a27df0b83494fbebed4d80c1c1e1f99"
 }
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.provenanceSpelling"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "b50c03b10f1a9727e9fb24ae1e3817ba86ee3949a0c6992654436e9a6233f2ae"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "bb60d56b9c8bd8a323bc9b48603213d26d6d5d38214e42a26d543f157f51ace3"
+  source_hash: "320697c78a5f3a7806677fe4ee1e8e100fe5cae0b86ad4fcadcb403c83c6c7d3"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestProvenanceSpelling"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b6ffdb12a5876ae0dba208e132af41249912e75c5f48ab40073b031e089a5f23"
+}
