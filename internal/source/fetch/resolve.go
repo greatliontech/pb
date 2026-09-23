@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/greatliontech/pb/internal/module"
 
@@ -31,12 +32,36 @@ func ModfileHash(b []byte) string {
 // requirement loader version selection consumes. An unpinned pair runs
 // the full first-use pipeline (fetch, verify, evaluate provenance,
 // record the pin); a pinned pair verifies cached or fetched bytes
-// against the pin and re-evaluates nothing (the pin is the record).
+// against the pin, the pin the record, and a pin accepted under a
+// pinned key is held to the policy of the day besides (pinGoverned).
 func (c *Client) Module(ctx context.Context, modPath string, v version.Version) (*modfile.File, error) {
 	if pin, ok := c.Lock.Module(modPath, v.String()); ok {
+		if _, err := c.pinGoverned(modPath, v, pin); err != nil {
+			return nil, err
+		}
 		return c.pinnedModule(ctx, modPath, v, pin)
 	}
 	return c.firstUse(ctx, modPath, v)
+}
+
+// pinGoverned holds a pinned pair to the policy of the day before it
+// is served: a pin accepted under a pinned key resolves only while the
+// policy still pins that key for the module — unpinning is the tier's
+// one revocation, and it reaches every later resolution
+// (REQ-prov-pinned-key-recorded) — and the key as pinned today is
+// returned, the one re-verification runs against; nil for a pin
+// accepted under an identity, which stands on its record
+// (REQ-lock-no-silent-downgrade): the record, not the policy's current
+// patterns, is what re-verification holds it to.
+func (c *Client) pinGoverned(modPath string, v version.Version, pin lockfile.ModulePin) (*gitprov.PinnedKey, error) {
+	if pin.Provenance.Type != lockfile.ProvenanceGitPinnedKey {
+		return nil, nil
+	}
+	key, ok := c.pinnedKeyOf(modPath, pin.Provenance)
+	if !ok {
+		return nil, fmt.Errorf("fetch: %s@%s: the pin records the %s key %s, which the trust policy no longer pins for it: %w", modPath, v, pin.Provenance.KeyKind, pin.Provenance.KeyFingerprint, lockfile.ErrProvenanceDowngrade)
+	}
+	return &key, nil
 }
 
 // pinnedModule serves a pinned pair's module file, cheapest verifiable
@@ -115,6 +140,9 @@ func (c *Client) Zip(ctx context.Context, modPath string, v version.Version) ([]
 			return nil, err
 		}
 		pin, _ = c.Lock.Module(modPath, v.String())
+	}
+	if _, err := c.pinGoverned(modPath, v, pin); err != nil {
+		return nil, err
 	}
 	return c.pinnedZip(ctx, modPath, v, pin)
 }
@@ -207,27 +235,38 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 }
 
 // evaluateProvenance fetches and evaluates a pair's provenance evidence
-// against the trust policy (REQ-prov-policy-eval), returning the record
-// for the pin and the envelope bytes when evidence was accepted.
+// against the trust policy (REQ-prov-policy-eval,
+// REQ-prov-pinned-key-eval), returning the record for the pin and the
+// envelope bytes when evidence was accepted.
 //
-// Classification is three-way. Evidence that verifies and matches the
-// accepted identity is recorded. Evidence that is absent — no envelope
-// served, no embedded transparency proof (REQ-prov-signed-tag), an
-// identity the policy does not accept, or no identity to hold it to
-// (no explicit rule and no derivable origin default,
-// REQ-prov-origin-consistency; or no trusted root) — leaves the subject
-// unsigned: recorded none under allow-unsigned
-// (REQ-prov-unsigned-recorded), a failure under require-provenance.
-// Evidence that fails verification or binding any other way is
-// tampered-with or corrupt and fails the operation outright
-// (REQ-prov-tag-binding: rejected, not ignored).
+// The governing rule has up to two arms: an identity, explicit or the
+// origin-consistency default, for a sigstore signature; and pinned
+// keys, for an OpenPGP or SSH one. A rule naming keys is requiring
+// them, whatever the mode says; a rule naming both accepts either
+// evidence; a rule naming keys alone accepts a pinned key's signature
+// and no identity, the default included.
+//
+// Classification is three-way. Evidence that verifies under an arm is
+// recorded. Evidence that is absent — no envelope served, a kind no
+// arm takes, no embedded transparency proof (REQ-prov-signed-tag), an
+// identity the policy does not accept, a signature by no pinned key,
+// or no identity to hold a sigstore signature to (no explicit rule and
+// no derivable origin default, REQ-prov-origin-consistency; or no
+// trusted root) — leaves the subject unsigned: recorded none under
+// allow-unsigned (REQ-prov-unsigned-recorded), a failure under
+// require-provenance or a rule naming keys. Evidence that fails
+// verification or binding any other way is tampered-with or corrupt
+// and fails the operation outright (REQ-prov-tag-binding: rejected,
+// not ignored).
 func (c *Client) evaluateProvenance(ctx context.Context, modPath string, v version.Version, zip []byte) (lockfile.Provenance, []byte, error) {
 	var dec trust.Decision
 	if c.Policy != nil {
 		dec = c.Policy.EvaluateModule(modPath)
 	}
+	// Naming keys is requiring them (REQ-prov-pinned-key-eval).
+	require := dec.Require || len(dec.Keys) > 0
 	fail := func(reason string) (lockfile.Provenance, []byte, error) {
-		if dec.Require {
+		if require {
 			return lockfile.Provenance{}, nil, fmt.Errorf("fetch: %s@%s requires provenance: %s", modPath, v, reason)
 		}
 		return lockfile.Provenance{}, nil, nil
@@ -247,38 +286,45 @@ func (c *Client) evaluateProvenance(ctx context.Context, modPath string, v versi
 	if len(evidence) == 0 {
 		return fail("the provenance envelope carries no recognized evidence")
 	}
-	if c.TrustedRoot == nil {
+	// Without a trusted root a sigstore signature verifies against
+	// nothing; where pinned keys are the only arm, none is needed.
+	if c.TrustedRoot == nil && len(dec.Keys) == 0 {
 		return fail("no trusted root is configured to verify evidence against")
 	}
 
 	// Evidence exists, so the origin is needed regardless of which
-	// identity arm applies: the subject's subtree binds the tree walk.
+	// arm applies: the subject's subtree binds the tree walk.
 	o, err := c.origin(ctx, modPath)
 	if err != nil {
 		return lockfile.Provenance{}, nil, err
 	}
-	var id gitprov.Identity
-	if dec.Identity != nil {
-		id, err = trust.ExplicitIdentity(*dec.Identity)
+	// The identity arm: explicit, or the origin's default where the
+	// rule names no keys.
+	var id *gitprov.Identity
+	switch {
+	case dec.Identity != nil:
+		explicit, err := trust.ExplicitIdentity(*dec.Identity)
 		if err != nil {
 			return lockfile.Provenance{}, nil, err
 		}
-	} else {
-		id, err = trust.DefaultIdentity(o.Repo)
+		id = &explicit
+	case len(dec.Keys) == 0:
+		byDefault, err := trust.DefaultIdentity(o.Repo)
 		if errors.Is(err, trust.ErrNoDefaultIdentity) {
 			return fail(err.Error())
 		}
 		if err != nil {
 			return lockfile.Provenance{}, nil, err
 		}
+		id = &byDefault
 	}
 
-	rec, accepted, skipped, err := c.verifyEvidence(ctx, o.Subtree, v, zip, evidence, id, func(lockfile.Provenance) bool { return true })
+	rec, accepted, skipped, err := c.verifyEvidence(ctx, o.Subtree, v, zip, evidence, id, dec.Keys, func(lockfile.Provenance) bool { return true })
 	if err != nil {
 		return lockfile.Provenance{}, nil, fmt.Errorf("%s@%s: %w", modPath, v, err)
 	}
 	if accepted {
 		return rec, provBytes, nil
 	}
-	return fail(fmt.Sprintf("no evidence accepted (%d object(s) absent or by an unaccepted identity)", skipped))
+	return fail("no evidence accepted: " + strings.Join(skipped, "; "))
 }

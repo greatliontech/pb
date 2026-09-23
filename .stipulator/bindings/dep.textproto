@@ -143,8 +143,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-download"
-  content_hash: "bea6e94a489550f82f74948fb3ae7335e4fa8f93e0a85ff80d4edb7f18389f23"
-  source_hash: "c70052c0531aac28fda028a6bdbb4b0c901f58100fb3782b7107bf1f0a039500"
+  content_hash: "b873723feb2d3724a098b5f5d4ad70f2f078fc9a506dacc4cd675ec3ebc758ef"
+  source_hash: "6d2bd353945643ad9ce6ac916a0f19e9c2bc91875586ac0b14058d9d5c00b88c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Download"
   role: BINDING_ROLE_IMPLEMENTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-download"
-  content_hash: "bea6e94a489550f82f74948fb3ae7335e4fa8f93e0a85ff80d4edb7f18389f23"
-  source_hash: "c70052c0531aac28fda028a6bdbb4b0c901f58100fb3782b7107bf1f0a039500"
+  content_hash: "b873723feb2d3724a098b5f5d4ad70f2f078fc9a506dacc4cd675ec3ebc758ef"
+  source_hash: "6d2bd353945643ad9ce6ac916a0f19e9c2bc91875586ac0b14058d9d5c00b88c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestDownloadVerb"
   role: BINDING_ROLE_TESTS

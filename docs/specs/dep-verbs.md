@@ -93,18 +93,21 @@ workspace module used it — never adding a ruleset declaration — and
 fail naming the ruleset when no workspace module declares it and it is
 no workspace module.
 
-**REQ-dep-download** (behavior): `download` MUST fetch, verify, and pin
-the artifacts of every non-local build-list module into the module
+**REQ-dep-download** (behavior): `download` MUST fetch, verify, and
+pin the artifacts of every non-local build-list module into the module
 cache — archive, module file (when the module declares one), info, and
 provenance envelope (when the source has one) — recording first-use
 pins per `REQ-lock-first-use` and recording provenance `none` only as
 `REQ-prov-unsigned-recorded` allows. For a pin already recording
 verified evidence, the envelope is cached only after re-verification
 reproduces exactly the recorded provenance facts, held to the recorded
-identity; served evidence that cannot fails per
+identity — or, for a pinned-key record, to the recorded key as the
+trust policy of the day still pins it for the module (`provenance.md`,
+REQ-prov-pinned-key-recorded); served evidence that cannot fails per
 `REQ-lock-no-silent-downgrade`, and evidence objects failing
-verification for reasons other than absence or identity non-acceptance
-are rejected exactly as at first use.
+verification for reasons other than absence or non-acceptance — an
+identity the rule does not accept, a signer no pinned key vouches for
+— are rejected exactly as at first use.
 
 **REQ-dep-update** (behavior): `update` MUST move requirements forward
 explicitly, to the highest tagged release discovered for the module —

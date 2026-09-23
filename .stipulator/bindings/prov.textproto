@@ -558,7 +558,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.verifyEvidence"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "ee2c9e798847f8a5208c02b48a21bba2f2f88ba93328a543b8814663a2c4e77a"
+  shape_hash: "ccb122d9bdfb32adb452d4f56037feaf963f33fcb49b3038ac7493942ad84915"
 }
 
 bindings {
@@ -639,4 +639,164 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/provenance/trust.TestEvaluateCarriesTheGoverningRulesKeys"
   role: BINDING_ROLE_TESTS
   shape_hash: "fc3bfc3a80bb8bbc435e4ac71b08c107c403e6f123aff4a880731ec214a012c3"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.evaluateProvenance"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "868cff57b8e18eac0cd86e45dd4649b672d8f917154ace8e34cd26dfbc40e829"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.verifyOne"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "640fd0763b2c68ab2d4a43aadf586c992b20987336e7960751203d9bba6b4b50"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.VerifyPinned"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "eafd5bfb14680af13b4ff450fe98b967e7c815833bf8bd7780c3a7ea730d815e"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyEvidenceAcceptedAndRecorded"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e3665e186df72ba52088cc9f39644bd465faaca0dbc047d5d6fd73704e29bf00"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestNamingKeysRequiresThem"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "fa4f3e3224a3da52e1bfa734bed8f401d2e3ee7a0a1311db447bd4ebc232651a"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestKeysBesideIdentityAcceptEither"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1dfb0b71ab7cec568405325355853e2de8bd8fa8ed00f7a7d043f07af1a66adc"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance.RecordPinned"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "89951b7ef6380dbd266cda976fc59d61304540d9c37d91247c119c95ea5d03ed"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.reverifyProv"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c4741b9852b31825326b21ef9e9a081f184749bf9c2367f54cf995dffcbf4ac7"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinnedKeyOf"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "97b376ca0c6c1dfbd98667f9848e25763915220deb53a28416ce30a87ce49a36"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyEvidenceAcceptedAndRecorded"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e3665e186df72ba52088cc9f39644bd465faaca0dbc047d5d6fd73704e29bf00"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyRecordReverified"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ddea9214ed506bdff0d6fde04038197e71594f133ddf6843a600170ca1725c3c"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestUnpinnedSignerBesideThePinnedOneIsSkipped"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "148ed1953cc94f9fec7b110eb711e33252399da1343704ee920832b58c8a9585"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyRejectionsAbort"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "74688f8e4cabd829e924bbe689a32934ba9926a84b9be768c9b7f5aa6035cbd1"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-eval"
+  content_hash: "679b2d495f45179203d0d2755ef748be6c3139fd97bbdcdff11f0425fc2b3ca7"
+  source_hash: "8a6ab48e9e20824021469f848248ea3d667a51559ac921b938673181f2638afc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestSigstoreEvidenceUnderKeysWithoutRootIsAbsent"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b537f92072787fab3f6400292a280b4293f6a5ba68e333ec00cace2b3387ed16"
+}
+
+bindings {
+  requirement_id: "REQ-prov-tag-binding"
+  content_hash: "5bb0112526ecebd203bcb198d313caf2666b30854d591ce35d764dd0f9415ca5"
+  source_hash: "469de4eb71c5e393232c843292830e51b2c1918045463da2f9e01b142bd9e9f9"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyRejectionsAbort"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "74688f8e4cabd829e924bbe689a32934ba9926a84b9be768c9b7f5aa6035cbd1"
+}
+
+bindings {
+  requirement_id: "REQ-prov-pinned-key-recorded"
+  content_hash: "8e2edcb647d7730dd931e56408f81e442557dc7fb15aeec2a3d87e8d755b2205"
+  source_hash: "7fc2b0f195b3073ce37c516ca0e16e433fb12a4c0ebc6c8d2dfa7c679bebb3f6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinGoverned"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "3f7813b46e4a4809f7d0884f640bf63f1f92ea02feb230570fc4d350372bae0a"
 }

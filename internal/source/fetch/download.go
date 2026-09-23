@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/module/archive"
@@ -30,6 +31,10 @@ func (c *Client) Download(ctx context.Context, modPath string, v version.Version
 		}
 		pin, _ = c.Lock.Module(modPath, v.String())
 	}
+	key, err := c.pinGoverned(modPath, v, pin)
+	if err != nil {
+		return err
+	}
 	zip, err := c.pinnedZip(ctx, modPath, v, pin)
 	if err != nil {
 		return err
@@ -43,7 +48,7 @@ func (c *Client) Download(ctx context.Context, modPath string, v version.Version
 		return err
 	}
 	if pin.Provenance != (lockfile.Provenance{}) {
-		if err := c.downloadProv(ctx, modPath, v, pin, zip); err != nil {
+		if err := c.downloadProv(ctx, modPath, v, pin, key, zip); err != nil {
 			return err
 		}
 	}
@@ -132,16 +137,17 @@ func checkInfo(b []byte, v version.Version) error {
 // downloadProv ensures the provenance envelope behind a verified pin is
 // cached, re-verifying that some evidence object reproduces exactly the
 // pinned record — held to the recorded identity, not the policy's
-// current patterns, with the same evidence classification as first use
+// current patterns, or to the recorded key as the policy of the day
+// still pins it — with the same evidence classification as first use
 // (verifyEvidence): tampered evidence aborts even here. A cached
 // envelope failing re-verification is local state and discarded as
 // absent (REQ-dep-cache-transparent); served evidence that cannot
 // reproduce the record fails rather than rewriting anything
 // (REQ-lock-no-silent-downgrade).
-func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, zip []byte) error {
+func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip []byte) error {
 	if b, ok, err := c.Cache.Get(modPath, v, KindProv); err != nil {
 		return err
-	} else if ok && c.reverifyProv(ctx, modPath, v, pin, zip, b) == nil {
+	} else if ok && c.reverifyProv(ctx, modPath, v, pin, key, zip, b) == nil {
 		return nil
 	}
 	provBytes, err := c.fetch(ctx, modPath, v, KindProv)
@@ -151,37 +157,60 @@ func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Ver
 	if err != nil {
 		return err
 	}
-	if err := c.reverifyProv(ctx, modPath, v, pin, zip, provBytes); err != nil {
+	if err := c.reverifyProv(ctx, modPath, v, pin, key, zip, provBytes); err != nil {
 		return err
 	}
 	return c.Cache.Put(modPath, v, KindProv, provBytes)
 }
 
 // reverifyProv checks that an envelope reproduces the pinned record:
-// some evidence object verifies against the recorded identity and
-// renders exactly the recorded provenance facts (the downgrade guard's
-// acceptance criterion).
-func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, zip, provBytes []byte) error {
+// some evidence object verifies against the recorded identity — or,
+// for a pinned-key record, against the recorded key as the policy of
+// the day pins it, which pinGoverned resolved before anything was
+// served (REQ-prov-pinned-key-recorded) — and renders exactly the
+// recorded provenance facts (the downgrade guard's acceptance
+// criterion).
+func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip, provBytes []byte) error {
 	evidence, err := provenance.ParseEnvelope(provBytes)
 	if err != nil {
 		return err
 	}
-	if c.TrustedRoot == nil {
-		return fmt.Errorf("fetch: %s@%s: pin records verified provenance but no trusted root is configured to re-verify it", modPath, v)
+	var id *gitprov.Identity
+	var keys []gitprov.PinnedKey
+	if key != nil {
+		keys = []gitprov.PinnedKey{*key}
+	} else {
+		if c.TrustedRoot == nil {
+			return fmt.Errorf("fetch: %s@%s: pin records verified provenance but no trusted root is configured to re-verify it", modPath, v)
+		}
+		id = &gitprov.Identity{Subject: pin.Provenance.SAN, Issuer: pin.Provenance.Issuer}
 	}
 	o, err := c.origin(ctx, modPath)
 	if err != nil {
 		return err
 	}
-	id := gitprov.Identity{Subject: pin.Provenance.SAN, Issuer: pin.Provenance.Issuer}
-	_, accepted, _, err := c.verifyEvidence(ctx, o.Subtree, v, zip, evidence, id, func(rec lockfile.Provenance) bool {
+	_, accepted, skipped, err := c.verifyEvidence(ctx, o.Subtree, v, zip, evidence, id, keys, func(rec lockfile.Provenance) bool {
 		return lockfile.CheckProvenanceTransition(pin.Provenance, rec) == nil
 	})
 	if err != nil {
 		return fmt.Errorf("%s@%s: %w", modPath, v, err)
 	}
 	if !accepted {
-		return fmt.Errorf("fetch: %s@%s: no served evidence reproduces the pinned provenance record: %w", modPath, v, lockfile.ErrProvenanceDowngrade)
+		return fmt.Errorf("fetch: %s@%s: no served evidence reproduces the pinned provenance record (%s): %w", modPath, v, strings.Join(skipped, "; "), lockfile.ErrProvenanceDowngrade)
 	}
 	return nil
+}
+
+// pinnedKeyOf is the key a pinned-key record names among the keys the
+// policy pins for the module today, by kind and fingerprint.
+func (c *Client) pinnedKeyOf(modPath string, rec lockfile.Provenance) (gitprov.PinnedKey, bool) {
+	if c.Policy == nil {
+		return gitprov.PinnedKey{}, false
+	}
+	for _, k := range c.Policy.EvaluateModule(modPath).Keys {
+		if string(k.Kind()) == rec.KeyKind && k.Fingerprint() == rec.KeyFingerprint {
+			return k, true
+		}
+	}
+	return gitprov.PinnedKey{}, false
 }

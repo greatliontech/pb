@@ -23,14 +23,7 @@ type provFixture struct {
 }
 
 func newProvFixture(t *testing.T, signer *provtest.Signer, o sigstoretest.TagOptions, tagName string) *provFixture {
-	fx := newFixture(t)
-	files := declaredFiles()
-	commit := fx.CommitFor(files, gitWhen)
-	zip, _ := moduleZip(t, files)
-	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
-	tag := signer.SignedTag(t, tagPayload(commit, tagName), o)
-	env := envelope(t, "sha1", tag, fx.Repo.Raw(plumbing.CommitObject, commit), nil)
-	fx.Endpoint("example.com/m", "v1.0.0", "prov", string(env))
+	fx, commit := newSignedFixture(t, tagName, func(payload []byte) []byte { return signer.SignedTag(t, payload, o) })
 	return &provFixture{fixture: fx, signer: signer, commit: commit}
 }
 

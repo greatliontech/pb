@@ -670,3 +670,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "a6d86b3aa28fc2186a79133227de13bd691d751cf5922715c86f03a1389ef14f"
 }
+
+bindings {
+  requirement_id: "REQ-proxy-direct-equivalence"
+  content_hash: "4944922322bebeb2c6dae973063f516a757b1498dceef7fa53c20780d9d62292"
+  source_hash: "302f0f983d5e46f78b52b3da99ce164afcf633acf96a3c54c88e85311bb58091"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestPinnedKeyEvidenceThroughTheOrigin"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "2790016913f8ac2e9adf70413f8b27f086328755aec83853488576a1d32b9a7a"
+}

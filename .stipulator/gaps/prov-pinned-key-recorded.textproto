@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-prov-pinned-key-recorded"
-reason: "the pinned-key trust tier is specced ahead of its plan, which follows the check-rules plan"
-content_hash: "e4c62f8885a16a6e6d213752d36a6043cf7d35a63070dcd9cfd9a3f941c3d6d0"
-source_hash: "578c36a6a6c2614306ae32d04f65702638d86eb76fdce13fe9a487e3652600d4"
-lands { manual { condition: "the pinned-key provenance plan lands the tier" } }

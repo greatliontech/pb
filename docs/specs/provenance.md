@@ -148,18 +148,17 @@ subject's git-signed-tag evidence MUST verify offline against exactly
 the rule's pinned keys of the signature's kind — `gitprov` verifying
 the tag's OpenPGP or SSH signature, binding chain and all as for a
 sigstore signature — with no transparency proof required or consulted;
-a signature by any other key, an unverifiable one, or none fails the
-operation, whatever `default` or `require` says: naming keys is
-requiring them. A rule naming both `keys` and `identity` accepts
-either evidence. Lands: the pinned-key plan.
+with no signature by a pinned key accepted — every signature by
+another key, unverifiable, or none — the operation fails, whatever
+`default` or `require` says: naming keys is requiring them. A rule
+naming both `keys` and `identity` accepts either evidence.
 
 **REQ-prov-pinned-key-recorded** (behavior): A subject accepted under
 a pinned key MUST be recorded in the lockfile with the key's kind and
 fingerprint as the record's identity (`module-lockfile.md`,
 REQ-lock-pinned-key-record); a later resolution under a policy that no
 longer pins that key fails as REQ-prov-pinned-key-eval says, the
-record naming the key that no longer governs. Lands: the check-rules
-plan closed out, the pinned-key plan following it.
+record naming the key that no longer governs.
 
 ## Plugin images
 

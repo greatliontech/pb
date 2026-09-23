@@ -9,7 +9,7 @@ require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-containerregistry v0.22.0
-	github.com/greatliontech/gitprov v0.0.0-20260923171949-f90641e8949d
+	github.com/greatliontech/gitprov v0.0.0-20260923182410-1923bc61ff69
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/ocifs v0.8.1-0.20260920092258-6c7dac6c6b3c
 	github.com/greatliontech/sandbox v0.4.1
