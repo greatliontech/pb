@@ -139,18 +139,17 @@ type atHead struct {
 	rooted    bool
 }
 
-// atHead judges a module at the origin's head: the one decision the
-// listing, a release's tag, a pseudo-version's base and the latest all
-// take, so that a version named in one namespace is fetched from the
-// same and ranked against the same releases (REQ-resolve-release-tags,
-// REQ-resolve-pseudo-base). Subtree-prefixed tags for a module declared
-// at a subtree, repository-level tags for a root or synthesized module
-// (REQ-resolve-synthesized-tags) — synthesized meaning a subtree that
-// exists holding no module file. A subtree absent at head is no
-// synthesized module — synthesis is the judgment over a subtree that
-// exists (REQ-resolve-synthesis) — and keeps its path's own namespace:
-// a release tagged there resolves, or fails at the root the tagged
-// commit lacks; head itself is no version of it.
+// atHead judges a module at the origin's head, the one state a listing
+// can be read from: the namespace the listing and the latest take
+// (REQ-resolve-release-tags, REQ-resolve-synthesized-tags) —
+// subtree-prefixed tags for a module declared at a subtree,
+// repository-level tags for a root or synthesized module, synthesized
+// meaning a subtree that exists holding no module file. A subtree
+// absent at head is no synthesized module — synthesis is the judgment
+// over a subtree that exists (REQ-resolve-synthesis) — and keeps its
+// path's own namespace; head itself is no version of it. The listing
+// is advisory: a version it names resolves by its own commit's state
+// (resolveAt), which may name none.
 func (c *Client) atHead(ctx context.Context, repo *direct.Repo, o origin.Origin) (atHead, error) {
 	if o.Subtree == "" {
 		return atHead{namespace: "", rooted: true}, nil
@@ -159,7 +158,16 @@ func (c *Client) atHead(ctx context.Context, repo *direct.Repo, o origin.Origin)
 	if err != nil {
 		return atHead{}, err
 	}
-	declared, err := repo.Declared(ctx, head.Hash, o.Subtree)
+	return c.namespaceAt(ctx, repo, o, head.Hash)
+}
+
+// namespaceAt judges a subtree module at one commit — the head's for
+// the listing, a pseudo-version's for its base — the one reading both
+// take: its own namespace where a module file lies at the subtree, the
+// repository's where the subtree lies there holding none, its own and
+// unrooted where the subtree is absent.
+func (c *Client) namespaceAt(ctx context.Context, repo *direct.Repo, o origin.Origin, commitHash string) (atHead, error) {
+	declared, err := repo.Declared(ctx, commitHash, o.Subtree)
 	switch {
 	case errors.Is(err, direct.ErrNoModuleRoot):
 		return atHead{namespace: o.Subtree, rooted: false}, nil

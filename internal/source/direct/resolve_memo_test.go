@@ -124,3 +124,26 @@ func TestMemoizedResolutionEqualsFresh(t *testing.T) {
 		t.Fatalf("Refs: memoized (%d, %v) != fresh (%d, %v)", len(refsMemo), err1, len(refsFresh), err2)
 	}
 }
+
+// PseudoCommit binds a pseudo-version to its commit with no judgment
+// of the base (REQ-resolve-pseudo-commit): a consumer judges the
+// namespace at that commit before ResolveVersion checks the base in it.
+func TestPseudoCommitBindsWithoutBase(t *testing.T) {
+	ctx := context.Background()
+	c := newChain(t)
+	opts, _ := c.recording()
+	repo, err := Fetcher{ClientOptions: opts}.Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// c3 carries a tag in the root namespace, so a zero-base
+	// pseudo-version over it binds and yet fails the base.
+	v := mustV(t, "v0.0.0-"+c.t0.Add(2*time.Hour).UTC().Format(version.PseudoTimeLayout)+"-"+c.c3.String()[:12])
+	bound, err := repo.PseudoCommit(ctx, v)
+	if err != nil || bound.Hash != c.c3 {
+		t.Fatalf("PseudoCommit = %v, %v", bound, err)
+	}
+	if _, err := repo.ResolveVersion(ctx, v, ""); !errors.Is(err, ErrBaseInconsistent) {
+		t.Fatalf("ResolveVersion = %v", err)
+	}
+}

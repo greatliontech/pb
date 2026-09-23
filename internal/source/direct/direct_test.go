@@ -131,12 +131,15 @@ func TestResolveUnknownVersionFails(t *testing.T) {
 	}
 }
 
-func TestResolveTagNamingNonCommitFails(t *testing.T) {
+// A tag naming no commit is no release (REQ-resolve-release-tags): the
+// version has no tag naming it, as base derivation reads such a tag,
+// never a failure of its own.
+func TestResolveTagNamingNonCommitIsNoRelease(t *testing.T) {
 	f := newGraphFixture(t)
 	repo := f.fetch()
 	_, err := repo.ResolveVersion(context.Background(), mustParse(t, "v1.0.0"), "obj")
-	if err == nil || errors.Is(err, ErrUnknownVersion) {
-		t.Fatalf("err = %v, want a non-commit tag failure", err)
+	if !errors.Is(err, ErrUnknownVersion) {
+		t.Fatalf("err = %v, want ErrUnknownVersion", err)
 	}
 }
 

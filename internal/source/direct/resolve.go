@@ -89,7 +89,10 @@ func (r *Repo) resolveTag(v version.Version, subtree string) (origin.Commit, err
 		return origin.Commit{}, fmt.Errorf("resolving %s: tag %s: %w", v, tagRefName(v, subtree), err)
 	}
 	if !ok {
-		return origin.Commit{}, fmt.Errorf("resolving %s: tag %s does not name a commit", v, tagRefName(v, subtree))
+		// A tag naming no commit is no release (REQ-resolve-release-tags):
+		// the version has no tag naming it here, as base derivation
+		// reads such a tag.
+		return origin.Commit{}, fmt.Errorf("%w: %s (tag %s names no commit)", ErrUnknownVersion, v, tagRefName(v, subtree))
 	}
 	return commitIdentity(c), nil
 }
@@ -120,20 +123,33 @@ func tagCommit(repo *git.Repository, h plumbing.Hash) (*object.Commit, bool, err
 	return c, isCommit, nil
 }
 
-func (r *Repo) resolvePseudo(ctx context.Context, v version.Version, subtree string) (origin.Commit, error) {
+// PseudoCommit binds a pseudo-version to the commit it names — present
+// at the origin, unique for the embedded prefix, its time the embedded
+// one (REQ-resolve-pseudo-commit) — with no judgment of its base: the
+// commit a consumer judges the module's namespace at before the base
+// is checked in that namespace (REQ-resolve-pseudo-base).
+func (r *Repo) PseudoCommit(ctx context.Context, v version.Version) (*object.Commit, error) {
 	_, prefix, _ := v.Pseudo()
 	matches, err := r.commitsWithPrefix(ctx, prefix)
 	if err != nil {
-		return origin.Commit{}, fmt.Errorf("resolving %s: %w", v, err)
+		return nil, fmt.Errorf("resolving %s: %w", v, err)
 	}
 	c, err := uniqueCommit(v, matches)
 	if err != nil {
-		return origin.Commit{}, err
+		return nil, err
 	}
 	// Binding before base: the embedded time must match the commit in
 	// hand (REQ-resolve-pseudo-commit) before its tag history means
 	// anything.
 	if err := origin.VerifyPseudo(v, commitIdentity(c)); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (r *Repo) resolvePseudo(ctx context.Context, v version.Version, subtree string) (origin.Commit, error) {
+	c, err := r.PseudoCommit(ctx, v)
+	if err != nil {
 		return origin.Commit{}, err
 	}
 	expected, err := r.expectedPseudo(ctx, c, subtree)

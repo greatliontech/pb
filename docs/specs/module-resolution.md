@@ -125,10 +125,21 @@ list, and `noproxy` alone routes it to the origin.
 **REQ-resolve-release-tags** (wire): A tagged release of a module rooted
 at the repository root MUST correspond to a git tag named exactly the
 version; a declared module rooted at a subtree uses tags prefixed with
-the subtree path (`<subtree>/vX.Y.Z`). Whether a subtree module is
-declared is judged at the origin's default-branch head, the only state
-the origin answers for; a subtree absent there is no synthesized module
-and keeps its subtree-prefixed namespace.
+the subtree path (`<subtree>/vX.Y.Z`). A tag names a version of a
+subtree module by the subtree's state at the commit the tag names, the
+one commit a tag speaks of: `<subtree>/vX.Y.Z` where a module file
+lies at the subtree there, the repository-level `vX.Y.Z` where the
+subtree lies there holding none, the repository versioned as a whole;
+a version both name is ambiguous and fails resolution, and a
+subtree-prefixed tag over a commit where the subtree is absent fails
+it too, the tag claiming a module the commit lacks; a tag naming no
+commit is no release and names no version. The listing of a
+subtree module is judged at the origin's default-branch head, the only
+state a listing can be read from: subtree-prefixed tags where a module
+file lies at the subtree there, repository-level tags where it lies
+holding none, subtree-prefixed where it is absent, no synthesized
+module being there; the listing is advisory, a version it names
+resolving by the tagged commit's own state, which may name none.
 
 **REQ-resolve-synthesized-tags** (behavior): A synthesized module MUST
 take its tagged releases from repository-level tags. A module of either
@@ -145,8 +156,11 @@ resolves to never depends on enumeration order.
 
 **REQ-resolve-pseudo-base** (invariant): A pseudo-version's base MUST
 derive from the module's own release-tag history at the embedded commit
-— its tag namespace per REQ-resolve-release-tags, repository-level for a
-synthesized module — taking the highest of those release tags on an
+— its tag namespace per REQ-resolve-release-tags judged at that commit,
+subtree-prefixed where a module file lies at the subtree there,
+repository-level where it lies holding none, and no namespace where it
+is absent, the version then naming nothing of the module — taking the
+highest of that namespace's release tags, by name alone, on an
 ancestor of that commit, or the zero base when none exists, so a crafted
 pseudo-version cannot outrank the module's real releases in selection; a
 base-inconsistent pseudo-version fails resolution. Ancestry is

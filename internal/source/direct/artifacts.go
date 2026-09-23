@@ -29,11 +29,14 @@ import (
 // contract's.
 
 // ErrNoModuleRoot is wrapped when a commit's tree has no directory at
-// the module's subtree path — an in-spec state consumers classify: a
-// subtree absent at head is no synthesized module and keeps its path's
-// tag namespace (REQ-resolve-synthesized-tags reads listings through
-// it), while for artifact construction against a resolved version it
-// is simply a failing walk.
+// the module's subtree path — an in-spec state consumers classify by
+// the commit asked about (REQ-resolve-release-tags): at head, the
+// subtree is no synthesized module and keeps its path's tag namespace
+// for the listing; at a pseudo-version's commit, the version names
+// nothing of the module; at the repository's tagged commit, the tag is
+// the root's release and not the module's; at the subtree's own
+// tagged commit, the origin claims a module the commit has not, and
+// artifact construction fails as any failing walk does.
 var ErrNoModuleRoot = errors.New("module root not present in commit tree")
 
 // commitObject looks up the full-hash commit a resolved version bound.
@@ -232,18 +235,6 @@ func blobBytes(blob *object.Blob) ([]byte, error) {
 	}
 	defer rd.Close()
 	return io.ReadAll(rd)
-}
-
-// Rooted reports whether the module root at subtree exists at the
-// commit: nil, or ErrNoModuleRoot where the commit's tree has no
-// directory there.
-func (r *Repo) Rooted(ctx context.Context, commitHash, subtree string) error {
-	c, err := r.commitObject(ctx, commitHash)
-	if err != nil {
-		return err
-	}
-	_, _, err = r.moduleRoot(c, subtree)
-	return err
 }
 
 // Declared reports whether the module root at subtree holds a module

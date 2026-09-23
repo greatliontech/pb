@@ -150,6 +150,82 @@ func (c *Client) fetch(ctx context.Context, modPath string, v version.Version, k
 	})
 }
 
+// ErrAmbiguousRelease is wrapped when a release version of a subtree
+// module is named by two tags at once — the subtree's own over a
+// commit where the subtree is declared, and the repository's over one
+// where it is synthesized — so the version binds no commit uniquely
+// (REQ-resolve-release-tags): an integrity failure resolution fails
+// on rather than picks through.
+var ErrAmbiguousRelease = errors.New("release version named by the subtree's tag and the repository's alike")
+
+// resolveAt binds a version of the module to its commit by the
+// subtree's state at that commit, the one commit a tag or a
+// pseudo-version speaks of (REQ-resolve-release-tags,
+// REQ-resolve-pseudo-base), and yields the namespace the version was
+// judged in, the verification pack's. A root module has one namespace.
+// A release of a subtree module is the subtree's tag where a module
+// file lies at the subtree at the tagged commit, the repository's tag
+// where the subtree lies there holding none; both is ambiguous; the
+// subtree's tag over a commit lacking the subtree is the origin's
+// claim of a module the commit has not, and aborts. A pseudo-version
+// binds its commit first, the namespace is judged there — a subtree
+// absent at that commit names nothing of the module, not-here for
+// every artifact alike — and the base is then checked in it.
+func (c *Client) resolveAt(ctx context.Context, repo *direct.Repo, o origin.Origin, v version.Version) (origin.Commit, string, error) {
+	if o.Subtree == "" {
+		commit, err := repo.ResolveVersion(ctx, v, "")
+		return commit, "", err
+	}
+	if v.IsPseudo() {
+		bound, err := repo.PseudoCommit(ctx, v)
+		if err != nil {
+			return origin.Commit{}, "", err
+		}
+		at, err := c.namespaceAt(ctx, repo, o, bound.Hash.String())
+		if err != nil {
+			return origin.Commit{}, "", err
+		}
+		if !at.rooted {
+			return origin.Commit{}, "", fmt.Errorf("%w: origin %s: %s names commit %s, where %s is absent", proxy.ErrNotHere, o.Repo, v, bound.Hash, o.Subtree)
+		}
+		commit, err := repo.ResolveVersion(ctx, v, at.namespace)
+		return commit, at.namespace, err
+	}
+	var found []struct {
+		commit    origin.Commit
+		namespace string
+	}
+	for _, namespace := range []string{o.Subtree, ""} {
+		commit, err := repo.ResolveVersion(ctx, v, namespace)
+		if errors.Is(err, direct.ErrUnknownVersion) {
+			continue
+		}
+		if err != nil {
+			return origin.Commit{}, "", err
+		}
+		declared, err := repo.Declared(ctx, commit.Hash, o.Subtree)
+		switch {
+		case errors.Is(err, direct.ErrNoModuleRoot) && namespace == "":
+			continue // the repository's release, of a commit holding no such subtree
+		case err != nil:
+			return origin.Commit{}, "", err
+		}
+		if declared == (namespace == o.Subtree) {
+			found = append(found, struct {
+				commit    origin.Commit
+				namespace string
+			}{commit, namespace})
+		}
+	}
+	switch len(found) {
+	case 0:
+		return origin.Commit{}, "", fmt.Errorf("%w: %s (no tag of %s names it at a commit it is at)", direct.ErrUnknownVersion, v, o.Subtree)
+	case 1:
+		return found[0].commit, found[0].namespace, nil
+	}
+	return origin.Commit{}, "", fmt.Errorf("%w: %s at %s and %s", ErrAmbiguousRelease, v, found[0].commit.Hash, found[1].commit.Hash)
+}
+
 // directArtifact constructs one artifact from the origin repository —
 // the direct source's half of REQ-proxy-direct-equivalence, over the
 // internal/source/direct construction layer.
@@ -162,27 +238,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 	if err != nil {
 		return nil, err
 	}
-	// The version resolves in the namespace the listing names — a
-	// release through its tag there, a pseudo-version's base over the
-	// release tags there (REQ-resolve-pseudo-base).
-	at, err := c.atHead(ctx, repo, o)
-	if err != nil {
-		return nil, err
-	}
-	commit, err := repo.ResolveVersion(ctx, v, at.namespace)
-	if err == nil && v.IsPseudo() {
-		// A pseudo-version names a commit on the consumer's own say,
-		// no claim of the origin's: where the module root is absent at
-		// that commit the origin has no artifact of any kind for it —
-		// not-here for info and archive alike, so the two never
-		// disagree — whereas a release tag over a commit lacking the
-		// root is the origin's claim and aborts below as any failing
-		// walk does.
-		err = repo.Rooted(ctx, commit.Hash, o.Subtree)
-		if errors.Is(err, direct.ErrNoModuleRoot) {
-			return nil, fmt.Errorf("%w: origin %s: %v", proxy.ErrNotHere, o.Repo, err)
-		}
-	}
+	commit, namespace, err := c.resolveAt(ctx, repo, o, v)
 	switch {
 	case errors.Is(err, direct.ErrUnknownVersion), errors.Is(err, direct.ErrCommitAbsent):
 		// The origin does not have this version — the direct analog of a
@@ -217,7 +273,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		}
 		return buf.Bytes(), nil
 	case KindProv:
-		b, ok, err := repo.VerificationPack(ctx, v, at.namespace)
+		b, ok, err := repo.VerificationPack(ctx, v, namespace)
 		if err != nil {
 			return nil, err
 		}

@@ -833,3 +833,172 @@ func TestProxyCredentials(t *testing.T) {
 		}
 	}
 }
+
+// A tag names a version of a subtree module by the subtree's state at
+// the commit the tag names (REQ-resolve-release-tags): a subtree that
+// was synthesized when the repository cut its releases and is declared
+// at head resolves those releases through the repository's tags and
+// its own through its tags, the listing at head naming its own alone;
+// one declared when it cut its releases and synthesized at head
+// resolves its own, and the repository's release of a commit where it
+// was declared is the root's, not here for it; a version the subtree's
+// tag and the repository's name alike, each at a commit whose state
+// fits, is ambiguous and fails as an integrity failure, never routed
+// around.
+func TestSubtreeNamespaceAtTheTaggedCommit(t *testing.T) {
+	synthesized := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	declared := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/pb.yaml": "module: example.com/m/sub\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+
+	t.Run("synthesized then declared", func(t *testing.T) {
+		fx := newFixture(t)
+		old := fx.CommitFor(synthesized, gitWhen)
+		head := fx.Repo.CommitTree(fx.TreeFor(fx.Repo, declared), "declares", gitWhen.Add(time.Hour), old)
+		fx.Repo.Ref("refs/tags/v1.0.0", old)
+		fx.Repo.Ref("refs/tags/sub/v2.0.0", head)
+		fx.Repo.Ref("refs/heads/main", head)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
+		vs, err := c.Versions(ctx, "example.com/m/sub")
+		if err != nil || len(vs) != 1 || vs[0].String() != "v2.0.0" {
+			t.Fatalf("the listing at head = %v, %v", vs, err)
+		}
+		mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0"))
+		if err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("the repository's release of the synthesized past: %+v, %v", mf, err)
+		}
+		if pin, _ := c.Lock.Module("example.com/m/sub", "v1.0.0"); pin.Modfile != "" {
+			t.Fatalf("the synthesized release pinned a module file: %+v", pin)
+		}
+		mf, err = c.Module(ctx, "example.com/m/sub", ver(t, "v2.0.0"))
+		if err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("the subtree's own release: %+v, %v", mf, err)
+		}
+		if pin, _ := c.Lock.Module("example.com/m/sub", "v2.0.0"); pin.Modfile == "" {
+			t.Fatalf("the declared release pinned no module file: %+v", pin)
+		}
+	})
+
+	t.Run("declared then synthesized", func(t *testing.T) {
+		fx := newFixture(t)
+		old := fx.CommitFor(declared, gitWhen)
+		head := fx.Repo.CommitTree(fx.TreeFor(fx.Repo, synthesized), "undeclares", gitWhen.Add(time.Hour), old)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", old)
+		fx.Repo.Ref("refs/tags/v1.2.0", old) // the root's release, sub declared there
+		fx.Repo.Ref("refs/tags/v2.0.0", head)
+		fx.Repo.Ref("refs/heads/main", head)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
+		vs, err := c.Versions(ctx, "example.com/m/sub")
+		if err != nil || len(vs) != 2 || vs[0].String() != "v1.2.0" || vs[1].String() != "v2.0.0" {
+			t.Fatalf("the listing at head = %v, %v", vs, err)
+		}
+		if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("the subtree's own release of its declared past: %+v, %v", mf, err)
+		}
+		if _, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.2.0")); !errors.Is(err, proxy.ErrNotHere) {
+			t.Fatalf("the root's release the listing named: %v", err)
+		}
+		if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v2.0.0")); err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("the repository's release of the synthesized present: %+v, %v", mf, err)
+		}
+	})
+
+	t.Run("lockstep", func(t *testing.T) {
+		// The repository and its declared subtree tagged together on
+		// one commit: the subtree's tag fits, the repository's does
+		// not, and the version resolves through the one.
+		fx := newFixture(t)
+		commit := fx.CommitFor(declared, gitWhen)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", commit)
+		fx.Repo.Ref("refs/tags/v1.0.0", commit)
+		fx.Repo.Ref("refs/heads/main", commit)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
+		if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("a lockstep release: %+v, %v", mf, err)
+		}
+	})
+
+	t.Run("a non-commit tag in the other namespace", func(t *testing.T) {
+		// A stray subtree tag naming a tree is no release and names no
+		// version: the repository's tag over the synthesized subtree
+		// resolves as if the stray were not there.
+		fx := newFixture(t)
+		commit := fx.CommitFor(synthesized, gitWhen)
+		fx.Repo.Ref("refs/tags/v1.0.0", commit)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", fx.Repo.Blob("not a commit"))
+		fx.Repo.Ref("refs/heads/main", commit)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
+		if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil || mf.Module != "example.com/m/sub" {
+			t.Fatalf("beside a stray tag naming no commit: %+v, %v", mf, err)
+		}
+	})
+
+	t.Run("ambiguous", func(t *testing.T) {
+		fx := newFixture(t)
+		a := fx.CommitFor(declared, gitWhen)
+		b := fx.Repo.CommitTree(fx.TreeFor(fx.Repo, synthesized), "undeclares", gitWhen.Add(time.Hour), a)
+		fx.Repo.Ref("refs/tags/sub/v1.0.0", a)
+		fx.Repo.Ref("refs/tags/v1.0.0", b)
+		fx.Repo.Ref("refs/heads/main", b)
+		fx.Repo.Symref("HEAD", "refs/heads/main")
+		fx.Subtrees["example.com/m/sub"] = "sub"
+		c := fx.Client("direct")
+		_, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0"))
+		if !errors.Is(err, ErrAmbiguousRelease) || errors.Is(err, proxy.ErrNotHere) {
+			t.Fatalf("a version two tags name at fitting commits: %v", err)
+		}
+	})
+}
+
+// A pseudo-version's base is judged in the namespace the subtree has
+// at the embedded commit (REQ-resolve-pseudo-base): a subtree declared
+// at head whose embedded commit predates its module file ranks against
+// the repository's releases there, the zero base inconsistent beside
+// one; a subtree absent at the embedded commit names nothing.
+func TestSubtreePseudoBaseAtTheEmbeddedCommit(t *testing.T) {
+	fx := newFixture(t)
+	synthesized := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	declared := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/pb.yaml": "module: example.com/m/sub\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	release := fx.CommitFor(synthesized, gitWhen)
+	middle := fx.Repo.CommitTree(fx.TreeFor(fx.Repo, synthesized), "later, still synthesized", gitWhen.Add(time.Hour), release)
+	head := fx.Repo.CommitTree(fx.TreeFor(fx.Repo, declared), "declares", gitWhen.Add(2*time.Hour), middle)
+	fx.Repo.Ref("refs/tags/v3.0.0", release)
+	fx.Repo.Ref("refs/heads/main", head)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	c := fx.Client("direct")
+	stamp := gitWhen.Add(time.Hour).UTC().Format(version.PseudoTimeLayout) + "-" + middle.String()[:12]
+	if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v3.0.1-0."+stamp)); err != nil || mf.Module != "example.com/m/sub" {
+		t.Fatalf("a pseudo-version over the repository's release, the subtree synthesized there: %+v, %v", mf, err)
+	}
+	if _, err := c.Module(ctx, "example.com/m/sub", ver(t, "v0.0.0-"+stamp)); !errors.Is(err, direct.ErrBaseInconsistent) {
+		t.Fatalf("the zero base beside the repository's release: %v", err)
+	}
+	// At head the subtree is declared with no release of its own: the
+	// zero base is the consistent one there.
+	stamp = gitWhen.Add(2*time.Hour).UTC().Format(version.PseudoTimeLayout) + "-" + head.String()[:12]
+	if mf, err := c.Module(ctx, "example.com/m/sub", ver(t, "v0.0.0-"+stamp)); err != nil || mf.Module != "example.com/m/sub" {
+		t.Fatalf("a zero-base pseudo-version at the declaring commit: %+v, %v", mf, err)
+	}
+}
+
+// A root module's tag naming no commit names no version
+// (REQ-resolve-release-tags): the version is not here, the source walk
+// going on, never a failure of the origin's.
+func TestRootTagNamingNoCommitIsNotHere(t *testing.T) {
+	fx := newFixture(t)
+	commit := fx.CommitFor(map[string]string{"pb.yaml": "module: example.com/m\n"}, gitWhen)
+	fx.Repo.Ref("refs/heads/main", commit)
+	fx.Repo.Symref("HEAD", "refs/heads/main")
+	fx.Repo.Ref("refs/tags/v1.0.0", fx.Repo.Blob("not a commit"))
+	c := fx.Client("direct")
+	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, proxy.ErrNotHere) {
+		t.Fatalf("a tag naming no commit: %v", err)
+	}
+}
