@@ -55,7 +55,7 @@ func liveRun(t *testing.T, r Runner, param string, l trust.Limits) (*Result, err
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Rootfs: rootfsDir, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
+	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
 }
 
 // The docker runner against a real daemon: the request reaches the
@@ -275,6 +275,7 @@ func TestDockerLivePull(t *testing.T) {
 		t.Fatal(err)
 	}
 	image := host + "/live/plugin@" + digest.String()
+	pulled := &plugin.Pulled{Repository: host + "/live/plugin", Digest: digest.String(), Entry: platform}
 	t.Cleanup(func() {
 		if out, err := exec.Command("docker", "rmi", image).CombinedOutput(); err != nil {
 			t.Errorf("releasing the pulled image: %v\n%s", err, out)
@@ -283,7 +284,7 @@ func TestDockerLivePull(t *testing.T) {
 	run := func(param string) (*Result, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: platform, Stdin: request(t, param), Limits: limits(nil), MinTier: plugin.TierStrong})
+		return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: pulled, Stdin: request(t, param), Limits: limits(nil), MinTier: plugin.TierStrong})
 	}
 	res, err := run("")
 	if err != nil {
@@ -299,10 +300,10 @@ func TestDockerLivePull(t *testing.T) {
 		t.Fatalf("read-only root: %v %q", err, res.Stdout)
 	}
 	// A digest the registry does not hold is the daemon's refusal.
-	unknown := host + "/live/plugin@sha256:" + strings.Repeat("1", 64)
+	unknown := &plugin.Pulled{Repository: host + "/live/plugin", Digest: "sha256:" + strings.Repeat("1", 64), Entry: platform}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	if _, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Reference: unknown, Pull: true, Entry: platform, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown) {
+	if _, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: unknown, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "the daemon pulling "+unknown.Reference()) {
 		t.Fatalf("an unknown digest: %v", err)
 	}
 }
@@ -348,7 +349,7 @@ func TestPropertyRunnerIndependence(t *testing.T) {
 		run := func(r Runner) *Result {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-			res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Rootfs: rootfsDir, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: req, Limits: limits(nil), MinTier: plugin.TierStrong})
+			res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: req, Limits: limits(nil), MinTier: plugin.TierStrong})
 			if err != nil {
 				rt.Fatalf("%T: %v", r, err)
 			}

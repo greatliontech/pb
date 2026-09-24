@@ -155,7 +155,7 @@ func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*pl
 	if err != nil {
 		return nil, fmt.Errorf("oci: override %s for %s: %v", source, ref, err)
 	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs}}, nil
 }
 
 // withPlatforms fills in, for every image the manifest list carries

@@ -189,14 +189,14 @@ func TestAcquireFirstUse(t *testing.T) {
 		t.Fatal("pin not recorded")
 	}
 	// The store path exports: nothing for a daemon to pull.
-	if got.Image == nil || got.Image.Pull || got.Image.Reference != "" {
-		t.Fatalf("a store acquisition's image = %+v, want an export alone", got.Image)
+	if _, ok := got.Image.(*plugin.Export); !ok {
+		t.Fatalf("a store acquisition's image = %+v, want an export", got.Image)
 	}
-	fi, err := os.Stat(got.Image.Rootfs)
+	fi, err := os.Stat(rootfsOf(t, got))
 	if err != nil || !fi.IsDir() {
-		t.Fatalf("rootfs %q: %v", got.Image.Rootfs, err)
+		t.Fatalf("rootfs %q: %v", rootfsOf(t, got), err)
 	}
-	entries, err := os.ReadDir(got.Image.Rootfs)
+	entries, err := os.ReadDir(rootfsOf(t, got))
 	if err != nil || len(entries) == 0 {
 		t.Fatalf("rootfs empty: %v %v", entries, err)
 	}
@@ -233,8 +233,8 @@ func TestAcquirePinnedIgnoresMovedTag(t *testing.T) {
 	// What materializes is the pinned image: the export is content-
 	// addressed, so the same child the first acquisition yielded, not
 	// the content the tag moved to.
-	if filepath.Base(again.Image.Rootfs) != filepath.Base(first.Image.Rootfs) {
-		t.Fatalf("the pinned acquisition materialized %s, the first %s", again.Image.Rootfs, first.Image.Rootfs)
+	if filepath.Base(rootfsOf(t, again)) != filepath.Base(rootfsOf(t, first)) {
+		t.Fatalf("the pinned acquisition materialized %s, the first %s", rootfsOf(t, again), rootfsOf(t, first))
 	}
 }
 
@@ -314,20 +314,20 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := host.OS + "/" + host.Architecture + "/v9"; got.Image.Entry != want {
-		t.Fatalf("admitted entry = %q, want %q", got.Image.Entry, want)
+	if want := host.OS + "/" + host.Architecture + "/v9"; entryOf(t, got) != want {
+		t.Fatalf("admitted entry = %q, want %q", entryOf(t, got), want)
 	}
 	plain := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || got.Image.Entry != host.OS+"/"+host.Architecture {
+	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || entryOf(t, got) != host.OS+"/"+host.Architecture {
 		t.Fatalf("an entry without a variant: %+v %v", got, err)
 	}
 	// The store path exports that same child: the one entry that
 	// matched, whatever its variant — its own marker is in the export.
 	got, err = plain.Acquire(ctx, ref)
-	if err != nil || got.Image.Entry != host.OS+"/"+host.Architecture+"/v9" {
+	if err != nil || entryOf(t, got) != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the store path's admitted child: %+v %v", got, err)
 	}
-	if marker, err := os.ReadFile(filepath.Join(got.Image.Rootfs, "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {
+	if marker, err := os.ReadFile(filepath.Join(rootfsOf(t, got), "platform")); err != nil || string(marker) != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the export is not the admitted child's: %q %v", marker, err)
 	}
 }
@@ -919,7 +919,7 @@ func TestAcquireOverride(t *testing.T) {
 		}
 		// An override materializes without pinning: the stale pin the
 		// lockfile holds for the reference is exactly as it was.
-		if pin, _ := a.lock.Plugin(ref, lockfile.SchemeOCI); got.Process.Argv[0] != "/plugin" || got.Image.Rootfs == "" || !reflect.DeepEqual(pin, seeded) {
+		if pin, _ := a.lock.Plugin(ref, lockfile.SchemeOCI); got.Process.Argv[0] != "/plugin" || rootfsOf(t, got) == "" || !reflect.DeepEqual(pin, seeded) {
 			t.Fatalf("%s: %+v (pin now %+v)", source, got, pin)
 		}
 	}
@@ -1365,7 +1365,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Image.Reference != fx.host+"/org/plugin@"+fx.digest || !got.Image.Pull || got.Image.Rootfs != "" || len(got.Process.Argv) != 0 {
+	if p, ok := got.Image.(*plugin.Pulled); !ok || p.Reference() != fx.host+"/org/plugin@"+fx.digest || len(got.Process.Argv) != 0 {
 		t.Fatalf("acquired %+v, want the repository at %s and nothing else", got, fx.digest)
 	}
 	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Digest != fx.digest {
@@ -1397,7 +1397,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	// pinned digest.
 	pushIndex(t, ref, hostPlatform())
 	again, err := a.Acquire(ctx, ref)
-	if err != nil || again.Image.Reference != got.Image.Reference {
+	if err != nil || pulledRef(t, again) != pulledRef(t, got) {
 		t.Fatalf("pinned acquisition: %+v %v", again, err)
 	}
 	// A pin the registry contradicts fails closed.
@@ -1413,4 +1413,39 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if _, err := b.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), strings.Repeat("0", 64)) {
 		t.Fatalf("a pin the registry does not hold: %v", err)
 	}
+}
+
+// rootfsOf is an export's rootfs, the acquisition's world an export.
+func rootfsOf(t *testing.T, a *plugin.Acquired) string {
+	t.Helper()
+	e, ok := a.Image.(*plugin.Export)
+	if !ok {
+		t.Fatalf("image %+v is no export", a.Image)
+	}
+	return e.Rootfs
+}
+
+// pulledRef is a pulled image's reference, the acquisition's world a
+// pulled image.
+func pulledRef(t *testing.T, a *plugin.Acquired) string {
+	t.Helper()
+	p, ok := a.Image.(*plugin.Pulled)
+	if !ok {
+		t.Fatalf("image %+v is no pulled image", a.Image)
+	}
+	return p.Reference()
+}
+
+// entryOf is the admitted entry the acquisition's world carries: an
+// export's or a pulled image's.
+func entryOf(t *testing.T, a *plugin.Acquired) string {
+	t.Helper()
+	switch img := a.Image.(type) {
+	case *plugin.Export:
+		return img.Entry
+	case *plugin.Pulled:
+		return img.Entry
+	}
+	t.Fatalf("image %+v carries no admitted entry", a.Image)
+	return ""
 }

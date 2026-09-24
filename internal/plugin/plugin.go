@@ -110,43 +110,66 @@ func CheckEnv(env []string) error {
 	return nil
 }
 
-// Image is what an acquired image is run from: an exported root
-// filesystem, or a reference the daemon runs — pulled at a verified
-// digest, or held by the daemon already — and the manifest-list entry
-// admitted for the platform.
-type Image struct {
-	// Rootfs is the exported root filesystem — the store's shared
-	// export-cache entry; treat it as read-only. Empty where the
-	// daemon pulls.
+// Image is what an acquired image is run from, one of three worlds:
+// an Export, the image's root filesystem materialized; a Pulled, a
+// repository at a verified digest for the daemon to pull; a
+// DaemonLocal, an image the daemon holds already. A host binary has
+// none. The sum is the shape: a run is in exactly one world by
+// construction, never a union some check holds to one arm.
+type Image interface {
+	// world marks the arms; nothing outside the package is an Image.
+	world()
+}
+
+// Export is an exported root filesystem — the store's shared
+// export-cache entry; treat it as read-only — and the manifest-list
+// entry the seam admitted for the platform, the one child of the
+// verified index the export is.
+type Export struct {
 	Rootfs string
-	// Reference is the image the daemon runs: with Pull, the
-	// repository at the verified digest for the daemon to pull;
-	// without, an image the daemon holds already, run as it is.
-	// Empty where a rootfs was exported.
-	Reference string
-	// Pull says the daemon pulls Reference at its verified digest
-	// before running it; a daemon-local image is run without.
-	Pull bool
-	// Entry is the manifest-list entry the seam admitted for the
-	// platform — os/arch, with its variant where the entry states one
-	// — the one child of the verified index the run uses: an export
-	// already is that child; a daemon is told it (Reference) and
-	// pulls exactly that. Not the platform itself (Platform): the
-	// entry the seam admitted for it.
+	// Entry is the admitted entry — os/arch, with its variant where
+	// the entry states one — not the platform itself: the entry the
+	// seam admitted for it.
 	Entry string
 }
 
+// Pulled is an image the daemon pulls itself: the repository at the
+// digest pb verified, and the manifest-list entry the seam admitted,
+// which the daemon is told so it pulls and runs that child and no
+// other of the verified index. The process is the image's own
+// configuration, which the daemon applies.
+type Pulled struct {
+	Repository string
+	Digest     string
+	Entry      string
+}
+
+// Reference is the image as the daemon is told it: the repository at
+// the digest.
+func (p *Pulled) Reference() string { return p.Repository + "@" + p.Digest }
+
+// DaemonLocal is an image the daemon holds already, run as it is: an
+// override, which pb verifies nothing of. The process is the image's
+// own configuration, which the daemon applies.
+type DaemonLocal struct {
+	Reference string
+}
+
+func (*Export) world()      {}
+func (*Pulled) world()      {}
+func (*DaemonLocal) world() {}
+
 // Acquired is one plugin ready to run, whichever scheme yielded it:
-// the process, and — for an image — the image's facts behind a pointer
-// a host binary leaves nil, so an absent image is never taken for an
+// the process, and — for an image — the world it runs in, which a
+// host binary leaves nil, so an absent image is never taken for an
 // empty one. The pin an acquisition records is the lockfile's to
 // read, not the result's to carry.
 type Acquired struct {
 	// Process is the process to run: argv, environment and working
-	// directory. For an image it is the image config's process, zero
-	// where the daemon pulls and applies the image's own
-	// configuration; for a host binary, the binary's absolute path.
+	// directory. For an export it is the image config's process; zero
+	// where the daemon applies the image's own configuration; for a
+	// host binary, the binary's absolute path.
 	Process Process
-	// Image is the image's facts; nil for a host binary.
-	Image *Image
+	// Image is the image's world; nil for a host binary.
+	Image Image
 }

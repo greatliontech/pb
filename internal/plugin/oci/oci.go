@@ -170,7 +170,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 	target := ref
 	acq := &acquisition{declaredRef: ref}
 	if pinned {
-		target = atDigest(ref, pin.Digest)
+		target = genfile.ReferenceRepository(ref) + "@" + pin.Digest
 		acq.pinnedDigest = pin.Digest
 		acq.pinnedProvenance = pin.Provenance
 	}
@@ -203,7 +203,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 		if err := record(); err != nil {
 			return nil, err
 		}
-		return &plugin.Acquired{Image: &plugin.Image{Reference: atDigest(ref, res.Digest.String()), Pull: true, Entry: acq.entry}}, nil
+		return &plugin.Acquired{Image: &plugin.Pulled{Repository: genfile.ReferenceRepository(ref), Digest: res.Digest.String(), Entry: acq.entry}}, nil
 	}
 	// One acquisition: the pull resolves and runs the seam, and the
 	// export of the image it returned materializes exactly that,
@@ -223,7 +223,7 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 	if err != nil {
 		return nil, fmt.Errorf("oci: %s: %v", ref, err)
 	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Image{Rootfs: rootfs, Entry: acq.entry}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs, Entry: acq.entry}}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the
@@ -266,12 +266,6 @@ func (acq *acquisition) pin() (lockfile.PluginPin, error) {
 		return lockfile.PluginPin{}, fmt.Errorf("oci: %s: acquisition ran no verification seam", acq.declaredRef)
 	}
 	return lockfile.PluginPin{Ref: acq.declaredRef, Scheme: lockfile.SchemeOCI, Digest: acq.resolved, Provenance: acq.provenance}, nil
-}
-
-// atDigest is ref's repository at digest: the digest-form reference
-// a pinned acquisition resolves and a daemon pulls.
-func atDigest(ref, digest string) string {
-	return genfile.ReferenceRepository(ref) + "@" + digest
 }
 
 // processOf reads an image configuration into the plugin process: argv

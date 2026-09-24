@@ -100,7 +100,7 @@ func genFixture(t *testing.T, genYaml string) (*depFixture, *Session) {
 // REQ-gen-out-containment end to end).
 func TestGenHappyPath(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    opt: k=v\n")
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a/x.pb.go": "code", "doc/readme.md": "d"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var out strings.Builder
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &out); err != nil {
@@ -131,7 +131,7 @@ func TestGenHappyPath(t *testing.T) {
 // explicit lowering path (REQ-plugin-min-tier, REQ-plugin-reported-tier).
 func TestGenTierFloor(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierOS, Bounds: runner.BoundsCgroups}}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "tier OS, below the required Strong") || !strings.Contains(err.Error(), "lower the floor explicitly") {
@@ -163,7 +163,7 @@ func TestGenTierFloor(t *testing.T) {
 func TestGenContainment(t *testing.T) {
 	for _, hostile := range []string{"/abs.go", "../up.go", "a/../../up.go", "a//b.go", "..", ".", "./x.go"} {
 		fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-		acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+		acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", hostile: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "is not a clean relative path inside the output directory") {
@@ -184,7 +184,7 @@ func TestGenContainment(t *testing.T) {
 	}}
 	db, _ := proto.Marshal(dup)
 	runDup := &stubRunner{res: &runner.Result{Stdout: db, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: runDup}, &strings.Builder{})
+	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: runDup}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), `names file "x.go" twice`) {
 		t.Fatalf("duplicate name: %v", err)
 	}
@@ -196,7 +196,7 @@ func TestGenContainment(t *testing.T) {
 	resp := &pluginpb.CodeGeneratorResponse{File: []*pluginpb.CodeGeneratorResponse_File{{Name: proto.String("x.go"), InsertionPoint: proto.String("imports"), Content: proto.String("y")}}}
 	b, _ := proto.Marshal(resp)
 	run := &stubRunner{res: &runner.Result{Stdout: b, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "insertion point") {
 		t.Fatalf("insertion point: %v", err)
 	}
@@ -226,7 +226,7 @@ func TestGenSchemeGate(t *testing.T) {
 func TestGenPlumbing(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Limits: trust.Limits{Pids: 7}}}
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
@@ -270,7 +270,7 @@ func TestGenContainmentProperty(t *testing.T) {
 		}
 		_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{name: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
 		clean := name != "" && name != "." && name != ".." && !strings.HasPrefix(name, "/") && !strings.HasPrefix(name, "../") && pathpkg.Clean(name) == name
 		if clean && err != nil {
 			rt.Fatalf("clean %q refused: %v", name, err)
@@ -285,7 +285,7 @@ func TestGenContainmentProperty(t *testing.T) {
 // each row breaks one stage and the run reports it.
 func TestGenFailurePaths(t *testing.T) {
 	okAcq := func() *stubAcquirer {
-		return &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+		return &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	}
 	okRun := func() *stubRunner {
 		return &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
@@ -392,7 +392,7 @@ func TestGenFailurePaths(t *testing.T) {
 func TestGenPersistsPins(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	acq := &stubAcquirer{
-		acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}},
+		acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}},
 		onAcquire: func() {
 			if err := s.Lock.AddPlugin(lockfile.PluginPin{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("ab", 32)}); err != nil {
 				t.Fatal(err)
@@ -427,7 +427,7 @@ func TestGenWriteRealFS(t *testing.T) {
 	}
 	deps := func(files map[string]string) GenDeps {
 		return GenDeps{
-			Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
+			Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
 			Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, files), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
 		}
 	}
@@ -524,7 +524,7 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			}
 			s := fx.session(t, pathpkg.Join(root, "."))
 			deps := GenDeps{
-				Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
+				Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
 				Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", "sub/deep/x.go": "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
 			}
 			err := Gen(ctx, s, deps, &strings.Builder{})
@@ -564,7 +564,7 @@ func TestGenRequestDeterministic(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		_, s := genFixture(t, gen)
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{}); err != nil {
+		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{}); err != nil {
 			t.Fatal(err)
 		}
 		runs = append(runs, run.spec.Stdin)
@@ -577,7 +577,7 @@ func TestGenRequestDeterministic(t *testing.T) {
 // Every arm of the verb names the failing entry (REQ-gen-verb), and
 // the runner's report must carry a tier and a bounds mechanism.
 func TestGenNamesEntry(t *testing.T) {
-	okAcq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	okAcq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: x.proto\n    option: (m1.nosuch)\n    value: x\n")
 	err := Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: &stubRunner{}}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: ") || !strings.Contains(err.Error(), "no extension") {
@@ -615,7 +615,7 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 			acq.err = errors.New("registry down")
 			return
 		}
-		acq.acq = &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}
+		acq.acq = &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}
 		if err := s.Lock.AddPlugin(lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("ab", 32)}); err != nil {
 			t.Fatal(err)
 		}
@@ -660,7 +660,7 @@ func TestGenLocalEntry(t *testing.T) {
 	loc := &stubLocal{acq: &plugin.Acquired{Process: plugin.Process{Argv: []string{"/abs/tools/gen"}}}}
 	localRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a.go": "x"}), Tier: plugin.TierMinimal, Bounds: runner.BoundsRlimits}}
 	ociRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	var out strings.Builder
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
 		t.Fatal(err)
@@ -668,10 +668,10 @@ func TestGenLocalEntry(t *testing.T) {
 	if loc.value != "tools/gen" {
 		t.Fatalf("local acquirer got %q", loc.value)
 	}
-	if localRun.spec.Scheme != plugin.SchemeLocal || localRun.spec.Rootfs != "" || localRun.spec.MinTier != plugin.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
+	if localRun.spec.Scheme != plugin.SchemeLocal || localRun.spec.Image != nil || localRun.spec.MinTier != plugin.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
 		t.Fatalf("local run spec = %+v", localRun.spec)
 	}
-	if ociRun.spec.Scheme != plugin.SchemeOCI || ociRun.spec.Rootfs != "/r" || ociRun.spec.MinTier != plugin.TierStrong {
+	if e, ok := ociRun.spec.Image.(*plugin.Export); ociRun.spec.Scheme != plugin.SchemeOCI || !ok || e.Rootfs != "/r" || ociRun.spec.MinTier != plugin.TierStrong {
 		t.Fatalf("oci run spec = %+v", ociRun.spec)
 	}
 	if !strings.Contains(out.String(), "tools/gen: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
@@ -690,7 +690,7 @@ func TestGenLocalEntry(t *testing.T) {
 // error; the lockfile is untouched in both directions.
 func TestGenOverrides(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - ref: ghcr.io/o/q:v1\n    out: gen2\n")
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var diag strings.Builder
 	deps := GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}, Diagnostics: &diag}
@@ -717,7 +717,7 @@ func TestGenOverrides(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "only the docker runner runs (select it with --runner docker)") || plain.spec.Scheme != "" {
 		t.Fatalf("daemon image under another runner: %v (ran: %+v)", err, plain.spec)
 	}
-	if runs.spec.Reference != "plugins/q:dev" || runs.spec.Rootfs != "" || len(runs.spec.Process.Argv) != 0 {
+	if d, ok := runs.spec.Image.(*plugin.DaemonLocal); !ok || d.Reference != "plugins/q:dev" || len(runs.spec.Process.Argv) != 0 {
 		t.Fatalf("daemon-local spec = %+v", runs.spec)
 	}
 	if !strings.Contains(diag.String(), "overriding ghcr.io/o/q:v1 with the daemon-local image plugins/q:dev") {
@@ -750,27 +750,28 @@ func TestGenOverrides(t *testing.T) {
 // daemon images may receive it (REQ-plugin-core-verifies).
 func TestGenPulledImage(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
-	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Reference: image, Pull: true, Entry: "linux/arm/v6"}}}
+	repo, digest := "ghcr.io/o/p", "sha256:"+strings.Repeat("ab", 32)
+	image := repo + "@" + digest
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Pulled{Repository: repo, Digest: digest, Entry: "linux/arm/v6"}}}
 	run := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
-	if run.spec.Reference != image || !run.spec.Pull || run.spec.Entry != "linux/arm/v6" || run.spec.Rootfs != "" || len(run.spec.Process.Argv) != 0 {
+	if p, ok := run.spec.Image.(*plugin.Pulled); !ok || p.Reference() != image || p.Entry != "linux/arm/v6" || len(run.spec.Process.Argv) != 0 {
 		t.Fatalf("runner received %+v", run.spec)
 	}
 	plain := &stubRunner{res: run.res}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain}, &strings.Builder{})
-	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Reference != "" {
+	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Image != nil {
 		t.Fatalf("a runner without a daemon ran a pulled image: %v %+v", err, plain.spec)
 	}
-	// A store acquisition carries the admitted entry too — the
-	// export is that child — and the runner is told none of it.
-	stored := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Image{Rootfs: "/r", Entry: "linux/arm/v6"}, Process: plugin.Process{Argv: []string{"/p"}}}}
+	// A store acquisition's world reaches the runner whole: the
+	// export with the admitted entry it is, which no runner reads.
+	stored := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r", Entry: "linux/arm/v6"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: plain}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
-	if plain.spec.Entry != "" || plain.spec.Pull || plain.spec.Rootfs != "/r" {
+	if e, ok := plain.spec.Image.(*plugin.Export); !ok || e.Rootfs != "/r" || e.Entry != "linux/arm/v6" {
 		t.Fatalf("the store path's spec: %+v", plain.spec)
 	}
 }

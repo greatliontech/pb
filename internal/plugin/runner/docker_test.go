@@ -25,7 +25,7 @@ func dockerSpec(t *testing.T, rootfs string, l trust.Limits) Spec {
 	t.Helper()
 	return Spec{
 		Scheme:  plugin.SchemeOCI,
-		Rootfs:  rootfs,
+		Image:   &plugin.Export{Rootfs: rootfs},
 		Process: plugin.Process{Argv: []string{"/plugin", "--flag"}, Env: []string{"A=1", "B=two"}, WorkDir: "/w"},
 		Stdin:   request(t, ""),
 		Limits:  l,
@@ -467,7 +467,7 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 		t.Fatal(err)
 	}
 	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
-	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
+	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.DaemonLocal{Reference: "plugins/q:dev"}, Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,18 +490,19 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 	// A name that is no image reference, or a flag in its place, is
 	// refused before the daemon is asked.
 	for _, bad := range []string{"--privileged", "", "not a ref!"} {
-		_, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: bad, Limits: l, MinTier: plugin.TierStrong})
-		if err == nil || !(strings.Contains(err.Error(), "does not name a daemon image") || strings.Contains(err.Error(), "exactly one of")) {
+		_, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.DaemonLocal{Reference: bad}, Limits: l, MinTier: plugin.TierStrong})
+		if err == nil || !(strings.Contains(err.Error(), "does not name a daemon image") || strings.Contains(err.Error(), "names no reference")) {
 			t.Errorf("image %q: %v", bad, err)
 		}
 	}
-	// Both worlds, or neither, refuse.
+	// A world where the scheme has none, or none where it has one,
+	// refuses; two worlds at once the type cannot spell.
 	for _, spec := range []Spec{
-		{Scheme: plugin.SchemeOCI, Reference: "x", Rootfs: "/r", Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong},
-		{Scheme: plugin.SchemeLocal, Reference: "x", Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierNone},
-		{Scheme: plugin.SchemeLocal, Pull: true, Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierNone},
+		{Scheme: plugin.SchemeOCI, Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong},
+		{Scheme: plugin.SchemeLocal, Image: &plugin.DaemonLocal{Reference: "x"}, Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierNone},
+		{Scheme: plugin.SchemeLocal, Image: &plugin.Pulled{Repository: "x", Digest: "sha256:" + strings.Repeat("ab", 32), Entry: "linux/amd64"}, Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierNone},
 	} {
-		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "exactly one of") && !strings.Contains(err.Error(), "world of its own") {
+		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "has a world") && !strings.Contains(err.Error(), "world of its own") {
 			t.Errorf("%+v accepted: %v", spec, err)
 		}
 	}
@@ -577,10 +578,14 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 		t.Fatal(err)
 	}
 	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
-	image := "ghcr.io/o/p@sha256:" + strings.Repeat("ab", 32)
+	repo, digest := "ghcr.io/o/p", "sha256:"+strings.Repeat("ab", 32)
+	image := repo + "@" + digest
+	pulled := func(entry string) *plugin.Pulled {
+		return &plugin.Pulled{Repository: repo, Digest: digest, Entry: entry}
+	}
 	// The admitted entry's platform, variant included, is what the
 	// daemon is told — not the daemon's own os/arch.
-	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: "linux/arm/v6", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
+	res, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: pulled("linux/arm/v6"), Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -601,14 +606,15 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != image || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" || create[len(create)-5] != "--platform" || create[len(create)-4] != "linux/arm/v6" {
 		t.Fatalf("create = %q", create)
 	}
-	// A pulled image names its platform, and only a pulled one does.
+	// A pulled image names its digest and its platform; an export
+	// its rootfs; a daemon image its reference.
 	for _, c := range []struct {
 		spec Spec
 		text string
 	}{
-		{Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Limits: l, MinTier: plugin.TierStrong}, "none is named"},
-		{Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Entry: "linux/arm/v6", Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
-		{Spec{Scheme: plugin.SchemeOCI, Rootfs: "/r", Entry: "linux/arm/v6", Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong}, "pulled image alone"},
+		{Spec{Scheme: plugin.SchemeOCI, Image: pulled(""), Limits: l, MinTier: plugin.TierStrong}, "entry, and none is named"},
+		{Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Pulled{Repository: repo, Entry: "linux/arm/v6"}, Limits: l, MinTier: plugin.TierStrong}, "digest, and none is named"},
+		{Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{}, Process: plugin.Process{Argv: []string{"/p"}}, Limits: l, MinTier: plugin.TierStrong}, "names no rootfs"},
 	} {
 		if _, err := r.Run(context.Background(), c.spec); err == nil || !strings.Contains(err.Error(), c.text) {
 			t.Errorf("%+v: %v, want %q", c.spec, err, c.text)
@@ -619,18 +625,46 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	if !reflect.DeepEqual(argv[7], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
 		t.Fatalf("rm = %q", argv[7])
 	}
-	if _, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "ghcr.io/o/p:v1", Pull: true, Entry: "linux/fakearch", Limits: l, MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "names none") {
-		t.Fatalf("a tag to pull: %v", err)
+	if _, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Pulled{Repository: "ghcr.io/o/p", Entry: "linux/fakearch"}, Limits: l, MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "digest, and none is named") {
+		t.Fatalf("a repository with no digest to pull: %v", err)
 	}
 	dir = fakeDaemon(t)
 	if err := os.WriteFile(filepath.Join(dir, "pull-fails"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: image, Pull: true, Entry: "linux/fakearch", Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: pulled("linux/fakearch"), Stdin: request(t, ""), Limits: l, MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "the daemon pulling "+image) || !strings.Contains(err.Error(), "manifest unknown") {
 		t.Fatalf("a refused pull: %v", err)
 	}
 	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "create") {
 		t.Fatalf("a container was created after a refused pull: %v", verbs)
+	}
+}
+
+// An export's admitted entry, which the world carries whole, is not
+// the daemon's to be told: the import is created for the daemon's
+// own platform, the one that stamped the image.
+func TestDockerImportIgnoresExportEntry(t *testing.T) {
+	dir := fakeDaemon(t)
+	rootfs := exportFixture(t)
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec := dockerSpec(t, rootfs, l)
+	spec.Image = &plugin.Export{Rootfs: rootfs, Entry: "linux/arm/v6"}
+	if _, err := r.Run(context.Background(), spec); err != nil {
+		t.Fatal(err)
+	}
+	_, argv := fakeLog(t, dir)
+	create := argv[3]
+	for i := 0; i+1 < len(create); i++ {
+		if create[i] == "--platform" && create[i+1] != "linux/fakearch" {
+			t.Fatalf("the import created for %q, not the daemon's platform", create[i+1])
+		}
+	}
+	if slices.Contains(create, "linux/arm/v6") {
+		t.Fatalf("the export's entry reached the daemon: %q", create)
 	}
 }

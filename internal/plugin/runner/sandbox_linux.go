@@ -53,7 +53,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 	if err := CheckSpec(spec); err != nil {
 		return nil, err
 	}
-	if spec.Reference != "" {
+	if daemonSupplies(spec.Image) {
 		return nil, errors.New("runner: a daemon image runs on the docker runner only")
 	}
 	floor, err := isolationOf(spec.MinTier)
@@ -154,7 +154,7 @@ func specOf(spec Spec, floor, row sandbox.Isolation, stdout, stderr io.Writer) s
 		out.Network = true
 		return out
 	}
-	out.Root = spec.Rootfs
+	out.Root = spec.Image.(*plugin.Export).Rootfs
 	out.Network = false
 	if row == sandbox.Strong {
 		out.Hostname = pluginHostname

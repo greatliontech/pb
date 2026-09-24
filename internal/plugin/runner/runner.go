@@ -11,47 +11,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
-// Spec is one plugin run: the image rootfs, its process, the request
-// bytes on stdin, the bounds, and the tier floor. Limits is the trust
-// policy's effective posture (trust.Execution.EffectiveLimits): every
-// field set. A zero field is an unbounded resource, and a runner
-// refuses it rather than guessing (REQ-plugin-resource-bounds).
-// MinTier is the policy's effective floor (trust.Execution
-// .EffectiveMinTier), a plugin tier name: a runner whose host
-// cannot reach it runs nothing and fails with ErrTierUnreachable
-// (REQ-plugin-min-tier); an absent floor is refused like an
-// unbounded resource.
-//
-// Scheme is the entry's identity scheme: an oci run has its world in
-// Rootfs — the image export — or in Reference, which only the docker
-// runner consumes: a daemon-local image an override names
-// (REQ-plugin-override), or, with Pull set, the repository at the
-// digest pb verified for the daemon to pull
-// (REQ-plugin-core-verifies); a local run has neither, its
-// Process a host binary run in the host's world with the host's
-// environment, under the bounds alone (plugin-execution.md, "Local
-// binaries").
+// Spec is one run: the identity scheme, the world — an oci run's
+// image, one of plugin's three arms; a local run none, its Process a
+// host binary run in the host's world with the host's environment,
+// under the bounds alone (plugin-execution.md, "Local binaries") —
+// the process, its standard input, the bounds and the tier floor.
 type Spec struct {
-	Scheme    string
-	Rootfs    string
-	Reference string
-	// Pull marks Reference as the registry's repository at a digest pb
-	// verified, for the daemon to pull (REQ-plugin-core-verifies);
-	// unset, Reference is a daemon-local image the daemon already holds.
-	Pull bool
-	// Entry is the manifest-list entry the seam admitted for a
-	// pulled image — os/arch, with its variant where stated — the one
-	// child the daemon is to pull and run; empty otherwise.
-	// The acquisition knows the admitted entry for an export too; the
-	// verb hands it on for a pulled image alone, so a spec never
-	// carries an acquisition's image facts whole.
-	Entry   string
+	Scheme string
+	// Image is the world an oci run is in: an *plugin.Export the
+	// runner enters, a *plugin.Pulled the daemon pulls at the verified
+	// digest (REQ-plugin-core-verifies), a *plugin.DaemonLocal the
+	// daemon holds already (REQ-plugin-override); nil for a local run.
+	Image   plugin.Image
 	Process plugin.Process
 	Stdin   []byte
 	Limits  trust.Limits
@@ -132,8 +108,8 @@ func beforeStart(ctx context.Context, err error) error {
 // (REQ-plugin-sandboxed).
 const pluginHostname = "pb-plugin"
 
-// DaemonImages marks a runner that runs a daemon image (Spec.Reference,
-// daemon-local or pulled): the docker runner alone. A daemon-local
+// DaemonImages marks a runner that runs a daemon image (a Pulled or a
+// DaemonLocal world): the docker runner alone. A daemon-local
 // override, and the docker byte path, are refused before anything
 // runs unless the selected runner is one.
 type DaemonImages interface {
@@ -153,33 +129,66 @@ func CheckSpec(spec Spec) error {
 	if err := checkScheme(spec); err != nil {
 		return err
 	}
-	if len(spec.Process.Argv) == 0 && spec.Reference == "" {
+	if len(spec.Process.Argv) == 0 && !daemonSupplies(spec.Image) {
 		return errors.New("runner: the plugin process has no argv")
 	}
 	return nil
 }
 
+// daemonImage is the image as the daemon is told it, for a world the
+// daemon holds or pulls: a pulled image's repository at its digest, a
+// daemon-local image's reference; none for an export or no world.
+// The one switch over the daemon's arms: what the daemon supplies the
+// process for is what it is told an image for. It reads a world the
+// scheme check has passed, a typed nil refused there.
+func daemonImage(img plugin.Image) (string, bool) {
+	switch img := img.(type) {
+	case *plugin.Pulled:
+		return img.Reference(), true
+	case *plugin.DaemonLocal:
+		return img.Reference, true
+	}
+	return "", false
+}
+
+// daemonSupplies reports whether the daemon applies the image's own
+// process: a world the daemon is told an image for.
+func daemonSupplies(img plugin.Image) bool {
+	_, ok := daemonImage(img)
+	return ok
+}
+
 // checkScheme refuses a Spec whose scheme and world disagree: an oci
-// run has exactly one of a rootfs and a daemon image, an image the
-// daemon is to pull names a digest, a local run has neither world,
-// and no other scheme runs.
+// run is in one world, its facts complete — an export's rootfs, a
+// pulled image's repository, digest and admitted entry, a daemon
+// image's reference — a local run in none, and no other scheme
+// runs. Which world, and that it is one, the type says.
 func checkScheme(spec Spec) error {
 	switch spec.Scheme {
 	case plugin.SchemeOCI:
-		if (spec.Rootfs == "") == (spec.Reference == "") {
-			return errors.New("runner: an oci run has exactly one of a rootfs and a daemon image")
-		}
-		if spec.Pull && !strings.Contains(spec.Reference, "@") {
-			return fmt.Errorf("runner: the daemon pulls a verified digest, and %q names none", spec.Reference)
-		}
-		if spec.Pull && spec.Entry == "" {
-			return errors.New("runner: the daemon pulls the admitted entry, and none is named")
-		}
-		if !spec.Pull && spec.Entry != "" {
-			return errors.New("runner: an entry is named for a pulled image alone")
+		// A typed nil is no world either: refused here, where the spec
+		// is built, never dereferenced by a runner.
+		switch img := spec.Image.(type) {
+		case *plugin.Export:
+			if img == nil || img.Rootfs == "" {
+				return errors.New("runner: an export names no rootfs")
+			}
+		case *plugin.Pulled:
+			if img == nil || img.Repository == "" || img.Digest == "" {
+				return errors.New("runner: the daemon pulls a verified digest, and none is named")
+			}
+			if img.Entry == "" {
+				return errors.New("runner: the daemon pulls the admitted entry, and none is named")
+			}
+		case *plugin.DaemonLocal:
+			if img == nil || img.Reference == "" {
+				return errors.New("runner: a daemon image names no reference")
+			}
+		default:
+			return errors.New("runner: an oci run has a world, an export or a daemon image")
 		}
 	case plugin.SchemeLocal:
-		if spec.Rootfs != "" || spec.Reference != "" || spec.Pull {
+		if spec.Image != nil {
 			return errors.New("runner: a local run carries a world of its own")
 		}
 	default:

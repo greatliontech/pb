@@ -167,9 +167,9 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 	if spec.Scheme == plugin.SchemeLocal {
 		return nil, errors.New("runner: a local plugin is a host binary; the docker runner runs images only")
 	}
-	if spec.Reference != "" {
-		if _, err := name.ParseReference(spec.Reference); err != nil || strings.HasPrefix(spec.Reference, "-") {
-			return nil, fmt.Errorf("runner: %q does not name a daemon image", spec.Reference)
+	if ref, daemon := daemonImage(spec.Image); daemon {
+		if _, err := name.ParseReference(ref); err != nil || strings.HasPrefix(ref, "-") {
+			return nil, fmt.Errorf("runner: %q does not name a daemon image", ref)
 		}
 	}
 	if _, err := isolationOf(spec.MinTier); err != nil {
@@ -282,7 +282,7 @@ type prepared struct {
 // releases whatever they left. What the record says is judged by the
 // caller: a verdict is no daemon step.
 func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limits) (p prepared, err error) {
-	image := spec.Reference
+	image, daemon := daemonImage(spec.Image)
 	// The platform named to the daemon: for a pulled image the very
 	// manifest-list entry the seam admitted, variant included, so
 	// the daemon pulls and runs that child and no other of the
@@ -290,8 +290,9 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 	// and its own variant matching aside; for an import the daemon's
 	// platform, which stamped the image.
 	platform := r.platform.String()
-	if spec.Pull {
-		platform = spec.Entry
+	pulled, pull := spec.Image.(*plugin.Pulled)
+	if pull {
+		platform = pulled.Entry
 		// The daemon fetches the content at the digest pb verified
 		// with its own credentials; the image is then the daemon's
 		// own and stays (REQ-plugin-core-verifies).
@@ -299,12 +300,12 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 			return p, fmt.Errorf("runner: the daemon pulling %s: %w", image, err)
 		}
 	}
-	if image == "" {
+	if export, ok := spec.Image.(*plugin.Export); ok {
 		// The export streams into the daemon; a write failure ends
 		// the import with the daemon's own report. A daemon-local
 		// image (an override) is the daemon's already and stays so.
 		pr, pw := io.Pipe()
-		go func() { pw.CloseWithError(writeTar(pw, spec.Rootfs)) }()
+		go func() { pw.CloseWithError(writeTar(pw, export.Rootfs)) }()
 		imported, err := r.docker(ctx, pr, "import", "-")
 		pr.Close()
 		if err != nil {
@@ -330,7 +331,7 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 	for _, kv := range spec.Process.Env {
 		args = append(args, "--env", kv)
 	}
-	if spec.Reference != "" {
+	if daemon {
 		// A daemon image runs under its own configuration: the daemon
 		// applies its entrypoint, command, environment and working
 		// directory — and is the daemon's by now: a daemon-local image
@@ -338,7 +339,7 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 		// verifies nothing a daemon pulls unasked), and a pulled one
 		// was fetched above at the verified digest. A client older
 		// than 20.10 knows no --pull and refuses in its own words.
-		if spec.Pull {
+		if pull {
 			args = append(args, "--platform", platform)
 		}
 		args = append(args, "--pull", "never", image)

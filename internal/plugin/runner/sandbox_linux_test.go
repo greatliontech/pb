@@ -143,7 +143,7 @@ func runAt(t *testing.T, param string, l trust.Limits, floor string) (*Result, e
 	defer cancel()
 	return (&SandboxRunner{}).Run(ctx, Spec{
 		Scheme:  plugin.SchemeOCI,
-		Rootfs:  rootfsDir,
+		Image:   &plugin.Export{Rootfs: rootfsDir},
 		Process: plugin.Process{Argv: []string{"/plugin"}},
 		Stdin:   request(t, ""),
 		Limits:  l,
@@ -267,7 +267,7 @@ func TestRunCancelledBeforeProbe(t *testing.T) {
 		cancel()
 		_, err := (&SandboxRunner{}).Run(ctx, Spec{
 			Scheme:  plugin.SchemeOCI,
-			Rootfs:  rootfsDir,
+			Image:   &plugin.Export{Rootfs: rootfsDir},
 			Process: plugin.Process{Argv: []string{"/plugin"}},
 			Stdin:   request(t, ""),
 			Limits:  limits(nil),
@@ -365,7 +365,7 @@ func TestRunCancelled(t *testing.T) {
 	}()
 	_, err := (&SandboxRunner{}).Run(ctx, Spec{
 		Scheme:  plugin.SchemeOCI,
-		Rootfs:  rootfsDir,
+		Image:   &plugin.Export{Rootfs: rootfsDir},
 		Process: plugin.Process{Argv: []string{"/plugin"}},
 		Stdin:   request(t, behavior.Sleep),
 		Limits:  limits(nil),
@@ -428,24 +428,24 @@ func TestRunCPUBound(t *testing.T) {
 // never starts a process.
 func TestRunRefusesIncomplete(t *testing.T) {
 	r := &SandboxRunner{}
-	_, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Rootfs: "/nonexistent", Process: plugin.Process{Argv: []string{"/plugin"}}, MinTier: plugin.TierStrong})
+	_, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: "/nonexistent"}, Process: plugin.Process{Argv: []string{"/plugin"}}, MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "unbounded") {
 		t.Fatalf("err = %v", err)
 	}
-	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Rootfs: "/nonexistent", Limits: limits(nil), MinTier: plugin.TierStrong})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: "/nonexistent"}, Limits: limits(nil), MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "no argv") {
 		t.Fatalf("err = %v", err)
 	}
-	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Rootfs: "/nonexistent", Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil)})
+	_, err = r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: "/nonexistent"}, Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil)})
 	if err == nil || !strings.Contains(err.Error(), "no sandbox tier floor") {
 		t.Fatalf("err = %v", err)
 	}
 	for _, spec := range []Spec{
-		{Rootfs: "/nonexistent", Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierStrong},
-		{Scheme: plugin.SchemeLocal, Rootfs: "/nonexistent", Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierNone},
+		{Image: &plugin.Export{Rootfs: "/nonexistent"}, Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierStrong},
+		{Scheme: plugin.SchemeLocal, Image: &plugin.Export{Rootfs: "/nonexistent"}, Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierNone},
 		{Scheme: plugin.SchemeOCI, Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierStrong},
 	} {
-		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "scheme") && !strings.Contains(err.Error(), "rootfs") && !strings.Contains(err.Error(), "world of its own") {
+		if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "scheme") && !strings.Contains(err.Error(), "has a world") && !strings.Contains(err.Error(), "world of its own") {
 			t.Errorf("scheme/world mismatch %+v accepted: %v", spec, err)
 		}
 	}
@@ -495,7 +495,7 @@ func TestSpecOf(t *testing.T) {
 	var out, errs strings.Builder
 	got := specOf(Spec{
 		Scheme:  plugin.SchemeOCI,
-		Rootfs:  "/export",
+		Image:   &plugin.Export{Rootfs: "/export"},
 		Process: plugin.Process{Argv: []string{"/bin/plugin", "--x"}, Env: []string{"A=1"}, WorkDir: "/w"},
 		Stdin:   []byte("req"),
 		Limits:  trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second},
@@ -515,7 +515,7 @@ func TestSpecOf(t *testing.T) {
 	// everything else of the intent is the same.
 	onOS := specOf(Spec{
 		Scheme:  plugin.SchemeOCI,
-		Rootfs:  "/export",
+		Image:   &plugin.Export{Rootfs: "/export"},
 		Process: plugin.Process{Argv: []string{"/bin/plugin", "--x"}, Env: []string{"A=1"}, WorkDir: "/w"},
 		Stdin:   []byte("req"),
 		Limits:  trust.Limits{Memory: 1 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second},
@@ -740,7 +740,7 @@ func TestRunReadsContextEnds(t *testing.T) {
 		r := &SandboxRunner{create: func(sandbox.Spec) (sandbox.Sandbox, error) { return c.fake, nil }}
 		res, err := r.Run(ctx, Spec{
 			Scheme:  plugin.SchemeOCI,
-			Rootfs:  "/export",
+			Image:   &plugin.Export{Rootfs: "/export"},
 			Process: plugin.Process{Argv: []string{"/plugin"}},
 			Limits:  limits(func(l *trust.Limits) { l.Timeout = 300 * time.Millisecond }),
 			MinTier: plugin.TierStrong,
@@ -760,7 +760,7 @@ func TestRunReadsContextEnds(t *testing.T) {
 
 // The sandbox runner never runs a daemon-local image.
 func TestSandboxRefusesDaemonImage(t *testing.T) {
-	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Reference: "plugins/q:dev", Process: plugin.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugin.TierStrong})
+	_, err := (&SandboxRunner{}).Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.DaemonLocal{Reference: "plugins/q:dev"}, Process: plugin.Process{Argv: []string{"/p"}}, Limits: limits(nil), MinTier: plugin.TierStrong})
 	if err == nil || !strings.Contains(err.Error(), "docker runner only") {
 		t.Fatalf("sandbox runner: %v", err)
 	}
@@ -772,7 +772,7 @@ func TestRunCancelledBeforeStart(t *testing.T) {
 	requireSandbox(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := (&SandboxRunner{}).Run(ctx, Spec{Scheme: plugin.SchemeOCI, Rootfs: rootfsDir, Process: plugin.Process{Argv: []string{"/plugin"}}, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong})
+	_, err := (&SandboxRunner{}).Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}}, Stdin: request(t, ""), Limits: limits(nil), MinTier: plugin.TierStrong})
 	if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "plugin run cancelled") {
 		t.Fatalf("cancelled before start: %v", err)
 	}
@@ -782,7 +782,7 @@ func TestRunCancelledBeforeStart(t *testing.T) {
 // after a run's own error never masks it.
 func TestRunReleaseFailure(t *testing.T) {
 	rl := sandbox.Stats{Accounting: sandbox.AccountingRlimits}
-	spec := Spec{Scheme: plugin.SchemeOCI, Rootfs: "/export", Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierStrong}
+	spec := Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: "/export"}, Process: plugin.Process{Argv: []string{"/plugin"}}, Limits: limits(nil), MinTier: plugin.TierStrong}
 	clean := &fakeSandbox{st: rl, destroyErr: errors.New("cgroup busy")}
 	r := &SandboxRunner{create: func(sandbox.Spec) (sandbox.Sandbox, error) { return clean, nil }}
 	if _, err := r.Run(context.Background(), spec); err == nil || !strings.Contains(err.Error(), "releasing the run's resources: cgroup busy") {
