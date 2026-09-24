@@ -1,0 +1,29 @@
+{
+  "image": "ghcr.io/greatliontech/gitprov-cosign-capture",
+  "tag": "",
+  "digest": "sha256:facb5564762d06aa0d30bba81be04b6d078cd289cb861e864dafd36a85322f28",
+  "identity": "nikolas@greatlion.tech",
+  "issuer": "https://accounts.google.com",
+  "captured": "2026-09-24T15:15:40Z",
+  "cosign": "v3.1.3+dirty",
+  "referrersAPI": "404",
+  "referrers": [
+    {
+      "digest": "sha256:b1e9df191fbadbc3821100ef1fd73035f10f619a78eca18c8cfa900068c622b8",
+      "file": "referrer-b1e9df191fbadbc3821100ef1fd73035f10f619a78eca18c8cfa900068c622b8"
+    }
+  ],
+  "bundleEntries": [
+    {
+      "logId": "wNI9atQGlz+VWfO6LRygH4QUfY/8W4RFwiT5i5WRgB0=",
+      "kindVersion": {
+        "kind": "dsse",
+        "version": "0.0.1"
+      },
+      "logIndex": "2940469140",
+      "integratedTime": "1790262766",
+      "checkpointOrigin": "rekor.sigstore.dev - 1193050959916656506"
+    }
+  ],
+  "bundleTimestamps": 1
+}

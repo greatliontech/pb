@@ -174,7 +174,11 @@ fetched from the repository the image was fetched from, at the digest
 being verified, from three places, in this order: the manifest's referrers
 whose artifact type is the sigstore bundle media type and whose
 `dev.sigstore.bundle.predicateType` annotation names cosign's sign
-predicate, each carrying the bundle as its one layer; the manifest's
+predicate — the annotation read from the listing's descriptor where
+the descriptor carries annotations, as the referrers API copies a
+manifest's, and from the referrer's manifest where it carries none,
+as the fallback tag's index names artifact types alone — each
+carrying the bundle as its one layer; the manifest's
 referrers whose artifact type is cosign's legacy signature
 configuration media type, each layer of the simple-signing media type
 an envelope with cosign's layer annotations; and the manifest under

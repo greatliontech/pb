@@ -213,3 +213,39 @@ func TestDiscoverTagErrorIsAnError(t *testing.T) {
 		t.Fatalf("a failing tag fetch: %v", err)
 	}
 }
+
+// A listing's descriptor decides the predicate where it carries
+// annotations — a bundle-typed referrer annotated without the
+// predicate is passed over unfetched, its manifest gone or not — and
+// the manifest decides where the descriptor carries none: a
+// fallback tag naming a referrer whose manifest is gone is a registry
+// error, which fails the acquisition (REQ-prov-plugin-carriers).
+func TestDiscoverReadsThePredicateWhereTheListingCarriesAnnotations(t *testing.T) {
+	s := sigstoretest.New(t)
+	bundle := imagetest.BundleArtifact(s.Bundle(t, "sha256:"+strings.Repeat("ab", 32), subject, issuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate)
+	t.Run("referrers API: annotated without the predicate, passed over unfetched", func(t *testing.T) {
+		repo := imagetest.Registry(t, true)
+		digest := imagetest.PushIndex(t, repo, "v1")
+		content := bundle
+		content.Annotations = map[string]string{imagetest.ContentAnnotation: "dsse-envelope"}
+		gone := imagetest.Attach(t, repo, digest, content)
+		if err := remote.Delete(repo.Digest(gone.String())); err != nil {
+			t.Fatal(err)
+		}
+		carriers, err := all(discover.Discover(ctx, repo, digest))
+		if err != nil || len(carriers) != 0 {
+			t.Fatalf("carriers %+v, err %v; want none and no fetch of the gone manifest", carriers, err)
+		}
+	})
+	t.Run("fallback tag: unannotated, the gone manifest is a registry error", func(t *testing.T) {
+		repo := imagetest.Registry(t, false)
+		digest := imagetest.PushIndex(t, repo, "v1")
+		gone := imagetest.Attach(t, repo, digest, bundle)
+		if err := remote.Delete(repo.Digest(gone.String())); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := all(discover.Discover(ctx, repo, digest)); err == nil || !strings.Contains(err.Error(), "referrer "+gone.String()) {
+			t.Fatalf("Discover = %v, want the gone referrer's registry error", err)
+		}
+	})
+}

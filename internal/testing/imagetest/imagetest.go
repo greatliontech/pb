@@ -57,8 +57,9 @@ var (
 // annotations. With the referrers API it answers
 // `/v2/<repo>/referrers/<digest>` with them and acknowledges a subject
 // on push with the OCI-Subject header; without it, it serves them as
-// the fallback tag's index, as cosign would have written it, and the
-// client's own upkeep of that tag is dropped.
+// the fallback tag's index as go-containerregistry writes the tag —
+// the descriptors' annotations dropped — and the client's own upkeep
+// of that tag is dropped.
 func Handler(referrersAPI bool) http.Handler {
 	inner := registry.New(registry.Logger(log.New(io.Discard, "", 0)))
 	return &referrers{inner: inner, api: referrersAPI, by: map[string][]v1.Descriptor{}}
@@ -80,9 +81,20 @@ func (r *referrers) list(key string) []v1.Descriptor {
 	return append([]v1.Descriptor(nil), r.by[key]...)
 }
 
-func serveIndex(w http.ResponseWriter, list []v1.Descriptor) {
+// serveIndex answers with an index of the descriptors: the referrers
+// API's carry a manifest's annotations; the fallback tag's carry
+// none, as go-containerregistry writes the tag.
+func serveIndex(w http.ResponseWriter, list []v1.Descriptor, fallback bool) {
 	if list == nil {
 		list = []v1.Descriptor{}
+	}
+	if fallback {
+		stripped := make([]v1.Descriptor, len(list))
+		for i, d := range list {
+			d.Annotations = nil
+			stripped[i] = d
+		}
+		list = stripped
 	}
 	body, _ := json.Marshal(v1.IndexManifest{SchemaVersion: 2, MediaType: types.OCIImageIndex, Manifests: list})
 	w.Header().Set("Content-Type", string(types.OCIImageIndex))
@@ -93,7 +105,7 @@ func serveIndex(w http.ResponseWriter, list []v1.Descriptor) {
 
 func (r *referrers) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if m := referrersPath.FindStringSubmatch(req.URL.Path); m != nil && req.Method == http.MethodGet && r.api {
-		serveIndex(w, r.list(m[1]+"@"+m[2]))
+		serveIndex(w, r.list(m[1]+"@"+m[2]), false)
 		return
 	}
 	m := manifestPath.FindStringSubmatch(req.URL.Path)
@@ -107,7 +119,7 @@ func (r *referrers) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		case http.MethodGet, http.MethodHead:
 			if list := r.list(key); len(list) > 0 {
-				serveIndex(w, list)
+				serveIndex(w, list, true)
 				return
 			}
 		}
@@ -411,3 +423,86 @@ func EnvelopeLayer(e gitprov.SimpleSigningEnvelope) Layer {
 
 // SignatureTag is cosign's legacy tag for a digest's signatures.
 func SignatureTag(digest v1.Hash) string { return digest.Algorithm + "-" + digest.Hex + ".sig" }
+
+// Replay serves a captured registry's answers verbatim, for a test
+// over bytes a real registry gave: each manifest under the digest or
+// tag it was fetched by, with the media type its own bytes name and
+// its digest; each blob under its digest; and the referrers API
+// answered with the captured status and body for every digest. A
+// request for anything else is answered 404 as a registry answers
+// it. The repository is the captured one's path on the test server.
+func Replay(t testing.TB, repoPath string, manifests map[string][]byte, blobs [][]byte, referrersStatus int, referrersBody []byte) name.Repository {
+	t.Helper()
+	byDigest := map[string][]byte{}
+	for _, b := range blobs {
+		byDigest[Digest(b)] = b
+	}
+	mediaTypes := map[string]string{}
+	for key, m := range manifests {
+		var mf struct {
+			MediaType string `json:"mediaType"`
+		}
+		if err := json.Unmarshal(m, &mf); err != nil || mf.MediaType == "" {
+			t.Fatalf("replay: manifest %s names no media type: %v", key, err)
+		}
+		mediaTypes[key] = mf.MediaType
+	}
+	prefix := "/v2/" + repoPath + "/"
+	notFound := func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"errors":[{"code":"MANIFEST_UNKNOWN","message":"manifest unknown"}]}`))
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rest, under := strings.CutPrefix(r.URL.Path, prefix)
+		switch {
+		case r.URL.Path == "/v2/":
+			w.WriteHeader(http.StatusOK)
+		case !under:
+			notFound(w)
+		case strings.HasPrefix(rest, "referrers/"):
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(referrersStatus)
+			w.Write(referrersBody)
+		case strings.HasPrefix(rest, "manifests/"):
+			key := strings.TrimPrefix(rest, "manifests/")
+			m, ok := manifests[key]
+			if !ok {
+				notFound(w)
+				return
+			}
+			w.Header().Set("Content-Type", mediaTypes[key])
+			w.Header().Set("Docker-Content-Digest", Digest(m))
+			w.Header().Set("Content-Length", fmt.Sprint(len(m)))
+			w.WriteHeader(http.StatusOK)
+			if r.Method != http.MethodHead {
+				w.Write(m)
+			}
+		case strings.HasPrefix(rest, "blobs/"):
+			b, ok := byDigest[strings.TrimPrefix(rest, "blobs/")]
+			if !ok {
+				notFound(w)
+				return
+			}
+			w.Header().Set("Content-Length", fmt.Sprint(len(b)))
+			w.WriteHeader(http.StatusOK)
+			if r.Method != http.MethodHead {
+				w.Write(b)
+			}
+		default:
+			notFound(w)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	repo, err := name.NewRepository(srv.Listener.Addr().String() + "/" + repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return repo
+}
+
+// Digest is the sha256 digest of bytes as a registry spells it.
+func Digest(b []byte) string {
+	sum := sha256.Sum256(b)
+	return "sha256:" + hex.EncodeToString(sum[:])
+}

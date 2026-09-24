@@ -3,7 +3,14 @@
 // (provenance.md REQ-prov-plugin-carriers), yielding each as it is
 // fetched so a judgement stops at the first it accepts. This is the
 // one place cosign's storage conventions — media types, annotations,
-// the signature tag — are spelled.
+// the signature tag — are spelled, each held to carriers cosign
+// itself pushed and the answers a real registry gave
+// (testdata/cosign): a registry without the referrers API answers
+// 404, and its referrers are the fallback tag's index, whose
+// descriptors name artifact types and no annotations; cosign's
+// default sign writes the bundle referrer and no legacy tag; the
+// legacy sign writes the tag's layer with the signature, certificate,
+// chain and bundle annotations.
 package discover
 
 import (
@@ -73,10 +80,23 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 		referrers := slices.Clone(im.Manifests)
 		slices.SortFunc(referrers, func(a, b v1.Descriptor) int { return strings.Compare(a.Digest.String(), b.Digest.String()) })
 		for _, d := range referrers {
-			if d.ArtifactType != bundleMediaType || d.Annotations[predicateAnnotation] != cosignSignPredicate {
+			if d.ArtifactType != bundleMediaType {
 				continue
 			}
-			if !yield(bundleReferrer(repo, d, opts)) {
+			// A descriptor carrying annotations decides the predicate
+			// here, as the referrers API copies a manifest's; the
+			// fallback tag's index names artifact types alone, and its
+			// referrer's predicate is the manifest's, read when the
+			// referrer is fetched.
+			annotated := len(d.Annotations) > 0
+			if annotated && d.Annotations[predicateAnnotation] != cosignSignPredicate {
+				continue
+			}
+			c, evidence, err := bundleReferrer(repo, d, !annotated, opts)
+			if !evidence {
+				continue
+			}
+			if !yield(c, err) {
 				return
 			}
 		}
@@ -107,25 +127,37 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 }
 
 // bundleReferrer reads the bundle a referrer carries as its one
-// layer; another layer count is not cosign's shape.
-func bundleReferrer(repo name.Repository, d v1.Descriptor, opts []remote.Option) (image.Carrier, error) {
+// layer; another layer count is not cosign's shape. With
+// predicateFromManifest, the descriptor was listed without
+// annotations and the manifest's predicate decides: one naming
+// another predicate is not evidence, and evidence is false.
+func bundleReferrer(repo name.Repository, d v1.Descriptor, predicateFromManifest bool, opts []remote.Option) (c image.Carrier, evidence bool, err error) {
 	where := "referrer " + d.Digest.String()
 	img, err := remote.Image(repo.Digest(d.Digest.String()), opts...)
 	if err != nil {
-		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, true, fmt.Errorf("discover: %s: %w", where, err)
+	}
+	if predicateFromManifest {
+		m, err := img.Manifest()
+		if err != nil {
+			return image.Carrier{}, true, fmt.Errorf("discover: %s: %w", where, err)
+		}
+		if m.Annotations[predicateAnnotation] != cosignSignPredicate {
+			return image.Carrier{}, false, nil
+		}
 	}
 	layers, err := img.Layers()
 	if err != nil {
-		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, true, fmt.Errorf("discover: %s: %w", where, err)
 	}
 	if len(layers) != 1 {
-		return image.Carrier{}, fmt.Errorf("discover: evidence rejected: %s: %d layers, want the bundle as one", where, len(layers))
+		return image.Carrier{}, true, fmt.Errorf("discover: evidence rejected: %s: %d layers, want the bundle as one", where, len(layers))
 	}
 	raw, err := layerBytes(layers[0])
 	if err != nil {
-		return image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err)
+		return image.Carrier{}, true, fmt.Errorf("discover: %s: %w", where, err)
 	}
-	return image.Carrier{Where: where, Value: gitprov.SigstoreBundle{JSON: raw}}, nil
+	return image.Carrier{Where: where, Value: gitprov.SigstoreBundle{JSON: raw}}, true, nil
 }
 
 // envelopes yields every simple-signing layer of a signature image as

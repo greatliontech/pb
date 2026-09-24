@@ -1,0 +1,1 @@
+Error: fetching manifest ghcr.io/greatliontech/gitprov-cosign-capture:sha256-facb5564762d06aa0d30bba81be04b6d078cd289cb861e864dafd36a85322f28.sig: GET https://ghcr.io/v2/greatliontech/gitprov-cosign-capture/manifests/sha256-facb5564762d06aa0d30bba81be04b6d078cd289cb861e864dafd36a85322f28.sig: MANIFEST_UNKNOWN: manifest unknown

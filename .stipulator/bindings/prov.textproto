@@ -313,8 +313,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.Discover"
   role: BINDING_ROLE_IMPLEMENTS
@@ -323,8 +323,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverFindsEveryLocationInOrder"
   role: BINDING_ROLE_TESTS
@@ -333,8 +333,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverOrdersReferrersByDigest"
   role: BINDING_ROLE_TESTS
@@ -343,8 +343,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverFetchesAsTaken"
   role: BINDING_ROLE_TESTS
@@ -353,8 +353,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverRejectsOversizedCarrier"
   role: BINDING_ROLE_TESTS
@@ -363,8 +363,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "a449129f788e36700fbc64b3f19bea687b9552f47d080f636a2970081365611b"
-  source_hash: "b769594660572267d480d4aa1c675c571f98b826bed159303019022695fe478c"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireOverride"
   role: BINDING_ROLE_TESTS
@@ -799,4 +799,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinGoverned"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "3f7813b46e4a4809f7d0884f640bf63f1f92ea02feb230570fc4d350372bae0a"
+}
+
+bindings {
+  requirement_id: "REQ-prov-plugin-carriers"
+  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
+  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverCapturedCosignCarriers"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6d48559a60004d3661ce95620675959aa5ad5bc37a6f9acda10cf9e01381e8b4"
 }
