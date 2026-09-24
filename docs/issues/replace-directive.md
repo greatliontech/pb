@@ -1,10 +1,7 @@
 # A fork cannot stand in for a dependency's dependency
 
-Lands: user decision — a replace directive naming another module
-path only, every input still fetched and verified under the pin
-store and the trust policy; or one that may also name a directory in
-the working tree, the workspace's own trust extended to a
-dependency's content
+Lands: the replace plan's chunk 1 (docs/plans/replace.md): the path
+form; the directory form is its chunk 2
 
 Depending on a fork works where the workspace itself requires the
 module: it requires the fork's path instead, and the fork's files
