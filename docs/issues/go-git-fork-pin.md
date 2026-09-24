@@ -1,15 +1,13 @@
 # The go-git pin points at a fork carrying the bounded pack parser
 
-Lands: user decision — the fork's shape across the projects that
-depend on go-git: a fork rebased over upstream as upstream moves,
-the change proposed upstream and the pin moving to upstream's
-release when it carries it; or a hard fork, the pin staying on it
-for good
+Lands: when an upstream go-git release carries the bounded pack
+parser — the replace directive dropped, the pin on that release
 
-go.mod replaces github.com/go-git/go-git/v6 with the fork's commit
-c559ec92 on github.com/thegrumpylion/go-git's bounded-index branch:
-upstream main plus the parser change that indexes a pack within a
-delta base cache budget (module-proxy.md REQ-proxy-direct-fetch:
+go.mod replaces github.com/go-git/go-git/v6 with the fork's main on
+github.com/thegrumpylion/go-git, a tracking fork: upstream main plus
+the parser change that indexes a pack within a delta base cache
+budget, rebased over upstream as upstream moves and proposed
+upstream as a pull request (module-proxy.md REQ-proxy-direct-fetch:
 every fetch indexed within a memory bounded independently of the
 pack's decoded size). Upstream's parser, run without a storage to
 build a pack's index while the pack is written to disk, held every
