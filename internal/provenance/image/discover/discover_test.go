@@ -217,9 +217,11 @@ func TestDiscoverTagErrorIsAnError(t *testing.T) {
 // A listing's descriptor decides the predicate where it carries
 // annotations — a bundle-typed referrer annotated without the
 // predicate is passed over unfetched, its manifest gone or not — and
-// the manifest decides where the descriptor carries none: a
-// fallback tag naming a referrer whose manifest is gone is a registry
-// error, which fails the acquisition (REQ-prov-plugin-carriers).
+// the manifest decides where the descriptor carries none; a listed
+// referrer the registry answers is unknown, a stale entry of the
+// fallback tag or of the API's list, is no evidence, and the
+// carriers past it are still found; another registry error fetching
+// a listed referrer fails the acquisition (REQ-prov-plugin-carriers).
 func TestDiscoverReadsThePredicateWhereTheListingCarriesAnnotations(t *testing.T) {
 	s := sigstoretest.New(t)
 	bundle := imagetest.BundleArtifact(s.Bundle(t, "sha256:"+strings.Repeat("ab", 32), subject, issuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate)
@@ -237,15 +239,44 @@ func TestDiscoverReadsThePredicateWhereTheListingCarriesAnnotations(t *testing.T
 			t.Fatalf("carriers %+v, err %v; want none and no fetch of the gone manifest", carriers, err)
 		}
 	})
-	t.Run("fallback tag: unannotated, the gone manifest is a registry error", func(t *testing.T) {
-		repo := imagetest.Registry(t, false)
-		digest := imagetest.PushIndex(t, repo, "v1")
-		gone := imagetest.Attach(t, repo, digest, bundle)
-		if err := remote.Delete(repo.Digest(gone.String())); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := all(discover.Discover(ctx, repo, digest)); err == nil || !strings.Contains(err.Error(), "referrer "+gone.String()) {
-			t.Fatalf("Discover = %v, want the gone referrer's registry error", err)
-		}
-	})
+	for mode, api := range modes {
+		t.Run(mode+": a listed referrer the registry no longer holds is no evidence", func(t *testing.T) {
+			repo := imagetest.Registry(t, api)
+			digest := imagetest.PushIndex(t, repo, "v1")
+			goneBundle := imagetest.Attach(t, repo, digest, bundle)
+			goneLegacy := imagetest.Attach(t, repo, digest, imagetest.Artifact{ArtifactType: imagetest.LegacyConfigMediaType, Layers: []imagetest.Layer{imagetest.EnvelopeLayer(s.Envelope(t, digest.String(), subject, issuer, sigstoretest.EnvelopeOptions{}))}})
+			for _, gone := range []v1.Hash{goneBundle, goneLegacy} {
+				if err := remote.Delete(repo.Digest(gone.String())); err != nil {
+					t.Fatal(err)
+				}
+			}
+			tagged := s.Envelope(t, digest.String(), subject, issuer, sigstoretest.EnvelopeOptions{})
+			imagetest.Tag(t, repo, imagetest.SignatureTag(digest), []imagetest.Layer{imagetest.EnvelopeLayer(tagged)})
+			carriers, err := all(discover.Discover(ctx, repo, digest))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(carriers) != 1 || carriers[0].Where != "tag "+imagetest.SignatureTag(digest)+" layer 0" {
+				t.Fatalf("carriers = %+v, want the tag's envelope alone, the stale entries passed over", carriers)
+			}
+		})
+		t.Run(mode+": a blob the registry lacks under a manifest it holds is a registry error", func(t *testing.T) {
+			for _, kind := range []struct {
+				name     string
+				artifact imagetest.Artifact
+			}{
+				{"bundle", bundle},
+				{"legacy", imagetest.Artifact{ArtifactType: imagetest.LegacyConfigMediaType, Layers: []imagetest.Layer{imagetest.EnvelopeLayer(s.Envelope(t, "sha256:"+strings.Repeat("ab", 32), subject, issuer, sigstoretest.EnvelopeOptions{}))}}},
+			} {
+				repo := imagetest.Registry(t, api)
+				digest := imagetest.PushIndex(t, repo, "v1")
+				imagetest.Attach(t, repo, digest, kind.artifact)
+				blob := imagetest.Digest(kind.artifact.Layers[0].Content)
+				imagetest.DeleteBlob(t, repo, blob)
+				if _, err := all(discover.Discover(ctx, repo, digest)); err == nil || !strings.Contains(err.Error(), "blobs/"+blob) {
+					t.Fatalf("%s: Discover = %v, want the missing blob's registry error", kind.name, err)
+				}
+			}
+		})
+	}
 }

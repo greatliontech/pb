@@ -506,3 +506,22 @@ func Digest(b []byte) string {
 	sum := sha256.Sum256(b)
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
+
+// DeleteBlob removes a blob from the registry, leaving every manifest
+// naming it: the state a registry's garbage collection or a partial
+// deletion leaves.
+func DeleteBlob(t testing.TB, repo name.Repository, digest string) {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodDelete, "http://"+repo.RegistryStr()+"/v2/"+repo.RepositoryStr()+"/blobs/"+digest, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusAccepted {
+		t.Fatalf("delete blob %s: %s", digest, resp.Status)
+	}
+}

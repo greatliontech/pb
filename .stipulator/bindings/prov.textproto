@@ -313,8 +313,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.Discover"
   role: BINDING_ROLE_IMPLEMENTS
@@ -323,8 +323,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverFindsEveryLocationInOrder"
   role: BINDING_ROLE_TESTS
@@ -333,8 +333,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverOrdersReferrersByDigest"
   role: BINDING_ROLE_TESTS
@@ -343,8 +343,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverFetchesAsTaken"
   role: BINDING_ROLE_TESTS
@@ -353,8 +353,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverRejectsOversizedCarrier"
   role: BINDING_ROLE_TESTS
@@ -363,8 +363,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireOverride"
   role: BINDING_ROLE_TESTS
@@ -803,8 +803,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-carriers"
-  content_hash: "0790b272a0acc2f0b9de16cacf7aa6d9965b2445ac1a911a420e997e4f013771"
-  source_hash: "da0608b558027019f65291bc00ffbabe86daf9faa599e6859203295b322c9ae7"
+  content_hash: "17af7bf3628648ebe31c5849b1e2ce93a1ba4ed3caaf27928cf2e34ebbee9640"
+  source_hash: "e753dab65d045277a58be052b7141d113c92cd3a98ad47a34ca69baf6663c18d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/discover.TestDiscoverCapturedCosignCarriers"
   role: BINDING_ROLE_TESTS

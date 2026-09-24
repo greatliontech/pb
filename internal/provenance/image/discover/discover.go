@@ -59,10 +59,13 @@ const MaxCarrierBytes = 4 << 20
 // signature tag's layers — fetching each as it is taken. Referrers are
 // those the registry lists, or those its referrers fallback tag lists
 // where it has no referrers API, in digest order. What is not
-// evidence is passed over; an absent tag and an empty referrers list
-// are no evidence; a carrier that is not cosign's shape — a bundle
-// referrer with other than one layer, a carrier over MaxCarrierBytes
-// — is yielded as rejected evidence; a registry error is yielded as
+// evidence is passed over; an absent tag, an empty referrers list and
+// a listed referrer whose manifest the registry answers is unknown
+// (a stale listing entry, absence stated as for the tag) are no
+// evidence; a carrier that is not cosign's shape — a bundle referrer
+// with other than one layer, a carrier over MaxCarrierBytes — is
+// yielded as rejected evidence; any other registry error, a blob the
+// registry lacks under a manifest it holds included, is yielded as
 // the step's error.
 func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ...remote.Option) image.Carriers {
 	opts = append(slices.Clone(opts), remote.WithContext(ctx))
@@ -105,37 +108,63 @@ func Discover(ctx context.Context, repo name.Repository, digest v1.Hash, opts ..
 				continue
 			}
 			where := "referrer " + d.Digest.String()
-			img, err := remote.Image(repo.Digest(d.Digest.String()), opts...)
+			img, present, err := manifestOf(repo.Digest(d.Digest.String()), opts)
 			if err != nil {
 				yield(image.Carrier{}, fmt.Errorf("discover: %s: %w", where, err))
 				return
+			}
+			if !present {
+				continue
 			}
 			if !envelopes(img, where, yield) {
 				return
 			}
 		}
 		tag := repo.Tag(digest.Algorithm + "-" + digest.Hex + signatureTagSuffix)
-		img, err := remote.Image(tag, opts...)
+		img, present, err := manifestOf(tag, opts)
 		if err != nil {
-			if !notFound(err) {
-				yield(image.Carrier{}, fmt.Errorf("discover: tag %s: %w", tag.TagStr(), err))
-			}
+			yield(image.Carrier{}, fmt.Errorf("discover: tag %s: %w", tag.TagStr(), err))
+			return
+		}
+		if !present {
 			return
 		}
 		envelopes(img, "tag "+tag.TagStr(), yield)
 	}
 }
 
+// manifestOf fetches a manifest by reference: present is false where
+// the registry answers that the manifest does not exist — the one
+// registry answer that is no evidence, an absent tag's and a stale
+// listing entry's alike — and any other failure is the error. A
+// manifest's blobs are fetched later, and a blob the registry lacks
+// under a manifest it holds is a registry error like any other.
+func manifestOf(ref name.Reference, opts []remote.Option) (img v1.Image, present bool, err error) {
+	img, err = remote.Image(ref, opts...)
+	var te *transport.Error
+	if errors.As(err, &te) && te.StatusCode == http.StatusNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	return img, true, nil
+}
+
 // bundleReferrer reads the bundle a referrer carries as its one
 // layer; another layer count is not cosign's shape. With
 // predicateFromManifest, the descriptor was listed without
 // annotations and the manifest's predicate decides: one naming
-// another predicate is not evidence, and evidence is false.
+// another predicate is not evidence, and evidence is false, as it
+// is for a referrer the registry answers is unknown.
 func bundleReferrer(repo name.Repository, d v1.Descriptor, predicateFromManifest bool, opts []remote.Option) (c image.Carrier, evidence bool, err error) {
 	where := "referrer " + d.Digest.String()
-	img, err := remote.Image(repo.Digest(d.Digest.String()), opts...)
+	img, present, err := manifestOf(repo.Digest(d.Digest.String()), opts)
 	if err != nil {
 		return image.Carrier{}, true, fmt.Errorf("discover: %s: %w", where, err)
+	}
+	if !present {
+		return image.Carrier{}, false, nil
 	}
 	if predicateFromManifest {
 		m, err := img.Manifest()
@@ -215,11 +244,4 @@ func layerBytes(l v1.Layer) ([]byte, error) {
 		return nil, fmt.Errorf("evidence rejected: a carrier over %d bytes", MaxCarrierBytes)
 	}
 	return raw, nil
-}
-
-// notFound reports a registry answering that a manifest does not
-// exist, the one registry answer that is no evidence.
-func notFound(err error) bool {
-	var te *transport.Error
-	return errors.As(err, &te) && te.StatusCode == http.StatusNotFound
 }

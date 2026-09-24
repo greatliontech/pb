@@ -190,10 +190,13 @@ order, layers in manifest order, and each carrier is fetched as it is
 judged, nothing past the accepted one, so the carrier recorded is a
 function of the repository's content. A referrer with any other
 artifact type or predicate, a layer of any other media type, an
-absent tag, and an empty referrers list are not evidence; a carrier
-that is not cosign's shape — a bundle referrer with other than one
-layer, a carrier over 4 MiB — is rejected evidence; a registry error
-fetching a carrier fails the acquisition.
+absent tag, an empty referrers list, and a listed referrer whose
+manifest the registry answers is unknown (a stale listing entry;
+absence stated as for the tag) are not evidence; a carrier that is
+not cosign's shape — a bundle referrer with other than one layer, a
+carrier over 4 MiB — is rejected evidence; any other registry error
+fetching a carrier, a blob the registry lacks under a manifest it
+holds included, fails the acquisition.
 
 **REQ-prov-plugin-classification** (behavior): Carriers MUST be judged
 in discovery order until one is accepted, which is recorded. A carrier
