@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -229,7 +230,7 @@ func TestTidy(t *testing.T) {
 	})
 
 	s := fx.session(t, ".")
-	if err := Tidy(ctx, s); err != nil {
+	if err := Tidy(ctx, s, io.Discard); err != nil {
 		t.Fatalf("Tidy: %v", err)
 	}
 	got := fx.read(t, "a/pb.yaml")
@@ -247,7 +248,7 @@ func TestTidy(t *testing.T) {
 	lock1, mod1 := fx.read(t, "pb.lock"), fx.read(t, "a/pb.yaml")
 	s2 := fx.session(t, ".")
 	s2.Client.Cache = s.Client.Cache
-	if err := Tidy(ctx, s2); err != nil {
+	if err := Tidy(ctx, s2, io.Discard); err != nil {
 		t.Fatalf("second Tidy: %v", err)
 	}
 	if fx.read(t, "pb.lock") != lock1 || fx.read(t, "a/pb.yaml") != mod1 {
@@ -279,7 +280,7 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 		"u.proto": "syntax = \"proto3\";\n",
 	})
 	s := fx.session(t, ".")
-	if err := Tidy(ctx, s); err != nil {
+	if err := Tidy(ctx, s, io.Discard); err != nil {
 		t.Fatalf("Tidy: %v", err)
 	}
 	want := "module: example.com/a\ndeps:\n  example.com/s: v1.0.0\n  example.com/t: v1.0.0\n  example.com/u: v1.0.0\n"
@@ -288,7 +289,7 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 	}
 	s2 := fx.session(t, ".")
 	s2.Client.Cache = s.Client.Cache
-	if err := Tidy(ctx, s2); err != nil {
+	if err := Tidy(ctx, s2, io.Discard); err != nil {
 		t.Fatalf("second Tidy: %v", err)
 	}
 	if got := fx.read(t, "a/pb.yaml"); got != want {
@@ -312,7 +313,7 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 		"pb.yaml": ws("example.com/e", ""),
 		"e.proto": "syntax = \"proto3\";\n",
 	})
-	if err := Tidy(ctx, fx4.session(t, ".")); err != nil {
+	if err := Tidy(ctx, fx4.session(t, "."), io.Discard); err != nil {
 		t.Fatalf("Tidy over a declaring external: %v", err)
 	}
 	if got := fx4.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/d: v1.0.0\n") {
@@ -332,7 +333,7 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 	fx3.serve(t, "example.com/s", "v1.0.0", map[string]string{
 		"s.proto": "syntax = \"proto3\";\nimport \"lib.proto\";\n",
 	})
-	if err := Tidy(ctx, fx3.session(t, ".")); err == nil || !strings.Contains(err.Error(), "example.com/a needs example.com/s, whose files import workspace module example.com/lib") {
+	if err := Tidy(ctx, fx3.session(t, "."), io.Discard); err == nil || !strings.Contains(err.Error(), "example.com/a needs example.com/s, whose files import workspace module example.com/lib") {
 		t.Fatalf("err = %v, want the carried local import named", err)
 	}
 
@@ -347,8 +348,108 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 		"s.proto": "syntax = \"proto3\";\nimport \"t.proto\";\n",
 	})
 	var ue *importcheck.UnsatisfiedError
-	if err := Tidy(ctx, fx2.session(t, ".")); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/s" {
+	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/s" {
 		t.Fatalf("err = %v, want s's import of t unsatisfied", err)
+	}
+}
+
+// A declaring external whose files import beyond its declarations
+// has its gap carried by the consumer: the consumer's declaration of
+// the provider is kept, reported naming the external, transitively
+// through a declared dependency's own gap; a fully declaring external
+// is carried for nothing; the gap left undeclared stays unsatisfied,
+// never invented (REQ-dep-tidy).
+func TestTidyCarriesAnUnderDeclaringExternal(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/d: v1.0.0\n  example.com/e: v1.0.0\n  example.com/g: v1.0.0\n  example.com/i: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"d.proto\";\n",
+	})
+	// d declares f and h and imports e's file; f imports g's file and
+	// declares nothing of it; h, declared by d and imported by no
+	// file, imports i's file undeclared: a and only a can carry e, g
+	// and i, the last reached by declaration alone.
+	fx.serve(t, "example.com/d", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/d", "  example.com/f: v1.0.0\n  example.com/h: v1.0.0\n"),
+		"d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\nimport \"f.proto\";\n",
+	})
+	fx.serve(t, "example.com/h", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/h", ""), "h.proto": "syntax = \"proto3\";\nimport \"i.proto\";\n"})
+	fx.serve(t, "example.com/i", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/i", ""), "i.proto": "syntax = \"proto3\";\n"})
+	fx.serve(t, "example.com/e", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/e", ""), "e.proto": "syntax = \"proto3\";\n"})
+	fx.serve(t, "example.com/f", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/f", ""), "f.proto": "syntax = \"proto3\";\nimport \"g.proto\";\n"})
+	fx.serve(t, "example.com/g", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/g", ""), "g.proto": "syntax = \"proto3\";\n"})
+	s := fx.session(t, ".")
+	var out strings.Builder
+	if err := Tidy(ctx, s, &out); err != nil {
+		t.Fatalf("Tidy: %v", err)
+	}
+	want := ws("example.com/a", "  example.com/d: v1.0.0\n  example.com/e: v1.0.0\n  example.com/g: v1.0.0\n  example.com/i: v1.0.0\n")
+	if got := fx.read(t, "a/pb.yaml"); got != want {
+		t.Fatalf("tidied a/pb.yaml = %q, want %q", got, want)
+	}
+	wantOut := "example.com/a carries example.com/e for example.com/d@v1.0.0, whose files import it undeclared\nexample.com/a carries example.com/g for example.com/f@v1.0.0, whose files import it undeclared\nexample.com/a carries example.com/i for example.com/h@v1.0.0, whose files import it undeclared\n"
+	if out.String() != wantOut {
+		t.Fatalf("report = %q, want %q", out.String(), wantOut)
+	}
+	// Idempotent, the report the same.
+	out.Reset()
+	s2 := fx.session(t, ".")
+	s2.Client.Cache = s.Client.Cache
+	if err := Tidy(ctx, s2, &out); err != nil || fx.read(t, "a/pb.yaml") != want || out.String() != wantOut {
+		t.Fatalf("second tidy: %v %q %q", err, fx.read(t, "a/pb.yaml"), out.String())
+	}
+	// Version skew: the graph carries an older d's edges, which
+	// declared e; the selected d does not, so a carries e all the
+	// same.
+	fxv := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/d: v1.1.0\n  example.com/e: v1.0.0\n  example.com/x: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"d.proto\";\nimport \"xx.proto\";\n",
+	})
+	fxv.serve(t, "example.com/x", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/x", "  example.com/d: v1.0.0\n"), "xx.proto": "syntax = \"proto3\";\n"})
+	fxv.serve(t, "example.com/d", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/d", "  example.com/e: v1.0.0\n"), "d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n"})
+	fxv.serve(t, "example.com/d", "v1.1.0", map[string]string{"pb.yaml": ws("example.com/d", ""), "d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n"})
+	fxv.serve(t, "example.com/e", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/e", ""), "e.proto": "syntax = \"proto3\";\n"})
+	out.Reset()
+	if err := Tidy(ctx, fxv.session(t, "."), &out); err != nil {
+		t.Fatalf("Tidy under version skew: %v", err)
+	}
+	if got := fxv.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/d: v1.1.0\n  example.com/e: v1.0.0\n  example.com/x: v1.0.0\n") || out.String() != "example.com/a carries example.com/e for example.com/d@v1.1.0, whose files import it undeclared\n" {
+		t.Fatalf("version skew: %q %q", got, out.String())
+	}
+	// Two modules needing one declaration are each named, in one
+	// order, and a round that rewrites reports once.
+	fxt := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/d: v1.0.0\n  example.com/e: v1.0.0\n  example.com/k: v1.0.0\n  example.com/z: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"d.proto\";\n",
+		"a/y.proto": "syntax = \"proto3\";\nimport \"k.proto\";\n",
+	})
+	fxt.serve(t, "example.com/d", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/d", ""), "d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n"})
+	fxt.serve(t, "example.com/k", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/k", ""), "k.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n"})
+	fxt.serve(t, "example.com/e", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/e", ""), "e.proto": "syntax = \"proto3\";\n"})
+	fxt.serve(t, "example.com/z", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/z", ""), "z.proto": "syntax = \"proto3\";\n"})
+	out.Reset()
+	if err := Tidy(ctx, fxt.session(t, "."), &out); err != nil {
+		t.Fatalf("Tidy over two needs: %v", err)
+	}
+	wantTwo := "example.com/a carries example.com/e for example.com/d@v1.0.0, whose files import it undeclared\nexample.com/a carries example.com/e for example.com/k@v1.0.0, whose files import it undeclared\n"
+	if got := fxt.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/d: v1.0.0\n  example.com/e: v1.0.0\n  example.com/k: v1.0.0\n") || out.String() != wantTwo {
+		t.Fatalf("two needs: %q %q", got, out.String())
+	}
+	// The gap not declared by the consumer either: unsatisfied.
+	fx2 := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/d: v1.0.0\n"),
+		"a/x.proto": "syntax = \"proto3\";\nimport \"d.proto\";\n",
+	})
+	fx2.serve(t, "example.com/d", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/d", ""),
+		"d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n",
+	})
+	var ue *importcheck.UnsatisfiedError
+	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/d" {
+		t.Fatalf("err = %v, want d's import of e unsatisfied", err)
 	}
 }
 
@@ -362,7 +463,7 @@ func TestTidyUnsatisfiedImportFails(t *testing.T) {
 		"a/x.proto": "syntax = \"proto3\";\nimport \"nowhere.proto\";\n",
 	})
 	s := fx.session(t, ".")
-	err := Tidy(ctx, s)
+	err := Tidy(ctx, s, io.Discard)
 	var ue *importcheck.UnsatisfiedError
 	if !errors.As(err, &ue) {
 		t.Fatalf("err = %v, want UnsatisfiedError", err)
@@ -383,7 +484,7 @@ func TestTidyLocalImportNeedsDeclaredVersion(t *testing.T) {
 		"lib/lib.proto": "syntax = \"proto3\";\n",
 	})
 	s := fx.session(t, ".")
-	if err := Tidy(ctx, s); err == nil ||
+	if err := Tidy(ctx, s, io.Discard); err == nil ||
 		!strings.Contains(err.Error(), "declares no version") {
 		t.Fatalf("err = %v, want the missing-declared-version failure", err)
 	}
@@ -779,7 +880,7 @@ func TestSaveLockChangeDiscipline(t *testing.T) {
 
 	t.Run("emptied pins rewrite the existing lockfile", func(t *testing.T) {
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatalf("Tidy: %v", err)
 		}
 		after := fx.read(t, "pb.lock")
@@ -874,7 +975,7 @@ func TestTidyArms(t *testing.T) {
 			"a/pb.yaml": ws("example.com/a", "  example.com/gone: v1.0.0\n"),
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err == nil {
+		if err := Tidy(ctx, s, io.Discard); err == nil {
 			t.Fatal("tidy resolved an unservable module")
 		}
 	})
@@ -886,7 +987,7 @@ func TestTidyArms(t *testing.T) {
 			"a/x.proto": "this is not protobuf {{{",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err == nil || !strings.Contains(err.Error(), "x.proto") {
+		if err := Tidy(ctx, s, io.Discard); err == nil || !strings.Contains(err.Error(), "x.proto") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -901,7 +1002,7 @@ func TestTidyArms(t *testing.T) {
 			"bad.proto": "not protobuf }}}",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err == nil || !strings.Contains(err.Error(), "bad.proto") {
+		if err := Tidy(ctx, s, io.Discard); err == nil || !strings.Contains(err.Error(), "bad.proto") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -914,7 +1015,7 @@ func TestTidyArms(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
 		s := fx.session(t, ".")
 		s.Client.Cache = &fetch.Cache{FS: &fetchtest.ErrFS{Filesystem: memfs.New(), FailOpenSuffix: ".zip", PutFailAfter: -1}}
-		if err := Tidy(ctx, s); !errors.Is(err, fetchtest.ErrInjected) {
+		if err := Tidy(ctx, s, io.Discard); !errors.Is(err, fetchtest.ErrInjected) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -930,7 +1031,7 @@ func TestTidyArms(t *testing.T) {
 		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", ""), "m1.proto": "syntax = \"proto3\";\n"})
 		fx.serve(t, "example.com/m2", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m2", ""), "m2.proto": "syntax = \"proto3\";\n"})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/m1: v1.0.0\n") {
@@ -954,7 +1055,7 @@ func TestTidyArms(t *testing.T) {
 			"google/protobuf/timestamp.proto": "syntax = \"proto3\";\n",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/shipper: v1.0.0\n") {
@@ -970,7 +1071,7 @@ func TestTidyArms(t *testing.T) {
 			"a/y.proto": "syntax = \"proto3\";\n",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "") {
@@ -994,7 +1095,7 @@ func TestTidyArms(t *testing.T) {
 			"m1.proto": "syntax = \"proto3\";\n",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		want := ws("example.com/a", "  example.com/lib: v0.1.0\n  example.com/m1: v1.0.0\n")
@@ -1017,7 +1118,7 @@ func TestTidyArms(t *testing.T) {
 			"z.proto": "syntax = \"proto3\";\n",
 		})
 		s := fx.session(t, ".")
-		if err := Tidy(ctx, s); err != nil {
+		if err := Tidy(ctx, s, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		if got := fx.read(t, "w/pb.yaml"); got != ws("example.com/w", "  example.com/m1: v1.0.0\n") {
@@ -1319,7 +1420,7 @@ func TestTidyNamesAMalformedFile(t *testing.T) {
 		"a/x.proto": "syntax = \"proto3\";\nimport \"unterminated\n",
 	})
 	s := fx.session(t, ".")
-	err := Tidy(ctx, s)
+	err := Tidy(ctx, s, io.Discard)
 	if err == nil || !strings.HasPrefix(err.Error(), "a/x.proto: ") {
 		t.Fatalf("a malformed workspace file: %v", err)
 	}
@@ -1333,7 +1434,7 @@ func TestTidyNamesAMalformedFile(t *testing.T) {
 		"pb.yaml":  ws("example.com/m1", ""),
 		"m1.proto": "syntax = \"proto3\";\nimport \"unterminated\n",
 	})
-	err = Tidy(ctx, fx.session(t, "."))
+	err = Tidy(ctx, fx.session(t, "."), io.Discard)
 	if err == nil || !strings.HasPrefix(err.Error(), "example.com/m1@v1.0.0: m1.proto: ") {
 		t.Fatalf("a malformed external file: %v", err)
 	}
@@ -1366,7 +1467,7 @@ func TestTidyKeepsRulesets(t *testing.T) {
 		"pb.yaml": ws("example.com/unused", ""),
 	})
 	s := fx.session(t, ".")
-	if err := Tidy(ctx, s); err != nil {
+	if err := Tidy(ctx, s, io.Discard); err != nil {
 		t.Fatalf("Tidy: %v", err)
 	}
 	// The external ruleset moves to the selected version, b's v1.1.0;
@@ -1386,7 +1487,7 @@ func TestTidyKeepsRulesets(t *testing.T) {
 	})
 	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/unused", "")})
 	s = fx.session(t, ".")
-	err := Tidy(ctx, s)
+	err := Tidy(ctx, s, io.Discard)
 	if err == nil || !strings.Contains(err.Error(), "ruleset example.com/rules is no workspace module and no workspace module declares it") {
 		t.Fatalf("undeclared ruleset: %v", err)
 	}
@@ -1401,7 +1502,7 @@ func TestTidyKeepsRulesets(t *testing.T) {
 		"a/x.proto":    "syntax = \"proto3\";\n",
 	})
 	s = fx.session(t, ".")
-	if err := Tidy(ctx, s); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
+	if err := Tidy(ctx, s, io.Discard); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
 		t.Fatalf("malformed lint file: %v", err)
 	}
 }

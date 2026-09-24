@@ -49,7 +49,7 @@ func migrateCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
-					return dep.Tidy(ctx, session)
+					return dep.Tidy(ctx, session, os.Stdout)
 				},
 				Out: os.Stdout,
 			})

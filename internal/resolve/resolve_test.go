@@ -10,6 +10,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/module/mvs"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
@@ -559,5 +560,41 @@ func TestGraphOrderAcrossRequirers(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("graph = %v, want lexical requirer order %v", got, want)
+	}
+}
+
+// Declared keeps a build-list module's declarations at its selected
+// version alone, a workspace module's under its bare path, sorted;
+// an older version's edges, which the graph carries, never count.
+func TestDeclaredAtSelectedVersion(t *testing.T) {
+	v := func(s string) version.Version {
+		p, err := version.Parse(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	edges := []mvs.Edge{
+		{Requirer: "example.com/a", Path: "example.com/d", Version: v("v1.1.0")},
+		{Requirer: "example.com/a", Path: "example.com/x", Version: v("v1.0.0")},
+		{Requirer: "example.com/x@v1.0.0", Path: "example.com/d", Version: v("v1.0.0")},
+		{Requirer: "example.com/d@v1.0.0", Path: "example.com/e", Version: v("v1.0.0")},
+		{Requirer: "example.com/d@v1.1.0", Path: "example.com/z", Version: v("v1.0.0")},
+		{Requirer: "example.com/d@v1.1.0", Path: "example.com/b", Version: v("v1.0.0")},
+	}
+	list := []mvs.Requirement{{Path: "example.com/d", Version: v("v1.1.0")}, {Path: "example.com/x", Version: v("v1.0.0")}}
+	got := Declared(edges, list)
+	want := map[string][]string{
+		"example.com/a": {"example.com/d", "example.com/x"},
+		"example.com/x": {"example.com/d"},
+		"example.com/d": {"example.com/b", "example.com/z"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("Declared = %v, want %v", got, want)
+	}
+	for p, ps := range want {
+		if !slices.Equal(got[p], ps) {
+			t.Fatalf("Declared[%s] = %v, want %v", p, got[p], ps)
+		}
 	}
 }

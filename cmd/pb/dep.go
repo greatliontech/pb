@@ -36,7 +36,7 @@ func depCmd() *cobra.Command {
 
 	cmd.AddCommand(&cobra.Command{
 		Use: "tidy", Short: "reconcile declarations with imports", Args: cobra.NoArgs,
-		RunE: run(func(ctx context.Context, s *dep.Session) error { return dep.Tidy(ctx, s) }),
+		RunE: run(func(ctx context.Context, s *dep.Session) error { return dep.Tidy(ctx, s, os.Stdout) }),
 	})
 	cmd.AddCommand(&cobra.Command{
 		Use: "download", Short: "fetch, verify, and pin the build list", Args: cobra.NoArgs,

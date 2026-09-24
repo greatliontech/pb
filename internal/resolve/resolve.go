@@ -148,6 +148,34 @@ func (d *Driver) Graph(ctx context.Context) ([]mvs.Edge, error) {
 	return edges, nil
 }
 
+// Declared projects the graph's edges onto what each module of the
+// build declares at the version the build list selects: a workspace
+// module's declarations under its bare path, a build-list module's
+// under its path from the edges its selected version requires alone
+// — the graph carries every visited version's edges, and a module's
+// gap is judged against its own declarations, not an older version's
+// (dep-verbs.md REQ-dep-tidy). Paths sorted, a pure function of the
+// edges and the list.
+func Declared(edges []mvs.Edge, list []mvs.Requirement) map[string][]string {
+	selected := make(map[string]string, len(list))
+	for _, r := range list {
+		selected[r.Path] = r.Path + "@" + r.Version.String()
+	}
+	declared := map[string][]string{}
+	for _, e := range edges {
+		p, _, versioned := strings.Cut(e.Requirer, "@")
+		if versioned && selected[p] != e.Requirer {
+			continue
+		}
+		declared[p] = append(declared[p], e.Path)
+	}
+	for p := range declared {
+		slices.Sort(declared[p])
+		declared[p] = slices.Compact(declared[p])
+	}
+	return declared
+}
+
 // Why returns a shortest requirement chain from a workspace module to
 // the named path through the requirement graph (REQ-dep-why) — among
 // equal-length chains the lexically least — or nil when the path is

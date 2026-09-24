@@ -68,23 +68,27 @@ lockfile appears when a resolving verb first records a pin.
 **REQ-dep-tidy** (behavior): `tidy` MUST make each workspace module's
 declared dependencies exactly the modules whose files that module's own
 protobuf imports are satisfied by, and the modules whose files the
-imports of every synthesized module among them are satisfied by,
-transitively — a synthesized module declares no dependency
-(`module-resolution.md` REQ-resolve-synthesis), so the workspace
-module declaring it carries what its files need, the one declaration
-that can — at the versions the tidied graph selects — dropping
-declarations no import of the declaring module or of a synthesized
-module it declares uses, adding a declaration for any build-list
-module either imports directly, and re-emitting each changed module
-file canonically. An import satisfied
-by no build-list module and no well-known import fails tidy per
-`REQ-resolve-unsatisfied-imports`: with no registry, an import path
-names no module, so tidy never invents a dependency. An import
+imports of every module it reaches — by its declarations and by this
+carrying, transitively — are satisfied by where the reached module's own
+declarations, at its selected version, do not name the provider: a
+synthesized module declares no dependency (`module-resolution.md`
+REQ-resolve-synthesis), so the workspace module declaring it carries all
+its files need, and a declaring module whose files import beyond its
+declarations has that gap carried the same way, the consumer's
+declaration the one that can, each such declaration reported, once per
+tidy, in one line per module it is carried for, in one order — at the
+versions the tidied graph selects — dropping declarations no import of
+the declaring module or of a reached module's gap uses, adding a
+declaration for any build-list module the declaring module imports
+directly, and re-emitting each changed module file canonically. An
+import satisfied by no build-list module and no well-known import fails
+tidy per `REQ-resolve-unsatisfied-imports`: with no registry, an import
+path names no module, so tidy never invents a dependency. An import
 satisfied by a workspace-local module keeps that module's existing
-declared version — the local working copy has none to record — and
-fails tidy when no declared version exists to keep. Tidy removes
-lockfile pins for (module path, version) pairs outside the tidied
-requirement graph, and is idempotent: a second run changes nothing.
+declared version — the local working copy has none to record — and fails
+tidy when no declared version exists to keep. Tidy removes lockfile pins
+for (module path, version) pairs outside the tidied requirement graph,
+and is idempotent: a second run changes nothing.
 
 **REQ-dep-tidy-rulesets** (behavior): Tidy MUST keep, at the selected
 version, each declaration of a module the lint file's `rulesets`

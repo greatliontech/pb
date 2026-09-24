@@ -3,6 +3,8 @@ package dep
 import (
 	"context"
 	"fmt"
+	"io"
+	"maps"
 	"path"
 	"slices"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
+	"github.com/greatliontech/pb/internal/resolve"
 )
 
 // tidyRounds bounds the tidy fixpoint. Rewriting declarations to the
@@ -24,10 +27,13 @@ const tidyRounds = 10
 
 // Tidy makes each workspace module's declared dependencies exactly the
 // modules its own protobuf imports are satisfied by, and those the
-// imports of every synthesized module among them are satisfied by,
-// transitively — a synthesized module declares nothing, so the
-// workspace module declaring it carries what its files need — at the
-// versions the tidied graph selects (REQ-dep-tidy): unused
+// imports of every module it reaches are satisfied by where the
+// reached module's own declarations do not name the provider — a
+// synthesized module declares nothing, so the workspace module
+// declaring it carries all its files need; a declaring module that
+// under-declares has its gap carried the same way, the consumer's
+// declaration the one that can, and out names the module carried for
+// — at the versions the tidied graph selects (REQ-dep-tidy): unused
 // declarations drop, directly-imported build-list modules gain
 // declarations, an import satisfied by nothing fails per
 // REQ-resolve-unsatisfied-imports (tidy never invents a dependency),
@@ -40,30 +46,36 @@ const tidyRounds = 10
 // second run changes nothing. Module-file rewrites are per-file
 // atomic, not transactional: a failed round may leave some files
 // rewritten; rerunning after fixing the cause converges.
-func Tidy(ctx context.Context, s *Session) error {
+func Tidy(ctx context.Context, s *Session, out io.Writer) error {
 	rulesets, err := s.rulesets()
 	if err != nil {
 		return err
 	}
 	for round := 0; round < tidyRounds; round++ {
-		changed, err := tidyOnce(ctx, s, rulesets)
+		changed, carried, err := tidyOnce(ctx, s, rulesets)
 		if err != nil {
 			return err
 		}
 		if !changed {
+			// The stable round's carries are the report, once: every
+			// declaration kept for a reached module's gap, each module
+			// it is carried for named, in one order.
+			for _, line := range carried {
+				fmt.Fprintln(out, line)
+			}
 			return s.SaveLock()
 		}
 	}
 	return fmt.Errorf("dep tidy: no fixpoint after %d rounds", tidyRounds)
 }
 
-func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool, err error) {
+func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool, carried []string, err error) {
 	// The import-relevant view of every module, from the shared file-set
 	// loader (modfiles): workspace modules from the working tree,
 	// externals from their verified archives.
 	list, mods, err := s.Modules(ctx)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 	selected := map[string]string{}
 	for _, r := range list {
@@ -78,13 +90,26 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 		return fmt.Sprintf("%s@%s: %s", m.Path, m.Version, p)
 	})
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
-	synthesized := map[string]bool{}
-	for _, m := range mods {
-		if m.Synthesized {
-			synthesized[m.Path] = true
+	// What each module declares at its selected version, from the
+	// requirement graph's edges: the one source of a module's
+	// declarations, a synthesized module's empty.
+	edges, err := s.Driver.Graph(ctx)
+	if err != nil {
+		return false, nil, err
+	}
+	declared := resolve.Declared(edges, list)
+	declares := make(map[string]map[string]bool, len(declared))
+	for p, ps := range declared {
+		declares[p] = make(map[string]bool, len(ps))
+		for _, q := range ps {
+			declares[p][q] = true
 		}
+	}
+	viewOf := make(map[string]*importcheck.Module, len(views))
+	for i := range views {
+		viewOf[views[i].Path] = &views[i]
 	}
 	provider := map[string]string{} // proto file -> module path
 	for _, v := range views {
@@ -105,25 +130,30 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	// Satisfaction over the whole set (REQ-resolve-unsatisfied-imports):
 	// tidy never invents a module path for an unsatisfied import.
 	if err := importcheck.Check(views); err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	// Rewrite each workspace module's declarations to exactly its
 	// direct imports.
+	carries := map[string]bool{}
 	for _, m := range s.Root.Modules {
-		var view *importcheck.Module
-		for i := range views {
-			if views[i].Path == m.File.Module {
-				view = &views[i]
-				break
+		view := viewOf[m.File.Module]
+		// The module's own imports' providers, and — walking every
+		// module it reaches, by declaration or by carry — the providers
+		// of what a reached module's files import beyond its own
+		// declarations: a synthesized module declares nothing, so all
+		// its files need is carried here; a declaring module that
+		// under-declares has its gap carried the same way, the one place
+		// a declaration can live, and the report names it.
+		want := map[string]string{}
+		var walk []string
+		visited := map[string]bool{}
+		reach := func(p string) {
+			if !visited[p] {
+				visited[p] = true
+				walk = append(walk, p)
 			}
 		}
-		// The module's own imports' providers, and the providers of
-		// what each synthesized module among them imports, to closure:
-		// a synthesized module declares nothing, so what its files
-		// need is carried here, the one place a declaration can live.
-		want := map[string]string{}
-		var carry []string
 		require := func(from string, imports []string) error {
 			for _, imp := range imports {
 				if modfiles.WellKnown(imp) {
@@ -132,6 +162,16 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 				p, ok := provider[imp]
 				if !ok || p == m.File.Module || p == from {
 					continue
+				}
+				if from != m.File.Module && declares[from][p] {
+					// A reached module's own declaration is the edge; the
+					// workspace module's own imports are always its own
+					// to declare.
+					reach(p)
+					continue
+				}
+				if from != m.File.Module {
+					carries[fmt.Sprintf("%s carries %s for %s, whose files import it undeclared", m.File.Module, p, label(from, selected))] = true
 				}
 				if _, seen := want[p]; seen {
 					continue
@@ -148,27 +188,30 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 				} else {
 					want[p] = selected[p]
 				}
-				if synthesized[p] {
-					carry = append(carry, p)
-				}
+				reach(p)
 			}
 			return nil
 		}
-		for _, imports := range view.Files {
-			if err := require(m.File.Module, imports); err != nil {
-				return false, err
+		// Files in sorted order: the walk, and so the report, a
+		// function of the file set alone.
+		for _, f := range slices.Sorted(maps.Keys(view.Files)) {
+			if err := require(m.File.Module, view.Files[f]); err != nil {
+				return false, nil, err
 			}
 		}
-		for len(carry) > 0 {
-			p := carry[0]
-			carry = carry[1:]
-			for i := range views {
-				if views[i].Path != p {
-					continue
-				}
-				for _, imports := range views[i].Files {
-					if err := require(p, imports); err != nil {
-						return false, err
+		for len(walk) > 0 {
+			p := walk[0]
+			walk = walk[1:]
+			if _, isLocal := s.Root.IsLocal(p); isLocal {
+				continue // a workspace module's declarations are its own to tidy
+			}
+			for _, q := range declared[p] {
+				reach(q)
+			}
+			if v := viewOf[p]; v != nil {
+				for _, f := range slices.Sorted(maps.Keys(v.Files)) {
+					if err := require(p, v.Files[f]); err != nil {
+						return false, nil, err
 					}
 				}
 			}
@@ -193,22 +236,19 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 		nf := &modfile.File{Module: m.File.Module, Deps: want}
 		b, err := modfile.Encode(nf)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 		if err := writeFile(s.WS, path.Join(s.Root.Dir, m.Dir, module.ModuleFileName), b); err != nil {
-			return false, err
+			return false, nil, err
 		}
 		m.File.Deps = want
 	}
+	carried = slices.Sorted(maps.Keys(carries))
 	if changed {
-		return true, nil
+		return true, nil, nil
 	}
 
 	// Stable: prune pins outside the tidied requirement graph.
-	edges, err := s.Driver.Graph(ctx)
-	if err != nil {
-		return false, err
-	}
 	reachable := map[string]bool{}
 	for _, e := range edges {
 		reachable[e.Path+"@"+e.Version.String()] = true
@@ -219,7 +259,7 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	if len(kept) != len(s.Lock.Modules) {
 		s.Lock.Modules = kept
 	}
-	return false, nil
+	return false, carried, nil
 }
 
 func depsEqual(a, b map[string]string) bool {
@@ -249,4 +289,13 @@ func (s *Session) rulesets() ([]string, error) {
 		}
 	}
 	return lf.Rulesets, nil
+}
+
+// label names a build-list module with its selected version in the
+// tidy's report.
+func label(p string, selected map[string]string) string {
+	if v, ok := selected[p]; ok {
+		return p + "@" + v
+	}
+	return p
 }
