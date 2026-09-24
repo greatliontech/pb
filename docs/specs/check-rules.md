@@ -238,7 +238,13 @@ has — and the standard ones protoc ships (`(pb.java)`, `(pb.cpp)`,
 `proto.getExt(features(entity), pb.java)` and their enums by name,
 as a custom option reads as `proto.getExt(entity.options, pkg.ext)`
 and a message-valued option's own fields by name, an extension
-within such a value beyond reach; `syntax(file)`, the syntax the file declares — `proto2`, `proto3` or
+within such a value as `proto.getExt(proto.getExt(entity.options,
+pkg.ext), pkg.deep)` — every option value the environment's family's
+own, on both sides of a breaking run, the family the new side's: an
+extension the old side alone declared stays unread, as a feature it
+alone declared does, and an old value the new side's declarations
+cannot decode keeps the compiler's own family, its extensions within
+beyond reach as before; `syntax(file)`, the syntax the file declares — `proto2`, `proto3` or
 `editions` — or the empty string where it declares none, since a
 descriptor spells no proto2 and a declaration is a source fact: a
 declaration the file's source information does not carry counts as

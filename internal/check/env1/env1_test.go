@@ -4,17 +4,23 @@ import (
 	"errors"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"cel.dev/cel-go/common/types"
 	"cel.dev/cel-go/common/types/ref"
-	"github.com/greatliontech/pb/internal/testing/prototest"
+	"github.com/bufbuild/protocompile/linker"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"pgregory.net/rapid"
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/rules"
+	"github.com/greatliontech/pb/internal/testing/prototest"
 )
 
 // The fixture: three packages over four files — a proto3 file with a
@@ -126,6 +132,14 @@ message Wrap {
   extend google.protobuf.FieldOptions {
     bool wrapped = 9996;
   }
+  extend Opt {
+    bool inner = 101;
+  }
+  message Deeper {
+    extend Opt {
+      bool deeper = 102;
+    }
+  }
 }
 `,
 	"e/e.proto": `edition = "2023";
@@ -134,7 +148,7 @@ import "e/features.proto";
 option features.field_presence = IMPLICIT;
 option features.(e.flag).on = true;
 message E {
-  int32 n = 1 [(e.Wrap.wrapped) = true, (e.opt) = {tag: "x", [e.deep]: true}];
+  int32 n = 1 [(e.Wrap.wrapped) = true, (e.opt) = {tag: "x", [e.deep]: true, [e.Wrap.inner]: true, [e.Wrap.Deeper.deeper]: true}];
   E child = 2;
 }
 `,
@@ -471,12 +485,10 @@ func TestLibrary(t *testing.T) {
 	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == true && proto.getExt(field.options, e.Wrap.wrapped) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
 	holds(t, env, check.TargetField, `proto.getExt(features(field), e.flag).on == false`, kind)
 	holds(t, env, check.TargetField, `proto.getExt(field.options, e.opt).tag == 'x'`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
-	// A select the contract puts beyond reach — an extension within a
-	// message-valued option's value — fails the rule by name, never
-	// by the interpreter's recovered fault (REQ-rules-eval).
-	if _, err := verdict(t, env, check.KindLint, check.TargetField, `proto.getExt(proto.getExt(field.options, e.opt), e.deep) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef}); err == nil || !errors.Is(err, ErrEval) || !strings.Contains(err.Error(), "cannot answer (internal error:") {
-		t.Errorf("beyond reach: %v", err)
-	}
+	// An extension within a message-valued option's value reads
+	// through the same access: the value is the environment's family's
+	// own, re-decoded at construction.
+	holds(t, env, check.TargetField, `proto.getExt(proto.getExt(field.options, e.opt), e.deep) == true && proto.hasExt(proto.getExt(field.options, e.opt), e.deep) && proto.getExt(proto.getExt(field.options, e.opt), e.Wrap.inner) == true && proto.getExt(proto.getExt(field.options, e.opt), e.Wrap.Deeper.deeper) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
 	// dir: empty at the root.
 	holds(t, env, check.TargetFile, `dir(file) == 'a' && dir(fileByName('google/protobuf/descriptor.proto')) == 'google/protobuf' && dir(fileByName('u/u.proto')) == 'u' && dir(fileByName('root.proto')) == '' && dyn(dir(parent(file))) == null`, file)
 	// unique: first-seen order under CEL's equality — numbers by
@@ -573,6 +585,14 @@ func TestBreakingSides(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("sides: %v %v", ok, err)
 	}
+	// The old side's option values are the environment's family's
+	// too: an extension within a message-valued option reads on the
+	// old side as on the new.
+	oe, ne := oldSet.File("e/e.proto"), newSet.File("e/e.proto")
+	ok, err = verdict(t, env, check.KindBreaking, check.TargetField, `proto.getExt(proto.getExt(old.options, e.opt), e.deep) == true && proto.getExt(proto.getExt(new.options, e.opt), e.deep) == true`, map[string]any{"old": oe.MessageType[0].Field[0], "new": ne.MessageType[0].Field[0], "oldFile": oe, "newFile": ne})
+	if err != nil || !ok {
+		t.Fatalf("nested option on both sides: %v %v", ok, err)
+	}
 	pair := map[string]any{"old": op.name, "new": np.name, "oldFile": op.a, "newFile": np.a}
 	ok, err = verdict(t, env, check.KindBreaking, check.TargetField, `file(old) == oldFile && file(new) == newFile && parent(old).field.size() == 9 && parent(new).field.size() == 8 && fullName(old) == fullName(new)`, pair)
 	if err != nil || !ok {
@@ -581,6 +601,32 @@ func TestBreakingSides(t *testing.T) {
 	ok, err = verdict(t, env, check.KindBreaking, check.TargetPackage, `oldPackage == 'a' && newPackage == null && oldFiles.size() == 1 && newFiles == null`, map[string]any{"oldPackage": "a", "newPackage": nil, "oldFiles": []*descriptorpb.FileDescriptorProto{op.a}, "newFiles": nil})
 	if err != nil || !ok {
 		t.Fatalf("absent package side: %v %v", ok, err)
+	}
+}
+
+// The set indexes a copy of the compiler's proto: the environment
+// re-decodes the copy's option values into its family and the
+// compiler's own stays as parsed.
+func TestSetCopiesTheCompilersProto(t *testing.T) {
+	files := prototest.Compile(t, fixture)
+	set := NewSet(files)
+	if _, err := New(set, nil); err != nil {
+		t.Fatal(err)
+	}
+	own := files.FindFileByPath("e/e.proto").(linker.Result).FileDescriptorProto()
+	if set.File("e/e.proto") == own {
+		t.Fatal("the set indexes the compiler's own proto")
+	}
+	opt := own.MessageType[0].Field[0].Options.ProtoReflect()
+	var kept bool
+	opt.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if fd.FullName() == "e.opt" {
+			kept = v.Message().Descriptor() == files.FindFileByPath("e/features.proto").Messages().ByName("Opt")
+		}
+		return true
+	})
+	if !kept {
+		t.Fatal("the compiler's option value no longer over its own descriptor")
 	}
 }
 
@@ -1093,4 +1139,168 @@ func TestPairs(t *testing.T) {
 	if got := values(compileSet(t, firstAlias), plainSet); got != "e.K_ZERO|e.K_ZERO@e/e.proto e.K_ONE|e.K_ONE@e/e.proto e.K_UNO|-@e/e.proto[base]" {
 		t.Errorf("alias declared first, removed: %s", got)
 	}
+}
+
+// The schema's own declarations alone decode its option values: an
+// extension the running binary registers at the same number under
+// another name is no declaration of the schema's, and the schema's
+// value reads as its own.
+func TestOptionValuesDecodeBySchemaDeclarations(t *testing.T) {
+	registerCollidingExtension(t)
+	env, set := lintEnv(t)
+	ef := set.File("e/e.proto")
+	holds(t, env, check.TargetField, `proto.hasExt(field.options, e.opt) && proto.getExt(field.options, e.opt).tag == 'x' && proto.getExt(proto.getExt(field.options, e.opt), e.deep) == true`, map[string]any{"field": ef.MessageType[0].Field[0], "file": ef})
+}
+
+var collidingOnce sync.Once
+
+// registerCollidingExtension registers, in the runtime's registry, an
+// extension of FieldOptions at the fixture's own option number under
+// another name — what a linked library's registration looks like.
+func registerCollidingExtension(t *testing.T) {
+	t.Helper()
+	collidingOnce.Do(func() {
+		fdp := &descriptorpb.FileDescriptorProto{
+			Name:       proto.String("g/other.proto"),
+			Package:    proto.String("g"),
+			Dependency: []string{"google/protobuf/descriptor.proto"},
+			Extension: []*descriptorpb.FieldDescriptorProto{{
+				Name: proto.String("other"), Number: proto.Int32(9997), Label: descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+				Type: descriptorpb.FieldDescriptorProto_TYPE_BOOL.Enum(), Extendee: proto.String(".google.protobuf.FieldOptions"),
+			}},
+		}
+		fd, err := protodesc.NewFile(fdp, protoregistry.GlobalFiles)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := protoregistry.GlobalTypes.RegisterExtension(dynamicpb.NewExtensionType(fd.Extensions().Get(0))); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+// An old value the new side's declarations cannot decode — a field
+// once bytes now a string holding what is no UTF-8 — keeps the
+// compiler's family: its top-level reads stand, the nested read fails
+// as the environment's own failure, and the run is never refused; a
+// required field the new side added and the old value lacks refuses
+// nothing, the nested read standing (REQ-env1-library, REQ-rules-eval).
+func TestOldOptionValueTheNewSideCannotDecode(t *testing.T) {
+	oldSrc, newSrc := map[string]string{}, map[string]string{}
+	for k, v := range fixture {
+		oldSrc[k], newSrc[k] = v, v
+	}
+	oldSrc["e/features.proto"] = strings.Replace(fixture["e/features.proto"], "string tag = 1;", "string tag = 1;\n  bytes b = 3;", 1)
+	oldSrc["e/e.proto"] = strings.Replace(fixture["e/e.proto"], `{tag: "x",`, `{tag: "x", b: "\377",`, 1)
+	newSrc["e/features.proto"] = strings.Replace(fixture["e/features.proto"], "string tag = 1;", "string tag = 1;\n  string b = 3;\n  string must = 2 [features.field_presence = LEGACY_REQUIRED];", 1)
+	newSrc["e/e.proto"] = strings.Replace(fixture["e/e.proto"], `{tag: "x",`, `{tag: "x", must: "m",`, 1)
+	oldSet, newSet := compileSet(t, oldSrc), compileSet(t, newSrc)
+	env, err := New(newSet, oldSet)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	oe, ne := oldSet.File("e/e.proto"), newSet.File("e/e.proto")
+	vars := map[string]any{"old": oe.MessageType[0].Field[0], "new": ne.MessageType[0].Field[0], "oldFile": oe, "newFile": ne}
+	ok, err := verdict(t, env, check.KindBreaking, check.TargetField, `proto.getExt(old.options, e.opt).tag == 'x' && proto.getExt(proto.getExt(new.options, e.opt), e.deep) == true`, vars)
+	if err != nil || !ok {
+		t.Fatalf("the top-level old read and the new nested read: %v %v", ok, err)
+	}
+	if _, err := verdict(t, env, check.KindBreaking, check.TargetField, `proto.getExt(proto.getExt(old.options, e.opt), e.deep) == true`, vars); err == nil || !errors.Is(err, ErrEval) {
+		t.Fatalf("the old nested read: %v", err)
+	}
+	// The required field alone, the bytes decoding: the old nested read
+	// stands.
+	oldSrc["e/features.proto"] = strings.Replace(fixture["e/features.proto"], "string tag = 1;", "string tag = 1;\n  string b = 3;", 1)
+	oldSrc["e/e.proto"] = strings.Replace(fixture["e/e.proto"], `{tag: "x",`, `{tag: "x", b: "ok",`, 1)
+	oldSet = compileSet(t, oldSrc)
+	env, err = New(newSet, oldSet)
+	if err != nil {
+		t.Fatalf("New over a required field the old lacks: %v", err)
+	}
+	oe = oldSet.File("e/e.proto")
+	vars["old"], vars["oldFile"] = oe.MessageType[0].Field[0], oe
+	ok, err = verdict(t, env, check.KindBreaking, check.TargetField, `proto.getExt(proto.getExt(old.options, e.opt), e.deep) == true`, vars)
+	if err != nil || !ok {
+		t.Fatalf("the old nested read under a new required field: %v %v", ok, err)
+	}
+}
+
+// A schema declaring a standard language feature at its number under
+// its own path constructs: the schema's declaration stands, the
+// standard file's behind it, and the environment reads the feature
+// through the schema's own name.
+func TestVendoredStandardFeatureFile(t *testing.T) {
+	// A schema of its own: the compiler refuses the standard file and
+	// a vendored copy in one compile, so nothing here imports the
+	// standard path. The compiler holds the number to the standard
+	// name.
+	src := map[string]string{}
+	src["v/java_features.proto"] = `edition = "2023";
+package pb;
+import "google/protobuf/descriptor.proto";
+message JavaFeatures {
+  bool legacy_closed_enum = 1 [targets = TARGET_TYPE_FIELD, targets = TARGET_TYPE_FILE, edition_defaults = { edition: EDITION_LEGACY, value: "true" }];
+}
+extend google.protobuf.FeatureSet {
+  JavaFeatures java = 1001;
+}
+`
+	src["v/v.proto"] = `edition = "2023";
+package v;
+import "v/java_features.proto";
+option features.(pb.java).legacy_closed_enum = false;
+message V {}
+`
+	set := compileSet(t, src)
+	env, err := New(set, nil)
+	if err != nil {
+		t.Fatalf("New over a vendored standard feature file: %v", err)
+	}
+	vf := set.File("v/v.proto")
+	holds(t, env, check.TargetFile, `proto.getExt(features(file), pb.java).legacy_closed_enum == false`, map[string]any{"file": vf})
+	// One declaration of the feature: the schema's, the standard
+	// file's not appended beside it.
+	var javas int
+	for _, xt := range env.featureExts {
+		if xt.TypeDescriptor().FullName() == "pb.java" {
+			javas++
+		}
+	}
+	if javas != 1 {
+		t.Fatalf("pb.java declared %d times in the environment", javas)
+	}
+}
+
+// A FeatureSet extension declared within a message is a language
+// feature the environment knows, as a top-level one is.
+func TestNestedFeatureExtension(t *testing.T) {
+	src := map[string]string{}
+	for k, v := range fixture {
+		src[k] = v
+	}
+	src["n/feat.proto"] = `edition = "2023";
+package n;
+import "google/protobuf/descriptor.proto";
+message Holder {
+  message Feat {
+    bool on = 1 [targets = TARGET_TYPE_FILE, targets = TARGET_TYPE_FIELD, edition_defaults = { edition: EDITION_LEGACY, value: "false" }];
+  }
+  extend google.protobuf.FeatureSet {
+    Feat nested = 9996;
+  }
+}
+`
+	src["n/n.proto"] = `edition = "2023";
+package n;
+import "n/feat.proto";
+option features.(n.Holder.nested).on = true;
+message N {}
+`
+	set := compileSet(t, src)
+	env, err := New(set, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nf := set.File("n/n.proto")
+	holds(t, env, check.TargetFile, `proto.getExt(features(file), n.Holder.nested).on == true`, map[string]any{"file": nf})
 }

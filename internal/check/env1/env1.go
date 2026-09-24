@@ -77,6 +77,14 @@ type Set struct {
 	// The extensions of google.protobuf.FeatureSet the set declares —
 	// the language features — by fully qualified name.
 	featureExts map[protoreflect.FullName]protoreflect.ExtensionType
+	// The runtime family the set's option values were decoded into
+	// (New): the set's own where it is a new side, built once and kept
+	// so every environment over the set reads one family; a set given
+	// as an old side is decoded into the new side's, and serves that
+	// new side alone.
+	rebuilt []protoreflect.FileDescriptor
+	family  *familyTypeResolver
+	decoded *familyTypeResolver // the family the option values were last decoded into
 }
 
 // entry is one declaration: the descriptor the compiler linked, the
@@ -238,6 +246,123 @@ func runtimeFamilyFiles(s *Set) ([]protoreflect.FileDescriptor, error) {
 	return out, nil
 }
 
+// familyTypes is every extension the rebuilt files declare, top-level
+// and nested to any depth, as extension types over the family's
+// descriptors — the runtime's own where it registers the file — the
+// resolver option values are decoded with. The schema's own
+// declarations alone answer: an extension the running binary
+// registers at the same number under another name is no declaration
+// of the schema, and decoding through it would read the schema's
+// value as the binary's. Registration is first-wins in the files'
+// order — the schema's files before the standard feature files — so
+// a schema declaring a standard feature at its number under its own
+// path stands, the standard file's declaration behind it.
+func familyTypes(rebuilt []protoreflect.FileDescriptor) *familyTypeResolver {
+	r := &familyTypeResolver{own: &protoregistry.Types{}}
+	for _, fd := range rebuilt {
+		for _, xd := range extensionsOf(fd) {
+			extendee := xd.ContainingMessage().FullName()
+			if _, err := r.own.FindExtensionByName(xd.FullName()); err == nil {
+				continue
+			}
+			if _, err := r.own.FindExtensionByNumber(extendee, xd.Number()); err == nil {
+				continue
+			}
+			// Both lookups refused what would conflict, so the
+			// registration cannot fail.
+			r.own.RegisterExtension(extensionType(xd))
+		}
+	}
+	return r
+}
+
+// extensionsOf is every extension a file declares, top-level and
+// within its messages to any depth, in declaration order.
+func extensionsOf(fd protoreflect.FileDescriptor) []protoreflect.ExtensionDescriptor {
+	var out []protoreflect.ExtensionDescriptor
+	collect := func(exts protoreflect.ExtensionDescriptors) {
+		for i := 0; i < exts.Len(); i++ {
+			out = append(out, exts.Get(i))
+		}
+	}
+	var walk func(msgs protoreflect.MessageDescriptors)
+	walk = func(msgs protoreflect.MessageDescriptors) {
+		for i := 0; i < msgs.Len(); i++ {
+			collect(msgs.Get(i).Extensions())
+			walk(msgs.Get(i).Messages())
+		}
+	}
+	collect(fd.Extensions())
+	walk(fd.Messages())
+	return out
+}
+
+// familyTypeResolver resolves extensions for decoding from the
+// family's own declarations alone; messages, which decoding of an
+// Any needs, from the runtime's registry.
+type familyTypeResolver struct{ own *protoregistry.Types }
+
+func (r *familyTypeResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	return r.own.FindExtensionByName(field)
+}
+
+func (r *familyTypeResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	return r.own.FindExtensionByNumber(message, field)
+}
+
+func (r *familyTypeResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
+	return protoregistry.GlobalTypes.FindMessageByName(message)
+}
+
+func (r *familyTypeResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
+	return protoregistry.GlobalTypes.FindMessageByURL(url)
+}
+
+// redecodeOptions replaces every options message beneath m — a file's,
+// a declaration's, an extension range's — with the same bytes decoded
+// through the family's types, walking every message and list of
+// messages the descriptor proto holds; an options message the family
+// cannot decode — an old value the new schema's declarations refuse —
+// is left as the compiler holds it.
+func redecodeOptions(m protoreflect.Message, family *familyTypeResolver) {
+	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if fd.Kind() != protoreflect.MessageKind || fd.IsMap() {
+			return true
+		}
+		if fd.Name() == "options" {
+			if fresh := redecode(v.Message(), family); fresh != nil {
+				m.Set(fd, protoreflect.ValueOfMessage(fresh))
+			}
+			return true
+		}
+		if fd.IsList() {
+			l := v.List()
+			for i := 0; i < l.Len(); i++ {
+				redecodeOptions(l.Get(i).Message(), family)
+			}
+			return true
+		}
+		redecodeOptions(v.Message(), family)
+		return true
+	})
+}
+
+// redecode is the message's bytes decoded again through the family's
+// types into a fresh message of the same type — a required field the
+// bytes lack no refusal, the value being a declaration's, not a wire
+// message — or nil where the bytes do not decode under the family.
+func redecode(m protoreflect.Message, family *familyTypeResolver) protoreflect.Message {
+	b, err := proto.MarshalOptions{AllowPartial: true}.Marshal(m.Interface())
+	if err != nil {
+		return nil
+	}
+	fresh := m.New()
+	if err := (proto.UnmarshalOptions{AllowPartial: true, Resolver: family}).Unmarshal(b, fresh.Interface()); err != nil {
+		return nil
+	}
+	return fresh
+}
+
 // familyResolver serves the runtime's files first and the rebuilt
 // ones after them.
 type familyResolver struct{ rebuilt *protoregistry.Files }
@@ -256,12 +381,12 @@ func (r familyResolver) FindDescriptorByName(name protoreflect.FullName) (protor
 	return r.rebuilt.FindDescriptorByName(name)
 }
 
-// featureExtensionsOf lists a file's extensions of FeatureSet.
+// featureExtensionsOf lists a file's extensions of FeatureSet,
+// declared at the top level or within a message.
 func featureExtensionsOf(fd protoreflect.FileDescriptor) []protoreflect.ExtensionType {
 	var out []protoreflect.ExtensionType
-	exts := fd.Extensions()
-	for i := 0; i < exts.Len(); i++ {
-		if xd := exts.Get(i); xd.ContainingMessage().FullName() == featureSetName {
+	for _, xd := range extensionsOf(fd) {
+		if xd.ContainingMessage().FullName() == featureSetName {
 			out = append(out, extensionType(xd))
 		}
 	}
@@ -296,9 +421,12 @@ func (s *Set) addFile(fd protoreflect.FileDescriptor) *fileEntry {
 	// The compiler's own proto of a file it parsed keeps what the
 	// descriptor view forgets — a declared proto2 syntax, a weak
 	// import; a file known by descriptor alone is rebuilt from it.
+	// A copy: the set's option values are re-decoded into the
+	// environment's family (New), and the compiler's own proto stays
+	// as it parsed it.
 	var fdp *descriptorpb.FileDescriptorProto
 	if r, ok := fd.(linker.Result); ok {
-		fdp = r.FileDescriptorProto()
+		fdp = proto.Clone(r.FileDescriptorProto()).(*descriptorpb.FileDescriptorProto)
 	} else {
 		fdp = protodesc.ToFileDescriptorProto(fd)
 	}
@@ -436,22 +564,61 @@ func New(newSide, oldSide *Set) (*Env, error) {
 	// concrete options and feature sets a rule sees are the runtime's;
 	// then the standard language features, where the schema holds no
 	// file of that path.
-	rebuilt, err := runtimeFamilyFiles(newSide)
-	if err != nil {
-		return nil, fmt.Errorf("the schema's types: %w", err)
-	}
-	standard, err := standardFeatures()
-	if err != nil {
-		return nil, err
-	}
-	for _, fd := range standard {
-		if newSide.byPath[fd.Path()] == nil {
-			rebuilt = append(rebuilt, fd)
+	if newSide.rebuilt == nil {
+		rebuilt, err := runtimeFamilyFiles(newSide)
+		if err != nil {
+			return nil, fmt.Errorf("the schema's types: %w", err)
 		}
+		standard, err := standardFeatures()
+		if err != nil {
+			return nil, err
+		}
+		// A standard feature file the schema holds at its path, or whose
+		// feature the schema declares itself under another path — a
+		// vendored copy, which the compiler holds to the standard name
+		// and number — is the schema's to declare.
+		declared := map[protoreflect.FullName]bool{}
+		for _, fd := range rebuilt {
+			for _, xd := range extensionsOf(fd) {
+				declared[xd.FullName()] = true
+			}
+		}
+		for _, fd := range standard {
+			if newSide.byPath[fd.Path()] != nil {
+				continue
+			}
+			own := false
+			for _, xd := range extensionsOf(fd) {
+				own = own || declared[xd.FullName()]
+			}
+			if !own {
+				rebuilt = append(rebuilt, fd)
+			}
+		}
+		newSide.rebuilt, newSide.family = rebuilt, familyTypes(rebuilt)
 	}
-	for _, fd := range rebuilt {
+	for _, fd := range newSide.rebuilt {
 		opts = append(opts, cel.TypeDescs(fd))
 		e.featureExts = append(e.featureExts, featureExtensionsOf(fd)...)
+	}
+	// Option values re-decoded into that family: the compiler stores a
+	// message-valued custom option as a dynamic message over its own
+	// descriptor, whose fields a rule reads by name but whose
+	// extensions the registry, answering for the rebuilt family alone,
+	// cannot reach; decoded again through the family's extension
+	// types, a value's extensions are the family's own, on both sides
+	// — an extension the old side alone declared stays unread, as the
+	// schema no longer has it, and a value the family's declarations
+	// cannot decode keeps the compiler's own, its extensions within
+	// unreachable as before (REQ-env1-library).
+	for _, side := range []*Set{newSide, oldSide} {
+		if side == nil || side.decoded == newSide.family {
+			continue
+		}
+		for _, f := range side.files {
+			redecodeOptions(f.proto.ProtoReflect(), newSide.family)
+		}
+		side.decoded = newSide.family
 	}
 	e.charged = map[string]bool{}
 	for _, f := range e.library() {
