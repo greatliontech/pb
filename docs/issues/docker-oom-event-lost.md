@@ -1,8 +1,8 @@
 # The daemon loses a memory kill's record under load
 
-Lands: a Docker release on which the live memory case records its
-kill in fifty consecutive loaded runs (the daemon's oom event
-delivered every time), pinned by the runner suite
+Lands: the docker memory attribution plan's chunk 1
+(docs/plans/docker-memory-attribution.md): the kill read from the
+kernel's counter at a cgroup parent the daemon does not release
 
 The docker runner attributes a memory kill to the daemon's event
 log for the container, read around the container's finish

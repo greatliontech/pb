@@ -1,7 +1,7 @@
 # The plugin evidence store has no lifecycle
 
-Lands: when pb gains a verb or a step that collects the plugin store
-(ocifs's collection invoked by pb), the evidence store swept with it
+Lands: the clean plan's chunk 1 (docs/plans/clean.md): `pb clean`
+sweeps the evidence store with the plugin store
 
 Kept evidence (`<user cache>/pb/plugin-evidence`) is written on every
 fetch and never removed: an entry outlives the image it vouches for
