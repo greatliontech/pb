@@ -122,7 +122,8 @@ func (s *Session) Modules(ctx context.Context) ([]mvs.Requirement, []modfiles.Mo
 		return nil, nil, err
 	}
 	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
-		return s.Client.Zip(ctx, modPath, v)
+		src, srcV := s.Root.Source(modPath, v)
+		return s.Client.Zip(ctx, src, srcV)
 	})
 	if err := savePins(s, err); err != nil {
 		return nil, nil, err
@@ -202,8 +203,16 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 	}
 	warnCrossings(out, crossings)
 	for _, r := range list {
-		if err := s.Client.Download(ctx, r.Path, r.Version); err != nil {
+		// A replaced path is never fetched: its replacement is what the
+		// build reads, so that pair is the one downloaded, and the line
+		// names both (REQ-work-replace).
+		src, srcV := s.Root.Source(r.Path, r.Version)
+		if err := s.Client.Download(ctx, src, srcV); err != nil {
 			return err
+		}
+		if src != r.Path {
+			fmt.Fprintf(out, "%s@%s => %s@%s\n", r.Path, r.Version, src, srcV)
+			continue
 		}
 		fmt.Fprintf(out, "%s@%s\n", r.Path, r.Version)
 	}

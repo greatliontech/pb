@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
-  source_hash: "edf69a4f2b562309aa1a1bac35cfa1889afe1db9ea08cf119ff82c6f1fae4f64"
+  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
+  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/mvs.BuildList"
   role: BINDING_ROLE_IMPLEMENTS
@@ -113,8 +113,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
-  source_hash: "edf69a4f2b562309aa1a1bac35cfa1889afe1db9ea08cf119ff82c6f1fae4f64"
+  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
+  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/mvs.TestDeterminismProperty"
   role: BINDING_ROLE_TESTS
@@ -603,8 +603,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f406ae318d41be787259c6d77774803f03b09700bde70ef744c83515c63891a8"
-  source_hash: "edf69a4f2b562309aa1a1bac35cfa1889afe1db9ea08cf119ff82c6f1fae4f64"
+  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
+  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/resolve.TestSelectionSourceIndependent"
   role: BINDING_ROLE_TESTS
@@ -1089,4 +1089,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/proto/modfiles.TestWellKnownGolden"
   role: BINDING_ROLE_TESTS
   shape_hash: "c86bdb1d29f4ffc379206056177ff875cb1d7a6133947c43fc7ef2972ff7df12"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-determinism"
+  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
+  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceStandsTheForkForTheOriginal"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "f6d34832d0e5ff22d2191d68e4322e42c11bb95f9dd2f2ea0c1410f315b4661a"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-synthesis"
+  content_hash: "368034f77be652dcd36550a2a9c7b7594f7e5cbcc2ecafa72db8eb488ec6d3df"
+  source_hash: "f1a08d8947338c5c11fba7bde81e3b8b08acb2afc3d36b36aedd21617a943b83"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceBySynthesizedModule"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "01aa6a0efa44d626947c01872c48dcda27988ea00db18249571cbde31432cef0"
 }

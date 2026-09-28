@@ -1,7 +1,8 @@
 # A fork cannot stand in for a dependency's dependency
 
-Lands: the replace plan's chunk 1 (docs/plans/replace.md): the path
-form; the directory form is its chunk 2
+Lands: the replace plan's chunk 2 (docs/plans/replace.md): the
+directory form; the path form is in the workspace file
+(workspace.md REQ-work-replace)
 
 Depending on a fork works where the workspace itself requires the
 module: it requires the fork's path instead, and the fork's files

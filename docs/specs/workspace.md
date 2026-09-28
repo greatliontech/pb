@@ -19,14 +19,18 @@ beneath its root, is never publishable (`module-archive.md`
 REQ-archive-nested-module) — a working arrangement, not a published
 one.
 
-**REQ-work-schema** (wire): The workspace file MUST contain exactly the
+**REQ-work-schema** (wire): The workspace file MUST contain the
 top-level key `use`: a list of relative directory paths, each the module
-root of a declared module.
+root of a declared module; and, optionally, `replace`: a non-empty
+mapping from a module path to a replacement spelled
+`<module path>@<version>`, the version a tagged release or a
+pseudo-version (REQ-work-replace). No other keys exist.
 
 **REQ-work-emission** (behavior): Tooling that writes a workspace file
 MUST emit it canonically: UTF-8, LF line endings, two-space
-indentation, `use` first and alone, its entries cleaned and sorted in
-raw-byte order, each spelled as `check-rules.md` REQ-lint-emission
+indentation, `use` first, its entries cleaned and sorted in raw-byte
+order, then `replace` where the file holds one, its keys in raw-byte
+order, each scalar spelled as `check-rules.md` REQ-lint-emission
 spells a scalar — plain where the file's reader reads the plain
 spelling back as exactly that text and no YAML schema of any version
 reads it as other than text, double-quoted otherwise — and never a
@@ -49,6 +53,28 @@ over the union of all workspace modules' requirements.
 **REQ-work-lockfile** (structural): A workspace MUST have exactly one
 lockfile, at the workspace root; workspace modules have no lockfiles of
 their own.
+
+**REQ-work-replace** (behavior): A replacement `X: Y@v` MUST make the
+module Y at v stand for X throughout the build: every node of X in the
+requirement graph reads its requirements from Y@v's module file (a
+synthesized Y declares none, `module-resolution.md`
+REQ-resolve-synthesis), and X's selected version's file set is Y@v's.
+Selection over X's versions runs unchanged, so X keeps its place and
+its path in the build list, and every version of X is replaced alike.
+Y@v is fetched, verified and pinned, and its provenance judged, under
+Y's own path — never X's — and X itself is never fetched. Module files
+never carry a replacement: only the resolution root's own workspace
+file does, so a replacement never reaches a consumer of the workspace's
+published modules, and a module required both as X's replacement and
+in its own right is two modules of the build, each providing the
+other's import paths, which the compile refuses as any duplicate
+provider (`generation.md` REQ-gen-compile).
+
+**REQ-work-replace-names** (behavior): A workspace file MUST be
+refused when a replacement names, on either side, a workspace module
+(the local override already answers for the path), or when its
+replacement is the replaced path itself or a path the same file
+replaces: the graph reads through one step, never a chain.
 
 **REQ-work-default** (behavior): Absent a workspace file, a module's own
 root MUST serve as the resolution root — a single-module workspace in

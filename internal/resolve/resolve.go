@@ -43,7 +43,8 @@ func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
 		if _, local := d.Root.IsLocal(path); local {
 			return nil, nil
 		}
-		mf, err := d.Client.Module(ctx, path, v)
+		src, srcV := d.Root.Source(path, v)
+		mf, err := d.Client.Module(ctx, src, srcV)
 		if err != nil {
 			return nil, err
 		}

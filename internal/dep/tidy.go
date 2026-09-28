@@ -252,6 +252,10 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	reachable := map[string]bool{}
 	for _, e := range edges {
 		reachable[e.Path+"@"+e.Version.String()] = true
+		// A replaced pair's pin is its replacement's: the pair the
+		// build reads through it (REQ-work-replace).
+		src, srcV := s.Root.Source(e.Path, e.Version)
+		reachable[src+"@"+srcV.String()] = true
 	}
 	kept := slices.DeleteFunc(slices.Clone(s.Lock.Modules), func(p lockfile.ModulePin) bool {
 		return !reachable[p.Path+"@"+p.Version]

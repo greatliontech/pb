@@ -224,6 +224,6 @@ so the build list and its diagnostics stay a pure function of the
 requirements.
 
 **REQ-resolve-determinism** (invariant): The build list MUST be a pure
-function of the resolution root's requirements and the pinned module
-files of the graph — independent of fetch order, source list, and cache
-state.
+function of the resolution root's requirements, its replacements
+(`workspace.md` REQ-work-replace), and the pinned module files of the
+graph — independent of fetch order, source list, and cache state.

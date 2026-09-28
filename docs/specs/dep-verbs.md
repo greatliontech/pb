@@ -88,7 +88,11 @@ satisfied by a workspace-local module keeps that module's existing
 declared version — the local working copy has none to record — and fails
 tidy when no declared version exists to keep. Tidy removes lockfile pins
 for (module path, version) pairs outside the tidied requirement graph,
-and is idempotent: a second run changes nothing.
+and is idempotent: a second run changes nothing. Tidy reads the graph
+through the resolution root's replacements (`workspace.md`
+REQ-work-replace): a replaced module's files and declarations are its
+replacement's, a declaration stays on the replaced path, and the
+replacement's pin is inside the tidied graph.
 
 **REQ-dep-tidy-rulesets** (behavior): Tidy MUST keep, at the selected
 version, each declaration of a module the lint file's `rulesets`
@@ -99,7 +103,9 @@ no workspace module.
 
 **REQ-dep-download** (behavior): `download` MUST fetch, verify, and
 pin the artifacts of every non-local build-list module into the module
-cache — archive, module file (when the module declares one), info, and
+cache — a replaced module's replacement in its place, its line naming
+both as `<path>@<version> => <replacement path>@<version>` — archive,
+module file (when the module declares one), info, and
 provenance envelope (when the source has one) — recording first-use
 pins per `REQ-lock-first-use` and recording provenance `none` only as
 `REQ-prov-unsigned-recorded` allows. For a pin already recording
@@ -122,8 +128,13 @@ module requires, on a name whose discovery finds no release, and on a
 name whose highest discovered release is lower than a declaration — an
 origin that regressed is surfaced, never papered over. Without
 arguments it updates every direct requirement with a discoverable
-release higher than its declaration, skipping the rest. Updated
-declarations are rewritten canonically in their declaring module files;
+release higher than its declaration, skipping the rest. A requirement
+on a replaced path (`workspace.md` REQ-work-replace) is never
+discovered — the workspace consults the replacement, never the
+replaced path's origin, and the replacement's version is the workspace
+file's to move: the sweep leaves the declaration and reports it as
+replaced, and naming the path fails. Updated declarations are
+rewritten canonically in their declaring module files;
 pin changes for updated versions follow `REQ-lock-first-use`, and any
 rewrite of an existing pin is the explicit user-invoked update
 `REQ-lock-no-silent-downgrade` sanctions. An argument naming an `oci`

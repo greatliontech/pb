@@ -33,7 +33,10 @@ type PluginUpdater interface {
 // with no discoverable release, and on a name whose highest release is
 // lower than a declaration; without arguments, every direct external
 // requirement with a discoverable release higher than its declaration,
-// skipping the rest. An argument naming an oci plugin reference the
+// skipping the rest. A replaced path is never discovered: the
+// workspace consults the replacement, never the replaced path's origin
+// — the sweep leaves its declaration and reports it as replaced, and
+// naming it fails. An argument naming an oci plugin reference the
 // root's generation configuration declares updates that plugin's pin
 // through plugins instead — the reference resolved anew, its evidence
 // fetched anew — and fails with no updater; without arguments plugins
@@ -98,6 +101,11 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		if _, ok := declared[target]; !ok && named {
 			return fmt.Errorf("dep update: no workspace module requires %s", target)
 		}
+		// A replaced path is placed as nothing to move: the workspace
+		// file's fact, refused before any argument moves.
+		if src, srcV := s.Root.Source(target, version.Version{}); named && src != target {
+			return fmt.Errorf("dep update: %s is replaced by %s@%s in the workspace file; its origin is never consulted, and the replacement's version is the workspace file's to move", target, src, srcV)
+		}
 	}
 	// A moved plugin pin is durable before it is reported, whatever
 	// the module arm does after.
@@ -116,6 +124,10 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 	for _, target := range moduleTargets {
 		declarers, ok := declared[target]
 		if !ok {
+			continue
+		}
+		if src, srcV := s.Root.Source(target, version.Version{}); src != target {
+			fmt.Fprintf(out, "%s: replaced by %s@%s, declaration left\n", target, src, srcV)
 			continue
 		}
 		versions, err := s.Client.Versions(ctx, target)
