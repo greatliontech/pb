@@ -19,3 +19,28 @@ case retries a run so reported, counting the loss. No record on the
 daemon's side survives such a loss: the container's cgroup, whose
 memory events the kernel counts, is released by the daemon at the
 exit, before pb reads anything.
+
+Spike over the plan's chunk 1, on Docker 29.8.1, cgroup v2, the
+systemd driver: a container created with `--cgroup-parent=<name>.slice`
+runs under a transient slice the daemon does not release — after the
+container's exit and removal the slice stands at
+`/sys/fs/cgroup/<name>.slice`, active with zero tasks, its
+`memory.events` readable by pb's user and counting the kill
+(`oom_kill 1` for a container killed at its memory bound). The
+lifetime fails the plan's question: the slice is a root-owned system
+unit, systemd never collects an active slice, and pb's user cannot
+stop it (`systemctl stop` refuses without authentication), so a slice
+per run leaks one unit per run. Two mechanisms remain sound, a fork
+the user weighs: a per-user pool of reusable slices
+(`pb-u<uid>-<n>.slice`), a slot claimed per run under a machine-wide
+flock and the kill read as the slot's `memory.events` delta — the
+residue a bounded set of permanent root-owned empty slices per user,
+growing only with peak concurrency, the daemon's record the named
+fallback for a remote or VM daemon; or the in-container static shim
+the plan names, cross-built per linux architecture and embedded in
+pb, copied into the created container and run as its first process,
+relaying the plugin's streams and reporting the container's own
+counter after the death — no host residue and a remote daemon
+served, at the cost of a generate step, embedded binaries and a
+pb-owned process in every plugin container. pb's own binary cannot
+serve as the shim: a default `go install` links it dynamically.
