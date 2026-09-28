@@ -51,6 +51,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"slices"
 	"strings"
@@ -97,6 +98,71 @@ const (
 	probeDir     = "probe" // the prefix of a probe's directory, numbered per probe
 	lockName     = "lock"
 )
+
+// StoreDir is the store's directory under the module cache root (the
+// module cache term, dep-verbs.md).
+const StoreDir = "vcs"
+
+// Empty empties every origin's directory in the store of its
+// repositories and probes, each under the origin's own lock, leaving
+// the directory and its lock for the origin's next fetch to
+// initialize into (REQ-dep-clean): the lock file stays because a
+// process waiting on it holds the file open, and a recreated file
+// would grant a second holder over a live claim. Only what the
+// store's layout recognizes is touched — an origin's directory by its
+// name, its entries by theirs — so a directory the cache setting
+// named that is not the store's loses nothing. A store absent is
+// empty already.
+func Empty(ctx context.Context, store billy.Filesystem) error {
+	origins, err := store.ReadDir(".")
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("emptying the store: %w", err)
+	}
+	for _, origin := range origins {
+		if !origin.IsDir() || !isOriginDir(origin.Name()) {
+			continue
+		}
+		if err := hold(ctx, store, origin.Name()); err != nil {
+			return fmt.Errorf("emptying the store: %s: %w", origin.Name(), err)
+		}
+		dir, err := store.Chroot(origin.Name())
+		if err != nil {
+			return fmt.Errorf("emptying the store: %s: %w", origin.Name(), err)
+		}
+		entries, err := dir.ReadDir(".")
+		if err != nil {
+			return fmt.Errorf("emptying the store: %s: %w", origin.Name(), err)
+		}
+		for _, e := range entries {
+			if !isOriginEntry(e.Name()) {
+				continue
+			}
+			if err := util.RemoveAll(dir, e.Name()); err != nil {
+				return fmt.Errorf("emptying the store: %s: %w", origin.Name(), err)
+			}
+		}
+	}
+	return nil
+}
+
+// isOriginDir reports whether a name under the store is an origin's
+// directory: the hex of the origin URL's SHA-256, as Fetch names it.
+func isOriginDir(name string) bool {
+	if len(name) != 2*sha256.Size {
+		return false
+	}
+	_, err := hex.DecodeString(name)
+	return err == nil
+}
+
+// isOriginEntry reports whether a name under an origin's directory is
+// the store's to empty: a repository or a probe, never the lock.
+func isOriginEntry(name string) bool {
+	return name == snapshotsDir || name == historyDir || strings.HasPrefix(name, probeDir+"-")
+}
 
 // Fetch opens the origin's repositories in the store, initializing
 // them on first use, and lists the origin's refs — the one round trip

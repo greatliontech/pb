@@ -13,7 +13,8 @@ rewrites a pin outside the explicit-update sanction
 (REQ-lock-no-silent-downgrade).
 
 **dep verb** (term): One of the operations `init`, `tidy`, `download`,
-`update`, `graph`, `why`, `verify`, invoked as `pb dep <verb>`. Every
+`update`, `graph`, `why`, `verify`, invoked as `pb dep <verb>` (`pb clean`,
+the stores' verb, stands beside them, REQ-dep-clean). Every
 verb runs against the resolution root governing the working directory,
 located per `workspace.md` (the nearest workspace above the directory,
 else the nearest module root), and fails with no governing root or when
@@ -196,3 +197,47 @@ cached is outside `verify`'s scope even when other artifact kinds are
 exception to `REQ-dep-cache-transparent`'s outcome-identity: `verify`'s
 subject IS the cache state, so its report legitimately depends on what
 is cached — never on cached content evading verification.
+
+**REQ-dep-clean** (behavior): `pb clean` MUST empty the stores pb
+keeps on the machine and nothing else — each store's layout names
+what is its, and a directory the cache setting pointed at loses only
+that — so the next operation refetches and re-verifies everything
+from the lockfiles' pins, and the trusted root, the user
+configuration, the lint files, the lockfiles and every resolution
+root's files are never touched: `--modules` empties the module cache
+— every artifact and every temporary under an `@v` directory whose
+parent spells an escaped module path removed, and the directories
+that emptying left empty with them, recognized by name and layout
+alone (REQ-dep-cache-layout: another tool's cache of the same shape
+under the named directory is not this one's, a directory empty
+already is not touched), and each origin under `vcs` emptied of its
+repositories and probes under the origin's own lock, the directory
+and its lock left for the origin's next fetch to initialize into; a
+fetch in flight in another process either fails its write or lands a
+whole verified entry that outlives the emptying, never a torn one,
+and an emptying racing such a write may itself fail, a rerun by the
+user succeeding;
+`--plugins` empties the plugin store through the store's own removal
+and collection (`plugin-execution.md` REQ-plugin-core-verifies names
+the store): every root severed at once and the content collected
+without its retention grace, an image a live run holds or a live
+mount serves kept and reported by the platform manifest the store
+materialized — it stands until that run's end or the next emptying —
+a collection
+halted or left incomplete failing the verb naming why, a store the
+library refuses to open (a layout it does not recognize) not emptied
+and the refusal, which names what to delete, reported; and the kept
+evidence (`provenance.md` REQ-prov-plugin-evidence-store) emptied with
+it, temporary files included; neither flag empties both. A plugin
+running in another process reads its image from the store's export,
+which its acquirer holds for the run's life (a hold, ocifs's api
+contract) from the moment its acquisition returns: an emptying
+landing in the instant between the acquisition and the hold collects
+the image, and that run's export then fails loudly, a rerun by the
+user succeeding — never a wrong result; otherwise the emptying
+reports the held image
+among the kept and its export stands until that run's end, when the
+store's own collection reclaims it. The report names each
+store emptied and every image kept. The verb is machine-scoped: it
+needs no resolution root, and a store absent is emptied already,
+never created to say so.

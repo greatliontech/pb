@@ -9,10 +9,13 @@ package evidence
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-git/go-billy/v6/osfs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -30,6 +33,10 @@ const MaxEntryBytes = 64 << 20
 type Store struct {
 	Dir string
 }
+
+// keepPrefix prefixes the temporary an atomic keep writes beside the
+// entry (REQ-prov-plugin-evidence-store).
+const keepPrefix = ".keep-"
 
 // document is the store's entry for one digest.
 type document struct {
@@ -125,8 +132,47 @@ func (s Store) Save(digest v1.Hash, carriers []image.Carrier) error {
 	if err != nil {
 		return fmt.Errorf("evidence: %w", err)
 	}
-	if err := atomicfile.Write(osfs.New(s.Dir), filepath.Join(digest.Algorithm, digest.Hex+".json"), ".keep-", 0o644, raw); err != nil {
+	if err := atomicfile.Write(osfs.New(s.Dir), filepath.Join(digest.Algorithm, digest.Hex+".json"), keepPrefix, 0o644, raw); err != nil {
 		return fmt.Errorf("evidence: %w", err)
+	}
+	return nil
+}
+
+// Empty removes every entry and every temporary file of an
+// interrupted keep — what the store's layout recognizes
+// (REQ-prov-plugin-evidence-store), nothing else — leaving the store's
+// directory; a store that does not exist is empty already
+// (dep-verbs.md REQ-dep-clean).
+func (s Store) Empty() error {
+	algorithms, err := os.ReadDir(s.Dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("evidence: %w", err)
+	}
+	for _, a := range algorithms {
+		if !a.IsDir() {
+			continue
+		}
+		dir := filepath.Join(s.Dir, a.Name())
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return fmt.Errorf("evidence: %w", err)
+		}
+		for _, e := range entries {
+			if e.IsDir() || !(strings.HasSuffix(e.Name(), ".json") || strings.HasPrefix(e.Name(), keepPrefix)) {
+				continue
+			}
+			if err := os.Remove(filepath.Join(dir, e.Name())); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("evidence: %w", err)
+			}
+		}
+		if rest, err := os.ReadDir(dir); err == nil && len(rest) == 0 {
+			if err := os.Remove(dir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("evidence: %w", err)
+			}
+		}
 	}
 	return nil
 }

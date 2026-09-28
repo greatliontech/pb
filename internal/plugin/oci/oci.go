@@ -97,6 +97,11 @@ type Acquirer struct {
 
 	mu      sync.Mutex
 	pending map[string]*acquisition // digest-or-tag target -> in-flight state
+	// holds are the acquirer's holds over every image it exported
+	// (ocifs api.md REQ-api-hold): the export outlives an emptying of
+	// the store in another process for as long as the acquirer, whose
+	// runs read it (dep-verbs.md REQ-dep-clean). Released at Close.
+	holds []*ocifs.Hold
 }
 
 // acquisition carries one Acquire call's seam contract and results.
@@ -155,7 +160,15 @@ func New(cfg Config) (*Acquirer, error) {
 
 // Close releases the store.
 func (a *Acquirer) Close() error {
-	return a.fs.Close()
+	a.mu.Lock()
+	holds := a.holds
+	a.holds = nil
+	a.mu.Unlock()
+	var err error
+	for _, h := range holds {
+		err = errors.Join(err, h.Release(context.Background()))
+	}
+	return errors.Join(err, a.fs.Close())
 }
 
 // Acquire materializes ref (REQ-plugin-digest-pin, REQ-lock-first-use):
@@ -212,6 +225,20 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 	if err != nil {
 		return nil, err
 	}
+	// The image is held for the acquirer's life before its export is
+	// materialized, so the export is the hold's and a run reads it
+	// after an emptying of the store elsewhere (ocifs api.md
+	// REQ-api-hold, dep-verbs.md REQ-dep-clean). An emptying landing
+	// between the pull's return and the hold collects the image, and
+	// the export below fails loudly; a rerun by the user succeeds,
+	// and no result is ever wrong.
+	hold, err := a.fs.Hold(ctx, img)
+	if err != nil {
+		return nil, err
+	}
+	a.mu.Lock()
+	a.holds = append(a.holds, hold)
+	a.mu.Unlock()
 	rootfs, err := img.Export(ctx)
 	if err != nil {
 		return nil, err

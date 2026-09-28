@@ -117,15 +117,12 @@ func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 	if err != nil {
 		return nil, noproxyValue.Wrap(err)
 	}
-	cache := settings.Get(userconfig.KeyCache)
-	if !cache.Stated() {
-		base, err := os.UserCacheDir()
-		if err != nil {
-			return nil, fmt.Errorf("resolving the user cache directory (set the cache setting to override): %w", err)
-		}
-		cache = userconfig.Defaulted(filepath.Join(base, "pb", "mod"))
+	cache, err := moduleCacheDir(settings)
+	if err != nil {
+		return nil, err
 	}
-	if err := os.MkdirAll(cache.Value, 0o755); err != nil {
+	cacheDir := cache.Value
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return nil, cache.Wrap(fmt.Errorf("module cache: %w", err))
 	}
 	var root *gitprov.TrustedRoot
@@ -163,12 +160,29 @@ func assembleClient(settings *userconfig.Settings) (*fetch.Client, error) {
 	return &fetch.Client{
 		HTTP:        httpClient,
 		Sources:     proxy.Config{Sources: sources, NoProxy: patterns},
-		Cache:       &fetch.Cache{FS: osfs.New(cache.Value)},
+		Cache:       &fetch.Cache{FS: osfs.New(cacheDir)},
 		Lock:        &lockfile.File{}, // replaced by dep.Load with the root's lockfile
 		TrustedRoot: root,
 		ResolveOrigin: func(ctx context.Context, modPath string) (origin.Origin, error) {
 			return origin.Resolve(ctx, origin.Deps{Prober: &origin.GitProber{ClientOptions: gitOptions}, Client: httpClient, SSH: sshPatterns}, modPath)
 		},
-		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cache.Value, "vcs")), ClientOptions: gitOptions},
+		Fetcher: direct.Fetcher{Store: osfs.New(filepath.Join(cacheDir, direct.StoreDir)), ClientOptions: gitOptions},
 	}, nil
+}
+
+// moduleCacheDir is the module cache's directory from the settings —
+// the cache setting when stated, else pb/mod under the platform user
+// cache directory (the module cache term, dep-verbs.md) — with the
+// layer that stated it, for a refusal to name (user-config.md
+// REQ-uc-precedence).
+func moduleCacheDir(settings *userconfig.Settings) (userconfig.Value, error) {
+	cache := settings.Get(userconfig.KeyCache)
+	if cache.Stated() {
+		return cache, nil
+	}
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return userconfig.Value{}, fmt.Errorf("resolving the user cache directory (set the cache setting to override): %w", err)
+	}
+	return userconfig.Defaulted(filepath.Join(base, "pb", "mod")), nil
 }

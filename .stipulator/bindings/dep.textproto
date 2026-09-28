@@ -480,3 +480,153 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "629b9532cad8e86642d0cdf78173e362a2691880faefc6c0ab5454fd3553dc2e"
 }
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestCleanEmptiesTheSelectedStores"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "033126573c117ed643a25ac7a39657a9c06fe11716835d1b889910cd04a50d84"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.TestEmptyLeavesTheLocks"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "715d61ea497f199afc6d69ed4b3170ddf31422c431b4c9a08985b461624599aa"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestEmptyEmptiesTheStoreAndItsEvidence"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "53ea479b56dc9ed73028e7f805b42680b248f6b2ffdefa37a00bbad57ab5355b"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/cmd/pb.TestCleanCommand"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b4a34b016b9b19208874377ab2d6df5c22bf6f7986a98d0dd0123a4c8864126f"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Clean"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c6b1987f695240c45c79cdbcfaa32c160ba45d58d502bf5b02d59850c0eb9c84"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.Empty"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a2b913dbe1b520ca29d197292cd155e02cd5cc08809920c14399d6283394216d"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.Empty"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a3374f2c404e1a791b1f5be042b03164715419374eced1a1b1b2c446e7c3fad1"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.Store.Empty"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "18bb9b691501586410addf12280c0f3676af945eb5cc9b821cebdf35c2abe49e"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/direct.TestEmptyWaitsForTheOriginsLock"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "6b92d34b183781581124d62f0db30e2518cdcc026b6dbc740cd3ae463f4c80e8"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestEmptyFailsWhenCollectionLeavesContent"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "710bf55d53c269ad1d2971f81eb49e1c06589e2ba6067f43a980c93837a028c5"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestIsArtifactName"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b0349ae3bad51c43e5aca4ace3ab0a0fc14df496c1218e727e33b735090767fc"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.IsArtifactName"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "85f07cff2e61b8d5c81352e0acc7b9aa9cfabfdf368b55d2f187b8a8540bf894"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquirerHoldsItsExportsThroughEmptying"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c84b39c6126d2f9018311a8df95d90cdb0a2d65668ef6093ef16a2a50c63953e"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-layout"
+  content_hash: "f64d70ebced8b61e1d0a385828915773c76170d8c7a974130f94534f12092f86"
+  source_hash: "e757dd96988928e5cd46f9f3c41047938bc2b765630595033c27e10cadee9b62"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestIsModuleDir"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "7fbe358c6a6992d1fe6f8424c19ce13a7a77e96742be3164be6a45e644716a24"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "c3ea8119764efd90bf744356c961a45249bf13ab1f856be04be09a37f16884dd"
+  source_hash: "3068d59bfaeb44fc87e94538d6b3166b16453236ab8895b68116db529a66c7d1"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.IsModuleDir"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "5c4f5b0db8fb5bab67594caec3c31eb1a6e09bcb9d2cd29bc3635aafdefb4d0c"
+}

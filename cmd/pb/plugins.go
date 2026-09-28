@@ -31,13 +31,13 @@ func acquirerConfig(settings *userconfig.Settings, run runner.Runner, s *dep.Ses
 	if err != nil {
 		return oci.Config{}, err
 	}
-	base, err := os.UserCacheDir()
+	workDir, evidenceDir, err := pluginStoreDirs()
 	if err != nil {
-		return oci.Config{}, fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
+		return oci.Config{}, err
 	}
 	return oci.Config{
-		WorkDir:     filepath.Join(base, "pb", "plugins"),
-		EvidenceDir: filepath.Join(base, "pb", "plugin-evidence"),
+		WorkDir:     workDir,
+		EvidenceDir: evidenceDir,
 		Lock:        s.Lock,
 		Policy:      s.Client.Policy,
 		TrustedRoot: s.Client.TrustedRoot,
@@ -99,4 +99,17 @@ func (u *lazyUpdater) Close() error {
 	acq := u.acq
 	u.acq = nil
 	return acq.Close()
+}
+
+// pluginStoreDirs locates the plugin store and its kept evidence
+// under the platform user cache directory, beside the module cache's
+// default rather than inside it (plugin-execution.md
+// REQ-plugin-core-verifies, provenance.md
+// REQ-prov-plugin-evidence-store).
+func pluginStoreDirs() (workDir, evidenceDir string, err error) {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return "", "", fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
+	}
+	return filepath.Join(base, "pb", "plugins"), filepath.Join(base, "pb", "plugin-evidence"), nil
 }

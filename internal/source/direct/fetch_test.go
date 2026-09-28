@@ -24,6 +24,7 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/osfs"
+	"github.com/go-git/go-billy/v6/util"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/cache"
 	"github.com/go-git/go-git/v6/plumbing/format/config"
@@ -734,4 +735,52 @@ func buildVersionsPack(t *testing.T, versions, size int) ([]byte, plumbing.Hash)
 	}
 	_, _ = buf.Write(sum.Sum(nil))
 	return buf.Bytes(), last
+}
+
+// Empty empties every origin's store of its repositories and probes
+// under the origin's lock, leaving the directory and its lock, and
+// the origin's next fetch initializes into it (REQ-dep-clean); a
+// store absent is empty already.
+func TestEmptyLeavesTheLocks(t *testing.T) {
+	ctx := context.Background()
+	c := newChain(t)
+	store := osfs.New(scratchtest.Dir(t))
+	if _, err := (Fetcher{ClientOptions: c.ClientOptions(), Store: store}).Fetch(ctx, "file:///"); err != nil {
+		t.Fatal(err)
+	}
+	dirs, err := store.ReadDir(".")
+	if err != nil || len(dirs) != 1 {
+		t.Fatalf("stores: %v %v", dirs, err)
+	}
+	origin := dirs[0].Name()
+	for p, content := range map[string]string{"probe-7/x": "a probe left mid-run", "notes": "not the store's"} {
+		if err := util.WriteFile(store, store.Join(origin, p), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := Empty(ctx, store); err != nil {
+		t.Fatalf("Empty: %v", err)
+	}
+	entries, err := store.ReadDir(origin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	if strings.Join(names, ",") != "lock,notes" {
+		t.Fatalf("the origin's store after the emptying holds %v, want the lock and the stranger alone", names)
+	}
+	assertLocked(t, filepath.Join(store.Root(), origin, lockName))
+	repo, err := (Fetcher{ClientOptions: c.ClientOptions(), Store: store}).Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatalf("the origin's next fetch: %v", err)
+	}
+	if got, err := repo.ResolveVersion(ctx, mustV(t, "v1.0.0"), ""); err != nil || got.Hash != c.c1.String() {
+		t.Fatalf("after the emptying: %+v %v", got, err)
+	}
+	if err := Empty(ctx, osfs.New(filepath.Join(scratchtest.Dir(t), "never"))); err != nil {
+		t.Fatalf("Empty over an absent store: %v", err)
+	}
 }

@@ -473,8 +473,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-store"
-  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
-  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  content_hash: "fd9bfaf3e0639b3db7f7b23ab028814a3379a7e62f70d855f0d0a50016845b95"
+  source_hash: "9f251ca8088b00889a6e0aa623aca70df1d9c4cd7fa40a027841c56624e7c5ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.Store.Save"
   role: BINDING_ROLE_IMPLEMENTS
@@ -483,8 +483,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-store"
-  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
-  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  content_hash: "fd9bfaf3e0639b3db7f7b23ab028814a3379a7e62f70d855f0d0a50016845b95"
+  source_hash: "9f251ca8088b00889a6e0aa623aca70df1d9c4cd7fa40a027841c56624e7c5ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.Store.Load"
   role: BINDING_ROLE_IMPLEMENTS
@@ -493,8 +493,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-store"
-  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
-  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  content_hash: "fd9bfaf3e0639b3db7f7b23ab028814a3379a7e62f70d855f0d0a50016845b95"
+  source_hash: "9f251ca8088b00889a6e0aa623aca70df1d9c4cd7fa40a027841c56624e7c5ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.TestStoreRoundTrips"
   role: BINDING_ROLE_TESTS
@@ -513,8 +513,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-store"
-  content_hash: "12a232ad876b2d24147d13c532b42650201f18467fcb509726f6eda9caedaf47"
-  source_hash: "c90d8177adc9ffb6d2724cd5594157f2486e31f2d6717e3b6e08eec2b51c935b"
+  content_hash: "fd9bfaf3e0639b3db7f7b23ab028814a3379a7e62f70d855f0d0a50016845b95"
+  source_hash: "9f251ca8088b00889a6e0aa623aca70df1d9c4cd7fa40a027841c56624e7c5ac"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.TestStoreUnreadableIsAbsent"
   role: BINDING_ROLE_TESTS

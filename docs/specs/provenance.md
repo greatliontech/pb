@@ -248,4 +248,6 @@ as fetched, base64, or `envelope`, the simple-signing envelope's parts —
 most 64 MiB, a larger one being absent. Entries are written
 atomically and whole; apart from the transient temporary files atomic
 writes leave on interruption — never read as entries — no other
-content lives under the store.
+content lives under the store. An entry persists until the store is
+emptied (`dep-verbs.md` REQ-dep-clean): it may outlive the image it
+vouches for, kilobytes carrying no authority.
