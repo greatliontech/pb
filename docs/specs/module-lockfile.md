@@ -131,8 +131,12 @@ bytes, which the file set contains (`module-archive.md`).
 
 **REQ-lock-first-use** (behavior): Resolving a (module path, version) with
 no existing pin MUST compute its digest and module-file hash from fetched
-content, evaluate provenance evidence, and record the pin. Pins are only
-added or explicitly updated, never silently rewritten.
+content, evaluate provenance evidence, and record the pin. The pair
+resolved is the one fetched: a replaced path's pair is never fetched,
+its pinned replacement is resolved and pinned under the replacement's
+own path, and a directory replacement is no pair at all and is never
+pinned (`workspace.md` REQ-work-replace, REQ-work-replace-dir). Pins
+are only added or explicitly updated, never silently rewritten.
 
 **REQ-lock-modfile-consistency** (invariant): When both a standalone
 module file and the module archive have been fetched for the same pinned

@@ -46,7 +46,11 @@ type Module struct {
 	Path    string
 	Version string // "" for a workspace module
 	Local   bool
-	Dir     string // workspace module: its directory relative to the root; "" for externals
+	// Dir is the module's directory relative to the root for a module
+	// read from the working tree — a workspace module, or a directory
+	// replacement standing for a build-list pair — and "" for a
+	// fetched module.
+	Dir string
 	// Files holds every protobuf source under the include root as
 	// loaded; a copy of a well-known path among them is no file of the
 	// build (REQ-gen-compile: ignored in favor of the toolchain's), and
@@ -62,11 +66,15 @@ type Module struct {
 }
 
 // Label names the module as reports and errors spell it: a build-list
-// module with its selected version, a workspace module by its path
-// alone, which has no version.
+// module with its selected version — and, read from a directory
+// replacement, the directory, which the user can find — a workspace
+// module by its path alone, which has no version.
 func (m Module) Label() string {
 	if m.Local {
 		return m.Path
+	}
+	if m.Dir != "" {
+		return m.Path + "@" + m.Version + " (" + workspace.Replacement{Dir: m.Dir}.String() + ")"
 	}
 	return m.Path + "@" + m.Version
 }
@@ -118,7 +126,12 @@ func WellKnown(path string) bool {
 
 // Load returns the build's file sets in deterministic order: workspace
 // modules in the root's order, then build-list modules in build-list
-// order. fsys is the working tree the root was loaded from.
+// order. fsys is the working tree the root was loaded from. A
+// build-list pair's files are its source's (workspace.Root.Source):
+// the archive zip serves of the pair or of its pinned replacement, or
+// a directory replacement's working-tree files read as a workspace
+// module's are (REQ-work-replace, REQ-work-replace-dir) — zip is only
+// ever asked for a source pair, never a replaced one.
 func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Module, error) {
 	var out []Module
 	for _, m := range root.Modules {
@@ -129,7 +142,16 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir, Files: files, Rules: rules})
 	}
 	for _, r := range list {
-		b, err := zip(ctx, r.Path, r.Version)
+		src := root.Source(r.Path, r.Version)
+		if src.Module != nil {
+			files, rules, err := workspaceFiles(fsys, path.Join(root.Dir, src.Module.Dir))
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, Module{Path: r.Path, Version: r.Version.String(), Dir: src.Module.Dir, Files: files, Rules: rules})
+			continue
+		}
+		b, err := zip(ctx, src.Path, src.Version)
 		if err != nil {
 			return nil, err
 		}

@@ -52,10 +52,13 @@ and nothing else: the closure is computed over the whole build, so a
 file an excluded module's files import is written whenever its own
 module is not excluded, and an exclusion the closure never reaches
 removes nothing; a path naming no build-list module, naming a
-workspace module, or given twice fails the export before anything is
-written; and every excluded module is reported with its selected
-version, the consumer supplying that module and holding it to the
-pin.
+workspace module, naming a replaced path (`workspace.md`
+REQ-work-replace, REQ-work-replace-dir: the build read its
+replacement, which no pin under that path names, so nothing the
+consumer could supply and hold to a pin stands for it), or given
+twice fails the export before anything is written; and every excluded
+module is reported with its selected version, the consumer supplying
+that module and holding it to the pin.
 
 **REQ-export-layout** (wire): An export tree MUST hold each exported
 file at its include-root-relative path under the output directory, as

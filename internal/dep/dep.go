@@ -121,10 +121,7 @@ func (s *Session) Modules(ctx context.Context) ([]mvs.Requirement, []modfiles.Mo
 	if err := savePins(s, err); err != nil {
 		return nil, nil, err
 	}
-	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, func(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
-		src, srcV := s.Root.Source(modPath, v)
-		return s.Client.Zip(ctx, src, srcV)
-	})
+	mods, err := modfiles.Load(ctx, iofs.New(s.WS), s.Root, list, s.Client.Zip)
 	if err := savePins(s, err); err != nil {
 		return nil, nil, err
 	}
@@ -204,14 +201,14 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 	warnCrossings(out, crossings)
 	for _, r := range list {
 		// A replaced path is never fetched: its replacement is what the
-		// build reads, so that pair is the one downloaded, and the line
-		// names both (REQ-work-replace).
-		src, srcV := s.Root.Source(r.Path, r.Version)
-		if err := s.Client.Download(ctx, src, srcV); err != nil {
+		// build reads, so that source is the one downloaded, and the
+		// line names both (REQ-work-replace, REQ-work-replace-dir).
+		src, err := s.Driver.Download(ctx, r)
+		if err != nil {
 			return err
 		}
-		if src != r.Path {
-			fmt.Fprintf(out, "%s@%s => %s@%s\n", r.Path, r.Version, src, srcV)
+		if s.Root.Replaced(r.Path) {
+			fmt.Fprintf(out, "%s@%s => %s\n", r.Path, r.Version, src)
 			continue
 		}
 		fmt.Fprintf(out, "%s@%s\n", r.Path, r.Version)
@@ -234,24 +231,41 @@ func Graph(ctx context.Context, s *Session, out io.Writer) error {
 
 // Why prints, for each named path, a shortest requirement chain or
 // that the module is not needed (REQ-dep-why). The graph is computed
-// once and shared across targets.
+// once for every target. A chain ending at a replaced path carries the
+// replacement as its last line, and a replacement's own path answers,
+// after any chain of its own, through each path it stands for: a
+// pinned replacement is needed by what it replaces.
 func Why(ctx context.Context, s *Session, out io.Writer, targets ...string) error {
 	edges, err := s.Driver.Graph(ctx)
 	if err != nil {
 		return err
+	}
+	// A chain to a replaced path ends in the replacement step, spelled
+	// as download's line spells the source.
+	printChain := func(target string) bool {
+		chain := resolve.WhyOver(edges, target)
+		if chain == nil {
+			return false
+		}
+		for _, node := range chain {
+			fmt.Fprintln(out, node)
+		}
+		if s.Root.Replaced(target) {
+			fmt.Fprintf(out, "%s => %s\n", chain[len(chain)-1], s.Root.Source(target, version.Version{}))
+		}
+		return true
 	}
 	for i, target := range targets {
 		if i > 0 {
 			fmt.Fprintln(out)
 		}
 		fmt.Fprintf(out, "# %s\n", target)
-		chain := resolve.WhyOver(edges, target)
-		if chain == nil {
-			fmt.Fprintf(out, "(module %s is not needed)\n", target)
-			continue
+		needed := printChain(target)
+		for _, replaced := range s.Root.ReplacedBy(target) {
+			needed = printChain(replaced) || needed
 		}
-		for _, node := range chain {
-			fmt.Fprintln(out, node)
+		if !needed {
+			fmt.Fprintf(out, "(module %s is not needed)\n", target)
 		}
 	}
 	return s.SaveLock()

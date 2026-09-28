@@ -22,15 +22,19 @@ one.
 **REQ-work-schema** (wire): The workspace file MUST contain the
 top-level key `use`: a list of relative directory paths, each the module
 root of a declared module; and, optionally, `replace`: a non-empty
-mapping from a module path to a replacement spelled
+mapping from a module path to a replacement, spelled either
 `<module path>@<version>`, the version a tagged release or a
-pseudo-version (REQ-work-replace). No other keys exist.
+pseudo-version (REQ-work-replace), or a relative root-contained
+directory path led by `./`, or the bare `.` for the root itself
+(REQ-work-replace-dir). No other keys exist.
 
 **REQ-work-emission** (behavior): Tooling that writes a workspace file
 MUST emit it canonically: UTF-8, LF line endings, two-space
 indentation, `use` first, its entries cleaned and sorted in raw-byte
 order, then `replace` where the file holds one, its keys in raw-byte
-order, each scalar spelled as `check-rules.md` REQ-lint-emission
+order and each value canonical — a pair as `<module path>@<version>`,
+a directory as `./` and its cleaned path, the root as `.` — each
+scalar spelled as `check-rules.md` REQ-lint-emission
 spells a scalar — plain where the file's reader reads the plain
 spelling back as exactly that text and no YAML schema of any version
 reads it as other than text, double-quoted otherwise — and never a
@@ -70,11 +74,36 @@ in its own right is two modules of the build, each providing the
 other's import paths, which the compile refuses as any duplicate
 provider (`generation.md` REQ-gen-compile).
 
+**REQ-work-replace-dir** (behavior): A replacement `X: ./dir` MUST
+make the directory stand for X throughout the build as a workspace
+module's working copy stands for its own path: every node of X in the
+requirement graph reads its requirements from the directory's module
+file, and X's selected version's file set is the directory's files, a
+nested module's excluded, whatever state the working copy is in.
+Selection over X's versions runs unchanged, as under REQ-work-replace.
+Nothing is fetched for X, no pin is recorded for it, and the trust
+policy is never consulted: the working tree is the workspace's own,
+and the directory's content is an input of the build on the same
+footing as a workspace module's (REQ-work-local-resolution), not a
+verified artifact — the lockfile holds no record of it, and a pin
+under X from before the replacement is outside the graph, pruned as
+any unreachable pin (`dep-verbs.md` REQ-dep-tidy). The directory
+answers for X whatever module path its own module file declares, as
+a pinned replacement does; a lockfile inside it is a clone's own,
+never the workspace's, and is not read. Reports and errors name the
+directory's files by their place in the tree, as a workspace
+module's, and the module as `X@<version> (<directory>)`, the
+directory as the workspace file spells it.
+
 **REQ-work-replace-names** (behavior): A workspace file MUST be
 refused when a replacement names, on either side, a workspace module
-(the local override already answers for the path), or when its
-replacement is the replaced path itself or a path the same file
-replaces: the graph reads through one step, never a chain.
+(the local override already answers for the path, and a workspace
+module's directory named as a replacement is the same module twice),
+when its replacement is the replaced path itself or a path the same
+file replaces (the graph reads through one step, never a chain), or
+when its replacement directory is not root-contained or holds no
+module file (the directory is read as a workspace module is, and a
+workspace module declares itself).
 
 **REQ-work-default** (behavior): Absent a workspace file, a module's own
 root MUST serve as the resolution root — a single-module workspace in

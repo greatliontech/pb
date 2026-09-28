@@ -90,9 +90,11 @@ tidy when no declared version exists to keep. Tidy removes lockfile pins
 for (module path, version) pairs outside the tidied requirement graph,
 and is idempotent: a second run changes nothing. Tidy reads the graph
 through the resolution root's replacements (`workspace.md`
-REQ-work-replace): a replaced module's files and declarations are its
-replacement's, a declaration stays on the replaced path, and the
-replacement's pin is inside the tidied graph.
+REQ-work-replace, REQ-work-replace-dir): a replaced module's files
+and declarations are its replacement's, a declaration stays on the
+replaced path, a pinned replacement's pin is inside the tidied graph
+and the replaced path's own is outside it, and a directory
+replacement has none.
 
 **REQ-dep-tidy-rulesets** (behavior): Tidy MUST keep, at the selected
 version, each declaration of a module the lint file's `rulesets`
@@ -104,7 +106,10 @@ no workspace module.
 **REQ-dep-download** (behavior): `download` MUST fetch, verify, and
 pin the artifacts of every non-local build-list module into the module
 cache — a replaced module's replacement in its place, its line naming
-both as `<path>@<version> => <replacement path>@<version>` — archive,
+both as `<path>@<version> => <replacement>`, the replacement as the
+workspace file spells it (REQ-work-emission) — a directory
+replacement fetches nothing (`workspace.md` REQ-work-replace-dir) —
+archive,
 module file (when the module declares one), info, and
 provenance envelope (when the source has one) — recording first-use
 pins per `REQ-lock-first-use` and recording provenance `none` only as
@@ -129,10 +134,11 @@ name whose highest discovered release is lower than a declaration — an
 origin that regressed is surfaced, never papered over. Without
 arguments it updates every direct requirement with a discoverable
 release higher than its declaration, skipping the rest. A requirement
-on a replaced path (`workspace.md` REQ-work-replace) is never
-discovered — the workspace consults the replacement, never the
-replaced path's origin, and the replacement's version is the workspace
-file's to move: the sweep leaves the declaration and reports it as
+on a replaced path (`workspace.md` REQ-work-replace,
+REQ-work-replace-dir) is never discovered — the workspace consults
+the replacement, never the replaced path's origin, and what the
+replacement names is the workspace file's to move: the sweep leaves
+the declaration and reports it as
 replaced, and naming the path fails. Updated declarations are
 rewritten canonically in their declaring module files;
 pin changes for updated versions follow `REQ-lock-first-use`, and any
@@ -160,13 +166,21 @@ edge per line as `<requirer> <path>@<version>`, where the requirer is
 `<path>@<version>` for a graph node and the bare module path for a
 workspace module (the local working copy has no version). Output is
 sorted lexically by line: a pure function of the graph, byte-identical
-across runs (`REQ-resolve-determinism`).
+across runs (`REQ-resolve-determinism`). The graph's edges alone: a
+replaced path's edges are the ones read from its replacement
+(`workspace.md` REQ-work-replace), which `why` and `download` name.
 
 **REQ-dep-why** (behavior): `why <module path>...` MUST print, for each
 named path, a shortest requirement chain from a workspace module to
 that path through the requirement graph — among equal-length chains the
-lexically least — or state that the module is not needed. The answer is
-deterministic and derives from the same graph `graph` prints.
+lexically least — or state that the module is not needed. A chain
+ending at a replaced path carries the replacement as its last line,
+`<path>@<version> => <replacement>` as `download` spells it; naming a
+replacement's module path answers, after any chain of its own, through
+each path it replaces, in raw-byte order, each with its chain and
+replacement line — a pinned replacement is needed by what it stands
+for. The answer is deterministic and derives from the same graph
+`graph` prints.
 
 **REQ-dep-verify** (behavior): `verify` MUST recompute, for every
 pinned (module path, version) pair whose artifacts are present in the

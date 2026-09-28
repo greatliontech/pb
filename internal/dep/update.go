@@ -103,8 +103,8 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		}
 		// A replaced path is placed as nothing to move: the workspace
 		// file's fact, refused before any argument moves.
-		if src, srcV := s.Root.Source(target, version.Version{}); named && src != target {
-			return fmt.Errorf("dep update: %s is replaced by %s@%s in the workspace file; its origin is never consulted, and the replacement's version is the workspace file's to move", target, src, srcV)
+		if named && s.Root.Replaced(target) {
+			return fmt.Errorf("dep update: %s is replaced by %s in the workspace file; its origin is never consulted, and what the replacement names is the workspace file's to move", target, s.Root.Source(target, version.Version{}))
 		}
 	}
 	// A moved plugin pin is durable before it is reported, whatever
@@ -126,8 +126,8 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		if !ok {
 			continue
 		}
-		if src, srcV := s.Root.Source(target, version.Version{}); src != target {
-			fmt.Fprintf(out, "%s: replaced by %s@%s, declaration left\n", target, src, srcV)
+		if s.Root.Replaced(target) {
+			fmt.Fprintf(out, "%s: replaced by %s, declaration left\n", target, s.Root.Source(target, version.Version{}))
 			continue
 		}
 		versions, err := s.Client.Versions(ctx, target)

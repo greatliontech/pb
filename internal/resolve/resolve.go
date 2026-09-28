@@ -7,7 +7,13 @@
 // (internal/source/fetch) — and adds exactly the wiring the specs place
 // between them: local paths never reach the fetch layer, selection
 // seeds from exactly the declared union, and graph rendering attributes
-// root edges to the workspace module that declared them.
+// root edges to the workspace module that declared them. Every read of
+// a build-list pair's content — its module file for selection, its
+// artifacts for download — goes through the driver, and the file
+// sets' loader (internal/proto/modfiles) reads the same way: each asks
+// workspace.Root.Source what answers for the pair, so a replaced path
+// is read from its replacement everywhere and fetched nowhere. A dep
+// verb never hands a build-list pair to the fetch client itself.
 package resolve
 
 import (
@@ -32,10 +38,12 @@ type Driver struct {
 
 // load is the selection loader (REQ-resolve-mvs): the verified module
 // file of each reached pair, through the pipeline's pin-and-cache
-// discipline. A workspace-local path contributes no requirements and is
-// never fetched — the local override is unconditional
-// (REQ-work-local-resolution), and every workspace module's
-// declarations already ride the root union
+// discipline, or — for a pair the workspace replaces with a directory
+// — that directory's module file as the root loaded it
+// (REQ-work-replace-dir). A workspace-local path contributes no
+// requirements and is never fetched — the local override is
+// unconditional (REQ-work-local-resolution), and every workspace
+// module's declarations already ride the root union
 // (REQ-work-external-resolution), so fetching a published copy could
 // only answer for content the workspace overrides.
 func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
@@ -43,13 +51,19 @@ func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
 		if _, local := d.Root.IsLocal(path); local {
 			return nil, nil
 		}
-		src, srcV := d.Root.Source(path, v)
-		mf, err := d.Client.Module(ctx, src, srcV)
-		if err != nil {
-			return nil, err
+		src := d.Root.Source(path, v)
+		var deps map[string]string
+		if src.Module != nil {
+			deps = src.Module.File.Deps
+		} else {
+			mf, err := d.Client.Module(ctx, src.Path, src.Version)
+			if err != nil {
+				return nil, err
+			}
+			deps = mf.Deps
 		}
-		reqs := make([]mvs.Requirement, 0, len(mf.Deps))
-		for p, ver := range mf.Deps {
+		reqs := make([]mvs.Requirement, 0, len(deps))
+		for p, ver := range deps {
 			parsed, err := version.Parse(ver)
 			if err != nil {
 				return nil, fmt.Errorf("requirement %s@%s of %s@%s: %w", p, ver, path, v, err)
@@ -58,6 +72,19 @@ func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
 		}
 		return reqs, nil
 	}
+}
+
+// Download fetches, verifies and pins the source of a build-list pair
+// into the module cache — the pair itself, or its pinned replacement
+// in its place — and returns the source; a directory replacement is
+// the working tree's and fetches nothing (REQ-dep-download,
+// REQ-work-replace, REQ-work-replace-dir).
+func (d *Driver) Download(ctx context.Context, r mvs.Requirement) (workspace.Source, error) {
+	src := d.Root.Source(r.Path, r.Version)
+	if src.Module != nil {
+		return src, nil
+	}
+	return src, d.Client.Download(ctx, src.Path, src.Version)
 }
 
 // BuildList selects one version per reachable non-local module path

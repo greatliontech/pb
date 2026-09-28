@@ -61,8 +61,10 @@ its directory outside any nested module, with the module directory as
 include root — resolving each import first against the well-known
 imports — a module shipping a well-known path is ignored in favor of
 the toolchain's copy, never an ambiguity — and then against the build
-list's modules at their selected versions, each external module's archive root (a synthesized module's
-subtree root, `REQ-resolve-synthesis`) serving as its include root. An
+list's modules at their selected versions, each external module's
+archive root (a synthesized module's subtree root,
+`REQ-resolve-synthesis`; a directory replacement's directory,
+`workspace.md` REQ-work-replace-dir) serving as its include root. An
 import satisfied by no module fails per
 `REQ-resolve-unsatisfied-imports`; an import path that more than one
 module provides fails naming the path and every provider — pb never

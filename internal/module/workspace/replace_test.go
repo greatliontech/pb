@@ -97,17 +97,118 @@ func TestReplaceNamesExternalsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if src, srcV := root.Source("example.com/x", v2); src != "example.com/y" || srcV.String() != "v1.0.0" {
-		t.Fatalf("Source(x@v2.0.0) = %s@%s, want the replacement for every version of x", src, srcV)
+	if src := root.Source("example.com/x", v2); src.Module != nil || src.String() != "example.com/y@v1.0.0" || !root.Replaced("example.com/x") {
+		t.Fatalf("Source(x@v2.0.0) = %s, want the replacement for every version of x", src)
 	}
-	if src, srcV := root.Source("example.com/y", v2); src != "example.com/y" || srcV.String() != "v2.0.0" {
-		t.Fatalf("Source(y@v2.0.0) = %s@%s, want the pair itself: the replacement is not replaced", src, srcV)
+	if src := root.Source("example.com/y", v2); src.Module != nil || src.String() != "example.com/y@v2.0.0" || root.Replaced("example.com/y") {
+		t.Fatalf("Source(y@v2.0.0) = %s, want the pair itself: the replacement is not replaced", src)
 	}
 	single, err := Load(fstest.MapFS{"pb.yaml": mod("example.com/solo")}, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if src, srcV := single.Source("example.com/x", v2); src != "example.com/x" || srcV.String() != "v2.0.0" {
-		t.Fatalf("Source(x@v2.0.0) = %s@%s on a single-module root, want the pair itself", src, srcV)
+	if src := single.Source("example.com/x", v2); src.Module != nil || src.String() != "example.com/x@v2.0.0" || single.Replaced("example.com/x") {
+		t.Fatalf("Source(x@v2.0.0) = %s on a single-module root, want the pair itself", src)
+	}
+}
+
+// The directory form: `./dir` reads and writes as a root-contained
+// directory, distinct from a pair by its leading dot, and refuses
+// every spelling the schema does not admit (REQ-work-schema,
+// REQ-work-emission, REQ-work-replace-names).
+func TestReplaceDirectoryGrammar(t *testing.T) {
+	f, err := Parse([]byte("use:\n  - m\nreplace:\n  example.com/x: ./forks/./x/\n  example.com/w: ./.\n  example.com/v: .\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := f.Replace["example.com/x"]; got.Dir != "forks/x" || got.Path != "" || got.String() != "./forks/x" {
+		t.Fatalf("replace x = %+v", got)
+	}
+	for _, root := range []string{"example.com/w", "example.com/v"} {
+		if got := f.Replace[root]; got.Dir != "." || got.String() != "." {
+			t.Fatalf("replace %s = %+v, %q: want the root, spelled .", root, got, got.String())
+		}
+	}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "use:\n  - m\nreplace:\n  example.com/v: .\n  example.com/w: .\n  example.com/x: ./forks/x\n"; string(out) != want {
+		t.Fatalf("encoded = %q, want %q: every directory cleaned, the root spelled .", out, want)
+	}
+	again, err := Parse(out)
+	if err != nil || again.Replace["example.com/x"].Dir != "forks/x" || again.Replace["example.com/w"].Dir != "." {
+		t.Fatalf("round trip = %+v, %v", again, err)
+	}
+	if twice, err := Encode(again); err != nil || string(twice) != string(out) {
+		t.Fatalf("emission is not idempotent: %q / %q, %v", out, twice, err)
+	}
+	for name, body := range map[string]string{
+		"escapes the root":        "use:\n  - m\nreplace:\n  example.com/x: ./../x\n",
+		"parent directory":        "use:\n  - m\nreplace:\n  example.com/x: ../x\n",
+		"absolute":                "use:\n  - m\nreplace:\n  example.com/x: /x\n",
+		"bare relative directory": "use:\n  - m\nreplace:\n  example.com/x: forks/x\n",
+	} {
+		if _, err := Parse([]byte(body)); !errors.Is(err, ErrInvalid) {
+			t.Errorf("%s: Parse = %v, want ErrInvalid", name, err)
+		}
+	}
+	// A directory replacement is no chain: the replaced path may be
+	// another replacement's pair path only through the pair form.
+	if _, err := Parse([]byte("use:\n  - m\nreplace:\n  example.com/x: ./forks/x\n  example.com/y: ./forks/y\n")); err != nil {
+		t.Fatalf("two directory replacements: %v", err)
+	}
+}
+
+// A directory replacement is read at Load as a workspace module is:
+// it holds a module file, it is no workspace module's directory, and
+// Source hands every version of the replaced path the directory's
+// module file (REQ-work-replace-dir, REQ-work-replace-names).
+func TestReplaceDirectoryLoads(t *testing.T) {
+	mod := func(path, deps string) *fstest.MapFile {
+		return &fstest.MapFile{Data: []byte("module: " + path + "\n" + deps)}
+	}
+	for name, tc := range map[string]struct {
+		files fstest.MapFS
+		want  string
+	}{
+		"no module file": {fstest.MapFS{
+			"pb.work":         {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: ./forks/x\n")},
+			"m/pb.yaml":       mod("example.com/m", ""),
+			"forks/x/x.proto": {Data: []byte("syntax = \"proto3\";\n")},
+		}, "not a declared module root"},
+		"a workspace module's directory": {fstest.MapFS{
+			"pb.work":   {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: ./m\n")},
+			"m/pb.yaml": mod("example.com/m", ""),
+		}, "workspace module's directory"},
+		"an invalid module file": {fstest.MapFS{
+			"pb.work":         {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: ./forks/x\n")},
+			"m/pb.yaml":       mod("example.com/m", ""),
+			"forks/x/pb.yaml": {Data: []byte("module: Not A Path\n")},
+		}, "module at ./forks/x"},
+	} {
+		if _, err := Load(tc.files, "."); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: Load = %v, want %q", name, err, tc.want)
+		}
+	}
+	fsys := fstest.MapFS{
+		"pb.work":         {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: ./forks/x\n")},
+		"m/pb.yaml":       mod("example.com/m", "deps:\n  example.com/x: v1.0.0\n"),
+		"forks/x/pb.yaml": mod("example.com/x", "deps:\n  example.com/z: v1.0.0\n"),
+	}
+	root, err := Load(fsys, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2, err := version.Parse("v2.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := root.Source("example.com/x", v2)
+	if src.Module == nil || src.Module.Dir != "forks/x" || src.Module.File.Deps["example.com/z"] != "v1.0.0" || src.String() != "./forks/x" || !root.Replaced("example.com/x") {
+		t.Fatalf("Source(x@v2.0.0) = %+v, want the directory read as a workspace module is, for every version of x", src)
+	}
+	if len(root.Modules) != 1 {
+		t.Fatalf("workspace modules = %v: the replacement directory joined the workspace", root.Modules)
 	}
 }

@@ -81,10 +81,12 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	for _, r := range list {
 		selected[r.Path] = r.Version.String()
 	}
-	// A malformed file is named by a path the user can find: a workspace
-	// file by its place in the tree, an external by module and version.
+	// A malformed file is named by a path the user can find: a file of
+	// the working tree — a workspace module's or a directory
+	// replacement's — by its place in the tree, a fetched one by module
+	// and version.
 	views, err := importcheck.Views(mods, func(m modfiles.Module, p string) string {
-		if m.Local {
+		if m.Dir != "" {
 			return path.Join(s.Root.Dir, m.Dir, p)
 		}
 		return fmt.Sprintf("%s@%s: %s", m.Path, m.Version, p)
@@ -251,11 +253,12 @@ func tidyOnce(ctx context.Context, s *Session, rulesets []string) (changed bool,
 	// Stable: prune pins outside the tidied requirement graph.
 	reachable := map[string]bool{}
 	for _, e := range edges {
-		reachable[e.Path+"@"+e.Version.String()] = true
 		// A replaced pair's pin is its replacement's: the pair the
-		// build reads through it (REQ-work-replace).
-		src, srcV := s.Root.Source(e.Path, e.Version)
-		reachable[src+"@"+srcV.String()] = true
+		// build reads through it, never the replaced pair, which is
+		// never fetched (REQ-work-replace); a directory replacement
+		// has none (REQ-work-replace-dir), its spelling matching no
+		// pin key.
+		reachable[s.Root.Source(e.Path, e.Version).String()] = true
 	}
 	kept := slices.DeleteFunc(slices.Clone(s.Lock.Modules), func(p lockfile.ModulePin) bool {
 		return !reachable[p.Path+"@"+p.Version]

@@ -303,8 +303,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-export-exclusion"
-  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
-  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  content_hash: "5bfa63ec60bcf69d3cde41c3294deca04a7a972cde540fdfabfa634eb9e39a93"
+  source_hash: "a2dc1e2ba29c99009e2b1811a42440f01975b425f6fcafc8ff137f0cf9ecf905"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Export"
   role: BINDING_ROLE_IMPLEMENTS
@@ -313,8 +313,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-export-exclusion"
-  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
-  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  content_hash: "5bfa63ec60bcf69d3cde41c3294deca04a7a972cde540fdfabfa634eb9e39a93"
+  source_hash: "a2dc1e2ba29c99009e2b1811a42440f01975b425f6fcafc8ff137f0cf9ecf905"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestExportExclusion"
   role: BINDING_ROLE_TESTS
@@ -323,8 +323,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-export-exclusion"
-  content_hash: "1ed86698a8a9b9759d62c19b70d9053826ee29ef01cc85898b51b22638827d08"
-  source_hash: "a4c7cc66ef3b67870fc7f8e5d70df0e5f7368858633de0778447b2e0b8d01ac8"
+  content_hash: "5bfa63ec60bcf69d3cde41c3294deca04a7a972cde540fdfabfa634eb9e39a93"
+  source_hash: "a2dc1e2ba29c99009e2b1811a42440f01975b425f6fcafc8ff137f0cf9ecf905"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestExportProperty"
   role: BINDING_ROLE_TESTS
@@ -359,4 +359,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.Session.parentDirectory"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "4926f73431133287a3e0b05a4bf5c9a35b12f03d7d54615f73bdc9a4fc8f477a"
+}
+
+bindings {
+  requirement_id: "REQ-export-exclusion"
+  content_hash: "5bfa63ec60bcf69d3cde41c3294deca04a7a972cde540fdfabfa634eb9e39a93"
+  source_hash: "a2dc1e2ba29c99009e2b1811a42440f01975b425f6fcafc8ff137f0cf9ecf905"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceByDirectory"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1f3607f8c62233ce766dbcf3ad74f1b0c77a49b6191564a9660f19f59bd90222"
 }

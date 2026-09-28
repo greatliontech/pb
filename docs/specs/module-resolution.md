@@ -225,5 +225,6 @@ requirements.
 
 **REQ-resolve-determinism** (invariant): The build list MUST be a pure
 function of the resolution root's requirements, its replacements
-(`workspace.md` REQ-work-replace), and the pinned module files of the
+(`workspace.md` REQ-work-replace, a directory replacement's module
+file among them, REQ-work-replace-dir), and the pinned module files of the
 graph — independent of fetch order, source list, and cache state.

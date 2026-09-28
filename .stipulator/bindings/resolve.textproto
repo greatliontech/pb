@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
-  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
+  content_hash: "0208bcc8a2818f04ce154f2cf00ad53c9efc5f4a007857200e95121f595e8a27"
+  source_hash: "bb8261a459b5a6e9c46f141249e212f0588405dc45815a0263ca8d81663f8f16"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/mvs.BuildList"
   role: BINDING_ROLE_IMPLEMENTS
@@ -113,8 +113,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
-  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
+  content_hash: "0208bcc8a2818f04ce154f2cf00ad53c9efc5f4a007857200e95121f595e8a27"
+  source_hash: "bb8261a459b5a6e9c46f141249e212f0588405dc45815a0263ca8d81663f8f16"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/mvs.TestDeterminismProperty"
   role: BINDING_ROLE_TESTS
@@ -603,8 +603,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
-  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
+  content_hash: "0208bcc8a2818f04ce154f2cf00ad53c9efc5f4a007857200e95121f595e8a27"
+  source_hash: "bb8261a459b5a6e9c46f141249e212f0588405dc45815a0263ca8d81663f8f16"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/resolve.TestSelectionSourceIndependent"
   role: BINDING_ROLE_TESTS
@@ -1093,8 +1093,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-determinism"
-  content_hash: "f3b98c1d3060953f4fd12a1cd05ea3e441effba91a6b846596c7e5d774b230d2"
-  source_hash: "f60ebfa7513f28d18c78bb092410748e1bec0acd14a621fe0e4678a96ecad831"
+  content_hash: "0208bcc8a2818f04ce154f2cf00ad53c9efc5f4a007857200e95121f595e8a27"
+  source_hash: "bb8261a459b5a6e9c46f141249e212f0588405dc45815a0263ca8d81663f8f16"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceStandsTheForkForTheOriginal"
   role: BINDING_ROLE_TESTS

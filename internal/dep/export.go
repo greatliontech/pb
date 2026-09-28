@@ -14,6 +14,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module/archive"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
@@ -64,6 +65,12 @@ func Export(ctx context.Context, s *Session, dir, given string, opts ExportOptio
 		}
 		if slices.ContainsFunc(s.Root.Modules, func(m workspace.Module) bool { return m.File.Module == e }) {
 			return fmt.Errorf("export: --exclude %s names a workspace module, whose files are the export's subject", e)
+		}
+		// The build read a replaced path's replacement, which no pin
+		// under that path names: nothing the consumer could supply and
+		// hold to a pin stands for it.
+		if s.Root.Replaced(e) {
+			return fmt.Errorf("export: --exclude %s names a replaced path, read from %s: no pin under it names what the build used", e, s.Root.Source(e, version.Version{}))
 		}
 	}
 	_, mods, err := s.Modules(ctx)

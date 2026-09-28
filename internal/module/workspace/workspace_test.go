@@ -415,9 +415,10 @@ func TestWorkspaceLocalsNeverEnterExternalSelection(t *testing.T) {
 // model: a Module carries a directory and a module file and nothing
 // else — there is no field a per-module lockfile location could live
 // in — and a Root carries exactly the root directory, the workspace
-// file, and its modules, so the lockfile's home is derivable from the
-// root alone. The behavioral half (Load rejecting a nested pb.lock) is
-// TestLoad's lockfile subtest.
+// file, its modules, and its directory replacements, each a Module
+// again, so the lockfile's home is derivable from the root alone. The
+// behavioral half (Load rejecting a nested pb.lock) is TestLoad's
+// lockfile subtest.
 func TestLockfilePlacementStructural(t *testing.T) {
 	structural.ExportedData[Module](t,
 		structural.FieldOf[string]("Dir"),
@@ -426,7 +427,8 @@ func TestLockfilePlacementStructural(t *testing.T) {
 	// Root carries decision methods, so its field set is pinned by
 	// reflection in this same analyzer-classified test.
 	rt := reflect.TypeFor[Root]()
-	if rt.NumField() != 3 || rt.Field(0).Name != "Dir" || rt.Field(1).Name != "File" || rt.Field(2).Name != "Modules" {
+	if rt.NumField() != 4 || rt.Field(0).Name != "Dir" || rt.Field(1).Name != "File" || rt.Field(2).Name != "Modules" ||
+		rt.Field(3).Name != "dirs" || rt.Field(3).Type != reflect.TypeFor[map[string]Module]() {
 		t.Fatalf("Root fields changed: the lockfile's home must stay derivable from the root alone")
 	}
 }

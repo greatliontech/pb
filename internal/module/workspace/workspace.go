@@ -55,21 +55,36 @@ type File struct {
 	Replace map[string]Replacement
 }
 
-// Replacement is the module pair a replaced module path reads from
-// (REQ-work-replace): another module's path at an exact version, whose
-// requirements and files stand for every version of the replaced path.
+// Replacement is what a replaced module path reads from, for every
+// version of the path alike: a pair, another module's path at an
+// exact version, fetched, verified and pinned under its own path
+// (REQ-work-replace); or a directory of the working tree, read as a
+// workspace module is and never fetched or pinned
+// (REQ-work-replace-dir). Exactly one form is set: a directory is
+// spelled with a leading `./` in the file, or is the bare `.`, which
+// no module path is, so the forms never collide.
 type Replacement struct {
 	Path    string
 	Version version.Version
+	Dir     string // the directory form: root-relative, cleaned; "" for a pair
 }
 
-// String spells the replacement as the workspace file writes it.
-func (r Replacement) String() string { return r.Path + "@" + r.Version.String() }
+// String spells the replacement as the workspace file writes it: a
+// directory as `./` and its cleaned path, the root as `.`.
+func (r Replacement) String() string {
+	switch {
+	case r.Dir == ".":
+		return "."
+	case r.Dir != "":
+		return "./" + r.Dir
+	}
+	return r.Path + "@" + r.Version.String()
+}
 
 // Parse decodes and validates workspace-file bytes (REQ-work-schema):
 // the top-level key use, a non-empty list of relative directory paths,
 // and optionally replace, a non-empty mapping from module path to
-// `<module path>@<version>`.
+// `<module path>@<version>` or a `./` directory.
 func Parse(data []byte) (*File, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
@@ -117,7 +132,8 @@ func Parse(data []byte) (*File, error) {
 }
 
 // parseReplace reads the replace mapping: each key a module path, each
-// value `<module path>@<version>`, held to validateReplace.
+// value `<module path>@<version>` or `./<directory>`, held to
+// validateReplace.
 func parseReplace(n ast.Node) (map[string]Replacement, error) {
 	m, ok := n.(*ast.MappingNode)
 	if !ok || len(m.Values) == 0 {
@@ -128,7 +144,7 @@ func parseReplace(n ast.Node) (map[string]Replacement, error) {
 		replaced := kv.Key.(*ast.StringNode).Value
 		s, ok := kv.Value.(*ast.StringNode)
 		if !ok {
-			return nil, fmt.Errorf("%w: replace %q must be a module path at a version", ErrInvalid, replaced)
+			return nil, fmt.Errorf("%w: replace %q must be a module path at a version or a ./directory", ErrInvalid, replaced)
 		}
 		with, err := parseReplacement(s.Value)
 		if err != nil {
@@ -142,12 +158,22 @@ func parseReplace(n ast.Node) (map[string]Replacement, error) {
 	return replace, nil
 }
 
-// parseReplacement reads `<module path>@<version>`: a module path has
-// no @ (REQ-resolve-path-syntax), so the one separator is its last.
+// parseReplacement reads `./<directory>` — a root-contained directory,
+// `.` the root itself — or `<module path>@<version>`: a module path
+// has no @ (REQ-resolve-path-syntax), so the one separator is its
+// last, and none begins with a dot, so the leading `./` is the
+// directory form's alone.
 func parseReplacement(s string) (Replacement, error) {
+	if s == "." || strings.HasPrefix(s, "./") {
+		dir, err := rootpath.Clean(s, "the workspace root")
+		if err != nil {
+			return Replacement{}, fmt.Errorf("replacement directory %q: %v", s, err)
+		}
+		return Replacement{Dir: dir}, nil
+	}
 	at := strings.LastIndex(s, "@")
 	if at <= 0 {
-		return Replacement{}, fmt.Errorf("replacement %q is not <module path>@<version>", s)
+		return Replacement{}, fmt.Errorf("replacement %q is neither <module path>@<version> nor ./<directory>", s)
 	}
 	p, v := s[:at], s[at+1:]
 	if err := module.ValidatePath(p); err != nil {
@@ -171,6 +197,8 @@ func validateReplace(replace map[string]Replacement) error {
 		if err := module.ValidatePath(replaced); err != nil {
 			return fmt.Errorf("%w: replace key %q: %v", ErrInvalid, replaced, err)
 		}
+		// A directory's Path is "", never a key: a valid module path
+		// is non-empty.
 		if _, chained := replace[with.Path]; chained {
 			return fmt.Errorf("%w: replace %q names %s, which is itself replaced", ErrInvalid, replaced, with.Path)
 		}
@@ -208,7 +236,7 @@ func Encode(f *File) ([]byte, error) {
 		}
 	}, Parse, want, func(a, b *File) bool {
 		return slices.Equal(a.Use, b.Use) && maps.EqualFunc(a.Replace, b.Replace, func(x, y Replacement) bool {
-			return x.Path == y.Path && version.Compare(x.Version, y.Version) == 0 && x.Version.String() == y.Version.String()
+			return x.Dir == y.Dir && x.Path == y.Path && version.Compare(x.Version, y.Version) == 0 && x.Version.String() == y.Version.String()
 		})
 	}, ErrInvalid)
 }
@@ -254,6 +282,29 @@ type Root struct {
 	Dir     string // directory of the root within the loaded fs
 	File    *File  // nil for the single-module default
 	Modules []Module
+	// dirs holds each directory replacement read as a workspace
+	// module is, by the path it replaces (REQ-work-replace-dir).
+	dirs map[string]Module
+}
+
+// Source is what answers for a build-list pair: a pair — fetched,
+// verified and pinned under its own path — or a directory of the
+// working tree read as a workspace module is, which is never fetched
+// or pinned. Module is set for the directory form alone; Path and
+// Version are the pair form's.
+type Source struct {
+	Path    string
+	Version version.Version
+	Module  *Module
+}
+
+// String spells the source as download's line names it: a directory
+// as the workspace file spells it.
+func (s Source) String() string {
+	if s.Module != nil {
+		return Replacement{Dir: s.Module.Dir}.String()
+	}
+	return s.Path + "@" + s.Version.String()
 }
 
 // Find walks up from dir toward the filesystem root and returns the
@@ -342,43 +393,101 @@ func Load(fsys fs.FS, rootDir string) (*Root, error) {
 		r.Modules = append(r.Modules, Module{Dir: dir, File: mf})
 	}
 	// A replacement answers for an external path with another external
-	// pair (REQ-work-replace-names): a workspace module already answers
-	// for its own path through the local override, and a workspace
-	// module named as a replacement would pin the working copy's path
+	// pair or a directory that is no workspace module's
+	// (REQ-work-replace-names): a workspace module already answers for
+	// its own path through the local override; a workspace module
+	// named as a pinned replacement would pin the working copy's path
 	// to a published version, which that override never lets a build
-	// read.
+	// read; and its directory named as a replacement is the same
+	// module twice. A replacement directory is read as a workspace
+	// module is (REQ-work-replace-dir): it holds a module file, which
+	// declares what the replaced path's nodes require.
 	if wf != nil {
+		seenDir := map[string]bool{}
+		for _, m := range r.Modules {
+			seenDir[m.Dir] = true
+		}
 		for _, replaced := range slices.Sorted(maps.Keys(wf.Replace)) {
+			with := wf.Replace[replaced]
 			if dir, local := seenPath[replaced]; local {
 				return nil, fmt.Errorf("workspace: replace %q names the workspace module at %q, which the local override already answers for", replaced, dir)
 			}
-			if dir, local := seenPath[wf.Replace[replaced].Path]; local {
-				return nil, fmt.Errorf("workspace: replace %q names %s, the workspace module at %q, as a pinned replacement", replaced, wf.Replace[replaced], dir)
+			if with.Dir == "" {
+				if dir, local := seenPath[with.Path]; local {
+					return nil, fmt.Errorf("workspace: replace %q names %s, the workspace module at %q, as a pinned replacement", replaced, with, dir)
+				}
+				continue
 			}
+			if seenDir[with.Dir] {
+				return nil, fmt.Errorf("workspace: replace %q names %s, a workspace module's directory: the working copy already answers for its own path", replaced, with)
+			}
+			data, err := fs.ReadFile(fsys, path.Join(rootDir, with.Dir, module.ModuleFileName))
+			if err != nil {
+				return nil, fmt.Errorf("workspace: replace %q names %s, which is not a declared module root: %v", replaced, with, err)
+			}
+			mf, err := modfile.Parse(data)
+			if err != nil {
+				return nil, fmt.Errorf("workspace: replace %q: module at %s: %v", replaced, with, err)
+			}
+			if r.dirs == nil {
+				r.dirs = map[string]Module{}
+			}
+			r.dirs[replaced] = Module{Dir: with.Dir, File: mf}
 		}
 	}
 	return r, nil
 }
 
-// Source names the pair whose module file and archive answer for a
-// build-list pair: the root's replacement where its workspace file
-// replaces the path (REQ-work-replace), every version of the path
-// alike, else the pair itself. Every reader of a pair — selection's
-// requirement loader, the file sets' archive loader, download and the
+// Source names what answers for a build-list pair: the root's
+// replacement where its workspace file replaces the path — a pair
+// (REQ-work-replace) or a working-tree directory read as a workspace
+// module is (REQ-work-replace-dir) — every version of the path alike,
+// else the pair itself. Every reader of a pair — selection's
+// requirement loader, the file sets' loader, download and the
 // lockfile's reachable pins — asks this one function, so a replaced
 // path's requirements and its files can never come from two different
-// pairs, and the replaced path itself is never fetched. A pair is
-// replaced exactly when the source's path differs: a path never
-// replaces itself (REQ-work-replace-names). Only the workspace file
-// carries replacements: a module file never does, so a replacement
-// never reaches a consumer of the workspace's published modules.
-func (r *Root) Source(modulePath string, v version.Version) (string, version.Version) {
+// sources, and the replaced path itself is never fetched. A pair is
+// replaced exactly when the source is a directory or its path
+// differs: a path never replaces itself (REQ-work-replace-names). Only
+// the workspace file carries replacements: a module file never does,
+// so a replacement never reaches a consumer of the workspace's
+// published modules.
+func (r *Root) Source(modulePath string, v version.Version) Source {
+	if m, ok := r.dirs[modulePath]; ok {
+		return Source{Module: &m}
+	}
 	if r.File != nil {
 		if with, ok := r.File.Replace[modulePath]; ok {
-			return with.Path, with.Version
+			return Source{Path: with.Path, Version: with.Version}
 		}
 	}
-	return modulePath, v
+	return Source{Path: modulePath, Version: v}
+}
+
+// Replaced reports whether a build-list pair on modulePath reads from
+// a replacement rather than itself.
+func (r *Root) Replaced(modulePath string) bool {
+	if r.File == nil {
+		return false
+	}
+	_, ok := r.File.Replace[modulePath]
+	return ok
+}
+
+// ReplacedBy lists the paths the root replaces with a pair on
+// modulePath, in raw-byte order: what a pinned replacement stands for.
+func (r *Root) ReplacedBy(modulePath string) []string {
+	if r.File == nil {
+		return nil
+	}
+	var paths []string
+	for replaced, with := range r.File.Replace {
+		if with.Dir == "" && with.Path == modulePath {
+			paths = append(paths, replaced)
+		}
+	}
+	slices.Sort(paths)
+	return paths
 }
 
 func readWorkFile(fsys fs.FS, rootDir string) (*File, error) {
