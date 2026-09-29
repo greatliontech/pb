@@ -44,8 +44,10 @@ a runner by these exact names (`native`, `docker`), an empty
 environment value being an absent layer as for pb's other environment
 settings and a flag given empty naming no runner; the platform default
 chosen by capability exhaustion, not heuristics — `native` where pb's
-sandbox is available (Linux), otherwise `docker` where it is the only
-viable runner; and a layer naming no runner, or a selected runner that
+sandbox is available for the scheme on the platform, otherwise
+`docker` where it is the only viable runner (`platforms.md`
+REQ-plat-oci-substrate, REQ-plat-local-runner); and a layer naming no
+runner, or a selected runner that
 is unavailable, failing with an error that names the layer and, for a
 runner, the runner — no run ever falls back to another runner.
 
@@ -158,7 +160,9 @@ no floor is required of it.
 **REQ-plugin-local-resolution** (behavior): A `local` value containing no
 path separator MUST resolve through the `PATH` environment variable
 exactly as written — no name is ever synthesized (no `protoc-gen-`
-prefixing, no extension expansion) — while a value containing a path
+prefixing, no extension expansion but the platform's executable
+suffix where the platform has one, `platforms.md`
+REQ-plat-local-runner) — while a value containing a path
 separator resolves relative to the resolution root (absolute paths
 allowed), written with forward slashes. Resolution failure fails
 generation with an error naming the search performed; it never falls

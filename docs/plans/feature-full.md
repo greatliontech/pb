@@ -103,3 +103,20 @@ formatter and the language server
       holds the spike)
 - [ ] 14. The runner suite's live memory case records its kill in every
       loaded run and no longer retries a lost event
+- [ ] 15. Platforms, the portable half: the suite on macOS and Windows
+      runners in continuous integration and cross-compiled release
+      binaries with no C toolchain; the file rules witnessed there
+      (case folding, the rename of an open file on windows, the user
+      directories); ocifs's store and export on both in its own
+      matrix; the local scheme's `.exe` resolution on windows
+- [ ] 16. The sandbox's darwin row: the Seatbelt backend
+      (sandbox-exec profile, rlimits, a process group), its probe
+      reporting `OS` or `Minimal`, its `Reach`, on the macOS runners
+- [ ] 17. The sandbox's windows row: the AppContainer and Job Object
+      backend, its probe, its `Reach`, on the windows runners
+- [ ] 18. The native runner for `local` plugins on darwin and windows
+      over the sandbox's row, runner selection per platforms.md; the
+      local-scheme-darwin issue closes; what only hardware or a
+      Docker Desktop daemon can witness (the docker runner's live
+      cases on darwin and windows) tracked to a machine reporting
+      back

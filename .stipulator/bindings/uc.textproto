@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "05d0f715dfdb84a24dfd6e44e04c191d130d7a64befb82eb52c0d2ae2c80eb6f"
-  source_hash: "0f6217ab6a90e023a90255f923da05104c977616161d2ac63a7c5651ce5c9562"
+  content_hash: "1db93809cb7b370582509b5c58f5f235129d23ce2fffec150d82b7da8da6342e"
+  source_hash: "c65ab541e6841a27020e5e891fbe74e8c5ef5c426a8a66dbedb298e443a2060a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/cmd/pb.TestGenerateSelectsFromTheFile"
   role: BINDING_ROLE_TESTS

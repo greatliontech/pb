@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-plat-local-runner"
+reason: "the platform contract is stated ahead of its witnesses: the suite runs on Linux alone until the platform matrix lands"
+content_hash: "2e845e6b882b123e47d0178d32de28aa60b717ae5eacf500908fad70dc46eb42"
+source_hash: "16c60b666d2a0e5c79ae5f426ffd09ccb4ca74abbafdada7376af330a1e8b68a"
+lands { manual { condition: "the feature-full plan's chunk 18 lands" } }
