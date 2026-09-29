@@ -1,8 +1,9 @@
 # pb — platforms
 
 pb runs on more than one operating system, and what it can promise
-differs by what each affords: a sandbox row, a daemon, a filesystem's
-case rule, a way to replace an open file. This document names the
+differs by what each affords: a sandbox row, a daemon, an image entry
+for the host, a filesystem's case rule, a way to replace an open
+file. This document names the
 platforms pb builds for and states, for each contract the other
 documents write in Unix terms, what holds everywhere and what a
 platform changes. Every contract it touches is defined where its
@@ -37,26 +38,33 @@ and tracked to its witness as any deferral is.
 
 ## Plugin execution
 
-**REQ-plat-oci-substrate** (behavior): An `oci` plugin, being a
-Linux image, MUST run on Linux: on a `linux` platform through the
-native runner where the sandbox reaches the tier the policy requires
-(`plugin-execution.md` REQ-plugin-min-tier) or through the `docker`
-runner, and on `darwin` and `windows` through the `docker` runner
-alone — a daemon that runs Linux containers, Docker Desktop's among
-them, whose platform is the daemon's own (`linux` at the daemon's
-architecture: `linux/arm64` on an Apple-silicon host's Desktop,
-`linux/amd64` under WSL2) and is what the image's manifest list must
-serve. The platform default of runner selection
-(REQ-plugin-runner-selection) is therefore `native` on `linux` where
-the sandbox is available and `docker` on `darwin` and `windows`;
-naming `native` for an `oci` plugin on `darwin` or `windows` is a
-selection of an unavailable runner, refused as such, never a run of
-a Linux binary on the host. A daemon in a virtual machine leaves the
-host's cgroup tree unreadable to pb: a memory kill there is
-attributed as the daemon's record affords it and the record says
-which source spoke (REQ-plugin-resource-bounds); pb hands the daemon
-the export as a stream and binds no host directory, so the daemon's
-file sharing is never consulted.
+**REQ-plat-oci-substrate** (behavior): An `oci` plugin MUST run on
+the substrate whose platform its image serves, on every platform the
+same way: the native runner exports the image's entry for the host's
+platform and executes its entrypoint under the sandbox row the host
+reaches, where that row meets the tier the policy requires
+(`plugin-execution.md` REQ-plugin-min-tier — `Strong` unless lowered,
+so the `OS` rows of `darwin` and `windows` run an `oci` plugin only
+under the policy's explicit lowering); the `docker` runner hands the
+image's entry for the daemon's platform to a daemon running Linux
+containers — Docker Desktop's on `darwin` and `windows`, whose
+platform is `linux` at the daemon's architecture (`linux/arm64` on an
+Apple-silicon host, `linux/amd64` under WSL2). The entry sought is
+the substrate's platform and exactly one must match
+(REQ-plugin-platform-strict): an image serving no entry for the host
+is refused under the native runner naming the platforms it serves,
+never run through a daemon unasked, and the platform default of
+runner selection (REQ-plugin-runner-selection) is `native` wherever
+the sandbox reaches a row and `docker` only where it reaches none.
+On an `OS` row the plugin's world is the export and the platform's
+own system libraries, which every `darwin` and `windows` binary
+links (`libSystem`, the system DLLs), and nothing else; the Linux
+`OS` row's static-entrypoint rule is that platform's alone. A daemon
+in a virtual machine leaves the host's cgroup tree unreadable to pb:
+a memory kill there is attributed as the daemon's record affords it
+and the record says which source spoke (REQ-plugin-resource-bounds);
+pb hands the daemon the export as a stream and binds no host
+directory, so the daemon's file sharing is never consulted.
 
 **REQ-plat-local-runner** (behavior): A `local` plugin, a host binary,
 MUST run on the native runner on every platform, under the sandbox

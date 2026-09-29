@@ -23,8 +23,12 @@ formatter and the language server
       `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>:<version>`
       under buf's names — recipes from bufbuild/plugins at a pinned
       commit, an own recipe of the same shape the escape hatch; a
-      per-architecture matrix on native runners (linux/amd64,
-      linux/arm64) merged into a manifest list per tag; every image
+      per-platform matrix merged into a manifest list per tag —
+      linux/amd64 and linux/arm64 on native runners for every recipe,
+      and darwin/arm64, darwin/amd64, windows/amd64 and windows/arm64
+      cross-compiled for every recipe that takes TARGETOS (the Go
+      plugins), a native-toolchain recipe serving Linux alone until
+      built otherwise, per entry and visible in its list; every image
       and list signed keyless under the release workflow's identity;
       a scheduled bump of the pinned commit opening a pull request
       for the versions the registry lacks, a published tag never
@@ -114,8 +118,11 @@ formatter and the language server
       reporting `OS` or `Minimal`, its `Reach`, on the macOS runners
 - [ ] 17. The sandbox's windows row: the AppContainer and Job Object
       backend, its probe, its `Reach`, on the windows runners
-- [ ] 18. The native runner for `local` plugins on darwin and windows
-      over the sandbox's row, runner selection per platforms.md; the
+- [ ] 18. The native runner on darwin and windows over the sandbox's
+      row: `local` plugins under no floor, `oci` plugins from the
+      image's entry for the host under the policy's lowering to `OS`,
+      the row's world the export and the platform's system
+      libraries, runner selection per platforms.md; the
       local-scheme-darwin issue closes; what only hardware or a
       Docker Desktop daemon can witness (the docker runner's live
       cases on darwin and windows) tracked to a machine reporting
