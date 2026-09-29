@@ -1,7 +1,7 @@
 # The daemon loses a memory kill's record under load
 
-Lands: the docker memory attribution plan's chunk 1
-(docs/plans/docker-memory-attribution.md): the kill read from the
+Lands: the feature-full plan's chunk 13
+(docs/plans/feature-full.md): the kill read from the
 kernel's counter at a cgroup parent the daemon does not release
 
 The docker runner attributes a memory kill to the daemon's event
