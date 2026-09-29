@@ -18,11 +18,26 @@ formatter and the language server
       options), a golden of `pb migrate`'s report per entry, the
       suite running migrate over all of them; the goldens start as
       the gap list
-- [ ] 2. The plugin catalog kept current: pbr-plugins rebuilds the
-      current buf plugin set (protocolbuffers/go, grpc/go,
-      bufbuild/es, connectrpc/go, protoc-gen-go-grpc) and follows
-      tags; migrate's plugin table becomes what the catalog
-      publishes, stated as such
+- [ ] 2. The plugin catalog: a new private repository
+      greatliontech/pb-plugins publishing
+      `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>:<version>`
+      under buf's names — recipes from bufbuild/plugins at a pinned
+      commit, an own recipe of the same shape the escape hatch; a
+      per-architecture matrix on native runners (linux/amd64,
+      linux/arm64) merged into a manifest list per tag; every image
+      and list signed keyless under the release workflow's identity;
+      a scheduled bump of the pinned commit opening a pull request
+      for the versions the registry lacks, a published tag never
+      rebuilt; the initial membership what the projects reference
+      (protocolbuffers/go, grpc/go, connectrpc/go, bufbuild/es,
+      bufbuild/connect-es, grpc/web, protocolbuffers/js,
+      protocolbuffers/csharp, grpc/csharp). In pb: migrate's plugin
+      table becomes the rename rule plus a committed copy of the
+      catalog's names (versions passed through as spelled, a missing
+      build surfacing at the first generate), a test holding the copy
+      to the repository's catalog and the images reachable and
+      signed; the trust policy's identity rule for the catalog
+      documented
 - [ ] 3. `local` plugins with argv: `local: [command, args...]` in the
       generation file, the sandbox spawning the command with its
       arguments, migrate mapping buf's list form
