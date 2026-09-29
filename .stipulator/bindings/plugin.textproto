@@ -373,8 +373,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "91fbe956d09cd9447afe3c2f37249df33d764926ebdfe675aa4cfec4057d978f"
-  source_hash: "ada935b4a4850671dac896370d9b196325f076f2cd6e6ef13404b878aed74bdc"
+  content_hash: "40452a5939a982e48bfec6d0252bf3608453bcb932e035bc74f6db4db182e60f"
+  source_hash: "b21d07528e6fd038d8f146c9b9d6eaf318eed34bdb3c7b916a1cd059db8b9998"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.Open"
   role: BINDING_ROLE_IMPLEMENTS
@@ -383,8 +383,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "91fbe956d09cd9447afe3c2f37249df33d764926ebdfe675aa4cfec4057d978f"
-  source_hash: "ada935b4a4850671dac896370d9b196325f076f2cd6e6ef13404b878aed74bdc"
+  content_hash: "40452a5939a982e48bfec6d0252bf3608453bcb932e035bc74f6db4db182e60f"
+  source_hash: "b21d07528e6fd038d8f146c9b9d6eaf318eed34bdb3c7b916a1cd059db8b9998"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestOpenSelects"
   role: BINDING_ROLE_TESTS
@@ -393,8 +393,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "91fbe956d09cd9447afe3c2f37249df33d764926ebdfe675aa4cfec4057d978f"
-  source_hash: "ada935b4a4850671dac896370d9b196325f076f2cd6e6ef13404b878aed74bdc"
+  content_hash: "40452a5939a982e48bfec6d0252bf3608453bcb932e035bc74f6db4db182e60f"
+  source_hash: "b21d07528e6fd038d8f146c9b9d6eaf318eed34bdb3c7b916a1cd059db8b9998"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunnerSpellings"
   role: BINDING_ROLE_TESTS

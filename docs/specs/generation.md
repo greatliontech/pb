@@ -120,6 +120,7 @@ its plugin under the trust policy's execution posture
 (`plugin-execution.md`, `provenance.md`), and land the response's
 files (`REQ-gen-out-containment`) — reporting each completed entry on
 standard output with its plugin reference, file count, output
-directory, reported sandbox tier, and the bound-enforcing mechanism in
+directory, the runner that ran it, reported sandbox tier, and the
+bound-enforcing mechanism in
 effect. An entry's failure fails the verb naming the entry; later
 entries do not run.

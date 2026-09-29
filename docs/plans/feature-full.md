@@ -118,7 +118,13 @@ formatter and the language server
       reporting `OS` or `Minimal`, its `Reach`, on the macOS runners
 - [ ] 17. The sandbox's windows row: the AppContainer and Job Object
       backend, its probe, its `Reach`, on the windows runners
-- [ ] 18. The native runner on darwin and windows over the sandbox's
+- [ ] 18. Runner selection per entry: the default choosing `native`
+      where the image serves the host and the row meets the floor,
+      `docker` for the rest where a daemon is reachable, a layer's
+      runner binding every entry, the report naming each entry's
+      runner (witnessed on Linux with an image serving another
+      platform alone)
+- [ ] 19. The native runner on darwin and windows over the sandbox's
       row: `local` plugins under no floor, `oci` plugins from the
       image's entry for the host under the policy's lowering to `OS`,
       the row's world the export and the platform's system

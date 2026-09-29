@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-plugin-runner-selection"
+reason: "runner selection is one runner per run and the report names no runner until selection per entry lands"
+content_hash: "40452a5939a982e48bfec6d0252bf3608453bcb932e035bc74f6db4db182e60f"
+source_hash: "b21d07528e6fd038d8f146c9b9d6eaf318eed34bdb3c7b916a1cd059db8b9998"
+lands { manual { condition: "the feature-full plan's chunk 18 lands" contradicted: true } }

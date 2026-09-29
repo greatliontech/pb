@@ -53,9 +53,11 @@ Apple-silicon host, `linux/amd64` under WSL2). The entry sought is
 the substrate's platform and exactly one must match
 (REQ-plugin-platform-strict): an image serving no entry for the host
 is refused under the native runner naming the platforms it serves,
-never run through a daemon unasked, and the platform default of
-runner selection (REQ-plugin-runner-selection) is `native` wherever
-the sandbox reaches a row and `docker` only where it reaches none.
+and runner selection's default chooses per entry
+(REQ-plugin-runner-selection): `native` where the image serves the
+host and the row meets the floor, `docker` for the rest where a
+daemon is reachable, so one run mixes what runs natively with what
+a daemon must run and the report says which.
 On an `OS` row the plugin's world is the export and the platform's
 own system libraries, which every `darwin` and `windows` binary
 links (`libSystem`, the system DLLs), and nothing else; the Linux

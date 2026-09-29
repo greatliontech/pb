@@ -35,21 +35,30 @@ pin and policy vocabularies under its own scheme value.
 selection is machine-scoped configuration, never part of a generation
 entry and never committed (`REQ-plugin-runner-selection`).
 
-**REQ-plugin-runner-selection** (behavior): `generate` MUST select its
-runner by layer and never substitute one: the `--runner` flag where
-given, over the `PBRUNNER` environment variable where set to a non-empty value,
-over the user configuration file's `runner` key where present
-(`user-config.md`), over the platform default — each layer naming
-a runner by these exact names (`native`, `docker`), an empty
-environment value being an absent layer as for pb's other environment
-settings and a flag given empty naming no runner; the platform default
-chosen by capability exhaustion, not heuristics — `native` where pb's
-sandbox reaches a row on the platform, otherwise `docker` where it is
-the only viable runner (`platforms.md` REQ-plat-oci-substrate,
-REQ-plat-local-runner); and a layer naming no
-runner, or a selected runner that
-is unavailable, failing with an error that names the layer and, for a
-runner, the runner — no run ever falls back to another runner.
+**REQ-plugin-runner-selection** (behavior): `generate` MUST select
+the runner of each `oci` entry by layer and never substitute one: the
+`--runner` flag where given, over the `PBRUNNER` environment variable
+where set to a non-empty value, over the user configuration file's
+`runner` key where present (`user-config.md`), over the default —
+each layer naming a runner by these exact names (`native`, `docker`)
+for every entry of the run, an empty environment value being an
+absent layer as for pb's other environment settings and a flag given
+empty naming no runner; the default choosing per entry by capability,
+not heuristics — `native` where the entry's image serves the host's
+platform and the sandbox's row for the entry meets the tier the
+policy requires (`platforms.md` REQ-plat-oci-substrate,
+REQ-plugin-min-tier), else `docker` where a daemon is reachable, else
+the entry refused naming the platforms its image serves, the row the
+host reaches and the floor — every input a stated fact, so the choice
+is the same on every run; and a layer naming no runner, or a named
+runner that is unavailable or cannot run an entry (`native` for an
+image serving no entry for the host), failing with an error that
+names the layer and, for a runner, the runner and the entry — no
+entry ever falls back to another runner than the one its layer
+named, and the default names none. A `local` entry runs on the native
+runner on every platform, whatever the layers name
+(`platforms.md` REQ-plat-local-runner). The run's report names each
+entry's runner (`generation.md` REQ-gen-verb).
 
 **sandbox tier** (term): The isolation level a sandbox run actually
 achieved, as reported by the sandbox: `Strong` (kernel-enforced),
