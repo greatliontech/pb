@@ -640,12 +640,13 @@ func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string) (*
 
 type stubLocal struct {
 	value string
+	args  []string
 	acq   *plugin.Acquired
 	err   error
 }
 
-func (s *stubLocal) Acquire(_ context.Context, value string) (*plugin.Acquired, error) {
-	s.value = value
+func (s *stubLocal) Acquire(_ context.Context, value string, args []string) (*plugin.Acquired, error) {
+	s.value, s.args = value, args
 	return s.acq, s.err
 }
 
@@ -655,7 +656,7 @@ func (s *stubLocal) Acquire(_ context.Context, value string) (*plugin.Acquired, 
 // before anything runs; the oci entries still run on the selected
 // runner.
 func TestGenLocalEntry(t *testing.T) {
-	_, s := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen2\n")
+	_, s := genFixture(t, "plugins:\n  - local: [tools/gen, --a, b c]\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen2\n")
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugin.SchemeOCI, plugin.SchemeLocal}}}
 	loc := &stubLocal{acq: &plugin.Acquired{Process: plugin.Process{Argv: []string{"/abs/tools/gen"}}}}
 	localRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a.go": "x"}), Tier: plugin.TierMinimal, Bounds: runner.BoundsRlimits}}
@@ -665,8 +666,8 @@ func TestGenLocalEntry(t *testing.T) {
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
 		t.Fatal(err)
 	}
-	if loc.value != "tools/gen" {
-		t.Fatalf("local acquirer got %q", loc.value)
+	if loc.value != "tools/gen" || strings.Join(loc.args, "|") != "--a|b c" {
+		t.Fatalf("local acquirer got %q %q", loc.value, loc.args)
 	}
 	if localRun.spec.Scheme != plugin.SchemeLocal || localRun.spec.Image != nil || localRun.spec.MinTier != plugin.TierNone || localRun.spec.Process.Argv[0] != "/abs/tools/gen" {
 		t.Fatalf("local run spec = %+v", localRun.spec)
@@ -674,7 +675,7 @@ func TestGenLocalEntry(t *testing.T) {
 	if e, ok := ociRun.spec.Image.(*plugin.Export); ociRun.spec.Scheme != plugin.SchemeOCI || !ok || e.Rootfs != "/r" || ociRun.spec.MinTier != plugin.TierStrong {
 		t.Fatalf("oci run spec = %+v", ociRun.spec)
 	}
-	if !strings.Contains(out.String(), "tools/gen: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
+	if !strings.Contains(out.String(), "tools/gen --a b c: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
 		t.Fatalf("report = %q", out.String())
 	}
 	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun}, &strings.Builder{})

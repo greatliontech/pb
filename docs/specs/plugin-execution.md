@@ -23,7 +23,8 @@ tag) naming a plugin image in generation configuration.
 
 **identity scheme** (term): The namespace a generation entry's plugin
 identity lives in: `oci` (a plugin reference, the default path with the
-full guarantee set) or `local` (a host binary, an explicit downgrade).
+full guarantee set) or `local` (a host command — a binary, optionally
+with arguments — an explicit downgrade).
 `remote` (execution by an external service) is a reserved scheme name
 this document does not define; any future definition must model it as
 its own trust category — remote execution ships the compiled descriptors
@@ -180,23 +181,32 @@ grades nothing of the world: the binary runs in the host's, with the
 host's environment and network, under the resource bounds alone —
 no floor is required of it.
 
-**REQ-plugin-local-resolution** (behavior): A `local` value containing no
-path separator MUST resolve through the `PATH` environment variable
+**REQ-plugin-local-resolution** (behavior): A `local` command — the
+value's scalar, or its list's first element — containing no path
+separator MUST resolve through the `PATH` environment variable
 exactly as written — no name is ever synthesized (no `protoc-gen-`
 prefixing, no extension expansion but the platform's executable
 suffix where the platform has one, `platforms.md`
-REQ-plat-local-runner) — while a value containing a path
-separator resolves relative to the resolution root (absolute paths
-allowed), written with forward slashes. Resolution failure fails
-generation with an error naming the search performed; it never falls
-back to another scheme or source.
+REQ-plat-local-runner) — while one containing a path separator
+resolves relative to the resolution root (absolute paths allowed),
+written with forward slashes; the list's remaining elements are the
+process's arguments, handed to it verbatim after the resolved
+command, none resolved or rewritten, and the process runs with the
+resolution root as its working directory, so an argument naming a
+relative path names it under the root wherever pb was invoked.
+Resolution failure fails generation with an error naming the search
+performed; it never falls back to another scheme or source.
 
 **REQ-plugin-local-pin** (behavior): Unless the trust policy disables
 local pinning, first use of a `local` plugin MUST record the resolved
-binary's content hash in the lockfile per `REQ-lock-first-use`, keyed by
-host platform, with later runs failing on a hash mismatch and naming
+command's content hash in the lockfile per `REQ-lock-first-use`, keyed
+by host platform, with later runs failing on a hash mismatch and naming
 both hashes. Identity is the bytes, not the location: a moved or
-re-resolved binary with identical content is a non-event.
+re-resolved binary with identical content is a non-event. The pin is
+the command's alone, keyed by the command as written: entries naming
+one command with different arguments share it, and the arguments,
+with any file they name — an interpreter's script — are configuration
+the generation file holds, as `opt` is, never pinned.
 
 ## Execution
 

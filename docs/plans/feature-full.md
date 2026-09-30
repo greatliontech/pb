@@ -54,7 +54,7 @@ formatter and the language server
       the highest tag the registry lists), a test holding the copy to
       the repository's catalog and the images reachable and signed;
       the trust policy's identity rule for the catalog documented
-- [ ] 4. `local` plugins with argv: `local: [command, args...]` in the
+- [x] 4. `local` plugins with argv: `local: [command, args...]` in the
       generation file, the sandbox spawning the command with its
       arguments, migrate mapping buf's list form
 - [ ] 5. Generation targets: per-entry `files` globs over the

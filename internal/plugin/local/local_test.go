@@ -75,7 +75,7 @@ func TestResolve(t *testing.T) {
 // (REQ-plugin-local-pin).
 func TestAcquirePins(t *testing.T) {
 	root, a := fixture(t)
-	got, err := a.Acquire(ctx, "tools/bin/gen")
+	got, err := a.Acquire(ctx, "tools/bin/gen", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestAcquirePins(t *testing.T) {
 	if got.Image != nil {
 		t.Fatalf("a host binary carries image facts: %+v", got.Image)
 	}
-	if !ok || len(pin.Binary) != 1 || !strings.HasPrefix(pin.Binary["linux/amd64"], "sha256:") || got.Process.Argv[0] != filepath.Join(root, "tools", "bin", "gen") {
+	if !ok || len(pin.Binary) != 1 || !strings.HasPrefix(pin.Binary["linux/amd64"], "sha256:") || len(got.Process.Argv) != 1 || got.Process.Argv[0] != filepath.Join(root, "tools", "bin", "gen") || got.Process.WorkDir != root {
 		t.Fatalf("first use: %+v %+v", pin, got)
 	}
 	hash := pin.Binary["linux/amd64"]
@@ -94,20 +94,20 @@ func TestAcquirePins(t *testing.T) {
 	if err := os.Symlink(filepath.Join(root, "gen"), filepath.Join(root, "tools", "bin", "gen")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.Acquire(ctx, "tools/bin/gen"); err != nil {
+	if _, err := a.Acquire(ctx, "tools/bin/gen", nil); err != nil {
 		t.Fatalf("moved binary, same bytes: %v", err)
 	}
 	// Other bytes: a mismatch naming both hashes.
 	if err := os.WriteFile(filepath.Join(root, "gen"), []byte("#!/bin/sh\necho other\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.Acquire(ctx, "tools/bin/gen")
+	_, err = a.Acquire(ctx, "tools/bin/gen", nil)
 	if !errors.Is(err, lockfile.ErrPinMismatch) || !strings.Contains(err.Error(), hash) || !strings.Contains(err.Error(), "resolved sha256:") {
 		t.Fatalf("changed binary: %v", err)
 	}
 	// Another platform's first use adds its key.
 	other := &Acquirer{Root: root, Lock: a.Lock, Policy: a.Policy, platform: plugin.Platform{OS: "darwin", Arch: "arm64"}}
-	if _, err := other.Acquire(ctx, "tools/bin/gen"); err != nil {
+	if _, err := other.Acquire(ctx, "tools/bin/gen", nil); err != nil {
 		t.Fatal(err)
 	}
 	pin, _ = a.Lock.Plugin("tools/bin/gen", lockfile.SchemeLocal)
@@ -117,11 +117,49 @@ func TestAcquirePins(t *testing.T) {
 	// Pinning disabled: nothing recorded, nothing checked.
 	off := false
 	unpinned := &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{Execution: trust.Execution{LocalPin: &off}}, platform: plugin.Platform{OS: "linux", Arch: "amd64"}}
-	if _, err := unpinned.Acquire(ctx, "tools/bin/gen"); err != nil {
+	if _, err := unpinned.Acquire(ctx, "tools/bin/gen", nil); err != nil {
 		t.Fatal(err)
 	}
 	if len(unpinned.Lock.Plugins) != 0 {
 		t.Fatalf("a pin was recorded with pinning disabled: %+v", unpinned.Lock.Plugins)
+	}
+}
+
+// A command with arguments runs as the resolved command followed by
+// the arguments verbatim, from the resolution root; the pin is the
+// command's alone, shared by every entry naming it whatever the
+// arguments, and an argument naming a path is neither resolved nor
+// checked (REQ-plugin-local-resolution, REQ-plugin-local-pin).
+func TestAcquireWithArguments(t *testing.T) {
+	root, a := fixture(t)
+	args := []string{"tool", "web/no/such/script.js", "--flag with space", ""}
+	got, err := a.Acquire(ctx, "protoc-gen-x", args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := append([]string{filepath.Join(os.Getenv("PATH"), "protoc-gen-x")}, args...)
+	if strings.Join(got.Process.Argv, "\x00") != strings.Join(want, "\x00") || got.Process.WorkDir != root {
+		t.Fatalf("process = %+v, want argv %q from %s", got.Process, want, root)
+	}
+	pin, ok := a.Lock.Plugin("protoc-gen-x", lockfile.SchemeLocal)
+	if !ok || len(a.Lock.Plugins) != 1 {
+		t.Fatalf("pin = %+v %v; plugins %+v", pin, ok, a.Lock.Plugins)
+	}
+	// The same command with other arguments, and with none: one pin.
+	if _, err := a.Acquire(ctx, "protoc-gen-x", []string{"other"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Acquire(ctx, "protoc-gen-x", nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Lock.Plugins) != 1 {
+		t.Fatalf("arguments changed the pin: %+v", a.Lock.Plugins)
+	}
+	// The arguments are the caller's: the acquisition never aliases
+	// them.
+	args[0] = "changed"
+	if got.Process.Argv[1] != "tool" {
+		t.Fatal("the process shares the caller's argument slice")
 	}
 }
 
@@ -135,7 +173,7 @@ func TestPlatformAndRoot(t *testing.T) {
 	root, _ := fixture(t)
 	a := &Acquirer{Root: root, Lock: &lockfile.File{}, Policy: &trust.Policy{}}
 	for _, value := range []string{"./tools/bin/gen", filepath.Join(root, "tools", "bin", "gen")} {
-		if _, err := a.Acquire(ctx, value); err != nil {
+		if _, err := a.Acquire(ctx, value, nil); err != nil {
 			t.Fatalf("%q: %v", value, err)
 		}
 		pin, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
@@ -158,7 +196,7 @@ func TestAcquireHonoursContext(t *testing.T) {
 	_, a := fixture(t)
 	cancelled, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := a.Acquire(cancelled, "tools/bin/gen"); !errors.Is(err, context.Canceled) {
+	if _, err := a.Acquire(cancelled, "tools/bin/gen", nil); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancelled acquisition: %v", err)
 	}
 	if len(a.Lock.Plugins) != 0 {

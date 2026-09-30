@@ -65,7 +65,8 @@ module entry alone.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the plugin identity as written in generation configuration, without
-a digest), `scheme` (its identity scheme, `oci` or `local` —
+a digest — a `local` entry's the command alone, its arguments no part
+of the identity), `scheme` (its identity scheme, `oci` or `local` —
 `plugin-execution.md`), then the scheme's own facts and no others. An
 `oci` entry carries `digest` (the manifest-list digest the reference
 resolved to) and `provenance` (a provenance record for the image

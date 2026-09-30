@@ -1,10 +1,11 @@
 // Package local resolves and pins local-scheme plugins
-// (plugin-execution.md, "Local binaries"): a host binary named
+// (plugin-execution.md, "Local binaries"): a host command named
 // exactly as written, found on PATH or relative to the resolution
-// root, identified by its content hash per host platform and pinned
-// in the lockfile unless the trust policy disables local pinning. It
-// is the explicit downgrade the policy accepts: no manifest, no
-// provenance, no image root.
+// root, run with its arguments verbatim from the resolution root,
+// identified by its content hash per host platform and pinned in the
+// lockfile unless the trust policy disables local pinning. It is the
+// explicit downgrade the policy accepts: no manifest, no provenance,
+// no image root.
 package local
 
 import (
@@ -73,12 +74,15 @@ func (a *Acquirer) Resolve(value string) (string, error) {
 	return p, nil
 }
 
-// Acquire resolves the value and pins it (REQ-plugin-local-pin): the
-// binary's content hash on this platform is recorded on first use
-// and checked on every later one, naming both hashes on a mismatch;
-// a binary that moved with the same bytes is a non-event. A policy
+// Acquire resolves the command and pins it (REQ-plugin-local-pin):
+// the binary's content hash on this platform is recorded on first
+// use and checked on every later one, naming both hashes on a
+// mismatch; a binary that moved with the same bytes is a non-event.
+// The process is the resolved command with args after it, verbatim,
+// run from the resolution root (REQ-plugin-local-resolution); the
+// pin is the command's alone, whatever the arguments. A policy
 // disabling local pinning records and checks nothing.
-func (a *Acquirer) Acquire(ctx context.Context, value string) (*plugin.Acquired, error) {
+func (a *Acquirer) Acquire(ctx context.Context, value string, args []string) (*plugin.Acquired, error) {
 	path, err := a.Resolve(value)
 	if err != nil {
 		return nil, err
@@ -87,7 +91,7 @@ func (a *Acquirer) Acquire(ctx context.Context, value string) (*plugin.Acquired,
 	if err != nil {
 		return nil, fmt.Errorf("local: hashing %s: %w", path, err)
 	}
-	acq := &plugin.Acquired{Process: plugin.Process{Argv: []string{path}}}
+	acq := &plugin.Acquired{Process: plugin.Process{Argv: append([]string{path}, args...), WorkDir: a.Root}}
 	if a.Policy != nil && !a.Policy.Execution.LocalPinEnabled() {
 		return acq, nil
 	}

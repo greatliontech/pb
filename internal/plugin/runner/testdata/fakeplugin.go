@@ -62,6 +62,10 @@ func main() {
 		h, _ := os.Hostname()
 		emit("hostname=" + h)
 		return
+	case behavior.Argv:
+		wd, _ := os.Getwd()
+		emit("args=" + strings.Join(os.Args[1:], "|") + " cwd=" + wd)
+		return
 	case behavior.Both:
 		fmt.Fprintln(os.Stderr, "a line on stderr")
 		emit("stdout-with-stderr")

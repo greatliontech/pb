@@ -246,8 +246,23 @@ func TestNoHeuristicProperty(t *testing.T) {
 				if ref, has := pl["ref"]; has && !g.refs[fmt.Sprint(ref)] {
 					fail(genfile.FileName, data, "ref %v given nowhere", ref)
 				}
-				if l, has := pl["local"]; has && !g.locals[fmt.Sprint(l)] {
-					fail(genfile.FileName, data, "local %v given nowhere", l)
+				// A local is its command, or a list of the command and
+				// its arguments, given exactly so: the list's spelling
+				// with spaces is the local drawn, in its order.
+				switch l := pl["local"].(type) {
+				case nil:
+				case []any:
+					var elems []string
+					for _, e := range l {
+						elems = append(elems, fmt.Sprint(e))
+					}
+					if !g.locals[strings.Join(elems, " ")] {
+						fail(genfile.FileName, data, "local %v given nowhere", l)
+					}
+				default:
+					if !g.locals[fmt.Sprint(l)] {
+						fail(genfile.FileName, data, "local %v given nowhere", l)
+					}
 				}
 				if !g.outs[fmt.Sprint(pl["out"])] {
 					fail(genfile.FileName, data, "out %v given nowhere", pl["out"])
@@ -529,9 +544,32 @@ func (g *given) gen(rt *rapid.T, repl *Replacements) string {
 				}
 			}
 		case 1:
+			// A command alone, or with arguments in buf's list form;
+			// every element is a local marker, so the file's list is
+			// held to them element by element.
 			l := g.draw(rt, "l")
-			g.locals[l] = true
-			fmt.Fprintf(&b, "  - local: %s\n", l)
+			refused := rapid.IntRange(0, 5).Draw(rt, "refused command") == 0
+			if refused {
+				// A command pb's schema refuses, in either form: the
+				// entry is unmapped, so the command is given as no
+				// local and a file naming it fails the oracle below.
+				l = rapid.SampledFrom([]string{l + "//" + l, "./", l + "\\\\" + l}).Draw(rt, "refused")
+			} else {
+				g.locals[l] = true
+			}
+			if n := rapid.IntRange(0, 2).Draw(rt, "local args"); n > 0 {
+				argv := []string{l}
+				for range n {
+					arg := g.draw(rt, "l")
+					argv = append(argv, arg)
+				}
+				if !refused {
+					g.locals[strings.Join(argv, " ")] = true
+				}
+				fmt.Fprintf(&b, "  - local: [%s]\n", strings.Join(argv, ", "))
+			} else {
+				fmt.Fprintf(&b, "  - local: %s\n", l)
+			}
 		default:
 			fmt.Fprintf(&b, "  - protoc_builtin: %s\n", g.draw(rt, "bi"))
 		}

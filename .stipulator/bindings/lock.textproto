@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "f799758c8da1819f8032238f3da22497bc4834ad59e7abc60a4859f515432599"
-  source_hash: "3e1c61beb0bba088a831591ec27f053247cfe2bcd2168eb34e5d1a5042e5d4b7"
+  content_hash: "c46bc7afe4841e975b8bc69925f5637356e25be4b5f3d2e873a569df6e8312b0"
+  source_hash: "211b26f45a5f15e4011ba91f6432d6daf754a50cf1d57cf409ccf5bdaf9599d5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "f799758c8da1819f8032238f3da22497bc4834ad59e7abc60a4859f515432599"
-  source_hash: "3e1c61beb0bba088a831591ec27f053247cfe2bcd2168eb34e5d1a5042e5d4b7"
+  content_hash: "c46bc7afe4841e975b8bc69925f5637356e25be4b5f3d2e873a569df6e8312b0"
+  source_hash: "211b26f45a5f15e4011ba91f6432d6daf754a50cf1d57cf409ccf5bdaf9599d5"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS

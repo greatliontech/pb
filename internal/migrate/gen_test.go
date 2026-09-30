@@ -303,7 +303,8 @@ inputs:
 		"buf.gen.yaml plugins[5].local protoc-gen-connect-go -> local: protoc-gen-connect-go",
 		"buf.gen.yaml plugins[5].out gen/connect -> out: gen/connect",
 		"buf.gen.yaml plugins[5].opt paths=source_relative,package_suffix= -> opt: paths=source_relative,package_suffix=",
-		"buf.gen.yaml plugins[6].local go run ./cmd/gen !! a command with arguments: pb runs an executable alone",
+		"buf.gen.yaml plugins[6].local go run ./cmd/gen -> local: go run ./cmd/gen",
+		"buf.gen.yaml plugins[6].out gen/x -> out: gen/x",
 		"buf.gen.yaml plugins[7].protoc_builtin cpp !! pb runs no protoc",
 		"buf.gen.yaml plugins[8].local protoc-gen-up -> local: protoc-gen-up",
 		"buf.gen.yaml plugins[8].out ../up !! pb writes within the resolution root: \"../up\" escapes the resolution root",
@@ -331,6 +332,7 @@ inputs:
 		"  - ref: " + pbgo + ":v1.36.0\n    out: gen/go36\n" +
 		"  - ref: ghcr.io/acme/protoc-gen-replaced:v2.0.0\n    out: gen/replaced\n" +
 		"  - local: protoc-gen-connect-go\n    out: gen/connect\n    opt: paths=source_relative,package_suffix=\n" +
+		"  - local:\n      - go\n      - run\n      - ./cmd/gen\n    out: gen/x\n" +
 		"overrides:\n  - files: acme/v1/**\n    option: java_package\n    value: com.acme\n  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: v1\\[beta\\]/**\n    option: swift_prefix\n    value: ACM\n"
 	if string(out) != wantFile {
 		t.Fatalf("v2 file:\n%s", out)
@@ -467,6 +469,32 @@ plugins:
 	}
 	if _, err := Gen(context.Background(), nil, Replacements{}, nil, nil); err == nil {
 		t.Fatal("no file: no error")
+	}
+}
+
+// A local command pb's schema refuses — an unclean path, a
+// backslash — is an unmapped fact naming it, never a file the verb
+// refuses; the scalar and list forms alike.
+func TestGenLocalCommandRefused(t *testing.T) {
+	g := parseGen(t, "version: v2\nplugins:\n  - local: [tools//gen, x]\n    out: gen/a\n  - local: ./\n    out: gen/b\n  - local: [tools\\gen]\n    out: gen/c\n  - local: [ok, tools//x]\n    out: gen/d\n")
+	l := &Layout{}
+	facts, err := Gen(context.Background(), g, Replacements{}, l, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := factsOf(facts)
+	for _, want := range []string{
+		"buf.gen.yaml plugins[0].local tools//gen x !! pb's schema refuses the command: local \"tools//gen\" is not a clean path",
+		"buf.gen.yaml plugins[1].local ./ !! pb's schema refuses the command: local \"./\" is not a clean path",
+		"buf.gen.yaml plugins[2].local tools\\gen !! pb's schema refuses the command: local \"tools\\\\gen\": paths are written with forward slashes",
+		"buf.gen.yaml plugins[3].local ok tools//x -> local: ok tools//x",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("facts lack %q:\n%s", want, got)
+		}
+	}
+	if l.Gen == nil || len(l.Gen.Plugins) != 1 || l.Gen.Plugins[0].Ref != "ok" {
+		t.Errorf("file %+v", l.Gen)
 	}
 }
 

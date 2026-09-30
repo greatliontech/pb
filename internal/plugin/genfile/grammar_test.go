@@ -42,7 +42,7 @@ func TestGrammarEdges(t *testing.T) {
 			ok:  []string{"a", "a/b", "..a", "a..", ".", "gen/go", "..."},
 			bad: []string{"", "/", "/a", "..", "../a", "../..", "a/", "./a", "a//b", "a\\b", "a/./b", "a/../b"},
 		}},
-		"local": {checkLocal, tc{
+		"local": {CheckLocal, tc{
 			ok:  []string{"p", "./p", "/abs/p", "a/b", "../tool", "./a/b", "..p"},
 			bad: []string{"", ".", "..", "./", "a//b", "a\\b", "./.", "././p", "a/", "/"},
 		}},

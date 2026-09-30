@@ -23,6 +23,16 @@ plugins:
   - local: ./tools/bin/protoc-gen-x
     out: gen/x
     opt: 1
+  - local: [go, tool, protoc-gen-go-grpc]
+    out: gen/grpc
+  - local:
+      - bun
+      - web/node_modules/.bin/protoc-gen-es
+      - "--flag with space"
+      - ""
+    out: gen/es
+  - local: [protoc-gen-one]
+    out: gen/one
 overrides:
   - files: "**/*.proto"
     option: go_package
@@ -39,12 +49,15 @@ overrides:
 		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/go", Opt: "paths=source_relative"},
 		{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-lint", Out: "."},
 		{Scheme: plugin.SchemeLocal, Ref: "./tools/bin/protoc-gen-x", Out: "gen/x", Opt: "1"},
+		{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc"}, Out: "gen/grpc"},
+		{Scheme: plugin.SchemeLocal, Ref: "bun", Args: []string{"web/node_modules/.bin/protoc-gen-es", "--flag with space", ""}, Out: "gen/es"},
+		{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-one", Out: "gen/one"},
 	}
 	if len(f.Plugins) != len(want) {
 		t.Fatalf("plugins = %+v", f.Plugins)
 	}
 	for i := range want {
-		if f.Plugins[i] != want[i] {
+		if !f.Plugins[i].Equal(want[i]) {
 			t.Errorf("plugins[%d] = %+v, want %+v", i, f.Plugins[i], want[i])
 		}
 	}
@@ -93,7 +106,13 @@ func TestParseRejections(t *testing.T) {
 		{"no out", "plugins:\n  - ref: ghcr.io/o/p:v1\n", "has no out"},
 		{"ref not scalar", "plugins:\n  - ref: [a]\n    out: gen\n", "ref must be one line of text"},
 		{"ref block", "plugins:\n  - ref: |\n      ghcr.io/o/p:v1\n    out: gen\n", "ref must be one line of text"},
-		{"local block", "plugins:\n  - local: |\n      bin/gen\n    out: gen\n", "local must be one line of text"},
+		{"local block", "plugins:\n  - local: |\n      bin/gen\n    out: gen\n", "local must be one line of text or a list of them"},
+		{"local mapping", "plugins:\n  - local: {cmd: gen}\n    out: gen\n", "local must be one line of text or a list of them"},
+		{"local empty list", "plugins:\n  - local: []\n    out: gen\n", "local names no command"},
+		{"local list block element", "plugins:\n  - local:\n      - gen\n      - |\n        a\n        b\n    out: gen\n", "local[1] must be one line of text"},
+		{"local list nested", "plugins:\n  - local: [gen, [a]]\n    out: gen\n", "local[1] must be one line of text"},
+		{"local list bad command", "plugins:\n  - local: [./, a]\n    out: gen\n", "not a clean path"},
+		{"local list empty command", "plugins:\n  - local: [\"\", a]\n    out: gen\n", "empty local value"},
 		{"out not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: {a: b}\n", "out must be one line of text"},
 		{"out block", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: |\n      gen\n", "out must be one line of text"},
 		{"out broken", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: \"gen\\nx\"\n", "out must be one line of text"},
@@ -231,6 +250,8 @@ func TestReferenceGrammarProperty(t *testing.T) {
 func FuzzParse(f *testing.F) {
 	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n"))
 	f.Add([]byte("plugins:\n  - local: p\n    out: .\noverrides:\n  - files: '**'\n    option: a.b\n    value: 1\n"))
+	f.Add([]byte("plugins:\n  - local: [go, tool, protoc-gen-x, \"\", \"a b\"]\n    out: gen\n"))
+	f.Add([]byte("plugins:\n  - local:\n      - ./tools/gen\n      - --flag\n    out: gen\n  - local: [p]\n    out: .\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		parsed, err := Parse(data)
 		if err != nil {
@@ -242,6 +263,14 @@ func FuzzParse(f *testing.F) {
 		for _, p := range parsed.Plugins {
 			if !plugin.ValidScheme(p.Scheme) || p.Ref == "" || p.Out == "" {
 				t.Fatalf("accepted malformed plugin %+v", p)
+			}
+			if p.Scheme == plugin.SchemeOCI && p.Args != nil {
+				t.Fatalf("an oci entry with arguments %+v", p)
+			}
+			for _, a := range p.Args {
+				if strings.ContainsAny(a, "\n\r") {
+					t.Fatalf("accepted a multi-line argument %+v", p)
+				}
 			}
 			if strings.HasPrefix(p.Out, "/") || p.Out == ".." || strings.HasPrefix(p.Out, "../") {
 				t.Fatalf("accepted escaping out %q", p.Out)
@@ -261,6 +290,7 @@ func TestEncode(t *testing.T) {
 			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x"},
 			{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-connect-go", Out: "gen/connect"},
 			{Scheme: plugin.SchemeLocal, Ref: "tools/gen", Out: "gen/x", Opt: "a=1\nb=2\n"},
+			{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc", "--x=1 2", "true", ""}, Out: "gen/grpc"},
 		},
 		Overrides: []Override{
 			{Files: "**", Option: "java_package", Value: "com.acme"},
@@ -280,6 +310,14 @@ func TestEncode(t *testing.T) {
   - local: tools/gen
     out: gen/x
     opt: "a=1\nb=2\n"
+  - local:
+      - go
+      - tool
+      - protoc-gen-go-grpc
+      - --x=1 2
+      - "true"
+      - ""
+    out: gen/grpc
 overrides:
   - files: "**"
     option: java_package

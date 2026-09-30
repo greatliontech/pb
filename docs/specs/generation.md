@@ -14,8 +14,10 @@ before plugins run.
 
 **REQ-gen-schema** (wire): The generation file MUST contain `plugins`, a
 non-empty list of entries carrying exactly one identity-scheme key —
-`ref` (a plugin reference, the `oci` scheme) or `local` (a host binary
-per `plugin-execution.md`) — plus `out`, an output directory, and
+`ref` (a plugin reference, the `oci` scheme) or `local` (a host
+command per `plugin-execution.md`: one scalar, the command alone, or
+a list of one or more scalars, the command then its arguments, each
+handed to the process verbatim) — plus `out`, an output directory, and
 optional `opt`, the plugin parameter string handed to the plugin
 verbatim; and optionally `overrides`, a list of entries `{files,
 option, value}` where `files` is a glob pattern (the `/`-separated
@@ -38,10 +40,10 @@ no `@digest` appears — the lockfile pins the digest. An `out` value is a
 clean relative path written with forward slashes, never absolute and
 never escaping the resolution root through `..`. Every scalar is
 recorded with its written spelling — a value that looks numeric or
-boolean is still the text the author wrote; `ref`, `local`, `out`,
-`files` and `option` are one line of text, a spelling holding a line
-break refused, while `opt` and `value` are text as written, a block
-scalar included. Runner selection, trust
+boolean is still the text the author wrote; `ref`, `local` (each
+element of its list form), `out`, `files` and `option` are one line
+of text, a spelling holding a line break refused, while `opt` and
+`value` are text as written, a block scalar included. Runner selection, trust
 posture, and resource limits are not generation configuration and
 have no keys here (`plugin-execution.md`, `provenance.md`).
 
@@ -52,8 +54,10 @@ holds nothing, entries in the order given, a `plugins` entry's keys in
 the order `ref` or `local`, `out`, `opt` (absent where empty) and an
 `overrides` entry's in the order `files`, `option`, `value`, each
 scalar spelled as `check-rules.md`
-REQ-lint-emission spells a scalar, and never a rendering the file's
-reader rejects or reads as a different file.
+REQ-lint-emission spells a scalar — a `local` with arguments a block
+sequence of them under the key, one without the scalar form, as its
+list of one reads — and never a rendering the file's reader rejects
+or reads as a different file.
 
 **REQ-gen-compile** (behavior): Generation MUST compile every protobuf
 file of every workspace module — a module's files being those under

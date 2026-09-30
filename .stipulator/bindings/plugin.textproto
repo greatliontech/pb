@@ -573,8 +573,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-local-resolution"
-  content_hash: "eac587138f0955b18853d148c74533483ed84c3870417e3057e661316cf16e89"
-  source_hash: "4c05f9e08602d112021b679eea8408d1abadc74e71e99a9aac79c26a78ce239d"
+  content_hash: "e22d52230eaa12664e553d3ad145dd39c6e6f8cbcaeae60f6a70404ed2eb50d8"
+  source_hash: "a590d12b76d1e2818693a3314f089c23ecddd1782091e8cac0d8a8277bc024c7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.Acquirer.Resolve"
   role: BINDING_ROLE_IMPLEMENTS
@@ -583,8 +583,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-local-resolution"
-  content_hash: "eac587138f0955b18853d148c74533483ed84c3870417e3057e661316cf16e89"
-  source_hash: "4c05f9e08602d112021b679eea8408d1abadc74e71e99a9aac79c26a78ce239d"
+  content_hash: "e22d52230eaa12664e553d3ad145dd39c6e6f8cbcaeae60f6a70404ed2eb50d8"
+  source_hash: "a590d12b76d1e2818693a3314f089c23ecddd1782091e8cac0d8a8277bc024c7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.TestResolve"
   role: BINDING_ROLE_TESTS
@@ -593,18 +593,18 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-local-pin"
-  content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
-  source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
+  content_hash: "db1cb7c338c432ecb21f90a114d328105adb8e6c92551135d0b4b78a5bb81fdd"
+  source_hash: "e2d6403a42f48f45532cf7f25110361f41fd32edca17e2c2d1f98eac48ae80e6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.Acquirer.Acquire"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "a9f5eb4d315327cf8a53397200745530be94f529ae8ec377cc702bd666d3e08a"
+  shape_hash: "e6773bf4304243950ae2d73862b779e40a08403dfa817c60c6bd956b94dcd4b0"
 }
 
 bindings {
   requirement_id: "REQ-plugin-local-pin"
-  content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
-  source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
+  content_hash: "db1cb7c338c432ecb21f90a114d328105adb8e6c92551135d0b4b78a5bb81fdd"
+  source_hash: "e2d6403a42f48f45532cf7f25110361f41fd32edca17e2c2d1f98eac48ae80e6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.TestAcquirePins"
   role: BINDING_ROLE_TESTS
@@ -613,8 +613,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-local-pin"
-  content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
-  source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
+  content_hash: "db1cb7c338c432ecb21f90a114d328105adb8e6c92551135d0b4b78a5bb81fdd"
+  source_hash: "e2d6403a42f48f45532cf7f25110361f41fd32edca17e2c2d1f98eac48ae80e6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.File.SetPluginBinary"
   role: BINDING_ROLE_IMPLEMENTS
@@ -623,8 +623,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-local-pin"
-  content_hash: "c5e2ffd16fe1dd5b960f586217272f157159cc4d5f62defab1f1fe84b238361c"
-  source_hash: "1c121f638bd4123527c83fb0f3d5521e2e7fe45dab35cc6ec0516af91cdfbed2"
+  content_hash: "db1cb7c338c432ecb21f90a114d328105adb8e6c92551135d0b4b78a5bb81fdd"
+  source_hash: "e2d6403a42f48f45532cf7f25110361f41fd32edca17e2c2d1f98eac48ae80e6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestSetPluginBinary"
   role: BINDING_ROLE_TESTS
@@ -909,4 +909,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.New"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "67420834ebd302cae78a08f6f701cb4e8af58c33d95c278c6382bc3bd44511d3"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-local-resolution"
+  content_hash: "e22d52230eaa12664e553d3ad145dd39c6e6f8cbcaeae60f6a70404ed2eb50d8"
+  source_hash: "a590d12b76d1e2818693a3314f089c23ecddd1782091e8cac0d8a8277bc024c7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/local.TestAcquireWithArguments"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e10ede0e1833830bea63c66a13a2be89821db32f0415eefcb14edb4950f9ea80"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-local-pin"
+  content_hash: "db1cb7c338c432ecb21f90a114d328105adb8e6c92551135d0b4b78a5bb81fdd"
+  source_hash: "e2d6403a42f48f45532cf7f25110361f41fd32edca17e2c2d1f98eac48ae80e6"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/local.TestAcquireWithArguments"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e10ede0e1833830bea63c66a13a2be89821db32f0415eefcb14edb4950f9ea80"
 }

@@ -323,9 +323,11 @@ per name, a mapped fact naming the choice, a listing that fails or
 holds no version tag an unmapped fact naming the flag's form — a
 name neither holds an unmapped fact naming the plugin and the flag's
 form; a
-`local` entry naming one executable becoming a `local` entry, one
-naming a command with arguments an unmapped fact — a `v1` entry's
-`path` its command, and its bare `plugin` or `name` the executable
+`local` entry becoming a `local` entry of its command and arguments,
+the scalar form where it has none, where pb's schema takes the
+command (`generation.md` REQ-gen-schema), an unmapped fact naming it
+where not, as buf takes any text — a `v1` entry's `path` its
+command, and its bare `plugin` or `name` the executable
 `protoc-gen-<name>`, as buf ran them; a `protoc_builtin` entry — in
 `v1`, a name among protoc's builtins or any entry with `protoc_path` —
 an unmapped fact, pb running no protoc; `out` as written where it is

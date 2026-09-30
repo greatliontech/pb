@@ -13,13 +13,16 @@ const (
 	Net     = "net"
 	Write   = "write"
 	Host    = "host"
-	Both    = "both"
-	Env     = "env"
-	Exit7   = "exit7"
-	World   = "world"
-	Sleep   = "sleep"
-	Spin    = "spin"
-	Hog     = "hog"
+	// Argv reports the arguments after the program and the working
+	// directory the process runs in.
+	Argv  = "argv"
+	Both  = "both"
+	Env   = "env"
+	Exit7 = "exit7"
+	World = "world"
+	Sleep = "sleep"
+	Spin  = "spin"
+	Hog   = "hog"
 )
 
 // Compared are the behaviors both runners must answer identically:

@@ -21,12 +21,17 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// Acquirer yields an entry's plugin from the entry's value — an oci
-// reference or a local binary's name — whichever scheme it acquires
-// for; oci.Acquirer and local.Acquirer are the production
-// implementations, injected for the verb's own tests.
+// Acquirer yields an entry's plugin from the entry's value, an oci
+// reference; oci.Acquirer is the production implementation, injected
+// for the verb's own tests.
 type Acquirer interface {
 	Acquire(ctx context.Context, value string) (*plugin.Acquired, error)
+}
+
+// LocalAcquirer yields a local entry's plugin from its command and
+// arguments; local.Acquirer is the production implementation.
+type LocalAcquirer interface {
+	Acquire(ctx context.Context, value string, args []string) (*plugin.Acquired, error)
 }
 
 // ImageAcquirer is the oci scheme's acquirer, which also honors an
@@ -43,7 +48,7 @@ type ImageAcquirer interface {
 // all: the acquirer, and the native runner a host binary runs on —
 // whichever runner the oci entries selected.
 type LocalDeps struct {
-	Acquirer Acquirer
+	Acquirer LocalAcquirer
 	Runner   runner.Runner
 }
 
@@ -84,10 +89,10 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	exec := &s.Client.Policy.Execution
 	for _, p := range gf.Plugins {
 		if !exec.SchemeAllowed(p.Scheme) {
-			return fmt.Errorf("generate: the trust policy does not permit %s-scheme plugins (plugin %s)", p.Scheme, p.Ref)
+			return fmt.Errorf("generate: the trust policy does not permit %s-scheme plugins (plugin %s)", p.Scheme, p.Command())
 		}
 		if p.Scheme == plugin.SchemeLocal && deps.Local == nil {
-			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Ref)
+			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Command())
 		}
 	}
 	_, daemonRunner := deps.Runner.(runner.DaemonImages)
@@ -132,7 +137,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	for i, entry := range gf.Plugins {
 		switch entry.Scheme {
 		case plugin.SchemeLocal:
-			plugins[i], acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref)
+			plugins[i], acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref, entry.Args)
 		default:
 			source, overridden := deps.Overrides[entry.Ref]
 			switch {
@@ -162,7 +167,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			}
 		}
 		if acqErr != nil {
-			acqErr = fmt.Errorf("generate: plugin %s: %w", entry.Ref, acqErr)
+			acqErr = fmt.Errorf("generate: plugin %s: %w", entry.Command(), acqErr)
 			break
 		}
 	}
@@ -183,11 +188,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	for i, entry := range gf.Plugins {
 		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry.Opt)
 		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
 		reqBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(req)
 		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
 		// A local entry runs on the native runner under no floor: the
 		// policy admitted the scheme as a downgrade of every guarantee
@@ -203,29 +208,29 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		spec := runner.Spec{Scheme: entry.Scheme, Image: plugins[i].Image, Process: plugins[i].Process, Stdin: reqBytes, Limits: limits, MinTier: floor}
 		res, err := run.Run(ctx, spec)
 		if errors.Is(err, runner.ErrTierUnreachable) {
-			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Ref, err, lowerFloorHint)
+			return fmt.Errorf("generate: plugin %s: %w; %s", entry.Command(), err, lowerFloorHint)
 		}
 		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
 		// The runner's report is the record the tier floor and the
 		// bounds clause are judged on; a runner that reports neither
 		// has broken its contract.
 		if !plugin.ValidTier(res.Tier) || res.Bounds == "" {
-			return fmt.Errorf("generate: plugin %s: the runner reported no sandbox tier or bounds mechanism (tier %q, bounds %q)", entry.Ref, res.Tier, res.Bounds)
+			return fmt.Errorf("generate: plugin %s: the runner reported no sandbox tier or bounds mechanism (tier %q, bounds %q)", entry.Command(), res.Tier, res.Bounds)
 		}
 		if plugin.TierBelow(res.Tier, floor) {
-			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Ref, res.Tier, floor, lowerFloorHint)
+			return fmt.Errorf("generate: plugin %s ran at tier %s, below the required %s; %s", entry.Command(), res.Tier, floor, lowerFloorHint)
 		}
 		resp, err := runner.Respond(res)
 		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
 		n, err := s.writeGenerated(entry, resp)
 		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Ref, err)
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
-		fmt.Fprintf(out, "%s: %d file(s) into %s (tier %s, bounds %s)\n", entry.Ref, n, entry.Out, res.Tier, res.Bounds)
+		fmt.Fprintf(out, "%s: %d file(s) into %s (tier %s, bounds %s)\n", entry.Command(), n, entry.Out, res.Tier, res.Bounds)
 	}
 	return nil
 }

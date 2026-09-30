@@ -116,10 +116,10 @@ var computed = map[string]bool{
 // version tag the registry lists where none is named — listed once
 // per name through tags, nil for no registry access; a name neither
 // holds, or a listing that fails or holds no version tag, an
-// unmapped fact naming the flag's form. A local entry naming one
-// executable becomes a `local` entry, one naming a command with
-// arguments an
-// unmapped fact; a protoc builtin an unmapped fact; out as written
+// unmapped fact naming the flag's form. A local entry becomes a
+// `local` entry of its command and arguments, an unmapped fact where
+// pb's schema refuses the command; a protoc builtin an unmapped
+// fact; out as written
 // where pb's schema takes it, an unmapped fact where not; opt as
 // joined; each key the reader passed over an unmapped fact naming
 // it, as is `inputs`. buf's managed mode becomes overrides where an
@@ -168,12 +168,19 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, repl Replacements, l *Layout, 
 			ref, fact := pluginRef(ctx, key+".remote "+p.Remote, name, version, repl, tags, listed)
 			report(fact)
 			entry.Scheme, entry.Ref, kept = plugin.SchemeOCI, ref, ref != ""
-		case len(p.Local) == 1:
+		case len(p.Local) > 0:
+			// The command as written where pb's schema takes it, as
+			// out below; buf takes any non-empty text.
+			if err := genfile.CheckLocal(p.Local[0]); err != nil {
+				report(unmapped(key+".local "+strings.Join(p.Local, " "), "pb's schema refuses the command: "+err.Error()))
+				kept = false
+				break
+			}
 			entry.Scheme, entry.Ref = plugin.SchemeLocal, p.Local[0]
-			report(mapped(key+".local "+p.Local[0], "local: "+p.Local[0]))
-		case len(p.Local) > 1:
-			report(unmapped(key+".local "+strings.Join(p.Local, " "), "a command with arguments: pb runs an executable alone"))
-			kept = false
+			if len(p.Local) > 1 {
+				entry.Args = p.Local[1:]
+			}
+			report(mapped(key+".local "+strings.Join(p.Local, " "), "local: "+strings.Join(p.Local, " ")))
 		case p.ProtocBuiltin != "":
 			report(unmapped(key+".protoc_builtin "+p.ProtocBuiltin, "pb runs no protoc"))
 			kept = false

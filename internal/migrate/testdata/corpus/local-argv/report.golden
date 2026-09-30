@@ -5,10 +5,14 @@ buf.yaml.breaking -> enable: github.com/greatliontech/buf-rules:FILE (buf's defa
 buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
 buf.gen.yaml plugins[0].out gen -> out: gen
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
-buf.gen.yaml plugins[1].local go tool protoc-gen-go-grpc !! a command with arguments: pb runs an executable alone
-buf.gen.yaml plugins[2].local bun web/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es !! a command with arguments: pb runs an executable alone
+buf.gen.yaml plugins[1].local go tool protoc-gen-go-grpc -> local: go tool protoc-gen-go-grpc
+buf.gen.yaml plugins[1].out gen -> out: gen
+buf.gen.yaml plugins[1].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[2].local bun web/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es -> local: bun web/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es
+buf.gen.yaml plugins[2].out web/src/gen -> out: web/src/gen
+buf.gen.yaml plugins[2].opt target=ts -> opt: target=ts
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

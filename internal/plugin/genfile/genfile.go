@@ -32,9 +32,29 @@ var ErrInvalid = errors.New("invalid generation file")
 // the parameter string handed to the plugin verbatim.
 type Plugin struct {
 	Scheme string // plugin.SchemeOCI or plugin.SchemeLocal
-	Ref    string // the identity as written: an OCI reference, or a local name/path
-	Out    string
-	Opt    string
+	Ref    string // the identity as written: an OCI reference, or a local command
+	// Args are a local command's arguments, handed to the process
+	// verbatim after it (REQ-gen-schema's list form); none for an
+	// oci entry.
+	Args []string
+	Out  string
+	Opt  string
+}
+
+// Command is the entry's plugin as the entry spells it: the reference,
+// or the local command with its arguments after it, space-separated
+// — the name generation's report and refusals call the entry by.
+func (p Plugin) Command() string {
+	if len(p.Args) == 0 {
+		return p.Ref
+	}
+	return p.Ref + " " + strings.Join(p.Args, " ")
+}
+
+// Equal reports whether two entries are the same entry, argument for
+// argument.
+func (p Plugin) Equal(q Plugin) bool {
+	return p.Scheme == q.Scheme && p.Ref == q.Ref && p.Out == q.Out && p.Opt == q.Opt && slices.Equal(p.Args, q.Args)
 }
 
 // Override is one declared file-option assignment.
@@ -83,7 +103,8 @@ func Parse(data []byte) (*File, error) {
 // overrides, the latter absent where empty, entries in the order
 // given, an entry's keys in the order ref or local, out, opt — absent
 // where empty — and files, option, value, each scalar spelled as
-// contractfile.Spell has it. The rendering is held to its reading —
+// contractfile.Spell has it; a local with arguments is a block
+// sequence, the command first, one without the scalar. The rendering is held to its reading —
 // Encode never emits what Parse rejects, nor what Parse reads as a
 // different file.
 func Encode(f *File) ([]byte, error) {
@@ -93,11 +114,14 @@ func Encode(f *File) ([]byte, error) {
 	return contractfile.Emit(func(w *contractfile.Writer) {
 		w.Sequence("plugins", len(f.Plugins), func(i int) {
 			p := f.Plugins[i]
-			key := "ref"
-			if p.Scheme == plugin.SchemeLocal {
-				key = "local"
+			switch {
+			case p.Scheme == plugin.SchemeLocal && len(p.Args) > 0:
+				w.List("local", append([]string{p.Ref}, p.Args...))
+			case p.Scheme == plugin.SchemeLocal:
+				w.Scalar("local", p.Ref)
+			default:
+				w.Scalar("ref", p.Ref)
 			}
-			w.Scalar(key, p.Ref)
 			w.Scalar("out", p.Out)
 			if p.Opt != "" {
 				w.Scalar("opt", p.Opt)
@@ -112,13 +136,15 @@ func Encode(f *File) ([]byte, error) {
 			})
 		}
 	}, Parse, f, func(a, b *File) bool {
-		return slices.Equal(a.Plugins, b.Plugins) && slices.Equal(a.Overrides, b.Overrides)
+		return slices.EqualFunc(a.Plugins, b.Plugins, Plugin.Equal) && slices.Equal(a.Overrides, b.Overrides)
 	}, ErrInvalid)
 }
 
 // parsePlugins reads the plugins list: each entry a mapping carrying
 // exactly one of ref or local, out, and optionally opt — a reference
-// and a path one line of text, the parameter string text as written.
+// one line of text, a local one line or a list of them, the command
+// then its arguments, a list of one the same entry as its scalar,
+// the parameter string text as written.
 func parsePlugins(n ast.Node) ([]Plugin, error) {
 	plugins := []Plugin{}
 	err := contractfile.Sequence(n, "plugins", ErrInvalid, func(i int, en ast.Node) error {
@@ -138,7 +164,37 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 		}
 		err := contractfile.Mapping(en, where, ErrInvalid,
 			line("ref", func(s string) { schemes++; p.Ref, p.Scheme = s, plugin.SchemeOCI }),
-			line("local", func(s string) { schemes++; p.Ref, p.Scheme = s, plugin.SchemeLocal }),
+			contractfile.Field{Name: "local", Read: func(n ast.Node) error {
+				schemes++
+				p.Scheme = plugin.SchemeLocal
+				if text, ok := contractfile.Line(n); ok {
+					p.Ref = text
+					return nil
+				}
+				if _, isList := n.(*ast.SequenceNode); !isList {
+					return fmt.Errorf("%w: %s.local must be one line of text or a list of them", ErrInvalid, where)
+				}
+				var argv []string
+				err := contractfile.Sequence(n, where+".local", ErrInvalid, func(i int, item ast.Node) error {
+					text, ok := contractfile.Line(item)
+					if !ok {
+						return fmt.Errorf("%w: %s.local[%d] must be one line of text", ErrInvalid, where, i)
+					}
+					argv = append(argv, text)
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+				if len(argv) == 0 {
+					return fmt.Errorf("%w: %s.local names no command", ErrInvalid, where)
+				}
+				p.Ref = argv[0]
+				if len(argv) > 1 {
+					p.Args = argv[1:]
+				}
+				return nil
+			}},
 			line("out", func(s string) { hasOut = true; p.Out = s }),
 			contractfile.Field{Name: "opt", Read: func(n ast.Node) error {
 				text, ok := contractfile.Scalar(n)
@@ -181,7 +237,7 @@ func checkIdentity(p Plugin) error {
 	case plugin.SchemeOCI:
 		return CheckReference(p.Ref)
 	case plugin.SchemeLocal:
-		return checkLocal(p.Ref)
+		return CheckLocal(p.Ref)
 	}
 	return fmt.Errorf("unknown scheme %q", p.Scheme)
 }
@@ -361,10 +417,10 @@ func checkTag(t string) error {
 	return nil
 }
 
-// checkLocal accepts a local plugin value (plugin-execution.md
+// CheckLocal accepts a local plugin command (plugin-execution.md
 // REQ-plugin-local-resolution): a bare program name, or a forward-slash
 // path — relative or absolute. Backslashes are never separators.
-func checkLocal(s string) error {
+func CheckLocal(s string) error {
 	if s == "" {
 		return errors.New("empty local value")
 	}

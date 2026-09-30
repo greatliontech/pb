@@ -68,7 +68,7 @@ and the record says which source spoke (REQ-plugin-resource-bounds);
 pb hands the daemon the export as a stream and binds no host
 directory, so the daemon's file sharing is never consulted.
 
-**REQ-plat-local-runner** (behavior): A `local` plugin, a host binary,
+**REQ-plat-local-runner** (behavior): A `local` plugin, a host command,
 MUST run on the native runner on every platform, under the sandbox
 row the host reaches and with no tier floor of its own — listing the
 scheme is the root's acceptance of host execution
@@ -79,7 +79,7 @@ AppContainer is, `Minimal` where a platform's security boundary is
 absent and only bounds apply; a platform matching no row refuses the
 run naming the platform, never a bare exec. The `docker` runner
 never runs a `local` plugin, on any platform. On `windows` a `local`
-value with no path separator and no extension resolves to the name
+command with no path separator and no extension resolves to the name
 with `.exe` appended and to nothing else — the platform's executable
 suffix, never `PATHEXT`'s scripts, which the sandbox would not run
 as one process — the one extension REQ-plugin-local-resolution's

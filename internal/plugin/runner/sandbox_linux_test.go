@@ -560,6 +560,23 @@ func TestRunLocal(t *testing.T) {
 	if got := content(t, res); got != "hostname="+host {
 		t.Fatalf("a local plugin runs in the host's world: %q", got)
 	}
+	// The command's arguments reach the process verbatim, an empty
+	// one and one with a space included, and it runs in the working
+	// directory the spec names (REQ-plugin-local-resolution).
+	wd := t.TempDir()
+	res, err = (&SandboxRunner{}).Run(ctx, Spec{
+		Scheme:  plugin.SchemeLocal,
+		Process: plugin.Process{Argv: []string{filepath.Join(rootfsDir, "plugin"), "--x", "b c", ""}, WorkDir: wd},
+		Stdin:   request(t, "argv"),
+		Limits:  limits(nil),
+		MinTier: plugin.TierNone,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := content(t, res); got != "args=--x|b c| cwd="+wd {
+		t.Fatalf("arguments and working directory: %q", got)
+	}
 }
 
 // The tier vocabularies map both ways, and an absent or unknown floor
