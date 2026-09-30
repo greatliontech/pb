@@ -5,4 +5,4 @@ requirement_id: "REQ-gen-verb"
 reason: "runner selection is one runner per run and the report names no runner until selection per entry lands"
 content_hash: "0ca8fb77639f0d3b698f6b4e2ee6aaf2872b4679bb7678ee50ebb5ef310c5784"
 source_hash: "4941db4fde830067b02fed4fc2758b4a254eadeb37f3768b99f9d13686e857eb"
-lands { manual { condition: "the feature-full plan's chunk 18 lands" contradicted: true } }
+lands { manual { condition: "the feature-full plan's chunk 19 lands" contradicted: true } }

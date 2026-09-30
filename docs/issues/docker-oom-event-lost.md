@@ -1,6 +1,6 @@
 # The daemon loses a memory kill's record under load
 
-Lands: the feature-full plan's chunk 13
+Lands: the feature-full plan's chunk 14
 (docs/plans/feature-full.md): the kill read from the
 kernel's counter at a cgroup parent the daemon does not release
 

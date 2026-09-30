@@ -5,4 +5,4 @@ requirement_id: "REQ-plat-oci-substrate"
 reason: "the platform contract is stated ahead of its witnesses: the suite runs on Linux alone until the platform matrix lands"
 content_hash: "5a4ae1e42899ce4c0256baa3d7c29b918d31103fc8f60bec15b4328d19061483"
 source_hash: "52ee8fd0a1fd9b4d8dabe6cb3f1d533866cf5c31966fcacbc344d1e651ecde6a"
-lands { manual { condition: "the feature-full plan's chunk 19 lands" } }
+lands { manual { condition: "the feature-full plan's chunk 20 lands" } }
