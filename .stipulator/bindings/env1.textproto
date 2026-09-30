@@ -320,3 +320,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "46c017deffadd7d8a63263429d906b4e0d7d050a61f62b9a3f9429633ef4fd3f"
 }
+
+bindings {
+  requirement_id: "REQ-env1-types"
+  content_hash: "9b18ddb086cf70e6914c6cfd8da885ee2fa952051c78074d51e01c75cbb7a6ca"
+  source_hash: "ab206c154844415a8410cd0b75af565291db410fcfb008a797b157b9cfc34580"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.typeOf"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "79653f528384294966b9923d0d6e82643bb4d4ac8fada0e9bb7ea6e39db7e936"
+}
+
+bindings {
+  requirement_id: "REQ-env1-types"
+  content_hash: "9b18ddb086cf70e6914c6cfd8da885ee2fa952051c78074d51e01c75cbb7a6ca"
+  source_hash: "ab206c154844415a8410cd0b75af565291db410fcfb008a797b157b9cfc34580"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/env1.TestFunctions"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "9ed23a4c0f25aa9e58c23bf4de01cc6a2409446c0185b68a86b67041ed533e07"
+}

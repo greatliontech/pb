@@ -47,7 +47,7 @@ const tidyRounds = 10
 // atomic, not transactional: a failed round may leave some files
 // rewritten; rerunning after fixing the cause converges.
 func Tidy(ctx context.Context, s *Session, out io.Writer) error {
-	imported, err := s.importedRulesets()
+	imported, err := s.importedRulesets(ctx)
 	if err != nil {
 		return err
 	}
@@ -269,19 +269,17 @@ func tidyOnce(ctx context.Context, s *Session, imported map[string]bool) (change
 	return false, carried, nil
 }
 
-// importedRulesets is the pairs the lint file's imports pin: each
-// fetched import's pair through the workspace's replacements, a
-// working-tree import's none.
-func (s *Session) importedRulesets() (map[string]bool, error) {
-	imports, err := s.imports()
+// importedRulesets is the pairs the imports pin, the lint file's
+// through the rule files' own: each fetched pair through the
+// workspace's replacements, a working-tree import's none.
+func (s *Session) importedRulesets(ctx context.Context) (map[string]bool, error) {
+	loaded, err := s.closure(ctx)
 	if err != nil {
 		return nil, err
 	}
 	pairs := map[string]bool{}
-	for _, ri := range imports {
-		if !ri.Local {
-			pairs[ri.Source.String()] = true
-		}
+	for _, src := range loaded.Fetched {
+		pairs[src.String()] = true
 	}
 	return pairs, nil
 }

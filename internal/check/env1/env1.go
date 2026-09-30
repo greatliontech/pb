@@ -31,12 +31,13 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
+	"sync"
+
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
 	"cel.dev/cel-go/common/types/ref"
 	"cel.dev/cel-go/ext"
-	"context"
-	"sync"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
@@ -525,12 +526,28 @@ type Env struct {
 	// The environment extended with each target's bindings, for the
 	// one kind the environment compiles.
 	byTarget map[check.Target]*cel.Env
+	// The rule files' functions compiled under the environment
+	// (REQ-rules-functions): each scope's declarations, each function
+	// once, the functions by their overload id for the cost tracker,
+	// and a target's environment extended with a scope's declarations.
+	scopes     map[*rules.Scope]*compiledScope
+	functions  map[functionKey]*userFunction
+	byOverload map[string]*userFunction
+	byScope    map[scopeKey]*cel.Env
+	// The environment's macro names, which a function may not take.
+	macros map[string]bool
+}
+
+// scopeKey names a target's environment under one scope.
+type scopeKey struct {
+	target check.Target
+	scope  *rules.Scope
 }
 
 // New is the environment over the new side, and the old side where a
 // breaking run compares against one (nil for a lint run).
 func New(newSide, oldSide *Set) (*Env, error) {
-	e := &Env{new: newSide, old: oldSide, byTarget: map[check.Target]*cel.Env{}}
+	e := &Env{new: newSide, old: oldSide, byTarget: map[check.Target]*cel.Env{}, scopes: map[*rules.Scope]*compiledScope{}, functions: map[functionKey]*userFunction{}, byOverload: map[string]*userFunction{}, byScope: map[scopeKey]*cel.Env{}}
 	size := newSide.Size()
 	if oldSide != nil {
 		size += oldSide.Size()
@@ -631,6 +648,10 @@ func New(newSide, oldSide *Set) (*Env, error) {
 	}
 	e.base = base
 	e.adapter = base.CELTypeAdapter()
+	e.macros = map[string]bool{}
+	for _, m := range base.Macros() {
+		e.macros[m.Function()] = true
+	}
 	return e, nil
 }
 
@@ -730,6 +751,17 @@ func (e *Env) Compile(r rules.Rule) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The rule's file's functions, its own and its imports'
+	// (REQ-rules-functions), compiled before the rule.
+	if r.Scope != nil {
+		env, err = e.forScope(env, r.Target, r.Scope)
+		if err != nil {
+			if errors.Is(err, ErrCompile) {
+				return nil, err
+			}
+			return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.Name(), err)
+		}
+	}
 	ast, iss := env.Compile(r.CEL)
 	if iss != nil && iss.Err() != nil {
 		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.Name(), iss.Err())
@@ -742,6 +774,25 @@ func (e *Env) Compile(r rules.Rule) (*Program, error) {
 		return nil, fmt.Errorf("%w: %s: %v", ErrCompile, r.Name(), err)
 	}
 	return &Program{rule: r, prg: prg}, nil
+}
+
+// forScope is the target's environment extended with a scope's
+// declarations, once per pair.
+func (e *Env) forScope(target *cel.Env, t check.Target, sc *rules.Scope) (*cel.Env, error) {
+	key := scopeKey{t, sc}
+	if env := e.byScope[key]; env != nil {
+		return env, nil
+	}
+	opts, err := e.scope(sc)
+	if err != nil {
+		return nil, err
+	}
+	env, err := target.Extend(opts...)
+	if err != nil {
+		return nil, err
+	}
+	e.byScope[key] = env
+	return env, nil
 }
 
 func (e *Env) forTarget(kind check.Kind, t check.Target) (*cel.Env, error) {

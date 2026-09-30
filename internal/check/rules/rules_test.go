@@ -240,3 +240,65 @@ func TestDiscover(t *testing.T) {
 		t.Fatalf("no files: %+v %v", got, err)
 	}
 }
+
+// A rule file declares imports and functions beside its rules
+// (REQ-rules-file-schema): each import `{path, version, alias}`, each
+// function `{name, params, returns, cel}` with type spellings of the
+// environment's vocabulary shape; the file's scope holds them and
+// every rule shares it; every departure is refused naming it.
+func TestParseImportsAndFunctions(t *testing.T) {
+	src := "celEnv: 1\nimports:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\nfunctions:\n  - name: isVersion\n    params:\n      - name: s\n        type: string\n    returns: bool\n    cel: s.matches('^v[0-9]+$')\n  - name: names\n    params:\n      - name: f\n        type: google.protobuf.FileDescriptorProto\n      - name: depth\n        type: int\n    returns: list(string)\n    cel: |\n      messages(f).map(m, m.name)\n  - name: pairs\n    returns: map(string, list(dyn))\n    cel: \"{}\"\nrules:\n  - id: A\n    kind: lint\n    target: file\n    severity: error\n    cel: isVersion(file.package)\n    message: m\n"
+	f, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Imports) != 1 || f.Imports[0] != (Import{Path: "example.com/std", Version: "v1.0.0", Alias: "std"}) {
+		t.Fatalf("imports = %+v", f.Imports)
+	}
+	if len(f.Functions) != 3 || f.Functions[0].Name != "isVersion" || f.Functions[0].Params[0].Name != "s" || f.Functions[0].Params[0].Type.String() != "string" || f.Functions[0].Returns.String() != "bool" || f.Functions[0].CEL != "s.matches('^v[0-9]+$')" {
+		t.Fatalf("functions = %+v", f.Functions)
+	}
+	if n := f.Functions[1]; len(n.Params) != 2 || n.Params[0].Type.String() != "google.protobuf.FileDescriptorProto" || n.Params[1].Type.Name != "int" || n.Returns.String() != "list(string)" || n.CEL != "messages(f).map(m, m.name)\n" {
+		t.Fatalf("names = %+v", n)
+	}
+	if p := f.Functions[2]; len(p.Params) != 0 || p.Returns.String() != "map(string, list(dyn))" || p.CEL != "{}" {
+		t.Fatalf("pairs = %+v", p)
+	}
+	if f.Scope == nil || f.Rules[0].Scope != f.Scope || len(f.Scope.Functions) != 3 || len(f.Scope.Imports) != 1 || f.Scope.Lent != nil {
+		t.Fatalf("scope = %+v, rule's %p", f.Scope, f.Rules[0].Scope)
+	}
+	fn := func(fields string) string {
+		return "celEnv: 1\nfunctions:\n  - " + strings.ReplaceAll(strings.TrimSpace(fields), "\n", "\n    ") + "\nrules: []\n"
+	}
+	for name, c := range map[string]struct{ in, want string }{
+		"bad name":       {fn("name: 1x\nreturns: bool\ncel: \"true\""), "functions[0]: name must be ASCII letters"},
+		"name twice":     {"celEnv: 1\nfunctions:\n  - name: f\n    returns: bool\n    cel: \"true\"\n  - name: f\n    returns: bool\n    cel: \"true\"\nrules: []\n", `functions[1]: function "f" declared twice`},
+		"param twice":    {fn("name: f\nparams:\n  - name: a\n    type: int\n  - name: a\n    type: int\nreturns: bool\ncel: \"true\""), `functions[0].params[1]: parameter "a" declared twice`},
+		"param no type":  {fn("name: f\nparams:\n  - name: a\nreturns: bool\ncel: \"true\""), "functions[0].params[0]: missing type"},
+		"bad type":       {fn("name: f\nreturns: list(\ncel: \"true\""), `functions[0]: type "list(" is no type spelling`},
+		"list arity":     {fn("name: f\nreturns: list(int, int)\ncel: \"true\""), "list takes no such arguments"},
+		"map arity":      {fn("name: f\nreturns: map(int)\ncel: \"true\""), "map takes no such arguments"},
+		"no returns":     {fn("name: f\ncel: \"true\""), "functions[0]: missing returns"},
+		"empty cel":      {fn("name: f\nreturns: bool\ncel: \"\""), "functions[0]: cel must be a non-empty scalar"},
+		"unknown key":    {fn("name: f\nreturns: bool\ncel: \"true\"\nmessage: m"), `functions[0]: unknown key "message"`},
+		"functions list": {"celEnv: 1\nfunctions: {}\nrules: []\n", "functions must be a list"},
+		"import alias":   {"celEnv: 1\nimports:\n  - path: example.com/a\n    version: v1.0.0\n    alias: a\n  - path: example.com/b\n    version: v1.0.0\n    alias: a\nrules: []\n", "imports[1]: alias a is another import's"},
+		"import version": {"celEnv: 1\nimports:\n  - path: example.com/a\n    version: latest\n    alias: a\nrules: []\n", "imports[0].version:"},
+	} {
+		_, err := Parse([]byte(c.in))
+		if err == nil || !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	for _, s := range []string{"bool", "list(string)", "map(string, list(dyn))", "google.protobuf.DescriptorProto", "list(map(string, int))"} {
+		typ, err := ParseType(s)
+		if err != nil || typ.String() != s {
+			t.Errorf("ParseType(%q) = %v %v", s, typ, err)
+		}
+	}
+	for _, s := range []string{"", "list", "list()", "map(a, b, c)", "a b", "list(string))", "(string)"} {
+		if _, err := ParseType(s); err == nil {
+			t.Errorf("ParseType(%q) accepted", s)
+		}
+	}
+}

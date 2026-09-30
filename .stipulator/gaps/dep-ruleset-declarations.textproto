@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-dep-ruleset-declarations"
-reason: "the lint file's imports are covered; the rule-file imports' edges (`<path>@<version> <path>@<version>`, why over them, an import in a fetched rule file never rewritten) wait for rule files to gain imports"
-content_hash: "c47e4f2d98e03d6e01d6cf5781a4fe2aa2cec3384d85e67954d043f8cf01f8f1"
-source_hash: "7ef8e18e79091025e10fe3eb8f8663fec7c4df1017a0850abb8dca4614bccf9c"
-lands { manual { condition: "rule files declare imports and the dep verbs walk them: graph prints a rule file's import edge and update leaves a fetched rule file's import as it is" } }

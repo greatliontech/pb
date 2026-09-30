@@ -102,7 +102,7 @@ declared dependencies MUST act on ruleset imports where they live —
 the lint file's `rulesets` and each imported rule file's `imports`
 (`check-rules.md`) — exactly as they act on module files' `deps`:
 `download` fetches, verifies and pins every fetched import's
-artifacts, its line a module's (`<path>@<version>`, a replaced path's
+artifacts, the rule files' imports among them, its line a module's (`<path>@<version>`, a replaced path's
 `=> <replacement>`), a working-tree import fetching nothing; `update`
 moves an import forward to the highest discovered release, rewriting
 the lint file canonically and pinning the moved pair — a named path the lint file imports is found as one a workspace
@@ -111,8 +111,8 @@ replaced import is reported left as a replaced declaration is, and
 of a path imported at several versions the highest moves while
 another that would read the same release under a second alias is
 left and reported by the sweep and fails the run, before any
-declaration or import moves, when the path is named (an import in a fetched ruleset's rule file is that ruleset's
-own and is never rewritten); `verify` covers the rulesets' pins after
+declaration or import moves, when the path is named (a rule file's import, a fetched ruleset's or a working-tree
+module's, is that ruleset's own and is never rewritten); `verify` covers the rulesets' pins after
 the modules', a ruleset pin's line saying so; `graph` prints each
 import as an edge from the lint file (`pb.lint.yaml
 <path>@<version>`, a working-tree import's `pb.lint.yaml <path>`, the
@@ -120,8 +120,8 @@ working copy having no version) and from a rule file
 (`<path>@<version> <path>@<version>`); `why` answers over those
 edges too. Tidy leaves the imports alone:
 they are no protobuf dependency, so no module file declares one and
-nothing carries one; it removes the ruleset pins no import of the
-lint file names, as it removes module pins outside the tidied graph
+nothing carries one; it removes the ruleset pins no import names — the lint file's or a
+rule file's — as it removes module pins outside the tidied graph
 (`module-lockfile.md` REQ-lock-pins-only).
 
 **REQ-dep-download** (behavior): `download` MUST fetch, verify, and

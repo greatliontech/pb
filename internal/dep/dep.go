@@ -215,41 +215,58 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 		}
 		fmt.Fprintf(out, "%s@%s\n", r.Path, r.Version)
 	}
-	// Then every fetched ruleset import, its artifacts the same, its
-	// line a module's, pinned as a ruleset
-	// (REQ-dep-ruleset-declarations).
-	imports, err := s.imports()
+	// Then every fetched ruleset import, the lint file's and the rule
+	// files', its artifacts the same, its line a module's, pinned as a
+	// ruleset (REQ-dep-ruleset-declarations): each pair once, in the
+	// order the imports are read.
+	loaded, err := s.closure(ctx)
 	if err != nil {
 		return err
 	}
-	for _, ri := range imports {
-		if ri.Local {
+	done := map[string]bool{}
+	for _, e := range loaded.Edges {
+		if e.Version == "" || done[e.To()] {
 			continue
 		}
-		err := s.Client.RulesetDownload(ctx, ri.Source.Path, ri.Source.Version)
+		done[e.To()] = true
+		parsed, err := version.Parse(e.Version)
+		if err != nil {
+			return err
+		}
+		src := s.Root.Source(e.Path, parsed)
+		err = s.Client.RulesetDownload(ctx, src.Path, src.Version)
 		if err := savePins(s, err); err != nil {
 			return err
 		}
-		if s.Root.Replaced(ri.imp.Path) {
-			fmt.Fprintf(out, "%s@%s => %s\n", ri.imp.Path, ri.imp.Version, ri.Source)
+		if s.Root.Replaced(e.Path) {
+			fmt.Fprintf(out, "%s => %s\n", e.To(), src)
 			continue
 		}
-		fmt.Fprintf(out, "%s@%s\n", ri.imp.Path, ri.imp.Version)
+		fmt.Fprintln(out, e.To())
 	}
 	return s.SaveLock()
 }
 
-// importEdges is the requirement graph's edges from the lint file
-// (REQ-dep-ruleset-declarations): one per import, a fetched import's
-// to its pair as written, a working-tree import's to the bare path.
-func (s *Session) importEdges() ([]mvs.Edge, error) {
-	imports, err := s.imports()
+// importEdges is the requirement graph's edges the imports add
+// (REQ-dep-ruleset-declarations): one per import, from the lint file
+// or from the importing rule file's ruleset, a fetched import's to
+// its pair as written, a working-tree import's to the bare path.
+func (s *Session) importEdges(ctx context.Context) ([]mvs.Edge, error) {
+	loaded, err := s.closure(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var edges []mvs.Edge
-	for _, ri := range imports {
-		edges = append(edges, mvs.Edge{Requirer: lintRequirer, Path: ri.imp.Path, Version: ri.Version})
+	for _, e := range loaded.Edges {
+		edge := mvs.Edge{Requirer: e.From, Path: e.Path}
+		if e.Version != "" {
+			parsed, err := version.Parse(e.Version)
+			if err != nil {
+				return nil, err
+			}
+			edge.Version = parsed
+		}
+		edges = append(edges, edge)
 	}
 	return edges, nil
 }
@@ -283,7 +300,7 @@ func (s *Session) graph(ctx context.Context) ([]mvs.Edge, error) {
 	if err != nil {
 		return nil, err
 	}
-	imports, err := s.importEdges()
+	imports, err := s.importEdges(ctx)
 	if err != nil {
 		return nil, err
 	}

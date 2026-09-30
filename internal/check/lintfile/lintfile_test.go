@@ -536,4 +536,61 @@ func TestRulesets(t *testing.T) {
 	if _, err := Rulesets(context.Background(), imports(rules.Import{Path: "example.com/bad", Version: "v1.0.0", Alias: "bad"}), root, fsys, zip); !errors.Is(err, rules.ErrEnvironment) {
 		t.Fatalf("bad rule file's cause: %v", err)
 	}
+
+	// A rule file's imports lend their rulesets' functions to that
+	// file alone, each with its own file's scope; every import is an
+	// edge and every fetched pair is read once; a chain of imports
+	// returning to a path, and an import declaring no rule file, are
+	// refused naming them (REQ-rules-imports).
+	fnFile := func(imports, fns string) string {
+		if fns != "" {
+			fns = "functions:\n" + fns
+		}
+		return "celEnv: 1\n" + imports + fns + "rules: []\n"
+	}
+	served["example.com/util@v1.0.0"] = map[string]string{"pb.yaml": "module: example.com/util\n", "util.rules.yaml": fnFile("", "  - name: isSnake\n    returns: bool\n    params:\n      - name: s\n        type: string\n    cel: case(s, 'snake') == s\n")}
+	served["example.com/std@v2.0.0"] = map[string]string{"pb.yaml": "module: example.com/std\n", "s.rules.yaml": fnFile("imports:\n  - path: example.com/util\n    version: v1.0.0\n    alias: util\n", "  - name: fieldOk\n    returns: bool\n    params:\n      - name: n\n        type: string\n    cel: util.isSnake(n)\n") + "", "t.rules.yaml": "celEnv: 1\nrules:\n  - id: T\n    kind: lint\n    target: field\n    severity: error\n    cel: \"true\"\n    message: m\n"}
+	fsys["ws/lib/lib.rules.yaml"] = &fstest.MapFile{Data: []byte(fnFile("imports:\n  - path: example.com/std\n    version: v2.0.0\n    alias: std\n  - path: example.com/util\n    version: v1.0.0\n    alias: older\n", "  - name: ok\n    returns: bool\n    params:\n      - name: n\n        type: string\n    cel: std.fieldOk(n) && older.isSnake(n)\n"))}
+	asked = nil
+	loaded, err := Load(context.Background(), imports(rules.Import{Path: "example.com/lib", Alias: "house"}, rules.Import{Path: "example.com/std", Version: "v2.0.0", Alias: "std"}), root, fsys, zip)
+	if err != nil {
+		t.Fatal(err)
+	}
+	house := loaded.Rulesets[0].Files[0].File.Scope
+	if len(loaded.Rulesets) != 2 || house.Where != "example.com/lib's lib.rules.yaml" || len(house.Lent["std"]) != 1 || house.Lent["std"][0].Function.Name != "fieldOk" || len(house.Lent["older"]) != 1 || house.Lent["older"][0].Function.Name != "isSnake" {
+		t.Fatalf("lent scopes: %+v", house)
+	}
+	if stdScope := house.Lent["std"][0].Scope; stdScope.Where != "example.com/std@v2.0.0's s.rules.yaml" || len(stdScope.Lent["util"]) != 1 || stdScope.Lent["util"][0].Scope != house.Lent["older"][0].Scope {
+		t.Fatalf("the lent function's own scope: %+v", stdScope)
+	}
+	if len(loaded.Rulesets[1].Files) != 2 || loaded.Rulesets[1].Files[1].File.Scope.Lent != nil {
+		t.Fatalf("a file importing nothing is lent nothing: %+v", loaded.Rulesets[1].Files)
+	}
+	wantEdges := []Edge{{"pb.lint.yaml", "example.com/lib", ""}, {"example.com/lib", "example.com/std", "v2.0.0"}, {"example.com/std@v2.0.0", "example.com/util", "v1.0.0"}, {"example.com/lib", "example.com/util", "v1.0.0"}, {"pb.lint.yaml", "example.com/std", "v2.0.0"}}
+	if !reflect.DeepEqual(loaded.Edges, wantEdges) {
+		t.Fatalf("edges = %v", loaded.Edges)
+	}
+	if strings.Join(asked, ",") != "example.com/std@v2.0.0,example.com/util@v1.0.0" || len(loaded.Fetched) != 2 {
+		t.Fatalf("each pair read once: asked %v, fetched %v", asked, loaded.Fetched)
+	}
+	// A chain returning to a path at any version is a cycle; an
+	// import of a ruleset without rule files lends nothing and is
+	// refused.
+	served["example.com/std@v2.0.0"]["s.rules.yaml"] = fnFile("imports:\n  - path: example.com/util\n    version: v1.0.0\n    alias: util\n", "")
+	served["example.com/util@v1.0.0"]["util.rules.yaml"] = fnFile("imports:\n  - path: example.com/std\n    version: v2.0.0\n    alias: std\n", "")
+	if _, err := Load(context.Background(), imports(rules.Import{Path: "example.com/std", Version: "v2.0.0", Alias: "std"}), root, fsys, zip); err == nil || !errors.Is(err, ErrRuleset) || !strings.Contains(err.Error(), "imports cycle: example.com/std -> example.com/util -> example.com/std") {
+		t.Fatalf("a cycle: %v", err)
+	}
+	// A ruleset's function names are one namespace across its files.
+	served["example.com/util@v1.0.0"]["util.rules.yaml"] = fnFile("", "  - name: dup\n    returns: bool\n    cel: \"true\"\n")
+	served["example.com/util@v1.0.0"]["z.rules.yaml"] = fnFile("", "  - name: dup\n    returns: bool\n    cel: \"true\"\n")
+	if _, err := Load(context.Background(), imports(rules.Import{Path: "example.com/util", Version: "v1.0.0", Alias: "util"}), root, fsys, zip); err == nil || !errors.Is(err, ErrRuleset) || !strings.Contains(err.Error(), "example.com/util: function dup declared by util.rules.yaml and z.rules.yaml") {
+		t.Fatalf("a function declared by two files: %v", err)
+	}
+	delete(served["example.com/util@v1.0.0"], "z.rules.yaml")
+	served["example.com/empty@v1.0.0"] = map[string]string{"pb.yaml": "module: example.com/empty\n"}
+	served["example.com/util@v1.0.0"]["util.rules.yaml"] = fnFile("imports:\n  - path: example.com/empty\n    version: v1.0.0\n    alias: e\n", "")
+	if _, err := Load(context.Background(), imports(rules.Import{Path: "example.com/util", Version: "v1.0.0", Alias: "util"}), root, fsys, zip); err == nil || !errors.Is(err, ErrRuleset) || !strings.Contains(err.Error(), "example.com/util: util.rules.yaml imports example.com/empty, which declares no rule file") {
+		t.Fatalf("an import without rule files: %v", err)
+	}
 }

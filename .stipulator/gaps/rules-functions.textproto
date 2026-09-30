@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-rules-functions"
-reason: "rule files gain typed functions and per-file imports in the change set after the ruleset imports; the spec states them ahead so the import term and the lint file's imports are one design"
-content_hash: "b90368f33f189cb71c2fcdd46f930e081fdd7a6f192954fa349488b8593e21ef"
-source_hash: "f12371ef03843dbaaa4dfc258a5c807782a9986fd113f0f4e829bbada3ecc64c"
-lands { manual { condition: "rule files declare functions and imports: a rule file with a functions key compiles and a rule calls one" } }

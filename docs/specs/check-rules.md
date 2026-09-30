@@ -87,10 +87,10 @@ exclusions, and the breaking-change comparison base.
 **REQ-rules-file-schema** (wire): A rule file MUST contain `celEnv`, the
 CEL environment version its expressions target written as unquoted
 decimal digits with no sign and no leading zero; optionally
-`imports`, a list of ruleset imports; optionally `functions`, a list
-of entries `{name, params, returns, cel}` where `name` is one
-non-empty line of ASCII letters, digits and underscores opening with a
-letter and unique within the file, `params` a possibly empty list of
+`imports`, a list of ruleset imports; optionally `functions`, a list of entries `{name, params, returns, cel}` where
+`name` is one non-empty line of ASCII letters, digits and underscores
+opening with a letter and unique within the ruleset — its files one
+namespace, as its ids are — `params` a possibly empty list of
 `{name, type}` with names unique within the function, `returns` and
 each `type` a type name of the environment's vocabulary
 (REQ-env1-types), and `cel` non-empty text, a block scalar included;
@@ -110,11 +110,15 @@ compiled under the file's environment as typed, expression-bodied
 functions — each parameter bound at its declared type, the body
 refused when it does not evaluate to the declared return type, a
 body naming a function of the file or of an imported ruleset resolved
-as a rule's call is — before any rule of the file compiles, so a rule
-calls them as it calls the environment's own; a call's cost is the
-body's, charged under REQ-rules-bounded exactly as a library
-function's, and a function calling itself, directly or through
-another, is refused at compile time naming the cycle. A file's
+as a rule's call is — before any rule of the file compiles — a file no enabled rule draws
+on compiles nothing — so a rule calls them as it calls the
+environment's own; a function named as one of the environment's, a
+macro's name included, is refused, shadowing none; a call's cost is the body's,
+charged under REQ-rules-bounded exactly as a library function's, and
+a function calling itself, directly or through another, is refused
+at compile time naming the cycle; a body compiling to a value of no
+fixed type is held to the declared type at each call, a call yielding
+another failing the rule's evaluation. A file's
 functions are visible to its own expressions unqualified and to a
 file importing its ruleset as `<alias>.<name>`; nothing else of a
 ruleset is visible through an import — its rules are contributed by
@@ -124,9 +128,11 @@ the lint file's imports alone (REQ-lint-rulesets-imported).
 exactly as written: each at its version, from the module cache as
 any dependency is acquired, pinned and verified (`module-lockfile.md`
 REQ-lock-ruleset-entry, `provenance.md`), its rule files' functions
-the import lends; an import whose version does not resolve, whose
-ruleset declares no rule file, or whose alias another import of the
-file already uses fails the check run naming it; a chain of imports
+the import lends; an import whose version does not resolve, whose ruleset declares no
+rule file, whose alias another import of the file already uses or
+spells a binding's name (REQ-env1-bindings), or that writes a version
+for a path read from the working tree, or none for a fetched one,
+fails the check run naming it; a chain of imports
 that returns to a ruleset already on it — at any version — is
 refused naming the cycle, so what a file sees is finite and exact.
 
@@ -256,8 +262,10 @@ binds by their full names (`google.protobuf.FileDescriptorProto`,
 `google.protobuf.OneofDescriptorProto`, `google.protobuf.EnumDescriptorProto`,
 `google.protobuf.EnumValueDescriptorProto`,
 `google.protobuf.ServiceDescriptorProto`,
-`google.protobuf.MethodDescriptorProto`); any other spelling refuses
-the rule file at compile time naming the function and the type.
+`google.protobuf.MethodDescriptorProto`) — a map's key `bool`, `int`,
+`uint`, `string` or `dyn`, and a descriptor type admitting `null` wherever a function declares
+it — a parameter, a return, a member — as the library's do; any other spelling refuses the rule file
+at compile time naming the function and the type.
 
 **REQ-env1-library** (wire): Environment 1 MUST provide CEL's standard
 functions, CEL's optional values, cel-go's extension libraries at

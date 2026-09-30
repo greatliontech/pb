@@ -1304,3 +1304,205 @@ message N {}
 	nf := set.File("n/n.proto")
 	holds(t, env, check.TargetFile, `proto.getExt(features(file), n.Holder.nested).on == true`, map[string]any{"file": nf})
 }
+
+// A rule file's functions compile under the environment before its
+// rules: typed, expression-bodied, called unqualified by the file's
+// own expressions and as `<alias>.<name>` by a file importing the
+// ruleset; a body refused unless it yields its declared type, a type
+// outside the vocabulary, a cycle, a shadowed library name and a
+// reserved alias refused naming them; a call charged the body's cost
+// (REQ-rules-functions, REQ-rules-imports, REQ-env1-types).
+func TestFunctions(t *testing.T) {
+	env, set := lintEnv(t)
+	p := fixtureProtos(set)
+	fn := func(name, cel, returns string, params ...rules.Param) rules.Function {
+		ret, err := rules.ParseType(returns)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rules.Function{Name: name, Params: params, Returns: ret, CEL: cel}
+	}
+	param := func(name, typ string) rules.Param {
+		pt, err := rules.ParseType(typ)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rules.Param{Name: name, Type: pt}
+	}
+	rule := func(sc *rules.Scope, cel string) rules.Rule {
+		return rules.Rule{ID: "R", Kind: check.KindLint, Target: check.TargetField, CEL: cel, Scope: sc}
+	}
+	vars := map[string]any{"field": p.name, "file": p.a}
+	// A lent scope: the imported ruleset's file declares a function
+	// over the environment's library, called by the importer as
+	// std.isSnake, and one calling another of its own file.
+	lent := &rules.Scope{Where: "example.com/std@v1.0.0's s.rules.yaml", Functions: []rules.Function{
+		fn("isSnake", "case(s, 'snake') == s", "bool", param("s", "string")),
+		fn("fieldOk", "isSnake(f.name) && f.number > 0", "bool", param("f", "google.protobuf.FieldDescriptorProto")),
+	}}
+	own := &rules.Scope{Where: "house's h.rules.yaml", Functions: []rules.Function{
+		fn("short", "s.size() < n", "bool", param("s", "string"), param("n", "int")),
+		fn("names", "messages(f).map(m, m.name)", "list(string)", param("f", "google.protobuf.FileDescriptorProto")),
+	}, Lent: map[string][]rules.Lent{"std": {{Function: lent.Functions[0], Scope: lent}, {Function: lent.Functions[1], Scope: lent}}}}
+	for _, c := range []struct {
+		cel  string
+		want bool
+	}{
+		{"short(field.name, 10)", true},
+		{"short(field.name, 2)", false},
+		{"std.isSnake(field.name)", true},
+		{"std.fieldOk(field)", true},
+		{"'Outer' in names(file)", true},
+	} {
+		prg, err := env.Compile(rule(own, c.cel))
+		if err != nil {
+			t.Fatalf("%s: %v", c.cel, err)
+		}
+		if ok, err := prg.Eval(vars); err != nil || ok != c.want {
+			t.Fatalf("%s = %v %v, want %v", c.cel, ok, err, c.want)
+		}
+	}
+	// The call's cost is the body's: a body searching the schema
+	// charges the schema's size, as the library call it makes does.
+	costly := &rules.Scope{Where: "house's c.rules.yaml", Functions: []rules.Function{fn("found", "resolve(n) != null", "bool", param("n", "string"))}}
+	prg, err := env.Compile(rule(costly, "found('a.Outer')"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, details, err := prg.eval(vars)
+	if err != nil || details.ActualCost() == nil || *details.ActualCost() < uint64(set.Size()) {
+		t.Fatalf("a function's call cost: %v %v, want at least %d", details.ActualCost(), err, set.Size())
+	}
+	// A wrongly typed argument is the caller's compile error; a bare
+	// call of an import's function, or a function of another file,
+	// names nothing.
+	for _, bad := range []string{"short(field, 10)", "isSnake(field.name)", "fieldOk(field)", "std.short(field.name, 1)"} {
+		if _, err := env.Compile(rule(own, bad)); err == nil || !errors.Is(err, ErrCompile) {
+			t.Fatalf("%s: %v", bad, err)
+		}
+	}
+	// Refusals name the file, the function and the cause.
+	for name, c := range []struct {
+		sc   *rules.Scope
+		want string
+	}{
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "1", "bool")}}, "w: function f: the body yields int, not the declared bool"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "true", "bool", param("x", "google.protobuf.Nope"))}}, "w: function f, parameter x: type google.protobuf.Nope is none of environment 1's"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "true", "set")}}, "w: function f returns: type set is none of environment 1's"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("a", "b()", "bool"), fn("b", "c()", "bool"), fn("c", "a()", "bool")}}, "w: functions call in a cycle: a -> b -> c -> a"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "f()", "bool")}}, "w: functions call in a cycle: f -> f"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("comments", "true", "bool")}}, "w: function comments shadows the environment's"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("size", "true", "bool")}}, "w: function size shadows the environment's"},
+		{&rules.Scope{Where: "w", Imports: []rules.Import{{Path: "example.com/std", Alias: "file"}}, Lent: map[string][]rules.Lent{"file": {{Function: lent.Functions[0], Scope: lent}}}}, "w: import alias file is a binding's name"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "nope(1)", "bool")}}, "w: function f: "},
+	} {
+		if _, err := env.Compile(rule(c.sc, "true")); err == nil || !errors.Is(err, ErrCompile) || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("case %d: %v", name, err)
+		}
+	}
+	// A body yielding dyn compiles and is held to the declared type at
+	// the call: a mismatch fails the rule's evaluation.
+	dynamic := &rules.Scope{Where: "w", Functions: []rules.Function{fn("head", "l[0]", "string", param("l", "list(dyn)"))}}
+	prg, err = env.Compile(rule(dynamic, "head([1]) == 'x'"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := prg.Eval(vars); err == nil || !errors.Is(err, ErrEval) || !strings.Contains(err.Error(), "function head: the body yielded int, not the declared string") {
+		t.Fatalf("a dyn body off its declared type: %v", err)
+	}
+	// A lent function compiles through its own file's scope: its
+	// forward calls and its imports resolve as for its own rules, and
+	// a cycle among a lent file's functions is named as one; an alias
+	// of a lent file spelling a binding's name, and an import lending
+	// nothing under one, are refused; one ruleset under two aliases is
+	// two declarations.
+	forward := &rules.Scope{Where: "l", Functions: []rules.Function{fn("outer", "inner(s)", "bool", param("s", "string")), fn("inner", "s != ''", "bool", param("s", "string"))}}
+	twice := &rules.Scope{Where: "w", Lent: map[string][]rules.Lent{"a": {{Function: forward.Functions[0], Scope: forward}}, "b": {{Function: forward.Functions[0], Scope: forward}}}, Imports: []rules.Import{{Path: "example.com/l", Alias: "a"}, {Path: "example.com/l", Alias: "b"}}}
+	if prg, err := env.Compile(rule(twice, "a.outer(field.name) && b.outer(field.name)")); err != nil {
+		t.Fatal(err)
+	} else if ok, err := prg.Eval(vars); err != nil || !ok {
+		t.Fatalf("a lent forward call under two aliases: %v %v", ok, err)
+	}
+	cyclic := &rules.Scope{Where: "l", Functions: []rules.Function{fn("a", "b()", "bool"), fn("b", "a()", "bool")}}
+	lentCycle := &rules.Scope{Where: "w", Lent: map[string][]rules.Lent{"c": {{Function: cyclic.Functions[0], Scope: cyclic}}}, Imports: []rules.Import{{Path: "example.com/c", Alias: "c"}}}
+	if _, err := env.Compile(rule(lentCycle, "true")); err == nil || !strings.Contains(err.Error(), "l: functions call in a cycle: a -> b -> a") {
+		t.Fatalf("a lent cycle: %v", err)
+	}
+	badAlias := &rules.Scope{Where: "l", Imports: []rules.Import{{Path: "example.com/x", Alias: "field"}}, Functions: []rules.Function{fn("g", "true", "bool")}}
+	viaLent := &rules.Scope{Where: "w", Lent: map[string][]rules.Lent{"l": {{Function: badAlias.Functions[0], Scope: badAlias}}}, Imports: []rules.Import{{Path: "example.com/l", Alias: "l"}}}
+	if _, err := env.Compile(rule(viaLent, "l.g()")); err == nil || !strings.Contains(err.Error(), "l: import alias field is a binding's name") {
+		t.Fatalf("a lent file's reserved alias: %v", err)
+	}
+	nothingLent := &rules.Scope{Where: "w", Imports: []rules.Import{{Path: "example.com/x", Alias: "files"}}}
+	if _, err := env.Compile(rule(nothingLent, "true")); err == nil || !strings.Contains(err.Error(), "w: import alias files is a binding's name") {
+		t.Fatalf("an import lending nothing under a reserved alias: %v", err)
+	}
+	// A value is held to the declared type element by element, a map
+	// by its keys and values; a map's key type is one CEL admits; a
+	// macro's name is the environment's; a descriptor-typed parameter
+	// takes null.
+	elems := &rules.Scope{Where: "w", Functions: []rules.Function{fn("strs", "l", "list(string)", param("l", "list(dyn)")), fn("kv", "m", "map(string, int)", param("m", "map(string, dyn)"))}}
+	for _, c := range []struct{ cel, want string }{
+		{"strs(['a', 1]).size() == 2", "function strs: the body yielded int where the declared list(string) takes string"},
+		{"kv({'a': 1, 'b': 'x'}).size() == 2", "function kv: the body yielded string where the declared map(string, int) takes int"},
+	} {
+		prg, err := env.Compile(rule(elems, c.cel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := prg.Eval(vars); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Fatalf("%s: %v", c.cel, err)
+		}
+	}
+	if prg, err := env.Compile(rule(elems, "strs(['a', 'b']).size() == 2 && kv({'a': 1}).size() == 1")); err != nil {
+		t.Fatal(err)
+	} else if ok, err := prg.Eval(vars); err != nil || !ok {
+		t.Fatalf("conforming values: %v %v", ok, err)
+	}
+	for name, c := range []struct {
+		sc   *rules.Scope
+		want string
+	}{
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "{}", "map(list(int), int)")}}, "w: function f returns: type map(list(int), int): a map's key is bool, int, uint, string or dyn, not list(int)"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("has", "true", "bool")}}, "w: function has shadows the environment's"},
+	} {
+		if _, err := env.Compile(rule(c.sc, "true")); err == nil || !errors.Is(err, ErrCompile) || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("more refusals %d: %v", name, err)
+		}
+	}
+	nullable := &rules.Scope{Where: "w", Functions: []rules.Function{fn("nm", "f == null ? '' : f.name", "string", param("f", "google.protobuf.FieldDescriptorProto"))}}
+	if prg, err := env.Compile(rule(nullable, "nm(field) == 'name' && nm(null) == ''")); err != nil {
+		t.Fatal(err)
+	} else if ok, err := prg.Eval(vars); err != nil || !ok {
+		t.Fatalf("null to a descriptor parameter: %v %v", ok, err)
+	}
+	// A descriptor type admits null wherever a function declares it:
+	// a parameter, a return, a member; a wrapper of the library yields
+	// what the library yields; a scope reaching itself is named, not
+	// followed.
+	nulls := &rules.Scope{Where: "w", Functions: []rules.Function{
+		fn("pt", "f", "google.protobuf.FieldDescriptorProto", param("f", "google.protobuf.FieldDescriptorProto")),
+		fn("up", "parent(f)", "google.protobuf.DescriptorProto", param("f", "google.protobuf.FileDescriptorProto")),
+		fn("maybe", "f.name == '' ? null : f", "google.protobuf.FieldDescriptorProto", param("f", "google.protobuf.FieldDescriptorProto")),
+		fn("count", "l.size()", "int", param("l", "list(google.protobuf.FieldDescriptorProto)")),
+	}}
+	if prg, err := env.Compile(rule(nulls, "pt(null) == null && up(file) == null && maybe(field) == field && count([null, field]) == 2")); err != nil {
+		t.Fatal(err)
+	} else if ok, err := prg.Eval(vars); err != nil || !ok {
+		t.Fatalf("null through descriptor types: %v %v", ok, err)
+	}
+	selfish := &rules.Scope{Where: "s", Functions: []rules.Function{fn("s", "true", "bool")}}
+	selfish.Lent = map[string][]rules.Lent{"me": {{Function: selfish.Functions[0], Scope: selfish}}}
+	selfish.Imports = []rules.Import{{Path: "example.com/s", Alias: "me"}}
+	if _, err := env.Compile(rule(selfish, "me.s()")); err == nil || !errors.Is(err, ErrCompile) || !strings.Contains(err.Error(), "s: compiles through itself") {
+		t.Fatalf("a scope lending itself: %v", err)
+	}
+	// Functions declared later in the file may be called by earlier
+	// ones: the call order compiles the callee first.
+	later := &rules.Scope{Where: "w", Functions: []rules.Function{fn("outer", "inner(s) && true", "bool", param("s", "string")), fn("inner", "s != ''", "bool", param("s", "string"))}}
+	if prg, err := env.Compile(rule(later, "outer(field.name)")); err != nil {
+		t.Fatal(err)
+	} else if ok, err := prg.Eval(vars); err != nil || !ok {
+		t.Fatalf("forward call: %v %v", ok, err)
+	}
+}

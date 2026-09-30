@@ -1,8 +1,10 @@
 package dep
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/check/rules"
 )
@@ -17,6 +19,22 @@ const lintRequirer = lintfile.FileName
 type rulesetImport struct {
 	imp rules.Import
 	lintfile.Resolved
+}
+
+// closure reads the lint file's imports through the rule files' own
+// (REQ-dep-ruleset-declarations): every import an edge, every fetched
+// pair — pinned as a ruleset on the way, the pins saved — what
+// download fetches and tidy keeps.
+func (s *Session) closure(ctx context.Context) (*lintfile.Loaded, error) {
+	lf, err := s.LintFile()
+	if err != nil {
+		return nil, err
+	}
+	loaded, err := lintfile.Load(ctx, lf, s.Root, iofs.New(s.WS), s.Client.RulesetZip)
+	if err := savePins(s, err); err != nil {
+		return nil, err
+	}
+	return loaded, nil
 }
 
 // imports reads the lint file's ruleset imports, none where the file

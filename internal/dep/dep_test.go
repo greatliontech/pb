@@ -148,21 +148,25 @@ func TestDownloadVerb(t *testing.T) {
 		"pb.yaml": ws("example.com/m1", "  example.com/m2: v1.0.0\n"),
 	})
 	fx.serve(t, "example.com/m2", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m2", "")})
-	fx.serve(t, "example.com/rules", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nrules: []\n"})
+	// The ruleset's rule file imports a ruleset of its own, fetched
+	// and pinned too, after the import that reached it.
+	fx.serve(t, "example.com/rules", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nimports:\n  - path: example.com/fns\n    version: v0.1.0\n    alias: fns\nrules: []\n"})
+	fx.serve(t, "example.com/fns", "v0.1.0", map[string]string{"pb.yaml": ws("example.com/fns", ""), "f.rules.yaml": "celEnv: 1\nfunctions:\n  - name: yes\n    returns: bool\n    cel: \"true\"\nrules: []\n"})
 	fx.Endpoint("example.com/m1", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	fx.Endpoint("example.com/m2", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	fx.Endpoint("example.com/rules", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/fns", "v0.1.0", "info", `{"version":"v0.1.0"}`)
 
 	s := fx.session(t, ".")
 	var out bytes.Buffer
 	if err := Download(ctx, s, &out); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
-	if got := out.String(); got != "example.com/m1@v1.0.0\nexample.com/m2@v1.0.0\nexample.com/rules@v1.0.0\n" {
+	if got := out.String(); got != "example.com/m1@v1.0.0\nexample.com/m2@v1.0.0\nexample.com/rules@v1.0.0\nexample.com/fns@v0.1.0\n" {
 		t.Fatalf("output = %q", got)
 	}
 	lockBytes := fx.read(t, "pb.lock")
-	if !strings.Contains(lockBytes, "example.com/m1") || !strings.Contains(lockBytes, "example.com/m2") || !strings.Contains(lockBytes, "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n") || strings.Contains(lockBytes, "modules:\n  - path: example.com/rules") {
+	if !strings.Contains(lockBytes, "example.com/m1") || !strings.Contains(lockBytes, "example.com/m2") || !strings.Contains(lockBytes, "rulesets:\n  - path: example.com/fns\n    version: v0.1.0\n") || !strings.Contains(lockBytes, "  - path: example.com/rules\n    version: v1.0.0\n") || strings.Contains(lockBytes, "modules:\n  - path: example.com/rules") {
 		t.Fatalf("lockfile = %q", lockBytes)
 	}
 
@@ -189,12 +193,19 @@ func TestDownloadVerb(t *testing.T) {
 	// A path-replaced import's line names both, as a declaration's
 	// does; the pin made before a later import fails is saved.
 	fx.write(t, "pb.work", "use:\n  - a\nreplace:\n  example.com/rules: example.com/fork@v2.0.0\n")
-	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/gone\n    version: v1.0.0\n    alias: gone\n")
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n")
 	fx.serve(t, "example.com/fork", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/fork", "")})
 	fx.Endpoint("example.com/fork", "v2.0.0", "info", `{"version":"v2.0.0"}`)
 	out.Reset()
-	if err := Download(ctx, fx.session(t, "."), &out); err == nil || !strings.HasSuffix(out.String(), "example.com/rules@v1.0.0 => example.com/fork@v2.0.0\n") {
-		t.Fatalf("a replaced import, then one that fails: %v %q", err, out.String())
+	if err := Download(ctx, fx.session(t, "."), &out); err != nil || !strings.HasSuffix(out.String(), "example.com/rules@v1.0.0 => example.com/fork@v2.0.0\n") {
+		t.Fatalf("a replaced import: %v %q", err, out.String())
+	}
+	// An import that does not resolve fails the run, the pins made on
+	// the way saved.
+	fx.write(t, "pb.lock", "version: 1\nmodules: []\n")
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/gone\n    version: v1.0.0\n    alias: gone\n")
+	if err := Download(ctx, fx.session(t, "."), &out); err == nil || !strings.Contains(err.Error(), "ruleset example.com/gone@v1.0.0") {
+		t.Fatalf("an import that does not resolve: %v", err)
 	}
 	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/fork\n    version: v2.0.0\n") {
 		t.Fatalf("the replaced import's pin was not saved before the failure: %q", lock)
@@ -217,13 +228,17 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 		"pb.yaml": ws("example.com/m1", "  example.com/m2: v1.0.0\n"),
 	})
 	fx.serve(t, "example.com/m2", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m2", "")})
+	// The imported ruleset's rule file imports a ruleset of its own for
+	// its functions: an edge from the ruleset's pair.
+	fx.serve(t, "example.com/rules", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nimports:\n  - path: example.com/fns\n    version: v0.1.0\n    alias: fns\nrules: []\n"})
+	fx.serve(t, "example.com/fns", "v0.1.0", map[string]string{"pb.yaml": ws("example.com/fns", ""), "f.rules.yaml": "celEnv: 1\nfunctions:\n  - name: yes\n    returns: bool\n    cel: \"true\"\nrules: []\n"})
 
 	s := fx.session(t, ".")
 	var out bytes.Buffer
 	if err := Graph(ctx, s, &out); err != nil {
 		t.Fatal(err)
 	}
-	want := "example.com/a example.com/m1@v1.0.0\nexample.com/m1@v1.0.0 example.com/m2@v1.0.0\npb.lint.yaml example.com/house\npb.lint.yaml example.com/rules@v1.0.0\n"
+	want := "example.com/a example.com/m1@v1.0.0\nexample.com/m1@v1.0.0 example.com/m2@v1.0.0\nexample.com/rules@v1.0.0 example.com/fns@v0.1.0\npb.lint.yaml example.com/house\npb.lint.yaml example.com/rules@v1.0.0\n"
 	if out.String() != want {
 		t.Fatalf("graph = %q, want %q", out.String(), want)
 	}
@@ -241,6 +256,13 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 	}
 	if !strings.Contains(got, "# example.com/rules\npb.lint.yaml\nexample.com/rules@v1.0.0\n") || !strings.Contains(got, "# example.com/house\npb.lint.yaml\nexample.com/house\n") {
 		t.Fatalf("why over the import edges = %q", got)
+	}
+	out.Reset()
+	if err := Why(ctx, s, &out, "example.com/fns"); err != nil || out.String() != "# example.com/fns\npb.lint.yaml\nexample.com/rules@v1.0.0\nexample.com/fns@v0.1.0\n" {
+		t.Fatalf("why over a rule file's import: %v %q", err, out.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "  - path: example.com/fns\n    version: v0.1.0\n") {
+		t.Fatalf("a rule file's import pinned as a ruleset: %q", lock)
 	}
 	// Edges sort by the printed line, a path that prefixes a sibling's
 	// ordered as its spelling is (REQ-dep-graph); a directory-replaced
@@ -266,7 +288,7 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 	}
 	// An import the check run would refuse is refused here too.
 	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/house\n    version: v1.0.0\n    alias: house\n")
-	if err := Graph(ctx, fx.session(t, "."), &out); err == nil || !strings.Contains(err.Error(), "pb.lint.yaml: rulesets example.com/house: a workspace module, read from the working tree: write no version (v1.0.0 written)") {
+	if err := Graph(ctx, fx.session(t, "."), &out); err == nil || !strings.Contains(err.Error(), "ruleset example.com/house: a workspace module, read from the working tree: write no version (v1.0.0 written)") {
 		t.Fatalf("a working-tree import with a version: %v", err)
 	}
 }
@@ -1632,20 +1654,38 @@ func TestTidyNamesAMalformedFile(t *testing.T) {
 
 // Tidy leaves rulesets alone (REQ-dep-ruleset-declarations): the lint
 // file's imports add no declaration, a declaration no import uses is
-// dropped like any other, and the rulesets' pins are never pruned —
-// a ruleset is no protobuf dependency.
+// dropped like any other, and of the rulesets' pins those no import
+// names — the lint file's or a rule file's — are pruned, the rest
+// kept — a ruleset is no protobuf dependency.
 func TestTidyLeavesRulesetsAlone(t *testing.T) {
-	zeros := strings.Repeat("0", 64)
 	fx := newDep(t, map[string]string{
 		"pb.work":       "use:\n  - a\n  - lib\n",
-		"pb.lint.yaml":  "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/lib\n    alias: lib\n",
-		"pb.lock":       "version: 1\nmodules: []\nrulesets:\n  - path: example.com/rules\n    version: v0.9.0\n    digest: pb1:" + zeros + "\n    provenance: none\n  - path: example.com/rules\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n",
+		"pb.lint.yaml":  "rulesets:\n  - path: example.com/rules\n    version: v0.9.0\n    alias: rules\n  - path: example.com/lib\n    alias: lib\n",
 		"a/pb.yaml":     ws("example.com/a", "  example.com/unused: v1.0.0\n"),
 		"a/x.proto":     "syntax = \"proto3\";\n",
 		"lib/pb.yaml":   ws("example.com/lib", ""),
 		"lib/lib.proto": "syntax = \"proto3\";\n",
 	})
 	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/unused", "")})
+	fx.Endpoint("example.com/unused", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	for _, v := range []string{"v0.9.0", "v1.0.0"} {
+		fx.serve(t, "example.com/rules", v, map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nimports:\n  - path: example.com/fns\n    version: v0.1.0\n    alias: fns\nrules: []\n"})
+		fx.Endpoint("example.com/rules", v, "info", `{"version":"`+v+`"}`)
+	}
+	fx.serve(t, "example.com/fns", "v0.1.0", map[string]string{"pb.yaml": ws("example.com/fns", ""), "f.rules.yaml": "celEnv: 1\nfunctions:\n  - name: yes\n    returns: bool\n    cel: \"true\"\nrules: []\n"})
+	fx.Endpoint("example.com/fns", "v0.1.0", "info", `{"version":"v0.1.0"}`)
+	// v0.9.0 pinned by a download, then the import moved to v1.0.0 and
+	// pinned too: the stale pin is what tidy prunes.
+	if err := Download(ctx, fx.session(t, "."), io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/lib\n    alias: lib\n")
+	if err := Download(ctx, fx.session(t, "."), io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "version: v0.9.0") || !strings.Contains(lock, "version: v1.0.0") {
+		t.Fatalf("both pins before tidy: %q", lock)
+	}
 	s := fx.session(t, ".")
 	if err := Tidy(ctx, s, io.Discard); err != nil {
 		t.Fatalf("Tidy: %v", err)
@@ -1653,9 +1693,10 @@ func TestTidyLeavesRulesetsAlone(t *testing.T) {
 	if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "") {
 		t.Fatalf("tidied a/pb.yaml = %q: the ruleset import is no declaration to keep", got)
 	}
-	// The imported pair's pin stays, the pair no import names goes,
-	// and no ruleset pin moves to the modules.
-	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n") || strings.Contains(lock, "v0.9.0") || strings.Contains(lock, "modules:\n  - path: example.com/rules") {
+	// The imported pair's pin stays, the rule file's import's with it,
+	// the pair no import names goes, and no ruleset pin moves to the
+	// modules.
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "  - path: example.com/rules\n    version: v1.0.0\n") || !strings.Contains(lock, "rulesets:\n  - path: example.com/fns\n    version: v0.1.0\n") || strings.Contains(lock, "v0.9.0") || strings.Contains(lock, "modules:\n  - path: example.com/rules") {
 		t.Fatalf("the ruleset pins after tidy: %q", lock)
 	}
 	// Tidy reads the lint file for the pins its imports name; one it
@@ -1918,6 +1959,38 @@ func TestLint(t *testing.T) {
 	}
 	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/fork\n    version: v2.0.0\n") || strings.Contains(lock, "example.com/std") {
 		t.Fatalf("a path replacement's pin: %q", lock)
+	}
+
+	// A rule file's functions and imports through the verb: the
+	// workspace ruleset's file imports a fetched ruleset for a function
+	// and declares its own over it; a rule calls both; the imported
+	// pair is pinned as a ruleset (REQ-rules-functions,
+	// REQ-rules-imports).
+	fx = newDep(t, map[string]string{
+		"pb.work":       "use:\n  - a\n  - house\n",
+		"pb.lint.yaml":  "rulesets:\n  - path: example.com/house\n    alias: house\n",
+		"a/pb.yaml":     ws("example.com/a", ""),
+		"a/a.proto":     "syntax = \"proto3\";\npackage a;\nmessage Thing {\n  string BadName = 1;\n  string ok = 2;\n}\n",
+		"house/pb.yaml": ws("example.com/house", ""),
+		"house/house.rules.yaml": "celEnv: 1\nimports:\n  - path: example.com/fns\n    version: v0.1.0\n    alias: fns\nfunctions:\n  - name: named\n    params:\n      - name: f\n        type: google.protobuf.FieldDescriptorProto\n    returns: bool\n    cel: fns.isSnake(f.name)\nrules:\n" +
+			"  - id: FIELD_NAMES\n    kind: lint\n    target: field\n    severity: error\n    cel: named(field)\n    message: field names are snake_case\n",
+	})
+	fx.serve(t, "example.com/fns", "v0.1.0", map[string]string{
+		"pb.yaml":      ws("example.com/fns", ""),
+		"f.rules.yaml": "celEnv: 1\nfunctions:\n  - name: isSnake\n    params:\n      - name: s\n        type: string\n    returns: bool\n    cel: case(s, 'snake') == s\nrules: []\n",
+	})
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error house:FIELD_NAMES: field names are snake_case\n" {
+		t.Fatalf("functions through the verb: %v %q", err, out.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/fns\n    version: v0.1.0\n") {
+		t.Fatalf("the rule file's import pinned as a ruleset: %q", lock)
+	}
+	// A rule calling a function its file never sees fails the run
+	// naming the rule and the cause.
+	fx.write(t, "house/house.rules.yaml", "celEnv: 1\nrules:\n  - id: FIELD_NAMES\n    kind: lint\n    target: field\n    severity: error\n    cel: fns.isSnake(field.name)\n    message: m\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "house:FIELD_NAMES") || !strings.Contains(err.Error(), "undeclared reference to 'fns'") {
+		t.Fatalf("a function the file never imported: %v", err)
 	}
 
 	// An import whose version does not resolve fails naming it; a

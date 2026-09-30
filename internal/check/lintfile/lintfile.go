@@ -330,6 +330,15 @@ type Resolved struct {
 	Source  workspace.Source // the pair read, where fetched
 }
 
+// Read is what the import reads, one spelling per ruleset read: the
+// working-tree directory, or the pair through the replacements.
+func (r Resolved) Read() string {
+	if r.Local {
+		return "dir:" + r.Dir
+	}
+	return r.Source.String()
+}
+
 // Resolve classifies an import: a path naming a workspace module, or
 // one a directory replacement serves, is read from the working tree,
 // a version written for it refused; any other is read at its version
@@ -357,45 +366,161 @@ func Resolve(root *workspace.Root, imp rules.Import) (Resolved, error) {
 	return Resolved{Version: v, Source: root.Source(imp.Path, v)}, nil
 }
 
-// Rulesets reads each import the lint file names exactly as written
+// Edge is one import as the requirement graph prints it
+// (`dep-verbs.md` REQ-dep-ruleset-declarations): the importer — the
+// lint file's name, a fetched ruleset's `<path>@<version>` or a
+// working-tree ruleset's bare path — and the import as written, its
+// version empty for a working-tree import.
+type Edge struct {
+	From    string
+	Path    string
+	Version string
+}
+
+// To spells the import as the graph prints it: the pair, or the bare
+// path of a working-tree import.
+func (e Edge) To() string {
+	if e.Version == "" {
+		return e.Path
+	}
+	return e.Path + "@" + e.Version
+}
+
+// Loaded is what the lint file's imports read, through the rule
+// files' own imports: the rulesets the lint file imports, their rule
+// files' scopes lent every function their imports name; every import
+// as an edge; and every fetched pair, through the workspace's
+// replacements, the pins the closure holds.
+type Loaded struct {
+	Rulesets []Ruleset
+	Edges    []Edge
+	Fetched  []workspace.Source
+}
+
+// Load reads each import the lint file names exactly as written
 // (REQ-lint-rulesets-imported, REQ-rules-file-discovery), as Resolve
 // classifies it: a working-tree import's rule files from its
 // directory; a fetched import's through zip — the caller's verified
 // archive, pinned as a ruleset — at the pair Resolve names; a bad
-// rule file fails naming the ruleset and the file. fsys is the working
-// tree the root was loaded from.
-func Rulesets(ctx context.Context, f *File, root *workspace.Root, fsys fs.FS, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Ruleset, error) {
-	out := make([]Ruleset, 0, len(f.Rulesets))
+// rule file fails naming the ruleset and the file. Each rule file's
+// imports are read the same way, their rulesets' functions lent to
+// that file alone (REQ-rules-imports): an import whose ruleset
+// declares no rule file, and a chain of imports returning to a path
+// already on it, at any version, are refused naming them. fsys is
+// the working tree the root was loaded from.
+func Load(ctx context.Context, f *File, root *workspace.Root, fsys fs.FS, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) (*Loaded, error) {
+	l := &loader{ctx: ctx, root: root, fsys: fsys, zip: zip, read: map[string][]rules.Located{}}
+	out := &Loaded{}
 	for _, imp := range f.Rulesets {
-		res, err := Resolve(root, imp)
+		files, err := l.ruleset(FileName, imp)
 		if err != nil {
-			return nil, fmt.Errorf("%w %v", ErrRuleset, err)
+			return nil, err
 		}
-		var ruleFiles map[string][]byte
-		if res.Local {
-			_, rf, err := modfiles.WorkspaceFiles(fsys, path.Join(root.Dir, res.Dir))
-			if err != nil {
-				return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
-			}
-			ruleFiles = rf
-		} else {
-			b, err := zip(ctx, res.Source.Path, res.Source.Version)
-			if err != nil {
-				return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
-			}
-			_, rf, _, err := modfiles.UnpackArchive(b)
-			if err != nil {
-				return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
-			}
-			ruleFiles = rf
+		out.Rulesets = append(out.Rulesets, Ruleset{Path: imp.Path, Version: imp.Version, Alias: imp.Alias, Files: files})
+	}
+	out.Edges, out.Fetched = l.edges, l.fetched
+	return out, nil
+}
+
+// Rulesets is Load's rulesets alone.
+func Rulesets(ctx context.Context, f *File, root *workspace.Root, fsys fs.FS, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Ruleset, error) {
+	l, err := Load(ctx, f, root, fsys, zip)
+	if err != nil {
+		return nil, err
+	}
+	return l.Rulesets, nil
+}
+
+// loader reads rulesets through their imports, each once.
+type loader struct {
+	ctx     context.Context
+	root    *workspace.Root
+	fsys    fs.FS
+	zip     func(ctx context.Context, modPath string, v version.Version) ([]byte, error)
+	read    map[string][]rules.Located // by what is read: a directory or a pair
+	path    []string                   // the import chain in flight, by path
+	edges   []Edge
+	fetched []workspace.Source
+}
+
+// ruleset reads one import named by from, its rule files' imports
+// read in turn: the files, with every rule and function's scope lent
+// what its file imports.
+func (l *loader) ruleset(from string, imp rules.Import) ([]rules.Located, error) {
+	res, err := Resolve(l.root, imp)
+	if err != nil {
+		return nil, fmt.Errorf("%w %v", ErrRuleset, err)
+	}
+	edge := Edge{From: from, Path: imp.Path, Version: imp.Version}
+	to := edge.To()
+	l.edges = append(l.edges, edge)
+	for _, p := range l.path {
+		if p == imp.Path {
+			return nil, fmt.Errorf("%w %s: imports cycle: %s", ErrRuleset, imp.Path, strings.Join(append(append([]string(nil), l.path...), imp.Path), " -> "))
 		}
-		files, err := rules.Discover(ruleFiles)
+	}
+	key := res.Read()
+	if files, done := l.read[key]; done {
+		return files, nil
+	}
+	var ruleFiles map[string][]byte
+	if res.Local {
+		_, rf, err := modfiles.WorkspaceFiles(l.fsys, path.Join(l.root.Dir, res.Dir))
 		if err != nil {
 			return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
 		}
-		out = append(out, Ruleset{Path: imp.Path, Version: imp.Version, Alias: imp.Alias, Files: files})
+		ruleFiles = rf
+	} else {
+		b, err := l.zip(l.ctx, res.Source.Path, res.Source.Version)
+		if err != nil {
+			return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
+		}
+		_, rf, _, err := modfiles.UnpackArchive(b)
+		if err != nil {
+			return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
+		}
+		ruleFiles = rf
+		l.fetched = append(l.fetched, res.Source)
 	}
-	return out, nil
+	files, err := rules.Discover(ruleFiles)
+	if err != nil {
+		return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
+	}
+	// A ruleset's function names are one namespace across its files,
+	// as its rule ids are: what an import lends under one alias.
+	declaredIn := map[string]string{}
+	for _, rf := range files {
+		for _, fn := range rf.File.Functions {
+			if prior, dup := declaredIn[fn.Name]; dup {
+				return nil, fmt.Errorf("%w %s: function %s declared by %s and %s", ErrRuleset, imp.Path, fn.Name, prior, rf.Path)
+			}
+			declaredIn[fn.Name] = rf.Path
+		}
+	}
+	l.path = append(l.path, imp.Path)
+	defer func() { l.path = l.path[:len(l.path)-1] }()
+	for _, rf := range files {
+		rf.File.Scope.Where = to + "'s " + rf.Path
+		for _, dep := range rf.File.Imports {
+			lent, err := l.ruleset(to, dep)
+			if err != nil {
+				return nil, err
+			}
+			if len(lent) == 0 {
+				return nil, fmt.Errorf("%w %s: %s imports %s, which declares no rule file", ErrRuleset, imp.Path, rf.Path, dep.Path)
+			}
+			if rf.File.Scope.Lent == nil {
+				rf.File.Scope.Lent = map[string][]rules.Lent{}
+			}
+			for _, lf := range lent {
+				for _, fn := range lf.File.Functions {
+					rf.File.Scope.Lent[dep.Alias] = append(rf.File.Scope.Lent[dep.Alias], rules.Lent{Function: fn, Scope: lf.File.Scope})
+				}
+			}
+		}
+	}
+	l.read[key] = files
+	return files, nil
 }
 
 // Selection is a lint file's selection over the imported rulesets:

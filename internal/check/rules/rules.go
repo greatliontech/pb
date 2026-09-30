@@ -36,13 +36,22 @@ var decimal = regexp.MustCompile(`^(0|[1-9][0-9]*)$`)
 // keys are a rule entry's keys.
 var keys = map[string]bool{"id": true, "kind": true, "target": true, "severity": true, "tags": true, "cel": true, "message": true}
 
-// File is one parsed rule file.
+// File is one parsed rule file (REQ-rules-file-schema).
 type File struct {
-	// CELEnv is the environment version every rule of the file
+	// CELEnv is the environment version every expression of the file
 	// targets, one the engine provides.
 	CELEnv int
+	// Imports are the rulesets the file imports for their functions,
+	// in declaration order (REQ-rules-imports).
+	Imports []Import
+	// Functions are the file's functions in declaration order
+	// (REQ-rules-functions).
+	Functions []Function
 	// Rules are the file's rules in declaration order.
 	Rules []Rule
+	// Scope is what the file's expressions see: its functions and its
+	// imports', shared by every rule of the file.
+	Scope *Scope
 }
 
 // Rule is one declared check (check-rules.md, the rule term).
@@ -58,6 +67,9 @@ type Rule struct {
 	Tags     []string
 	CEL      string // the expression as written
 	Message  string
+	// Scope is the declaring file's: the functions the expression may
+	// call (REQ-rules-functions).
+	Scope *Scope
 }
 
 // Name is the rule's canonical name, `<module path>:<id>`, or the
@@ -70,9 +82,11 @@ func (r Rule) Name() string {
 }
 
 // Parse reads a rule file (REQ-rules-file-schema): the document a
-// mapping of celEnv and rules, every key known, every scalar the text
-// written; the environment version refused unless provided
-// (REQ-rules-env-versioned).
+// mapping of celEnv, rules and, optionally, imports and functions,
+// every key known, every scalar the text written; the environment
+// version refused unless provided (REQ-rules-env-versioned). The
+// file's scope is built and shared by its rules, its imports' lent
+// functions left for the reader of the imports to fill.
 func Parse(data []byte) (*File, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
@@ -100,6 +114,16 @@ func Parse(data []byte) (*File, error) {
 			f.CELEnv = v
 			return nil
 		}},
+		contractfile.Field{Name: "imports", Read: func(n ast.Node) error {
+			imports, err := ParseImports(n, "imports", ErrInvalid)
+			f.Imports = imports
+			return err
+		}},
+		contractfile.Field{Name: "functions", Read: func(n ast.Node) error {
+			fns, err := parseFunctions(n)
+			f.Functions = fns
+			return err
+		}},
 		contractfile.Field{Name: "rules", Required: true, Read: func(n ast.Node) error {
 			rs, err := parseRules(n)
 			f.Rules = rs
@@ -111,6 +135,10 @@ func Parse(data []byte) (*File, error) {
 	}
 	if !check.ProvidesEnvironment(f.CELEnv) {
 		return nil, fmt.Errorf("%w: celEnv %d (provided: %v)", ErrEnvironment, f.CELEnv, check.Environments())
+	}
+	f.Scope = &Scope{Functions: f.Functions, Imports: f.Imports}
+	for i := range f.Rules {
+		f.Rules[i].Scope = f.Scope
 	}
 	return f, nil
 }
@@ -230,6 +258,7 @@ func Discover(files map[string][]byte) ([]Located, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", p, err)
 		}
+		f.Scope.Where = p
 		out = append(out, Located{Path: p, File: f})
 	}
 	return out, nil

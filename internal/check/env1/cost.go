@@ -25,6 +25,12 @@ func costLimit(size int) uint64 { return costBase + costPerEntry*uint64(size) }
 type costs struct{ env *Env }
 
 func (c costs) CallCost(function, overloadID string, args []ref.Val, result ref.Val) *uint64 {
+	// A rule file's function costs what its body cost, the call's
+	// evaluation having just recorded it (REQ-rules-functions).
+	if uf := c.env.byOverload[overloadID]; uf != nil {
+		cost := uf.lastCost
+		return &cost
+	}
 	if !c.env.charged[function] {
 		return nil
 	}
