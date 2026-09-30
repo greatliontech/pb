@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path"
 	"strings"
 
+	"github.com/go-git/go-billy/v6/util"
+
 	"github.com/greatliontech/pb/internal/atomicfile"
+	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/plugin/genrequest"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/proto/compile"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/rootpath"
 
 	"google.golang.org/protobuf/proto"
@@ -181,19 +186,31 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		return acqErr
 	}
 
+	// Every request is built before anything is emptied or run: a
+	// dead pattern or an override naming nothing refuses while the
+	// output directories still hold what they held (REQ-gen-clean).
+	requests := make([][]byte, len(gf.Plugins))
+	for i, entry := range gf.Plugins {
+		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry, modfiles.WellKnown)
+		if err != nil {
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
+		}
+		marshal := proto.MarshalOptions{Deterministic: true}
+		if requests[i], err = marshal.Marshal(req); err != nil {
+			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
+		}
+	}
+	if gf.Clean {
+		if err := s.cleanOutputs(gf, mods); err != nil {
+			return err
+		}
+	}
 	limits := exec.EffectiveLimits()
 	minTier := exec.EffectiveMinTier()
 	// The one way past a tier refusal (REQ-plugin-min-tier).
 	const lowerFloorHint = "lower the floor explicitly in the trust policy's execution block to accept a weaker tier"
 	for i, entry := range gf.Plugins {
-		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry.Opt)
-		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
-		}
-		reqBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(req)
-		if err != nil {
-			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
-		}
+		reqBytes := requests[i]
 		// A local entry runs on the native runner under no floor: the
 		// policy admitted the scheme as a downgrade of every guarantee
 		// a sandbox row gives an image, so whatever row the host puts
@@ -233,6 +250,114 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		fmt.Fprintf(out, "%s: %d file(s) into %s (tier %s, bounds %s)\n", entry.Command(), n, entry.Out, res.Tier, res.Bounds)
 	}
 	return nil
+}
+
+// cleanOutputs empties every output directory the entries name
+// (REQ-gen-clean), in entry order, every entry under it removed and
+// the directory kept — a directory named twice is emptied twice,
+// which nothing observes, no plugin having run; refused before
+// anything is removed, naming the entry, where a directory is the
+// resolution root, is or holds the directory of a module read from
+// the working tree, holds any of its files, holds a module file at
+// any depth, the build's or not, is reached through a symlink, or is
+// no directory — what generation never wrote is not its to remove.
+func (s *Session) cleanOutputs(gf *genfile.File, mods []modfiles.Module) error {
+	for _, entry := range gf.Plugins {
+		if entry.Out == "." {
+			return fmt.Errorf("generate: plugin %s: clean refuses to empty the resolution root (out %q)", entry.Command(), entry.Out)
+		}
+		for _, m := range mods {
+			if m.Dir == "" {
+				continue
+			}
+			if m.Dir == entry.Out || rootpath.Contains(entry.Out, m.Dir) {
+				return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which holds the module %s at %s", entry.Command(), entry.Out, m.Path, m.Dir)
+			}
+			if f := moduleFileUnder(m, entry.Out); f != "" {
+				return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which holds %s of the module %s", entry.Command(), entry.Out, f, m.Path)
+			}
+		}
+		// Every rule above judges the directory by its name, and the
+		// removal touches what the name reaches: a link anywhere on
+		// the way would part the two.
+		link, err := s.symlinkedComponent(s.Root.Dir, entry.Out, nil)
+		if err != nil {
+			return fmt.Errorf("generate: plugin %s: clean: %w", entry.Command(), err)
+		}
+		if link != "" {
+			return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, reached through the symlink %s", entry.Command(), entry.Out, link)
+		}
+		if fi, err := s.WS.Stat(path.Join(s.Root.Dir, entry.Out)); err == nil && !fi.IsDir() {
+			return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which is not a directory", entry.Command(), entry.Out)
+		} else if err != nil && !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("generate: plugin %s: clean: %w", entry.Command(), err)
+		}
+		found, err := s.moduleFileWithin(path.Join(s.Root.Dir, entry.Out))
+		if err != nil {
+			return fmt.Errorf("generate: plugin %s: clean: %w", entry.Command(), err)
+		}
+		if found != "" {
+			return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which holds the module file %s", entry.Command(), entry.Out, found)
+		}
+	}
+	for _, entry := range gf.Plugins {
+		dir := path.Join(s.Root.Dir, entry.Out)
+		entries, err := s.WS.ReadDir(dir)
+		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("generate: plugin %s: clean: %w", entry.Command(), err)
+		}
+		for _, e := range entries {
+			if err := util.RemoveAll(s.WS, path.Join(dir, e.Name())); err != nil {
+				return fmt.Errorf("generate: plugin %s: clean: %w", entry.Command(), err)
+			}
+		}
+	}
+	return nil
+}
+
+// moduleFileUnder is a file of the working-tree module lying under
+// dir — a protobuf source or a rule file, at its root-relative path —
+// or "" where none does; the smallest such path, so the answer is
+// deterministic.
+func moduleFileUnder(m modfiles.Module, dir string) string {
+	found := ""
+	for _, set := range []map[string][]byte{m.Files, m.Rules} {
+		for rel := range set {
+			p := path.Join(m.Dir, rel)
+			if rootpath.Contains(dir, p) && (found == "" || p < found) {
+				found = p
+			}
+		}
+	}
+	return found
+}
+
+// moduleFileWithin walks dir for a module file at any depth and
+// returns the first found in walk order, "" where none is; a dir
+// that does not exist holds none.
+func (s *Session) moduleFileWithin(dir string) (string, error) {
+	var found string
+	errFound := errors.New("found")
+	err := util.Walk(s.WS, dir, func(p string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !fi.IsDir() && path.Base(p) == module.ModuleFileName {
+			found = p
+			return errFound
+		}
+		return nil
+	})
+	switch {
+	case errors.Is(err, errFound):
+		return found, nil
+	case errors.Is(err, fs.ErrNotExist) || errors.Is(err, os.ErrNotExist):
+		return "", nil
+	}
+	return "", err
 }
 
 // writeGenerated lands a response's files under the entry's out
@@ -289,8 +414,23 @@ func (s *Session) writeGenerated(entry genfile.Plugin, resp *pluginpb.CodeGenera
 // layout and are not judged; the leaf needs no check because the
 // atomic rename replaces a symlink rather than following it.
 func (s *Session) refuseSymlinkedDirs(outDir, name string, checked map[string]bool) error {
-	dir := outDir
-	for _, seg := range strings.Split(path.Dir(name), "/") {
+	link, err := s.symlinkedComponent(outDir, path.Dir(name), checked)
+	if err != nil {
+		return err
+	}
+	if link != "" {
+		return fmt.Errorf("response file %q passes through %q, a symlink; generated files land only under the declared output directory", name, link)
+	}
+	return nil
+}
+
+// symlinkedComponent walks rel's components under base and returns
+// the first that is a symbolic link, relative to base, or "" where
+// none is; a component that does not exist is none. checked, where
+// given, memoizes the directories found to be no link across calls.
+func (s *Session) symlinkedComponent(base, rel string, checked map[string]bool) (string, error) {
+	dir := base
+	for _, seg := range strings.Split(rel, "/") {
 		if seg == "." {
 			continue
 		}
@@ -302,11 +442,13 @@ func (s *Session) refuseSymlinkedDirs(outDir, name string, checked map[string]bo
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
 		case err != nil:
-			return err
+			return "", err
 		case fi.Mode()&fs.ModeSymlink != 0:
-			return fmt.Errorf("response file %q passes through %q, a symlink; generated files land only under the declared output directory", name, strings.TrimPrefix(dir, outDir+"/"))
+			return strings.TrimPrefix(dir, base+"/"), nil
 		}
-		checked[dir] = true
+		if checked != nil {
+			checked[dir] = true
+		}
 	}
-	return nil
+	return "", nil
 }

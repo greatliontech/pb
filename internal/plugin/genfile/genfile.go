@@ -39,6 +39,12 @@ type Plugin struct {
 	Args []string
 	Out  string
 	Opt  string
+	// Files are the glob patterns selecting the entry's targets among
+	// the workspace's module-relative paths (REQ-gen-request); none
+	// selects every workspace file.
+	Files []string
+	// IncludeImports adds the files the targets reach through imports.
+	IncludeImports bool
 }
 
 // Command is the entry's plugin as the entry spells it: the reference,
@@ -54,7 +60,8 @@ func (p Plugin) Command() string {
 // Equal reports whether two entries are the same entry, argument for
 // argument.
 func (p Plugin) Equal(q Plugin) bool {
-	return p.Scheme == q.Scheme && p.Ref == q.Ref && p.Out == q.Out && p.Opt == q.Opt && slices.Equal(p.Args, q.Args)
+	return p.Scheme == q.Scheme && p.Ref == q.Ref && p.Out == q.Out && p.Opt == q.Opt && slices.Equal(p.Args, q.Args) &&
+		slices.Equal(p.Files, q.Files) && p.IncludeImports == q.IncludeImports
 }
 
 // Override is one declared file-option assignment.
@@ -68,6 +75,9 @@ type Override struct {
 type File struct {
 	Plugins   []Plugin
 	Overrides []Override
+	// Clean empties every entry's output directory before any
+	// plugin runs (REQ-gen-clean).
+	Clean bool
 }
 
 // Parse decodes and validates a generate file (REQ-gen-schema): the
@@ -82,6 +92,11 @@ func Parse(data []byte) (*File, error) {
 	}
 	f := &File{}
 	err = contractfile.Mapping(mapping, "", ErrInvalid,
+		contractfile.Field{Name: "clean", Read: func(n ast.Node) error {
+			v, err := flag(n, "clean")
+			f.Clean = v
+			return err
+		}},
 		contractfile.Field{Name: "plugins", Required: true, Read: func(n ast.Node) error {
 			plugins, err := parsePlugins(n)
 			f.Plugins = plugins
@@ -99,12 +114,14 @@ func Parse(data []byte) (*File, error) {
 	return f, nil
 }
 
-// Encode renders the file canonically (REQ-gen-emission): plugins then
-// overrides, the latter absent where empty, entries in the order
-// given, an entry's keys in the order ref or local, out, opt — absent
-// where empty — and files, option, value, each scalar spelled as
-// contractfile.Spell has it; a local with arguments is a block
-// sequence, the command first, one without the scalar. The rendering is held to its reading —
+// Encode renders the file canonically (REQ-gen-emission): clean where
+// true, plugins, then overrides where any, entries in the order given,
+// an entry's keys in the order ref or local, out, opt — absent where
+// empty — files (absent where every file is a target) and
+// include_imports (absent where false), and an override's files,
+// option, value, each scalar spelled as contractfile.Spell has it; a
+// local with arguments is a block sequence, the command first, one
+// without the scalar. The rendering is held to its reading —
 // Encode never emits what Parse rejects, nor what Parse reads as a
 // different file.
 func Encode(f *File) ([]byte, error) {
@@ -112,6 +129,9 @@ func Encode(f *File) ([]byte, error) {
 		return nil, fmt.Errorf("%w: no file", ErrInvalid)
 	}
 	return contractfile.Emit(func(w *contractfile.Writer) {
+		if f.Clean {
+			w.Literal("clean", "true")
+		}
 		w.Sequence("plugins", len(f.Plugins), func(i int) {
 			p := f.Plugins[i]
 			switch {
@@ -126,6 +146,12 @@ func Encode(f *File) ([]byte, error) {
 			if p.Opt != "" {
 				w.Scalar("opt", p.Opt)
 			}
+			if len(p.Files) > 0 {
+				w.List("files", p.Files)
+			}
+			if p.IncludeImports {
+				w.Literal("include_imports", "true")
+			}
 		})
 		if len(f.Overrides) > 0 {
 			w.Sequence("overrides", len(f.Overrides), func(i int) {
@@ -136,7 +162,7 @@ func Encode(f *File) ([]byte, error) {
 			})
 		}
 	}, Parse, f, func(a, b *File) bool {
-		return slices.EqualFunc(a.Plugins, b.Plugins, Plugin.Equal) && slices.Equal(a.Overrides, b.Overrides)
+		return a.Clean == b.Clean && slices.EqualFunc(a.Plugins, b.Plugins, Plugin.Equal) && slices.Equal(a.Overrides, b.Overrides)
 	}, ErrInvalid)
 }
 
@@ -204,6 +230,37 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 				p.Opt = text
 				return nil
 			}},
+			contractfile.Field{Name: "files", Read: func(n ast.Node) error {
+				if _, isList := n.(*ast.SequenceNode); !isList {
+					return fmt.Errorf("%w: %s.files must be a list of patterns", ErrInvalid, where)
+				}
+				err := contractfile.Sequence(n, where+".files", ErrInvalid, func(i int, item ast.Node) error {
+					text, ok := contractfile.Line(item)
+					if !ok {
+						return fmt.Errorf("%w: %s.files[%d] must be one line of text", ErrInvalid, where, i)
+					}
+					if text == "" {
+						return fmt.Errorf("%w: %s.files[%d] is empty", ErrInvalid, where, i)
+					}
+					if _, err := glob.Compile(text); err != nil {
+						return fmt.Errorf("%w: %s.files[%d]: %v", ErrInvalid, where, i, err)
+					}
+					p.Files = append(p.Files, text)
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+				if len(p.Files) == 0 {
+					return fmt.Errorf("%w: %s.files names no pattern", ErrInvalid, where)
+				}
+				return nil
+			}},
+			contractfile.Field{Name: "include_imports", Read: func(n ast.Node) error {
+				v, err := flag(n, where+".include_imports")
+				p.IncludeImports = v
+				return err
+			}},
 		)
 		if err != nil {
 			return err
@@ -230,6 +287,21 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 		return nil, fmt.Errorf("%w: plugins must not be empty", ErrInvalid)
 	}
 	return plugins, nil
+}
+
+// flag reads a key spelled `true` or `false`, and nothing else
+// (REQ-gen-schema).
+func flag(n ast.Node, where string) (bool, error) {
+	text, ok := contractfile.Line(n)
+	switch {
+	case !ok:
+		return false, fmt.Errorf("%w: %s must be true or false", ErrInvalid, where)
+	case text == "true":
+		return true, nil
+	case text == "false":
+		return false, nil
+	}
+	return false, fmt.Errorf("%w: %s must be true or false, not %q", ErrInvalid, where, text)
 }
 
 func checkIdentity(p Plugin) error {

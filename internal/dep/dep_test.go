@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"reflect"
 	"strings"
@@ -69,6 +70,20 @@ func (fx *depFixture) write(t *testing.T, name, content string) {
 	if err := util.WriteFile(fx.ws, name, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// exists reports whether a file lies at name in the tree.
+func (fx *depFixture) exists(t *testing.T, name string) bool {
+	t.Helper()
+	_, err := fx.ws.Stat(name)
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, os.ErrNotExist) || errors.Is(err, fs.ErrNotExist) {
+		return false
+	}
+	t.Fatal(err)
+	return false
 }
 
 func (fx *depFixture) read(t *testing.T, name string) string {

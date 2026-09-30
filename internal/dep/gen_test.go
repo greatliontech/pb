@@ -684,6 +684,284 @@ func TestGenLocalEntry(t *testing.T) {
 	}
 }
 
+// An entry's files patterns pick its targets among the workspace's
+// module-relative paths and include_imports adds what they import
+// (REQ-gen-request): the request the runner receives names exactly
+// them; patterns selecting nothing fail the entry naming them.
+func TestGenTargets(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\n",
+		"a/pb.yaml":    ws("example.com/a", ""),
+		"a/x.proto":    "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
+		"a/v1/y.proto": "syntax = \"proto3\";\npackage a.v1;\nimport \"x.proto\";\nimport \"google/protobuf/empty.proto\";\nmessage Y { a.X x = 1; google.protobuf.Empty e = 2; }\n",
+		"pb.gen.yaml":  "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/one\n    files: [\"v1/*.proto\"]\n  - ref: ghcr.io/o/p:v1\n    out: gen/two\n    files: [\"v1/**\"]\n    include_imports: true\n  - ref: ghcr.io/o/p:v1\n    out: gen/three\n",
+	})
+	s := fx.session(t, ".")
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
+	var requests [][]string
+	run := &recordingRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}, requests: &requests}
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	// Paths are module-relative: the module's directory is the include
+	// root.
+	want := [][]string{{"v1/y.proto"}, {"v1/y.proto", "x.proto"}, {"v1/y.proto", "x.proto"}}
+	if len(requests) != 3 {
+		t.Fatalf("requests %v", requests)
+	}
+	for i := range want {
+		if strings.Join(requests[i], " ") != strings.Join(want[i], " ") {
+			t.Errorf("entry %d targets %v, want %v", i, requests[i], want[i])
+		}
+	}
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"v2/**\"]\n")
+	s = fx.session(t, ".")
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), `plugin ghcr.io/o/p:v1: genrequest: the pattern "v2/**" selects no workspace file`) {
+		t.Fatalf("no match: %v", err)
+	}
+}
+
+// recordingRunner records each run's file_to_generate.
+type recordingRunner struct {
+	res      *runner.Result
+	requests *[][]string
+}
+
+func (r *recordingRunner) Platform() plugin.Platform { return plugin.HostPlatform() }
+
+func (r *recordingRunner) Run(_ context.Context, spec runner.Spec) (*runner.Result, error) {
+	var req pluginpb.CodeGeneratorRequest
+	if err := proto.Unmarshal(spec.Stdin, &req); err != nil {
+		return nil, err
+	}
+	*r.requests = append(*r.requests, req.GetFileToGenerate())
+	return r.res, nil
+}
+
+// With clean, every output directory is emptied once before any
+// plugin runs and kept, a missing one not created; without it
+// nothing is removed; an output directory that is the root or holds
+// a workspace module refuses before anything is removed, and a
+// refusal before the plugins are acquired removes nothing
+// (REQ-gen-clean).
+func TestGenClean(t *testing.T) {
+	files := map[string]string{
+		"pb.work":            "use:\n  - a\n",
+		"a/pb.yaml":          ws("example.com/a", ""),
+		"a/x.proto":          "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
+		"gen/go/stale.go":    "old",
+		"gen/go/deep/old.go": "old",
+		"gen/ts/stale.ts":    "old",
+		"keep/me.txt":        "kept",
+		"pb.gen.yaml":        "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: gen/ts\n  - ref: ghcr.io/o/p:v1\n    out: gen/new\n",
+	}
+	fx := newDep(t, files)
+	s := fx.session(t, ".")
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"fresh.go": "new"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, gone := range []string{"gen/go/stale.go", "gen/go/deep/old.go", "gen/ts/stale.ts"} {
+		if fx.exists(t, gone) {
+			t.Errorf("%s survived clean", gone)
+		}
+	}
+	// The first entry's file survives the second entry naming the same
+	// directory: emptied once, before any plugin ran.
+	for _, there := range []string{"gen/go/fresh.go", "gen/ts/fresh.go", "gen/new/fresh.go", "keep/me.txt"} {
+		if !fx.exists(t, there) {
+			t.Errorf("%s missing after generation", there)
+		}
+	}
+
+	// Without clean: nothing removed.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/go/fresh.go") {
+		t.Error("without clean, the stale file was removed or the fresh one not written")
+	}
+
+	// The root, a directory holding a module, a directory holding a
+	// module's source or rule file: refused, nothing removed, no
+	// plugin run; a directory under a module holding none of its
+	// files is the author's own and is emptied.
+	for _, out := range []string{".", "a", "a/sub", "a/rules", "a/empty"} {
+		fx = newDep(t, files)
+		fx.write(t, "a/sub/y.proto", "syntax = \"proto3\";\npackage a.sub;\nmessage Y {}\n")
+		fx.write(t, "a/rules/lint.rules.yaml", "")
+		fx.write(t, "a/empty/keep.txt", "x")
+		fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: "+out+"\n")
+		s = fx.session(t, ".")
+		counting := &stubRunner{res: run.res}
+		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: counting}, &strings.Builder{})
+		if out == "a/empty" {
+			if err != nil {
+				t.Fatalf("out %s: %v", out, err)
+			}
+			if fx.exists(t, "gen/go/stale.go") || fx.exists(t, "a/empty/keep.txt") || !fx.exists(t, "a/empty/fresh.go") {
+				t.Errorf("out %s: clean did not run", out)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), "clean refuses to empty") {
+			t.Fatalf("out %s: %v", out, err)
+		}
+		if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "a/sub/y.proto") || !fx.exists(t, "a/rules/lint.rules.yaml") || counting.spec.Stdin != nil {
+			t.Errorf("out %s: a refusal removed files or ran a plugin", out)
+		}
+	}
+
+	// A module at the root: every output directory lies under it, and
+	// only one holding its files is refused.
+	rooted := map[string]string{
+		"pb.yaml":       ws("example.com/root", ""),
+		"proto/x.proto": "syntax = \"proto3\";\npackage x;\nmessage X {}\n",
+		"gen/stale.go":  "old",
+		"pb.gen.yaml":   "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n",
+	}
+	fx = newDep(t, rooted)
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatalf("root module, out gen: %v", err)
+	}
+	if fx.exists(t, "gen/stale.go") || !fx.exists(t, "gen/fresh.go") {
+		t.Error("root module: gen was not emptied")
+	}
+	fx = newDep(t, rooted)
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: proto\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty proto, which holds proto/x.proto of the module example.com/root") {
+		t.Fatalf("root module, out proto: %v", err)
+	}
+	if !fx.exists(t, "proto/x.proto") {
+		t.Error("the source was removed")
+	}
+
+	// A directory replacement's module is read from the working tree
+	// too: its directory refuses as a workspace module's does.
+	fx = newDep(t, map[string]string{
+		"pb.work":         "use:\n  - m\nreplace:\n  example.com/x: ./forks/x\n",
+		"m/pb.yaml":       ws("example.com/m", "  example.com/x: v1.0.0\n"),
+		"m/m.proto":       "syntax = \"proto3\";\nimport \"x.proto\";\n",
+		"forks/x/pb.yaml": ws("example.com/x", ""),
+		"forks/x/x.proto": "syntax = \"proto3\";\n",
+		"forks/x/gen/old": "x",
+		"pb.gen.yaml":     "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: forks/x/gen\n",
+	})
+	fx.serve(t, "example.com/x", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/x", ""),
+		"x.proto": "syntax = \"proto3\";\n",
+	})
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatalf("replacement, out under it holding no file: %v", err)
+	}
+	if fx.exists(t, "forks/x/gen/old") {
+		t.Error("the replacement's output directory was not emptied")
+	}
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: forks/x\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty forks/x, which holds the module example.com/x at forks/x") {
+		t.Fatalf("replacement directory: %v", err)
+	}
+	if !fx.exists(t, "forks/x/x.proto") {
+		t.Error("the replacement's source was removed")
+	}
+
+	// A module the build never reads — nested under a member, so its
+	// parent skips it — is a module still: its file refuses at any
+	// depth.
+	fx = newDep(t, files)
+	fx.write(t, "a/nested/pb.yaml", ws("example.com/nested", ""))
+	fx.write(t, "a/nested/n.proto", "syntax = \"proto3\";\n")
+	fx.write(t, "a/nested/gen/old", "x")
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: a/nested\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty a/nested, which holds the module file a/nested/pb.yaml") {
+		t.Fatalf("nested module: %v", err)
+	}
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: a/wrap\n")
+	fx.write(t, "a/wrap/deep/pb.yaml", ws("example.com/deep", ""))
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "holds the module file a/wrap/deep/pb.yaml") {
+		t.Fatalf("deeper module: %v", err)
+	}
+	if !fx.exists(t, "a/nested/pb.yaml") || !fx.exists(t, "a/nested/n.proto") || !fx.exists(t, "a/wrap/deep/pb.yaml") {
+		t.Error("a nested module was removed")
+	}
+
+	// An output directory reached through a symbolic link — itself,
+	// or a component above it — refuses: the rules judge the name and
+	// the removal would touch the target. On the host filesystem,
+	// which follows links where the memory one does not.
+	for _, c := range []struct{ link, target, out, named string }{
+		{"gen", "other", "gen", "gen"},
+		{"x", "a", "x/gen", "x"},
+	} {
+		fx = newDepOn(t, osfs.New(t.TempDir()), map[string]string{
+			"pb.work":       "use:\n  - a\n",
+			"a/pb.yaml":     ws("example.com/a", ""),
+			"a/x.proto":     "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
+			"a/gen/old.go":  "old",
+			"other/pb.yaml": ws("example.com/other", ""),
+			"other/o.proto": "syntax = \"proto3\";\n",
+			"pb.gen.yaml":   "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: " + c.out + "\n",
+		})
+		if err := fx.ws.Symlink(c.target, c.link); err != nil {
+			t.Fatal(err)
+		}
+		s = fx.session(t, ".")
+		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+		if err == nil || !strings.Contains(err.Error(), "clean refuses to empty "+c.out+", reached through the symlink "+c.named) {
+			t.Fatalf("out %s through %s: %v", c.out, c.link, err)
+		}
+		if !fx.exists(t, "other/pb.yaml") || !fx.exists(t, "other/o.proto") || !fx.exists(t, "a/gen/old.go") || !fx.exists(t, "a/x.proto") {
+			t.Errorf("out %s through %s: the link's target was emptied", c.out, c.link)
+		}
+	}
+
+	// An output directory naming a file refuses before anything is
+	// emptied.
+	fx = newDep(t, files)
+	fx.write(t, "notes", "n")
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: notes\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty notes, which is not a directory") {
+		t.Fatalf("a file as out: %v", err)
+	}
+	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "notes") {
+		t.Error("a file as out emptied another entry's directory")
+	}
+
+	// A dead pattern refuses before anything is emptied.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: gen/ts\n    files: [\"typo/**\"]\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), `the pattern "typo/**" selects no workspace file`) {
+		t.Fatalf("dead pattern: %v", err)
+	}
+	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/ts/stale.ts") {
+		t.Error("a dead pattern emptied an output directory")
+	}
+
+	// A refusal before acquisition removes nothing.
+	fx = newDep(t, files)
+	s = fx.session(t, ".")
+	failing := &stubAcquirer{err: errors.New("registry down")}
+	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: run}, &strings.Builder{}); err == nil {
+		t.Fatal("an acquisition failure generated")
+	}
+	if !fx.exists(t, "gen/go/stale.go") {
+		t.Error("a failed acquisition emptied the output directory")
+	}
+}
+
 // An override substitutes only the content that executes: a layout or
 // archive goes through the override acquisition, a daemon-local image
 // rides the seam to the runner as it is; each is reported on standard

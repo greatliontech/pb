@@ -28,9 +28,89 @@ func compileMods(t testing.TB, mods []modfiles.Module) *compile.Result {
 	return res
 }
 
-// build is Build over a compiled result's own order.
+// The generation targets are the workspace files the entry's patterns select,
+// in compile order, any pattern matching; every workspace file with
+// none; a pattern selecting nothing fails naming it, whatever the
+// others select; with imports
+// included, what the selected reach through imports follows in
+// topological order, the well-known imports and the selected left
+// out, each once (REQ-gen-request, the generation target term).
+func TestTargets(t *testing.T) {
+	res := fixture(t)
+	all := func(entry genfile.Plugin) []string {
+		t.Helper()
+		got, err := Targets(res.Topological(), res.Files, entry, modfiles.WellKnown)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	if got := all(genfile.Plugin{}); !slices.Equal(got, []string{"a/a.proto", "a/b.proto"}) {
+		t.Errorf("no pattern: %v", got)
+	}
+	if got := all(genfile.Plugin{Files: []string{"a/b.proto"}}); !slices.Equal(got, []string{"a/b.proto"}) {
+		t.Errorf("one file: %v", got)
+	}
+	if got := all(genfile.Plugin{Files: []string{"a/b.proto", "a/*.proto"}}); !slices.Equal(got, []string{"a/a.proto", "a/b.proto"}) {
+		t.Errorf("any pattern, each file once: %v", got)
+	}
+	// A dead pattern fails whatever the others select.
+	_, err := Targets(res.Topological(), res.Files, genfile.Plugin{Files: []string{"a/*.proto", "nothing/*.proto", "b/**"}}, modfiles.WellKnown)
+	if err == nil || !strings.Contains(err.Error(), `["nothing/*.proto" "b/**"] select no workspace file`) {
+		t.Errorf("dead patterns: %v", err)
+	}
+	if got := all(genfile.Plugin{Files: []string{"a/a.proto"}, IncludeImports: true}); !slices.Equal(got, []string{"a/a.proto", "m1/m1.proto"}) {
+		t.Errorf("imports: %v (the well-known empty.proto and descriptor.proto are never targets)", got)
+	}
+	if got := all(genfile.Plugin{IncludeImports: true}); !slices.Equal(got, []string{"a/a.proto", "a/b.proto", "m1/m1.proto"}) {
+		t.Errorf("imports of all, each once: %v", got)
+	}
+	// A workspace file reached through another's import is a target
+	// once, among the selected where selected, else after them.
+	res2 := compileMods(t, []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{
+			"a/z.proto": "syntax = \"proto3\";\npackage a;\nimport \"a/y.proto\";\nmessage Z { Y y = 1; }\n",
+			"a/y.proto": "syntax = \"proto3\";\npackage a;\nmessage Y {}\n",
+		}),
+	})
+	if got, err := Targets(res2.Topological(), res2.Files, genfile.Plugin{Files: []string{"a/z.proto"}, IncludeImports: true}, modfiles.WellKnown); err != nil || !slices.Equal(got, []string{"a/z.proto", "a/y.proto"}) {
+		t.Errorf("a workspace import: %v %v", got, err)
+	}
+	if got, err := Targets(res2.Topological(), res2.Files, genfile.Plugin{Files: []string{"a/z.proto"}}, modfiles.WellKnown); err != nil || !slices.Equal(got, []string{"a/z.proto"}) {
+		t.Errorf("without imports: %v %v", got, err)
+	}
+	if got, err := Targets(res2.Topological(), res2.Files, genfile.Plugin{IncludeImports: true}, modfiles.WellKnown); err != nil || !slices.Equal(got, []string{"a/y.proto", "a/z.proto"}) {
+		t.Errorf("a selected file reached by another's import stays once: %v %v", got, err)
+	}
+	_, err = Targets(res.Topological(), res.Files, genfile.Plugin{Files: []string{"m1/*.proto", "b/**"}}, modfiles.WellKnown)
+	if err == nil || !strings.Contains(err.Error(), `["m1/*.proto" "b/**"] select no workspace file`) {
+		t.Errorf("no match: %v", err)
+	}
+	_, err = Targets(res.Topological(), res.Files, genfile.Plugin{Files: []string{"a/*.proto", "b/**"}}, modfiles.WellKnown)
+	if err == nil || !strings.Contains(err.Error(), `the pattern "b/**" selects no workspace file`) {
+		t.Errorf("one dead pattern: %v", err)
+	}
+	// A workspace without files generates for nothing: the request
+	// carries an empty list, as the spec's "every workspace file"
+	// reads (REQ-gen-request).
+	empty := compileMods(t, []modfiles.Module{mod("example.com/e", "", true, map[string]string{})})
+	if got, err := Targets(empty.Topological(), empty.Files, genfile.Plugin{}, modfiles.WellKnown); err != nil || len(got) != 0 {
+		t.Errorf("no workspace file: %v %v", got, err)
+	}
+	// The request carries the targets and their descriptors.
+	req, err := Build(res.Topological(), res.Files, nil, genfile.Plugin{Files: []string{"a/b.proto"}, IncludeImports: true, Opt: "x"}, modfiles.WellKnown)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(req.GetFileToGenerate(), []string{"a/b.proto", "m1/m1.proto"}) || len(req.GetSourceFileDescriptors()) != 2 || req.GetSourceFileDescriptors()[1].GetName() != "m1/m1.proto" || req.GetParameter() != "x" {
+		t.Errorf("request: %v %v %q", req.GetFileToGenerate(), req.GetSourceFileDescriptors(), req.GetParameter())
+	}
+}
+
+// build is Build over a compiled result's own order, for an entry
+// selecting every workspace file.
 func build(res *compile.Result, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
-	return Build(res.Topological(), res.Files, overrides, opt)
+	return Build(res.Topological(), res.Files, overrides, genfile.Plugin{Opt: opt}, modfiles.WellKnown)
 }
 
 func mod(path, ver string, local bool, files map[string]string) modfiles.Module {
@@ -221,7 +301,7 @@ func TestRequestCarriesTheDescriptorSet(t *testing.T) {
 			t.Fatalf("%s carries no source information", f.GetName())
 		}
 	}
-	if _, err := Build(res.Topological()[:1], res.Files, nil, ""); err == nil || !strings.Contains(err.Error(), "not in the compiled order") {
+	if _, err := Build(res.Topological()[:1], res.Files, nil, genfile.Plugin{}, modfiles.WellKnown); err == nil || !strings.Contains(err.Error(), "not in the compiled order") {
 		t.Fatalf("a file outside the order: %v", err)
 	}
 }
@@ -248,7 +328,7 @@ func TestBuildDeterminism(t *testing.T) {
 		// require the same proto_file order modulo the generated files'
 		// positions.
 		perm := linker.Files(rapid.Permutation(slices.Clone([]linker.File(files.Files))).Draw(rt, "perm"))
-		req, err := Build(compile.Topological(perm), perm, nil, "")
+		req, err := Build(compile.Topological(perm), perm, nil, genfile.Plugin{}, modfiles.WellKnown)
 		if err != nil {
 			rt.Fatal(err)
 		}

@@ -14,10 +14,16 @@ import (
 // (REQ-gen-schema).
 func TestParse(t *testing.T) {
 	in := `
+clean: true
 plugins:
   - ref: ghcr.io/org/protoc-gen-go:v1.34.2
     out: gen/go
     opt: paths=source_relative
+    files: ["acme/v1/*.proto", "**/x.proto"]
+    include_imports: true
+  - ref: ghcr.io/org/protoc-gen-go:v1.34.2
+    out: gen/all
+    include_imports: false
   - local: protoc-gen-lint
     out: .
   - local: ./tools/bin/protoc-gen-x
@@ -45,8 +51,12 @@ overrides:
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !f.Clean {
+		t.Error("clean not read")
+	}
 	want := []Plugin{
-		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/go", Opt: "paths=source_relative"},
+		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/go", Opt: "paths=source_relative", Files: []string{"acme/v1/*.proto", "**/x.proto"}, IncludeImports: true},
+		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/all"},
 		{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-lint", Out: "."},
 		{Scheme: plugin.SchemeLocal, Ref: "./tools/bin/protoc-gen-x", Out: "gen/x", Opt: "1"},
 		{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc"}, Out: "gen/grpc"},
@@ -113,6 +123,15 @@ func TestParseRejections(t *testing.T) {
 		{"local list nested", "plugins:\n  - local: [gen, [a]]\n    out: gen\n", "local[1] must be one line of text"},
 		{"local list bad command", "plugins:\n  - local: [./, a]\n    out: gen\n", "not a clean path"},
 		{"local list empty command", "plugins:\n  - local: [\"\", a]\n    out: gen\n", "empty local value"},
+		{"files not list", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: a/*.proto\n", "files must be a list"},
+		{"files empty", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: []\n", "files names no pattern"},
+		{"files empty pattern", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"\"]\n", "files[0] is empty"},
+		{"files block element", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files:\n      - |\n        a\n        b\n", "files[0] must be one line"},
+		{"files bad glob", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/[x\"]\n", "files[0]:"},
+		{"include_imports word", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: yes\n", "include_imports must be true or false"},
+		{"include_imports list", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: [true]\n", "include_imports must be true or false"},
+		{"clean number", "clean: 1\n" + ok, "clean must be true or false"},
+		{"clean capital", "clean: True\n" + ok, "clean must be true or false"},
 		{"out not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: {a: b}\n", "out must be one line of text"},
 		{"out block", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: |\n      gen\n", "out must be one line of text"},
 		{"out broken", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: \"gen\\nx\"\n", "out must be one line of text"},
@@ -252,6 +271,7 @@ func FuzzParse(f *testing.F) {
 	f.Add([]byte("plugins:\n  - local: p\n    out: .\noverrides:\n  - files: '**'\n    option: a.b\n    value: 1\n"))
 	f.Add([]byte("plugins:\n  - local: [go, tool, protoc-gen-x, \"\", \"a b\"]\n    out: gen\n"))
 	f.Add([]byte("plugins:\n  - local:\n      - ./tools/gen\n      - --flag\n    out: gen\n  - local: [p]\n    out: .\n"))
+	f.Add([]byte("clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/**\", \"*.proto\"]\n    include_imports: true\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		parsed, err := Parse(data)
 		if err != nil {
@@ -272,6 +292,14 @@ func FuzzParse(f *testing.F) {
 					t.Fatalf("accepted a multi-line argument %+v", p)
 				}
 			}
+			for _, pat := range p.Files {
+				if pat == "" || strings.ContainsAny(pat, "\n\r") {
+					t.Fatalf("accepted a malformed pattern %+v", p)
+				}
+			}
+			if p.Files != nil && len(p.Files) == 0 {
+				t.Fatalf("accepted an empty files list %+v", p)
+			}
 			if strings.HasPrefix(p.Out, "/") || p.Out == ".." || strings.HasPrefix(p.Out, "../") {
 				t.Fatalf("accepted escaping out %q", p.Out)
 			}
@@ -286,8 +314,9 @@ func FuzzParse(f *testing.F) {
 // the file; what Parse rejects Encode refuses.
 func TestEncode(t *testing.T) {
 	f := &File{
+		Clean: true,
 		Plugins: []Plugin{
-			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x"},
+			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x", Files: []string{"acme/v1/*.proto", "**"}, IncludeImports: true},
 			{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-connect-go", Out: "gen/connect"},
 			{Scheme: plugin.SchemeLocal, Ref: "tools/gen", Out: "gen/x", Opt: "a=1\nb=2\n"},
 			{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc", "--x=1 2", "true", ""}, Out: "gen/grpc"},
@@ -301,10 +330,15 @@ func TestEncode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `plugins:
+	want := `clean: true
+plugins:
   - ref: ghcr.io/acme/protoc-gen-go:v1.36.0
     out: gen/go
     opt: paths=source_relative,module=example.com/x
+    files:
+      - acme/v1/*.proto
+      - "**"
+    include_imports: true
   - local: protoc-gen-connect-go
     out: gen/connect
   - local: tools/gen

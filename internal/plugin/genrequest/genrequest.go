@@ -26,14 +26,17 @@ import (
 )
 
 // Build returns the request for one generation entry over the compiled
-// workspace files (REQ-gen-request): file_to_generate in compile
-// order, proto_file in the order given — the compile's topological
-// order over files, dependencies before importers, imports visited in
-// declaration order — source_file_descriptors the generated files'
-// descriptors, and opt as the parameter verbatim. Each descriptor is
-// converted fresh from the linked file, so this entry's overrides
-// touch this request alone.
-func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
+// workspace files (REQ-gen-request): file_to_generate the entry's
+// targets — the workspace files its patterns select in compile order,
+// then, where it includes imports, what those reach that is no
+// well-known import (wellKnown judges) in the order given — proto_file
+// in the order given — the compile's topological order over files,
+// dependencies before importers, imports visited in declaration order
+// — source_file_descriptors the targets' descriptors, and the entry's
+// opt as the parameter verbatim. Each descriptor is converted fresh
+// from the linked file, so this entry's overrides touch this request
+// alone.
+func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []genfile.Override, entry genfile.Plugin, wellKnown func(path string) bool) (*pluginpb.CodeGeneratorRequest, error) {
 	protos := make(map[string]*descriptorpb.FileDescriptorProto, len(order))
 	for _, fd := range order {
 		protos[fd.Path()] = protodesc.ToFileDescriptorProto(fd)
@@ -43,26 +46,103 @@ func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []
 	// leave a nil descriptor in the request.
 	for _, f := range files {
 		if protos[f.Path()] == nil {
-			return nil, fmt.Errorf("genrequest: %s is a file to generate but not in the compiled order", f.Path())
+			return nil, fmt.Errorf("genrequest: %s is a workspace file but not in the compiled order", f.Path())
 		}
+	}
+	targets, err := Targets(order, files, entry, wellKnown)
+	if err != nil {
+		return nil, err
 	}
 	if err := applyOverrides(order, protos, overrides, extensionResolver(order)); err != nil {
 		return nil, err
 	}
-	req := &pluginpb.CodeGeneratorRequest{}
-	for _, f := range files {
-		req.FileToGenerate = append(req.FileToGenerate, f.Path())
-	}
-	if opt != "" {
-		req.Parameter = &opt
+	req := &pluginpb.CodeGeneratorRequest{FileToGenerate: targets}
+	if entry.Opt != "" {
+		req.Parameter = &entry.Opt
 	}
 	for _, fd := range order {
 		req.ProtoFile = append(req.ProtoFile, protos[fd.Path()])
 	}
-	for _, f := range files {
-		req.SourceFileDescriptors = append(req.SourceFileDescriptors, protos[f.Path()])
+	for _, t := range targets {
+		req.SourceFileDescriptors = append(req.SourceFileDescriptors, protos[t])
 	}
 	return req, nil
+}
+
+// Targets names the entry's generation targets (REQ-gen-request, the
+// generation target term): the workspace files whose module-relative
+// path any of the entry's patterns matches, every workspace file with
+// no pattern, in files' order — a pattern matching nothing fails
+// naming it, whatever the others match — then, where
+// the entry includes imports, every file the selected reach through
+// imports that is no well-known import and not selected, in order's
+// order.
+func Targets(order []protoreflect.FileDescriptor, files linker.Files, entry genfile.Plugin, wellKnown func(path string) bool) ([]string, error) {
+	patterns := make([]*glob.Pattern, 0, len(entry.Files))
+	for _, f := range entry.Files {
+		p, err := glob.Compile(f)
+		if err != nil {
+			// Validated at parse time; a compile failure here is a
+			// genfile invariant violation, not user input.
+			return nil, err
+		}
+		patterns = append(patterns, p)
+	}
+	selected := map[string]bool{}
+	var targets []string
+	live := make([]bool, len(patterns))
+	for _, f := range files {
+		matched := len(patterns) == 0
+		for i, p := range patterns {
+			if p.Match(f.Path()) {
+				matched, live[i] = true, true
+			}
+		}
+		if matched {
+			selected[f.Path()] = true
+			targets = append(targets, f.Path())
+		}
+	}
+	var dead []string
+	for i, ok := range live {
+		if !ok {
+			dead = append(dead, entry.Files[i])
+		}
+	}
+	switch len(dead) {
+	case 0:
+	case 1:
+		return nil, fmt.Errorf("genrequest: the pattern %q selects no workspace file", dead[0])
+	default:
+		return nil, fmt.Errorf("genrequest: the patterns %q select no workspace file", dead)
+	}
+	if !entry.IncludeImports {
+		return targets, nil
+	}
+	reached := map[string]bool{}
+	var walk func(fd protoreflect.FileDescriptor)
+	walk = func(fd protoreflect.FileDescriptor) {
+		imports := fd.Imports()
+		for i := 0; i < imports.Len(); i++ {
+			dep := imports.Get(i).FileDescriptor
+			if reached[dep.Path()] {
+				continue
+			}
+			reached[dep.Path()] = true
+			walk(dep)
+		}
+	}
+	for _, f := range files {
+		if selected[f.Path()] {
+			walk(f)
+		}
+	}
+	for _, fd := range order {
+		if reached[fd.Path()] && !selected[fd.Path()] && !wellKnown(fd.Path()) {
+			targets = append(targets, fd.Path())
+		}
+	}
+	return targets, nil
 }
 
 // extensionResolver indexes every extension declaration reachable in
