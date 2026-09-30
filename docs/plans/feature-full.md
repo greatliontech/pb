@@ -57,7 +57,7 @@ formatter and the language server
 - [x] 4. `local` plugins with argv: `local: [command, args...]` in the
       generation file, the sandbox spawning the command with its
       arguments, migrate mapping buf's list form
-- [ ] 5. Generation targets: per-entry `files` globs over the
+- [x] 5. Generation targets: per-entry `files` globs over the
       workspace's module-relative paths (the glob machinery
       `overrides` has), per-entry `include_imports`, and `clean`
       emptying an entry's output directory of what generation wrote;
