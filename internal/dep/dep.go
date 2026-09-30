@@ -13,6 +13,8 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
+	"strings"
 
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
@@ -213,20 +215,81 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 		}
 		fmt.Fprintf(out, "%s@%s\n", r.Path, r.Version)
 	}
+	// Then every fetched ruleset import, its artifacts the same, its
+	// line a module's, pinned as a ruleset
+	// (REQ-dep-ruleset-declarations).
+	imports, err := s.imports()
+	if err != nil {
+		return err
+	}
+	for _, ri := range imports {
+		if ri.Local {
+			continue
+		}
+		err := s.Client.RulesetDownload(ctx, ri.Source.Path, ri.Source.Version)
+		if err := savePins(s, err); err != nil {
+			return err
+		}
+		if s.Root.Replaced(ri.imp.Path) {
+			fmt.Fprintf(out, "%s@%s => %s\n", ri.imp.Path, ri.imp.Version, ri.Source)
+			continue
+		}
+		fmt.Fprintf(out, "%s@%s\n", ri.imp.Path, ri.imp.Version)
+	}
 	return s.SaveLock()
+}
+
+// importEdges is the requirement graph's edges from the lint file
+// (REQ-dep-ruleset-declarations): one per import, a fetched import's
+// to its pair as written, a working-tree import's to the bare path.
+func (s *Session) importEdges() ([]mvs.Edge, error) {
+	imports, err := s.imports()
+	if err != nil {
+		return nil, err
+	}
+	var edges []mvs.Edge
+	for _, ri := range imports {
+		edges = append(edges, mvs.Edge{Requirer: lintRequirer, Path: ri.imp.Path, Version: ri.Version})
+	}
+	return edges, nil
+}
+
+// edgeLine spells an edge as graph prints it: a working-tree import's
+// target the bare path, the working copy having no version.
+func edgeLine(e mvs.Edge) string {
+	if e.Version == (version.Version{}) {
+		return e.Requirer + " " + e.Path
+	}
+	return fmt.Sprintf("%s %s@%s", e.Requirer, e.Path, e.Version)
 }
 
 // Graph prints the requirement graph, one edge per line
 // (REQ-dep-graph).
 func Graph(ctx context.Context, s *Session, out io.Writer) error {
-	edges, err := s.Driver.Graph(ctx)
+	edges, err := s.graph(ctx)
 	if err != nil {
 		return err
 	}
 	for _, e := range edges {
-		fmt.Fprintf(out, "%s %s@%s\n", e.Requirer, e.Path, e.Version)
+		fmt.Fprintln(out, edgeLine(e))
 	}
 	return s.SaveLock()
+}
+
+// graph is the requirement graph with the lint file's import edges,
+// sorted lexically by line as graph prints them.
+func (s *Session) graph(ctx context.Context) ([]mvs.Edge, error) {
+	edges, err := s.Driver.Graph(ctx)
+	if err != nil {
+		return nil, err
+	}
+	imports, err := s.importEdges()
+	if err != nil {
+		return nil, err
+	}
+	edges = append(edges, imports...)
+	slices.SortFunc(edges, func(a, b mvs.Edge) int { return strings.Compare(edgeLine(a), edgeLine(b)) })
+	return edges, nil
 }
 
 // Why prints, for each named path, a shortest requirement chain or
@@ -236,14 +299,27 @@ func Graph(ctx context.Context, s *Session, out io.Writer) error {
 // after any chain of its own, through each path it stands for: a
 // pinned replacement is needed by what it replaces.
 func Why(ctx context.Context, s *Session, out io.Writer, targets ...string) error {
-	edges, err := s.Driver.Graph(ctx)
+	edges, err := s.graph(ctx)
 	if err != nil {
 		return err
 	}
 	// A chain to a replaced path ends in the replacement step, spelled
 	// as download's line spells the source.
+	// A working-tree import's edge names no pair: it is answered as
+	// one step from the lint file beside the search over pairs, the
+	// shorter chain winning, the lexically least at equal length.
+	pairs := slices.DeleteFunc(slices.Clone(edges), func(e mvs.Edge) bool { return e.Version == (version.Version{}) })
 	printChain := func(target string) bool {
-		chain := resolve.WhyOver(edges, target)
+		chain := resolve.WhyOver(pairs, target)
+		for _, e := range edges {
+			if e.Requirer != lintRequirer || e.Path != target || e.Version != (version.Version{}) {
+				continue
+			}
+			imported := []string{lintRequirer, target}
+			if chain == nil || len(imported) < len(chain) || len(imported) == len(chain) && slices.Compare(imported, chain) < 0 {
+				chain = imported
+			}
+		}
 		if chain == nil {
 			return false
 		}

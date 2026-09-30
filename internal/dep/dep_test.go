@@ -137,27 +137,32 @@ func TestInit(t *testing.T) {
 // lockfile at the root; a second run fetches nothing and rewrites
 // nothing (REQ-dep-download, REQ-lock-canonical-emission).
 func TestDownloadVerb(t *testing.T) {
+	// The lint file imports a ruleset the build never needs, and the
+	// workspace module a (fetched by nothing).
 	fx := newDep(t, map[string]string{
-		"pb.work":   "use:\n  - a\n",
-		"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
+		"pb.work":      "use:\n  - a\n",
+		"pb.lint.yaml": "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/a\n    alias: a\n",
+		"a/pb.yaml":    ws("example.com/a", "  example.com/m1: v1.0.0\n"),
 	})
 	fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{
 		"pb.yaml": ws("example.com/m1", "  example.com/m2: v1.0.0\n"),
 	})
 	fx.serve(t, "example.com/m2", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m2", "")})
+	fx.serve(t, "example.com/rules", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nrules: []\n"})
 	fx.Endpoint("example.com/m1", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	fx.Endpoint("example.com/m2", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	fx.Endpoint("example.com/rules", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 
 	s := fx.session(t, ".")
 	var out bytes.Buffer
 	if err := Download(ctx, s, &out); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
-	if got := out.String(); got != "example.com/m1@v1.0.0\nexample.com/m2@v1.0.0\n" {
+	if got := out.String(); got != "example.com/m1@v1.0.0\nexample.com/m2@v1.0.0\nexample.com/rules@v1.0.0\n" {
 		t.Fatalf("output = %q", got)
 	}
 	lockBytes := fx.read(t, "pb.lock")
-	if !strings.Contains(lockBytes, "example.com/m1") || !strings.Contains(lockBytes, "example.com/m2") {
+	if !strings.Contains(lockBytes, "example.com/m1") || !strings.Contains(lockBytes, "example.com/m2") || !strings.Contains(lockBytes, "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n") || strings.Contains(lockBytes, "modules:\n  - path: example.com/rules") {
 		t.Fatalf("lockfile = %q", lockBytes)
 	}
 
@@ -181,15 +186,32 @@ func TestDownloadVerb(t *testing.T) {
 	if fx.read(t, "pb.lock") != lockBytes {
 		t.Fatal("second download rewrote the lockfile")
 	}
+	// A path-replaced import's line names both, as a declaration's
+	// does; the pin made before a later import fails is saved.
+	fx.write(t, "pb.work", "use:\n  - a\nreplace:\n  example.com/rules: example.com/fork@v2.0.0\n")
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/gone\n    version: v1.0.0\n    alias: gone\n")
+	fx.serve(t, "example.com/fork", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/fork", "")})
+	fx.Endpoint("example.com/fork", "v2.0.0", "info", `{"version":"v2.0.0"}`)
+	out.Reset()
+	if err := Download(ctx, fx.session(t, "."), &out); err == nil || !strings.HasSuffix(out.String(), "example.com/rules@v1.0.0 => example.com/fork@v2.0.0\n") {
+		t.Fatalf("a replaced import, then one that fails: %v %q", err, out.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/fork\n    version: v2.0.0\n") {
+		t.Fatalf("the replaced import's pin was not saved before the failure: %q", lock)
+	}
 }
 
 // Graph prints one edge per line in the spec's format; Why prints
 // shortest chains and not-needed answers, sharing one graph
 // computation (REQ-dep-graph, REQ-dep-why).
 func TestGraphAndWhyVerbs(t *testing.T) {
+	// The lint file's imports are edges from the lint file: a fetched
+	// import to its pair, a workspace module's to the bare path.
 	fx := newDep(t, map[string]string{
-		"pb.work":   "use:\n  - a\n",
-		"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
+		"pb.work":       "use:\n  - a\n  - house\n",
+		"pb.lint.yaml":  "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/house\n    alias: house\n",
+		"a/pb.yaml":     ws("example.com/a", "  example.com/m1: v1.0.0\n"),
+		"house/pb.yaml": ws("example.com/house", ""),
 	})
 	fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{
 		"pb.yaml": ws("example.com/m1", "  example.com/m2: v1.0.0\n"),
@@ -201,13 +223,13 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 	if err := Graph(ctx, s, &out); err != nil {
 		t.Fatal(err)
 	}
-	want := "example.com/a example.com/m1@v1.0.0\nexample.com/m1@v1.0.0 example.com/m2@v1.0.0\n"
+	want := "example.com/a example.com/m1@v1.0.0\nexample.com/m1@v1.0.0 example.com/m2@v1.0.0\npb.lint.yaml example.com/house\npb.lint.yaml example.com/rules@v1.0.0\n"
 	if out.String() != want {
 		t.Fatalf("graph = %q, want %q", out.String(), want)
 	}
 
 	out.Reset()
-	if err := Why(ctx, s, &out, "example.com/m2", "example.com/absent"); err != nil {
+	if err := Why(ctx, s, &out, "example.com/m2", "example.com/absent", "example.com/rules", "example.com/house"); err != nil {
 		t.Fatal(err)
 	}
 	got := out.String()
@@ -216,6 +238,36 @@ func TestGraphAndWhyVerbs(t *testing.T) {
 	}
 	if !strings.Contains(got, "(module example.com/absent is not needed)") {
 		t.Fatalf("why output = %q", got)
+	}
+	if !strings.Contains(got, "# example.com/rules\npb.lint.yaml\nexample.com/rules@v1.0.0\n") || !strings.Contains(got, "# example.com/house\npb.lint.yaml\nexample.com/house\n") {
+		t.Fatalf("why over the import edges = %q", got)
+	}
+	// Edges sort by the printed line, a path that prefixes a sibling's
+	// ordered as its spelling is (REQ-dep-graph); a directory-replaced
+	// import is a working-tree edge, and why prefers the shorter chain
+	// to it over the pairs' (REQ-dep-why).
+	fx2 := newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\nreplace:\n  example.com/x: ./fork\n",
+		"fork/pb.yaml": ws("example.com/x", ""),
+		"pb.lint.yaml": "rulesets:\n  - path: example.com/x\n    alias: x\n",
+		"a/pb.yaml":    ws("example.com/a", "  example.com/m1: v1.0.0\n  example.com/m1/v2: v2.0.0\n"),
+	})
+	fx2.serve(t, "example.com/m1/v2", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/m1/v2", "")})
+	fx2.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "  example.com/m2: v1.0.0\n  example.com/x: v1.0.0\n")})
+	fx2.serve(t, "example.com/m2", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m2", "")})
+	fx2.serve(t, "example.com/x", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/x", "")})
+	out.Reset()
+	if err := Graph(ctx, fx2.session(t, "."), &out); err != nil || out.String() != "example.com/a example.com/m1/v2@v2.0.0\nexample.com/a example.com/m1@v1.0.0\nexample.com/m1@v1.0.0 example.com/m2@v1.0.0\nexample.com/m1@v1.0.0 example.com/x@v1.0.0\npb.lint.yaml example.com/x\n" {
+		t.Fatalf("graph with a prefix sibling and a replaced import: %v %q", err, out.String())
+	}
+	out.Reset()
+	if err := Why(ctx, fx2.session(t, "."), &out, "example.com/x"); err != nil || out.String() != "# example.com/x\npb.lint.yaml\nexample.com/x\nexample.com/x => ./fork\n" {
+		t.Fatalf("why prefers the shorter import chain: %v %q", err, out.String())
+	}
+	// An import the check run would refuse is refused here too.
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/house\n    version: v1.0.0\n    alias: house\n")
+	if err := Graph(ctx, fx.session(t, "."), &out); err == nil || !strings.Contains(err.Error(), "pb.lint.yaml: rulesets example.com/house: a workspace module, read from the working tree: write no version (v1.0.0 written)") {
+		t.Fatalf("a working-tree import with a version: %v", err)
 	}
 }
 
@@ -535,6 +587,97 @@ func TestUpdateVerb(t *testing.T) {
 		}
 	})
 
+	t.Run("imports move with the sweep and by name", func(t *testing.T) {
+		withLint := map[string]string{
+			"pb.work":      "use:\n  - a\n",
+			"pb.lint.yaml": "rulesets:\n  - path: example.com/m1\n    version: v1.0.0\n    alias: one\n",
+			"a/pb.yaml":    ws("example.com/a", ""),
+		}
+		fx := newDep(t, withLint)
+		serve(fx)
+		s := fx.session(t, ".")
+		var out bytes.Buffer
+		if err := Update(ctx, s, &out, nil); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		if got := fx.read(t, "pb.lint.yaml"); got != "rulesets:\n  - path: example.com/m1\n    version: v1.2.0\n    alias: one\n" {
+			t.Fatalf("the lint file after the sweep: %q", got)
+		}
+		if !strings.Contains(out.String(), "pb.lint.yaml: example.com/m1 v1.0.0 -> v1.2.0\n") || !strings.Contains(fx.read(t, "pb.lock"), "rulesets:\n  - path: example.com/m1\n    version: v1.2.0\n") {
+			t.Fatalf("out = %q lock = %q", out.String(), fx.read(t, "pb.lock"))
+		}
+		// Named: the path no module requires is the lint file's import.
+		fx = newDep(t, withLint)
+		serve(fx)
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/m1"); err != nil || !strings.Contains(fx.read(t, "pb.lint.yaml"), "version: v1.2.0") {
+			t.Fatalf("named import: %v %q", err, fx.read(t, "pb.lint.yaml"))
+		}
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/none"); err == nil || !strings.Contains(err.Error(), "no workspace module requires example.com/none, and the lint file imports it not") {
+			t.Fatalf("a name nothing declares or imports: %v", err)
+		}
+		// Of two imports of one path, the higher moves and the lower is
+		// left with a report — it would read the same release under a
+		// second alias; naming the path fails before anything moves.
+		fx = newDep(t, withLint)
+		serve(fx)
+		fx.serve(t, "example.com/m1", "v1.1.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("v1.0.0\nv1.1.0\nv1.2.0\n")
+		two := "rulesets:\n  - path: example.com/m1\n    version: v1.0.0\n    alias: one\n  - path: example.com/m1\n    version: v1.1.0\n    alias: two\n"
+		fx.write(t, "pb.lint.yaml", two)
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "pb.lint.yaml: example.com/m1 v1.1.0 -> v1.2.0\npb.lint.yaml: example.com/m1 v1.0.0 left: v1.2.0 is read as two already\n" || fx.read(t, "pb.lint.yaml") != strings.Replace(two, "v1.1.0", "v1.2.0", 1) {
+			t.Fatalf("two imports, one moving: %v %q %q", err, out.String(), fx.read(t, "pb.lint.yaml"))
+		}
+		// One already at the highest release: the other is left too.
+		atHighest := strings.Replace(two, "v1.1.0", "v1.2.0", 1)
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "pb.lint.yaml: example.com/m1 v1.0.0 left: v1.2.0 is read as two already\n" || fx.read(t, "pb.lint.yaml") != atHighest {
+			t.Fatalf("one import at the highest release: %v %q %q", err, out.String(), fx.read(t, "pb.lint.yaml"))
+		}
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/m1"); err == nil || !strings.Contains(err.Error(), "example.com/m1 is imported as two and as one; the highest discovered release v1.2.0 would be read under both") || fx.read(t, "pb.lint.yaml") != atHighest {
+			t.Fatalf("named, two imports: %v %q", err, fx.read(t, "pb.lint.yaml"))
+		}
+		// A regressed origin holds the higher import where it is, and a
+		// lower one moves: the two read different pairs.
+		fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/m1\n    version: v1.3.0\n    alias: one\n  - path: example.com/m1\n    version: v1.0.0\n    alias: two\n")
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "pb.lint.yaml: example.com/m1 v1.0.0 -> v1.2.0\n" || !strings.Contains(fx.read(t, "pb.lint.yaml"), "version: v1.3.0\n    alias: one\n  - path: example.com/m1\n    version: v1.2.0\n    alias: two\n") {
+			t.Fatalf("a regressed origin beside a lower import: %v %q %q", err, out.String(), fx.read(t, "pb.lint.yaml"))
+		}
+		// A named import above the highest discovered release is an
+		// origin that regressed.
+		fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/m1\n    version: v1.3.0\n    alias: one\n")
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/m1"); err == nil || !strings.Contains(err.Error(), "the highest discovered release v1.2.0 is below the imported v1.3.0") {
+			t.Fatalf("a regressed origin for an import: %v", err)
+		}
+		// A workspace module the lint file imports has nothing to move;
+		// a directory-replaced import is left as a replaced declaration.
+		fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/a\n    alias: a\n")
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/a"); err == nil || !strings.Contains(err.Error(), "example.com/a is a workspace module the lint file imports from the working tree: nothing to move") {
+			t.Fatalf("a workspace import named: %v", err)
+		}
+		fx.write(t, "pb.work", "use:\n  - a\nreplace:\n  example.com/m1: ./fork\n")
+		fx.write(t, "fork/pb.yaml", ws("example.com/m1", ""))
+		fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/m1\n    alias: one\n")
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "example.com/m1: replaced by ./fork, import left\n" {
+			t.Fatalf("a directory-replaced import swept: %v %q", err, out.String())
+		}
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil, "example.com/m1"); err == nil || !strings.Contains(err.Error(), "example.com/m1 is replaced by ./fork in the workspace file") {
+			t.Fatalf("a directory-replaced import named: %v", err)
+		}
+		fx.write(t, "pb.work", "use:\n  - a\n")
+		// A replaced import is reported left, as a declaration is.
+		fx = newDep(t, withLint)
+		serve(fx)
+		fx.write(t, "pb.work", "use:\n  - a\nreplace:\n  example.com/m1: example.com/fork@v1.0.0\n")
+		fx.serve(t, "example.com/fork", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/fork", "")})
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || !strings.Contains(out.String(), "example.com/m1: replaced by example.com/fork@v1.0.0, import left\n") || !strings.Contains(fx.read(t, "pb.lint.yaml"), "version: v1.0.0") {
+			t.Fatalf("a replaced import: %v %q", err, out.String())
+		}
+	})
+
 	t.Run("named update of a declared plugin re-resolves it", func(t *testing.T) {
 		withPlugin := map[string]string{}
 		for k, v := range files {
@@ -710,6 +853,38 @@ func TestVerifyVerb(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "example.com/m1@v1.0.0: digest") {
 		t.Fatalf("report = %q", out.String())
+	}
+
+	// The rulesets' pins are covered after the modules', their lines
+	// saying so (REQ-dep-ruleset-declarations).
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n")
+	fx.serve(t, "example.com/rules", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nrules: []\n"})
+	fx.Endpoint("example.com/rules", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	s = fx.session(t, ".")
+	if err := Download(ctx, s, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err != nil || !strings.Contains(out.String(), "verified 2 cached module(s)") {
+		t.Fatalf("with a ruleset pin: %v %q", err, out.String())
+	}
+	wrongRules, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nrules: []\n# tampered\n"})
+	if err := s.Client.Cache.Put("example.com/rules", mustVer(t, "v1.0.0"), fetch.KindZip, wrongRules); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err == nil || !strings.Contains(out.String(), "example.com/rules@v1.0.0 (ruleset pin): digest") {
+		t.Fatalf("a tampered ruleset archive: %v %q", err, out.String())
+	}
+	// The modules' pins are reported before the rulesets', whatever
+	// the paths' order.
+	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	Verify(ctx, s, &out) //nolint:errcheck — the mismatches are the point
+	if m, r := strings.Index(out.String(), "example.com/m1@v1.0.0: digest"), strings.Index(out.String(), "example.com/rules@v1.0.0 (ruleset pin)"); m < 0 || r < m {
+		t.Fatalf("the rulesets' pins before the modules': %q", out.String())
 	}
 
 	// An absent cache entry is outside verify's scope.

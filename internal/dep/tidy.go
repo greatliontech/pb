@@ -3,8 +3,6 @@ package dep
 import (
 	"context"
 	"fmt"
-	"github.com/greatliontech/pb/internal/check/lintfile"
-	"github.com/greatliontech/pb/internal/module/version"
 	"io"
 	"maps"
 	"path"
@@ -272,27 +270,18 @@ func tidyOnce(ctx context.Context, s *Session, imported map[string]bool) (change
 }
 
 // importedRulesets is the pairs the lint file's imports pin: each
-// external import's pair through the workspace's replacements, a
-// workspace module's and a directory replacement's none.
+// fetched import's pair through the workspace's replacements, a
+// working-tree import's none.
 func (s *Session) importedRulesets() (map[string]bool, error) {
-	lf, err := s.LintFile()
+	imports, err := s.imports()
 	if err != nil {
 		return nil, err
 	}
 	pairs := map[string]bool{}
-	for _, imp := range lf.Rulesets {
-		if _, local := s.Root.IsLocal(imp.Path); local || imp.Version == "" {
-			continue
+	for _, ri := range imports {
+		if !ri.Local {
+			pairs[ri.Source.String()] = true
 		}
-		v, err := version.Parse(imp.Version)
-		if err != nil {
-			return nil, fmt.Errorf("%s: rulesets %s: %v", lintfile.FileName, imp.Path, err)
-		}
-		src := s.Root.Source(imp.Path, v)
-		if src.Module != nil {
-			continue
-		}
-		pairs[src.String()] = true
 	}
 	return pairs, nil
 }

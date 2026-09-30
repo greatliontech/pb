@@ -319,45 +319,67 @@ type Ruleset struct {
 	Files   []rules.Located
 }
 
+// Resolved is an import as the workspace reads it (REQ-lint-rulesets-
+// imported): from the working tree — a workspace module's directory
+// or a directory replacement's — or a pair through the workspace's
+// replacements, the version written parsed.
+type Resolved struct {
+	Local   bool
+	Dir     string // the working-tree directory, relative to the root, where Local
+	Version version.Version
+	Source  workspace.Source // the pair read, where fetched
+}
+
+// Resolve classifies an import: a path naming a workspace module, or
+// one a directory replacement serves, is read from the working tree,
+// a version written for it refused; any other is read at its version
+// through the replacements, a version missing refused.
+func Resolve(root *workspace.Root, imp rules.Import) (Resolved, error) {
+	dir, local := root.IsLocal(imp.Path)
+	src := root.Source(imp.Path, version.Version{})
+	if local || src.Module != nil {
+		how := "a workspace module"
+		if !local {
+			how, dir = "replaced by a directory", src.Module.Dir
+		}
+		if imp.Version != "" {
+			return Resolved{}, fmt.Errorf("%s: %s, read from the working tree: write no version (%s written)", imp.Path, how, imp.Version)
+		}
+		return Resolved{Local: true, Dir: dir}, nil
+	}
+	if imp.Version == "" {
+		return Resolved{}, fmt.Errorf("%s: no workspace module: write the version to read", imp.Path)
+	}
+	v, err := version.Parse(imp.Version)
+	if err != nil {
+		return Resolved{}, fmt.Errorf("%s: %v", imp.Path, err)
+	}
+	return Resolved{Version: v, Source: root.Source(imp.Path, v)}, nil
+}
+
 // Rulesets reads each import the lint file names exactly as written
-// (REQ-lint-rulesets-imported, REQ-rules-file-discovery), through the
-// workspace's replacements as the build reads a module: a path naming
-// a workspace module, or one a directory replacement serves, from the
-// working tree, a version written for it refused; any other at its
-// version through zip — the caller's verified archive, pinned as a
-// ruleset, a path replacement's pair in the path's place — a version
-// missing refused; a bad rule file fails naming the ruleset and the
-// file. fsys is the working tree the root was loaded from.
+// (REQ-lint-rulesets-imported, REQ-rules-file-discovery), as Resolve
+// classifies it: a working-tree import's rule files from its
+// directory; a fetched import's through zip — the caller's verified
+// archive, pinned as a ruleset — at the pair Resolve names; a bad
+// rule file fails naming the ruleset and the file. fsys is the working
+// tree the root was loaded from.
 func Rulesets(ctx context.Context, f *File, root *workspace.Root, fsys fs.FS, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Ruleset, error) {
 	out := make([]Ruleset, 0, len(f.Rulesets))
 	for _, imp := range f.Rulesets {
+		res, err := Resolve(root, imp)
+		if err != nil {
+			return nil, fmt.Errorf("%w %v", ErrRuleset, err)
+		}
 		var ruleFiles map[string][]byte
-		dir, local := root.IsLocal(imp.Path)
-		src := root.Source(imp.Path, version.Version{})
-		switch {
-		case local || src.Module != nil:
-			how := "a workspace module"
-			if !local {
-				how, dir = "replaced by a directory", src.Module.Dir
-			}
-			if imp.Version != "" {
-				return nil, fmt.Errorf("%w %s: %s, read from the working tree: write no version (%s written)", ErrRuleset, imp.Path, how, imp.Version)
-			}
-			_, rf, err := modfiles.WorkspaceFiles(fsys, path.Join(root.Dir, dir))
+		if res.Local {
+			_, rf, err := modfiles.WorkspaceFiles(fsys, path.Join(root.Dir, res.Dir))
 			if err != nil {
 				return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
 			}
 			ruleFiles = rf
-		default:
-			if imp.Version == "" {
-				return nil, fmt.Errorf("%w %s: no workspace module: write the version to read", ErrRuleset, imp.Path)
-			}
-			v, err := version.Parse(imp.Version)
-			if err != nil {
-				return nil, fmt.Errorf("%w %s: %v", ErrRuleset, imp.Path, err)
-			}
-			pair := root.Source(imp.Path, v)
-			b, err := zip(ctx, pair.Path, pair.Version)
+		} else {
+			b, err := zip(ctx, res.Source.Path, res.Source.Version)
 			if err != nil {
 				return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
 			}

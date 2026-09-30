@@ -101,13 +101,24 @@ replacement has none.
 declared dependencies MUST act on ruleset imports where they live —
 the lint file's `rulesets` and each imported rule file's `imports`
 (`check-rules.md`) — exactly as they act on module files' `deps`:
-`download` fetches, verifies and pins every import's artifacts;
-`update` moves an import forward to the highest discovered release,
-rewriting the lint file canonically (an import in a fetched ruleset's
-rule file is that ruleset's own and is never rewritten); `verify`
-covers ruleset pins; `graph` prints each import as an edge from the
-lint file (`pb.lint.yaml <path>@<version>`) and from a rule file
-(`<path>@<version> <path>@<version>`); `why` answers over those edges too. Tidy leaves the imports alone:
+`download` fetches, verifies and pins every fetched import's
+artifacts, its line a module's (`<path>@<version>`, a replaced path's
+`=> <replacement>`), a working-tree import fetching nothing; `update`
+moves an import forward to the highest discovered release, rewriting
+the lint file canonically and pinning the moved pair — a named path the lint file imports is found as one a workspace
+module requires is (a working-tree import having nothing to move), a
+replaced import is reported left as a replaced declaration is, and
+of a path imported at several versions the highest moves while
+another that would read the same release under a second alias is
+left and reported by the sweep and fails the run, before any
+declaration or import moves, when the path is named (an import in a fetched ruleset's rule file is that ruleset's
+own and is never rewritten); `verify` covers the rulesets' pins after
+the modules', a ruleset pin's line saying so; `graph` prints each
+import as an edge from the lint file (`pb.lint.yaml
+<path>@<version>`, a working-tree import's `pb.lint.yaml <path>`, the
+working copy having no version) and from a rule file
+(`<path>@<version> <path>@<version>`); `why` answers over those
+edges too. Tidy leaves the imports alone:
 they are no protobuf dependency, so no module file declares one and
 nothing carries one; it removes the ruleset pins no import of the
 lint file names, as it removes module pins outside the tidied graph
@@ -172,9 +183,11 @@ along.
 
 **REQ-dep-graph** (behavior): `graph` MUST print the requirement graph
 — every edge of the reachable graph `REQ-resolve-mvs` defines — one
-edge per line as `<requirer> <path>@<version>`, where the requirer is
-`<path>@<version>` for a graph node and the bare module path for a
-workspace module (the local working copy has no version). Output is
+edge per line as `<requirer> <path>@<version>`, where the requirer is `<path>@<version>` for a graph node and the
+bare module path for a workspace module (the local working copy has
+no version), the lint file's import edges among them
+(REQ-dep-ruleset-declarations), a working-tree import's target the
+bare path likewise. Output is
 sorted lexically by line: a pure function of the graph, byte-identical
 across runs (`REQ-resolve-determinism`). The graph's edges alone: a
 replaced path's edges are the ones read from its replacement

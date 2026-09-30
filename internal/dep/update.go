@@ -10,6 +10,7 @@ import (
 	"path"
 	"slices"
 
+	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
 
 	"github.com/greatliontech/pb/internal/module/archive"
@@ -87,6 +88,25 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		}
 	}
 
+	imports, err := s.imports()
+	if err != nil {
+		return err
+	}
+	// The lint file's fetched imports move as declarations do
+	// (REQ-dep-ruleset-declarations); a working-tree import has
+	// nothing to move, a replaced one is left as a declaration is.
+	imported := map[string][]int{} // path -> indexes of importing entries
+	workingTree := map[string]bool{}
+	for i, ri := range imports {
+		switch {
+		case ri.Local && s.Root.Replaced(ri.imp.Path):
+			imported[ri.imp.Path] = append(imported[ri.imp.Path], i)
+		case ri.Local:
+			workingTree[ri.imp.Path] = true
+		default:
+			imported[ri.imp.Path] = append(imported[ri.imp.Path], i)
+		}
+	}
 	named := len(targets) > 0
 	if !named {
 		moduleTargets = slices.Sorted(func(yield func(string) bool) {
@@ -95,11 +115,21 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 					return
 				}
 			}
+			for p := range imported {
+				if _, twice := declared[p]; !twice && !yield(p) {
+					return
+				}
+			}
 		})
 	}
 	for _, target := range moduleTargets {
 		if _, ok := declared[target]; !ok && named {
-			return fmt.Errorf("dep update: no workspace module requires %s", target)
+			if _, ok := imported[target]; !ok {
+				if workingTree[target] {
+					return fmt.Errorf("dep update: %s is a workspace module the lint file imports from the working tree: nothing to move", target)
+				}
+				return fmt.Errorf("dep update: no workspace module requires %s, and the lint file imports it not", target)
+			}
 		}
 		// A replaced path is placed as nothing to move: the workspace
 		// file's fact, refused before any argument moves.
@@ -120,14 +150,39 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		fmt.Fprintf(out, "plugin %s: %s -> %s, provenance %s -> %s\n", target, before.Digest, after.Digest, provenanceSpelling(before.Provenance), provenanceSpelling(after.Provenance))
 	}
 
+	// The module arm's report is written whole once every move is
+	// placed: a failure midway reports nothing it did not do.
+	var report []string
+	// move judges one version against the highest release: moved when
+	// higher; a highest below the current an origin that regressed,
+	// refused when named and left when swept.
+	move := func(cur, highest version.Version, what string) (bool, error) {
+		switch c := version.Compare(highest, cur); {
+		case c > 0:
+			return true, nil
+		case c < 0 && named:
+			return false, fmt.Errorf("dep update: the highest discovered release %s is below the %s %s — the origin regressed; not updating silently", highest, what, cur)
+		}
+		return false, nil
+	}
 	changed := map[int]bool{}
+	var movedImports []int
+	lf, err := s.LintFile()
+	if err != nil {
+		return err
+	}
 	for _, target := range moduleTargets {
-		declarers, ok := declared[target]
-		if !ok {
+		declarers, declares := declared[target]
+		importers, hasImports := imported[target]
+		if !declares && !hasImports {
 			continue
 		}
 		if s.Root.Replaced(target) {
-			fmt.Fprintf(out, "%s: replaced by %s, declaration left\n", target, s.Root.Source(target, version.Version{}))
+			what := "declaration"
+			if !declares {
+				what = "import"
+			}
+			report = append(report, fmt.Sprintf("%s: replaced by %s, %s left", target, s.Root.Source(target, version.Version{}), what))
 			continue
 		}
 		versions, err := s.Client.Versions(ctx, target)
@@ -141,25 +196,53 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 			continue
 		}
 		highest := versions[len(versions)-1]
+		// Of several imports of one path, the highest moves (or stands
+		// at the release already); another that would land on the same
+		// release would read one ruleset under two aliases, which the
+		// lint file refuses: the sweep leaves it and says so, naming
+		// the path fails before anything moves.
+		slices.SortFunc(importers, func(a, b int) int { return version.Compare(imports[b].Version, imports[a].Version) })
+		// The highest import ends at the release when it moves there or
+		// stands there; above it (a regressed origin) it stays, and a
+		// lower import moving collides with nothing.
+		firstAtHighest := len(importers) > 0 && version.Compare(highest, imports[importers[0]].Version) >= 0
+		for n, i := range importers {
+			cur := imports[i].Version
+			moved, err := move(cur, highest, "imported")
+			if err != nil {
+				return fmt.Errorf("%w (%s, imported as %s)", err, target, imports[i].imp.Alias)
+			}
+			if n > 0 && moved && firstAtHighest {
+				first := imports[importers[0]].imp.Alias
+				if named {
+					return fmt.Errorf("dep update: %s is imported as %s and as %s; the highest discovered release %s would be read under both", target, first, imports[i].imp.Alias, highest)
+				}
+				report = append(report, fmt.Sprintf("%s: %s %s left: %s is read as %s already", lintfile.FileName, target, cur, highest, first))
+				continue
+			}
+			if moved {
+				lf.Rulesets[i].Version = highest.String()
+				movedImports = append(movedImports, i)
+				report = append(report, fmt.Sprintf("%s: %s %s -> %s", lintfile.FileName, target, cur, highest))
+			}
+		}
 		for _, i := range declarers {
 			m := s.Root.Modules[i]
 			cur, err := version.Parse(m.File.Deps[target])
 			if err != nil {
 				return fmt.Errorf("%s: requirement %s@%s: %w", m.File.Module, target, m.File.Deps[target], err)
 			}
-			switch c := version.Compare(highest, cur); {
-			case c > 0:
+			moved, err := move(cur, highest, "declared")
+			if err != nil {
+				return fmt.Errorf("%w (%s)", err, target)
+			}
+			if moved {
 				m.File.Deps[target] = highest.String()
 				changed[i] = true
-				fmt.Fprintf(out, "%s: %s %s -> %s\n", m.File.Module, target, cur, highest)
-			case c < 0:
-				if named {
-					return fmt.Errorf("dep update: the highest discovered release of %s is %s, below the declared %s — the origin regressed; not updating silently", target, highest, cur)
-				}
+				report = append(report, fmt.Sprintf("%s: %s %s -> %s", m.File.Module, target, cur, highest))
 			}
 		}
 	}
-
 	for i, m := range s.Root.Modules {
 		if !changed[i] {
 			continue
@@ -172,12 +255,37 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 			return err
 		}
 	}
+	if len(movedImports) > 0 {
+		b, err := lintfile.Encode(lf)
+		if err != nil {
+			return err
+		}
+		if err := writeFile(s.WS, path.Join(s.Root.Dir, lintfile.FileName), b); err != nil {
+			return err
+		}
+	}
+
+	for _, line := range report {
+		fmt.Fprintln(out, line)
+	}
 
 	// Resolve over the updated declarations so new pins are recorded
 	// (REQ-lock-first-use; any rewrite of an existing pin is the
-	// explicit update REQ-lock-no-silent-downgrade sanctions).
-	if _, _, err := s.Driver.BuildList(ctx); err != nil {
+	// explicit update REQ-lock-no-silent-downgrade sanctions), and
+	// read each moved import so its pair is pinned as a ruleset.
+	_, _, err = s.Driver.BuildList(ctx)
+	if err := savePins(s, err); err != nil {
 		return err
+	}
+	for _, i := range movedImports {
+		res, err := lintfile.Resolve(s.Root, lf.Rulesets[i])
+		if err != nil {
+			return err
+		}
+		_, err = s.Client.RulesetZip(ctx, res.Source.Path, res.Source.Version)
+		if err := savePins(s, err); err != nil {
+			return err
+		}
 	}
 	return s.SaveLock()
 }
@@ -187,19 +295,36 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 // the pin (REQ-dep-verify), reporting every mismatch and failing when
 // any exists. Pairs with no cached artifacts are outside its scope.
 func Verify(ctx context.Context, s *Session, out io.Writer) error {
-	pins := slices.Clone(s.Lock.Modules)
-	slices.SortFunc(pins, func(a, b lockfile.ModulePin) int {
-		if c := bytes.Compare([]byte(a.Path), []byte(b.Path)); c != 0 {
-			return c
+	// The modules' pins, then the rulesets' (REQ-dep-ruleset-
+	// declarations), each list in raw-byte order of pair, a ruleset
+	// pin's line saying so.
+	type listed struct {
+		lockfile.ModulePin
+		mark string
+	}
+	var pins []listed
+	for _, l := range []lockfile.Pins{s.Lock.ModulePins(), s.Lock.RulesetPins()} {
+		sorted := l.All()
+		slices.SortFunc(sorted, func(a, b lockfile.ModulePin) int {
+			if c := bytes.Compare([]byte(a.Path), []byte(b.Path)); c != 0 {
+				return c
+			}
+			return bytes.Compare([]byte(a.Version), []byte(b.Version))
+		})
+		mark := ""
+		if l.Name() == "ruleset" {
+			mark = " (ruleset pin)"
 		}
-		return bytes.Compare([]byte(a.Version), []byte(b.Version))
-	})
+		for _, p := range sorted {
+			pins = append(pins, listed{p, mark})
+		}
+	}
 	var mismatches []string
 	verified := 0
 	for _, pin := range pins {
 		v, err := version.Parse(pin.Version)
 		if err != nil {
-			return fmt.Errorf("pin %s@%s: %w", pin.Path, pin.Version, err)
+			return fmt.Errorf("pin %s@%s%s: %w", pin.Path, pin.Version, pin.mark, err)
 		}
 		b, ok, err := s.Client.Cache.Get(pin.Path, v, fetch.KindZip)
 		if err != nil {
@@ -210,21 +335,21 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 		}
 		digest, _, err := archive.DigestZip(bytes.NewReader(b), int64(len(b)))
 		if err != nil {
-			mismatches = append(mismatches, fmt.Sprintf("%s@%s: cached archive unreadable: %v", pin.Path, pin.Version, err))
+			mismatches = append(mismatches, fmt.Sprintf("%s@%s%s: cached archive unreadable: %v", pin.Path, pin.Version, pin.mark, err))
 			continue
 		}
 		if digest != pin.Digest {
-			mismatches = append(mismatches, fmt.Sprintf("%s@%s: digest %s, pin records %s", pin.Path, pin.Version, digest, pin.Digest))
+			mismatches = append(mismatches, fmt.Sprintf("%s@%s%s: digest %s, pin records %s", pin.Path, pin.Version, pin.mark, digest, pin.Digest))
 			continue
 		}
 		if pin.Modfile != "" {
 			mb, has, err := archive.ZipModuleFile(bytes.NewReader(b), int64(len(b)))
 			if err != nil || !has {
-				mismatches = append(mismatches, fmt.Sprintf("%s@%s: pinned module file missing from cached archive", pin.Path, pin.Version))
+				mismatches = append(mismatches, fmt.Sprintf("%s@%s%s: pinned module file missing from cached archive", pin.Path, pin.Version, pin.mark))
 				continue
 			}
 			if got := fetch.ModfileHash(mb); got != pin.Modfile {
-				mismatches = append(mismatches, fmt.Sprintf("%s@%s: modfile %s, pin records %s", pin.Path, pin.Version, got, pin.Modfile))
+				mismatches = append(mismatches, fmt.Sprintf("%s@%s%s: modfile %s, pin records %s", pin.Path, pin.Version, pin.mark, got, pin.Modfile))
 				continue
 			}
 		}

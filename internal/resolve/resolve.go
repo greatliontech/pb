@@ -160,14 +160,11 @@ func (d *Driver) Graph(ctx context.Context) ([]mvs.Edge, error) {
 		}
 		edges = append(edges, e)
 	}
+	// Sorted lexically by the line graph prints (REQ-dep-graph): the
+	// whole line, so a path that prefixes a sibling's sorts as its
+	// spelling does, not as a field.
 	slices.SortFunc(edges, func(a, b mvs.Edge) int {
-		if c := strings.Compare(a.Requirer, b.Requirer); c != 0 {
-			return c
-		}
-		if c := strings.Compare(a.Path, b.Path); c != 0 {
-			return c
-		}
-		return version.Compare(a.Version, b.Version)
+		return strings.Compare(a.Requirer+" "+a.Path+"@"+a.Version.String(), b.Requirer+" "+b.Path+"@"+b.Version.String())
 	})
 	// Defensive: no producible duplicate exists — workspace edges are
 	// map-derived per module, inner edges expand each pair once, and

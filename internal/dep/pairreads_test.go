@@ -14,7 +14,7 @@ import (
 // driver or the file sets' loader, which ask workspace.Root.Source
 // what answers for the pair (REQ-work-replace, REQ-work-replace-dir):
 // nothing else in the module uses the fetch client's content readers
-// — Zip, RulesetZip, Module, Download — by call, method value or expression,
+// — Zip, RulesetZip, Module, Download, RulesetDownload — by call, method value or expression,
 // through an embedded client, or through an interface naming one,
 // in or outside a function; a use by reflection is outside any
 // static rung. The driver's loader and Download read source
@@ -22,8 +22,9 @@ import (
 // mapping; Breaking hands it to the breaking base, which reads a
 // workspace module's own published versions, a path no replacement
 // can name; prepare hands RulesetZip to lintfile.Rulesets, which
-// reads each import through Root.Source. A sixth site is a reader
-// the mapping does not reach.
+// reads each import through Root.Source, as Download and Update read
+// the imports through the session's view of them. An eighth site is
+// a reader the mapping does not reach.
 func TestPairReadsGoThroughTheDriver(t *testing.T) {
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
@@ -41,7 +42,7 @@ func TestPairReadsGoThroughTheDriver(t *testing.T) {
 			return false
 		}
 		switch fn.Name() {
-		case "Zip", "RulesetZip", "Module", "Download":
+		case "Zip", "RulesetZip", "Module", "Download", "RulesetDownload":
 		default:
 			return false
 		}
@@ -103,7 +104,7 @@ func TestPairReadsGoThroughTheDriver(t *testing.T) {
 		for i := 0; i < iface.NumMethods(); i++ {
 			m := iface.Method(i)
 			switch m.Name() {
-			case "Zip", "RulesetZip", "Module", "Download":
+			case "Zip", "RulesetZip", "Module", "Download", "RulesetDownload":
 			default:
 				continue
 			}
@@ -133,7 +134,7 @@ func TestPairReadsGoThroughTheDriver(t *testing.T) {
 		}
 	}
 	slices.Sort(sites)
-	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Modules.Zip", "internal/dep:prepare.RulesetZip", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
+	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Download.RulesetDownload", "internal/dep:Modules.Zip", "internal/dep:Update.RulesetZip", "internal/dep:prepare.RulesetZip", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
 	if !slices.Equal(sites, want) {
 		t.Fatalf("fetch-client content readers used across the module: %v, want exactly %v — a build-list pair is read through the driver or modfiles.Load, never handed to the client", sites, want)
 	}

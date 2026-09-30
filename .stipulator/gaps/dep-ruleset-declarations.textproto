@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-dep-ruleset-declarations"
-reason: "tidy's half of the ruleset clause is built with the imports; download, update, verify, graph and why over imports — verify reaching the ruleset pins among them — land in the next change set of the same work"
-content_hash: "e05f3a49199517e0c22f444b8b28d3f66920e61652922e1ea7039087788b4f63"
-source_hash: "b7814f65751ae0b9b8059a5aed988a6b2c0721b03615c6a66adba3e584391110"
-lands { manual { condition: "the dep verbs act on ruleset imports: download fetches and pins them, verify covers the rulesets' pins, update moves an import, graph and why show the import edges" } }
+reason: "the lint file's imports are covered; the rule-file imports' edges (`<path>@<version> <path>@<version>`, why over them, an import in a fetched rule file never rewritten) wait for rule files to gain imports"
+content_hash: "c47e4f2d98e03d6e01d6cf5781a4fe2aa2cec3384d85e67954d043f8cf01f8f1"
+source_hash: "7ef8e18e79091025e10fe3eb8f8663fec7c4df1017a0850abb8dca4614bccf9c"
+lands { manual { condition: "rule files declare imports and the dep verbs walk them: graph prints a rule file's import edge and update leaves a fetched rule file's import as it is" } }

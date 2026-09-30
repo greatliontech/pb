@@ -598,3 +598,27 @@ func TestDeclaredAtSelectedVersion(t *testing.T) {
 		}
 	}
 }
+
+// Edges sort by the line graph prints, so a path that prefixes a
+// sibling's sorts as its spelling does (`/` before `@`), never as a
+// field (REQ-dep-graph).
+func TestGraphOrderPrefixSiblings(t *testing.T) {
+	d, fx := newDriver(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/m: v1.0.0\n  example.com/m/v2: v2.0.0\n"),
+	})
+	fx.serveModule(t, "example.com/m", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m", "")})
+	fx.serveModule(t, "example.com/m/v2", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/m/v2", "")})
+	edges, err := d.Graph(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := make([]string, len(edges))
+	for i, e := range edges {
+		got[i] = e.Requirer + " " + e.Path + "@" + e.Version.String()
+	}
+	want := []string{"example.com/a example.com/m/v2@v2.0.0", "example.com/a example.com/m@v1.0.0"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("graph = %v, want %v", got, want)
+	}
+}

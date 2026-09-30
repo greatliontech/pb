@@ -24,12 +24,23 @@ import (
 // are held to the same validation as fetched bytes and discarded as
 // absent when they fail (REQ-dep-cache-transparent).
 func (c *Client) Download(ctx context.Context, modPath string, v version.Version) error {
-	pin, ok := c.Lock.Module(modPath, v.String())
+	return c.download(ctx, modPath, v, c.Lock.ModulePins())
+}
+
+// RulesetDownload is Download for a pair a ruleset import names,
+// pinned in the lockfile's rulesets list (module-lockfile.md
+// REQ-lock-ruleset-entry), the artifacts the same.
+func (c *Client) RulesetDownload(ctx context.Context, modPath string, v version.Version) error {
+	return c.download(ctx, modPath, v, c.Lock.RulesetPins())
+}
+
+func (c *Client) download(ctx context.Context, modPath string, v version.Version, pins lockfile.Pins) error {
+	pin, ok := pins.Module(modPath, v.String())
 	if !ok {
-		if _, err := c.firstUse(ctx, modPath, v, c.Lock.ModulePins()); err != nil {
+		if _, err := c.firstUse(ctx, modPath, v, pins); err != nil {
 			return err
 		}
-		pin, _ = c.Lock.Module(modPath, v.String())
+		pin, _ = pins.Module(modPath, v.String())
 	}
 	key, err := c.pinGoverned(modPath, v, pin)
 	if err != nil {

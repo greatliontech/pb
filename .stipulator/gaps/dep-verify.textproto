@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-dep-verify"
-reason: "tidy's half of the ruleset clause is built with the imports; download, update, verify, graph and why over imports — verify reaching the ruleset pins among them — land in the next change set of the same work"
-content_hash: "9cb67ce8213c284afe0719dc359d094535e3a5dbf4cc52f128a7a7aa55e204dd"
-source_hash: "a40859170530cc5f8d1f87ecd9e9288a4539cee8ff9f253efba46cb1a43411eb"
-lands { manual { condition: "the dep verbs act on ruleset imports: download fetches and pins them, verify covers the rulesets' pins, update moves an import, graph and why show the import edges" } }

@@ -175,6 +175,9 @@ func (p Pins) Name() string {
 	return "module"
 }
 
+// All is the list's pins as recorded, in their recorded order.
+func (p Pins) All() []ModulePin { return slices.Clone(*p.list()) }
+
 func (p Pins) list() *[]ModulePin {
 	if p.rulesets {
 		return &p.f.Rulesets
