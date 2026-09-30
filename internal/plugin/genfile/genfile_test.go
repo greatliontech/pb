@@ -46,6 +46,16 @@ overrides:
   - files: "api/{v1,v2}/*.proto"
     option: java_multiple_files
     value: true
+  - files: "**"
+    option: go_package
+    prefix: example.com/gen
+  - files: "**"
+    option: java_package
+    prefix: com.acme
+    suffix: proto
+  - files: "**"
+    option: ruby_package
+    suffix: Proto
 `
 	f, err := Parse([]byte(in))
 	if err != nil {
@@ -75,8 +85,18 @@ overrides:
 		{Files: "**/*.proto", Option: "go_package", Value: "example.com/gen"},
 		{Files: "api/{v1,v2}/*.proto", Option: "java_multiple_files", Value: "true"},
 	}
-	if len(f.Overrides) != 2 || f.Overrides[0] != wantO[0] || f.Overrides[1] != wantO[1] {
+	wantO = append(wantO,
+		Override{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
+		Override{Files: "**", Option: "java_package", Prefix: "com.acme", Suffix: "proto"},
+		Override{Files: "**", Option: "ruby_package", Suffix: "Proto"},
+	)
+	if len(f.Overrides) != len(wantO) {
 		t.Fatalf("overrides = %+v", f.Overrides)
+	}
+	for i := range wantO {
+		if f.Overrides[i] != wantO[i] {
+			t.Errorf("overrides[%d] = %+v, want %+v", i, f.Overrides[i], wantO[i])
+		}
 	}
 }
 
@@ -179,7 +199,18 @@ func TestParseRejections(t *testing.T) {
 		{"overrides not list", ok + "overrides: {}\n", "overrides must be a list"},
 		{"override not mapping", ok + "overrides:\n  - x\n", "must be a mapping"},
 		{"override unknown key", ok + "overrides:\n  - files: a\n    option: o\n    value: v\n    extra: 1\n", `unknown key "extra"`},
-		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "overrides[0]: missing value"},
+		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "missing value, or a prefix or suffix"},
+		{"override value and prefix", ok + "overrides:\n  - files: a\n    option: go_package\n    value: v\n    prefix: p\n", "carries a value and a derivation"},
+		{"override value and empty suffix", ok + "overrides:\n  - files: a\n    option: java_package\n    value: v\n    suffix: \"\"\n", "suffix is empty"},
+		{"override empty prefix", ok + "overrides:\n  - files: a\n    option: go_package\n    prefix: \"\"\n", "prefix is empty"},
+		{"override prefix and empty suffix", ok + "overrides:\n  - files: a\n    option: java_package\n    prefix: p\n    suffix: \"\"\n", "suffix is empty"},
+		{"override derivation unknown option", ok + "overrides:\n  - files: a\n    option: optimize_for\n    prefix: p\n", "has no derivation rule"},
+		{"override go suffix", ok + "overrides:\n  - files: a\n    option: go_package\n    suffix: s\n", "derives from no suffix"},
+		{"override ruby prefix", ok + "overrides:\n  - files: a\n    option: ruby_package\n    prefix: p\n", "derives from no prefix"},
+		{"override csharp suffix", ok + "overrides:\n  - files: a\n    option: csharp_namespace\n    suffix: s\n", "derives from no suffix"},
+		{"override php prefix", ok + "overrides:\n  - files: a\n    option: php_metadata_namespace\n    prefix: p\n", "derives from no prefix"},
+		{"override prefix block", ok + "overrides:\n  - files: a\n    option: go_package\n    prefix: |\n      p\n", "prefix must be one line of text"},
+		{"override extension derivation", ok + "overrides:\n  - files: a\n    option: (a.b)\n    prefix: p\n", "has no derivation rule"},
 		{"override missing files", ok + "overrides:\n  - option: o\n    value: v\n", "overrides[0]: missing files"},
 		{"override non-scalar", ok + "overrides:\n  - files: [a]\n    option: o\n    value: v\n", "files must be one line of text"},
 		{"override files block", ok + "overrides:\n  - files: |\n      a\n    option: o\n    value: v\n", "files must be one line of text"},
@@ -272,6 +303,7 @@ func FuzzParse(f *testing.F) {
 	f.Add([]byte("plugins:\n  - local: [go, tool, protoc-gen-x, \"\", \"a b\"]\n    out: gen\n"))
 	f.Add([]byte("plugins:\n  - local:\n      - ./tools/gen\n      - --flag\n    out: gen\n  - local: [p]\n    out: .\n"))
 	f.Add([]byte("clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/**\", \"*.proto\"]\n    include_imports: true\n"))
+	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: '**'\n    option: go_package\n    prefix: example.com/x\n  - files: '**'\n    option: java_package\n    suffix: pb\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		parsed, err := Parse(data)
 		if err != nil {
@@ -304,6 +336,14 @@ func FuzzParse(f *testing.F) {
 				t.Fatalf("accepted escaping out %q", p.Out)
 			}
 		}
+		for _, o := range parsed.Overrides {
+			if o.Derived() && (o.Value != "" || CheckDerivation(o) != nil) {
+				t.Fatalf("accepted a malformed derived override %+v", o)
+			}
+			if o.Option == "" || o.Files == "" {
+				t.Fatalf("accepted an override naming no option or files %+v", o)
+			}
+		}
 	})
 }
 
@@ -324,6 +364,9 @@ func TestEncode(t *testing.T) {
 		Overrides: []Override{
 			{Files: "**", Option: "java_package", Value: "com.acme"},
 			{Files: "acme/*.proto", Option: "(pkg.ext).field", Value: "true"},
+			{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
+			{Files: "**", Option: "java_package", Prefix: "com.acme", Suffix: "proto"},
+			{Files: "**", Option: "php_metadata_namespace", Suffix: "PB\\Meta"},
 		},
 	}
 	out, err := Encode(f)
@@ -359,6 +402,16 @@ overrides:
   - files: acme/*.proto
     option: (pkg.ext).field
     value: "true"
+  - files: "**"
+    option: go_package
+    prefix: example.com/gen
+  - files: "**"
+    option: java_package
+    prefix: com.acme
+    suffix: proto
+  - files: "**"
+    option: php_metadata_namespace
+    suffix: PB\Meta
 `
 	if string(out) != want {
 		t.Fatalf("Encode:\n%s", out)
@@ -393,6 +446,66 @@ overrides:
 	} {
 		if _, err := Encode(f); err == nil {
 			t.Errorf("%s: encoded", name)
+		}
+	}
+}
+
+// A derived override spells each file's value from its declared
+// prefix or suffix and the file's own path and package, exactly by
+// the rules stated, and assigns nothing to a file declaring no
+// package where the rule reads it (REQ-gen-overrides-derived).
+func TestDerive(t *testing.T) {
+	cases := []struct {
+		o         Override
+		path, pkg string
+		want      string
+		ok        bool
+	}{
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "acme/foo/v1/foo.proto", "acme.foo.v1", "example.com/gen/acme/foo/v1;foov1", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "acme/foo/v1beta1/foo.proto", "acme.foo.v1beta1", "example.com/gen/acme/foo/v1beta1;foov1beta1", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "acme/foo/foo.proto", "acme.foo", "example.com/gen/acme/foo", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "x.proto", "v1", "example.com/gen", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "x.proto", "", "example.com/gen", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen"}, "a/x.proto", "a.version1", "example.com/gen/a", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen/"}, "a/x.proto", "a", "example.com/gen/a", true},
+		{Override{Option: "go_package", Prefix: "example.com/gen/"}, "x.proto", "", "example.com/gen", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1alpha", "g/a;av1alpha", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1beta", "g/a;av1beta", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1test", "g/a;av1test", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1testfoo", "g/a;av1testfoo", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1p1alpha1", "g/a;av1p1alpha1", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v2beta3", "g/a;av2beta3", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v01", "g/a;av01", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v0", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1p1", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1beta0", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1alphabeta", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v2147483647", "g/a;av2147483647", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v2147483648", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1beta2147483648", "g/a", true},
+		{Override{Option: "go_package", Prefix: "g"}, "a/x.proto", "a.v1x", "g/a", true},
+		{Override{Option: "java_package", Prefix: "com.acme"}, "x.proto", "acme.foo.v1", "com.acme.acme.foo.v1", true},
+		{Override{Option: "java_package", Suffix: "proto"}, "x.proto", "acme.foo", "acme.foo.proto", true},
+		{Override{Option: "java_package", Prefix: "com", Suffix: "pb"}, "x.proto", "acme", "com.acme.pb", true},
+		{Override{Option: "java_package", Prefix: "com"}, "x.proto", "", "", false},
+		{Override{Option: "csharp_namespace", Prefix: "Acme.Gen"}, "x.proto", "acme.foo.v1", "Acme.Gen.Acme.Foo.V1", true},
+		{Override{Option: "csharp_namespace", Prefix: "Acme"}, "x.proto", "", "", false},
+		{Override{Option: "csharp_namespace", Prefix: "Acme"}, "x.proto", "acme.foo_bar.v1", "Acme.Acme.FooBar.V1", true},
+		{Override{Option: "csharp_namespace", Prefix: "Acme"}, "x.proto", "acme.fooBAR._x_", "Acme.Acme.FooBAR.X", true},
+		{Override{Option: "php_metadata_namespace", Suffix: "Meta"}, "x.proto", "acme.list.v1", `Acme\List_\V1\Meta`, true},
+		{Override{Option: "php_metadata_namespace", Suffix: "Meta"}, "x.proto", "acme.Class.v1", `Acme\Class_\V1\Meta`, true},
+		{Override{Option: "ruby_package", Suffix: "Proto"}, "x.proto", "acme.foo_bar", "Acme::FooBar::Proto", true},
+		{Override{Option: "java_package"}, "x.proto", "acme", "", false},
+		{Override{Option: "php_metadata_namespace", Suffix: "Meta"}, "x.proto", "acme.foo.v1", `Acme\Foo\V1\Meta`, true},
+		{Override{Option: "ruby_package", Suffix: "Proto"}, "x.proto", "acme.foo.v1", "Acme::Foo::V1::Proto", true},
+		{Override{Option: "ruby_package", Suffix: "Proto"}, "x.proto", "", "", false},
+		{Override{Option: "optimize_for", Prefix: "x"}, "x.proto", "a", "", false},
+	}
+	for _, c := range cases {
+		got, ok := c.o.Derive(c.path, c.pkg)
+		if got != c.want || ok != c.ok {
+			t.Errorf("Derive(%+v, %q, %q) = %q %v, want %q %v", c.o, c.path, c.pkg, got, ok, c.want, c.ok)
 		}
 	}
 }

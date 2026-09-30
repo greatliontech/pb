@@ -11,11 +11,12 @@ buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
 buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[1].out gen/remote -> out: gen/remote
-buf.gen.yaml managed.override[0] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true
-buf.gen.yaml managed.go_package_prefix example.com/acme/core/gen/go !! buf's own heuristic, a value computed per file from its package: pb declares values alone
+buf.gen.yaml managed.go_package_prefix.default example.com/acme/core/gen/go -> overrides: files ** option go_package prefix example.com/acme/core/gen/go
 buf.gen.yaml managed.go_package_prefix.except buf.build/googleapis/googleapis !! names a module, which a module-relative glob cannot
 buf.gen.yaml managed.go_package_prefix.override buf.build/acme/core=example.com/acme/core/gen/go/core !! names a module, which a module-relative glob cannot
 buf.gen.yaml managed.optimize_for.default SPEED -> overrides: files ** option optimize_for value SPEED
+buf.gen.yaml managed.override[0] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true
+buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone
 pb.yaml -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written

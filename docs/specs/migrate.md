@@ -382,14 +382,32 @@ path read the same way, and the `default` of `optimize_for`,
 `objc_class_prefix` and `swift_prefix` for every file — and an unmapped
 fact where it is
 buf's own heuristic or names a module, which a module-relative glob
-cannot: `enabled` with no explicit override, a `field_option`, a
-`disable` entry, a `module` scope, a form's `except` and its override
-per module, or a form pb would have to compute a value from — a
-prefix or suffix (`go_package_prefix`, `java_package_prefix`,
-`java_package_suffix`, `csharp_namespace_prefix`,
-`php_metadata_namespace_suffix`, `ruby_package_suffix`) and `v1`'s
-per-package forms (`java_package_prefix`, `go_package_prefix`,
-`csharp_namespace`, `ruby_package`). `managed` with `enabled` false
+cannot: `enabled`, for buf's defaults (the values it computes per
+file for every option no rule of the file names), a `field_option`, a
+`disable` entry, a `module` scope, a form's `except` and its
+override per module, or a form pb would have to compute a value from
+per package with no declared rule (`v1`'s `csharp_namespace` and
+`ruby_package`). A prefix or suffix option — `v2`'s
+`go_package_prefix`, `java_package_prefix`, `java_package_suffix`,
+`csharp_namespace_prefix`, `php_metadata_namespace_suffix` and
+`ruby_package_suffix`, and `v1`'s `go_package_prefix` and
+`java_package_prefix` defaults, over every file — becomes derived
+overrides (`generation.md` REQ-gen-overrides-derived) of the option
+it prefixes or suffixes reproducing buf's reading, which keeps per
+file and option the prefix and the suffix the rules matching the
+file set in order, a prefix rule keeping the suffix and a suffix
+rule the prefix, a value rule clearing both, and `java_package`
+starting from the prefix `com`: the rule's overrides carry its
+prefix or suffix and the other axis of the state the files had — one
+over the rule's scope from buf's starting state, where no earlier
+override of the option covers the scope whole, then one over the
+intersection with each earlier override of the option, in their
+order, carrying that override's other axis — and an override a later
+one of the option covers whole is dropped; a rule with an empty value,
+clearing what earlier rules set, is unmapped. In `v1` the rules hold buf's order, whatever the
+document's: the booleans, then the forms, then the per-file
+`override` map by option key as written and then by file path, in
+byte order — the map having the last word. `managed` with `enabled` false
 is read for nothing, a mapped fact saying so, as buf reads it. Where
 no plugin entry maps, no generation file is written and the managed
 mode is read for nothing, an unmapped fact for each. A

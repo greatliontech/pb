@@ -100,12 +100,20 @@ var keyReasons = map[string]string{
 	"remote":        "buf's alpha remote plugin, run by the BSR: pb runs every plugin itself",
 }
 
-// computed are buf's managed-mode file options that are no protobuf
-// option but a rule buf computes each file's value by: a prefix or
-// suffix over the package.
-var computed = map[string]bool{
-	"go_package_prefix": true, "java_package_prefix": true, "java_package_suffix": true,
-	"csharp_namespace_prefix": true, "php_metadata_namespace_suffix": true, "ruby_package_suffix": true,
+// derivation reads buf's managed-mode prefix and suffix options —
+// the option's name and `_prefix` or `_suffix` — as the option each
+// derives and its axis, through the rules pb's derived overrides
+// admit (generation.md REQ-gen-overrides-derived): what pb would
+// refuse is no derivation, `objc_class_prefix` and `swift_prefix`
+// being values.
+func derivation(name string) (option string, prefix, ok bool) {
+	if o, found := strings.CutSuffix(name, "_prefix"); found && genfile.CheckDerivation(genfile.Override{Option: o, Prefix: "x"}) == nil {
+		return o, true, true
+	}
+	if o, found := strings.CutSuffix(name, "_suffix"); found && genfile.CheckDerivation(genfile.Override{Option: o, Suffix: "x"}) == nil {
+		return o, false, true
+	}
+	return "", false, false
 }
 
 // Template is a generation template beside the configuration, read
@@ -524,20 +532,35 @@ func listTags(ctx context.Context, tags TagLister, repo string) listing {
 	return listing{highest: highestVersionTag(all)}
 }
 
-// filesGlob is the generation file's glob for a managed path: the
-// path as buf matches it — a file's path relative to its module,
-// equal to it or under it — over the path and everything under it,
-// `**` for the root; a path buf refuses, escaping or absolute, is
-// refused too.
-func filesGlob(spelled string) (string, error) {
-	p, err := rootpath.Clean(spelled, "the module")
-	if err != nil {
-		return "", err
+// scopePath is a managed path as buf matches it — a file's path
+// relative to its module, equal to it or under it — cleaned, "." for
+// the root; a path buf refuses, escaping or absolute, is refused too.
+func scopePath(spelled string) (string, error) {
+	return rootpath.Clean(spelled, "the module")
+}
+
+// scopeGlob is the generation file's glob over a scope: the path and
+// everything under it, `**` for the root.
+func scopeGlob(scope string) string {
+	if scope == "." {
+		return "**"
 	}
-	if p == "." {
-		return "**", nil
-	}
-	return glob.Quote(p) + "/**", nil
+	return glob.Quote(scope) + "/**"
+}
+
+// scopeContains reports whether scope a holds every file of scope b:
+// managed paths nest or lie apart, so two scopes' intersection is the
+// narrower or nothing.
+func scopeContains(a, b string) bool {
+	return a == b || rootpath.Contains(a, b)
+}
+
+// managedOverride is one override the managed mode gave, with the
+// scope it covers and the buf key that wrote it.
+type managedOverride struct {
+	o     genfile.Override
+	scope string
+	key   string
 }
 
 // managedOverrides maps buf's managed mode to overrides
@@ -552,45 +575,156 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 	if !m.Enabled {
 		return nil, []Fact{mapped(where+".enabled false", "nothing: managed mode is disabled, its entries read for nothing")}
 	}
-	var out []genfile.Override
+	var out []managedOverride
 	var facts []Fact
 	report := func(f Fact) { facts = append(facts, f) }
-	add := func(key, spec, option, value string) {
-		out = append(out, genfile.Override{Files: spec, Option: option, Value: value})
-		report(mapped(key, "overrides: files "+spec+" option "+option+" value "+value))
-	}
-	for i, o := range m.Overrides {
-		key := fmt.Sprintf("%s.override[%d]", where, i)
-		switch {
-		case o.FieldOption != "":
-			report(unmapped(key+" field_option="+o.FieldOption, "a field option: pb's overrides are file options"))
-			continue
-		case o.Module != "":
-			report(unmapped(key+" file_option="+o.FileOption+" module="+o.Module, "pb's override files are module-relative globs, naming no module"))
-			continue
-		case computed[o.FileOption]:
-			report(unmapped(key+" file_option="+o.FileOption+" value="+o.Value, "buf's own heuristic, a value computed per file from its package: pb declares values alone"))
-			continue
+	spell := func(o genfile.Override) string {
+		t := "overrides: files " + o.Files + " option " + o.Option
+		if !o.Derived() {
+			return t + " value " + o.Value
 		}
-		spec, scope := "**", ""
-		if o.Path != "" {
-			g, err := filesGlob(o.Path)
-			if err != nil {
-				report(unmapped(key+" file_option="+o.FileOption+" path="+o.Path, "no path buf matches: "+err.Error()))
+		if o.Prefix != "" {
+			t += " prefix " + o.Prefix
+		}
+		if o.Suffix != "" {
+			t += " suffix " + o.Suffix
+		}
+		return t
+	}
+	emit := func(key string, o genfile.Override, scope, note string) {
+		out = append(out, managedOverride{o, scope, key})
+		report(mapped(key, spell(o)+note))
+	}
+	// settle drops every override of an option a later one covers whole
+	// — the later entry wins all its files — after a rule's overrides
+	// are written, saying which a rule replaced.
+	settle := func(key string) {
+		kept := out[:0]
+		var replaced []string
+		for i, m := range out {
+			covered := false
+			for j := i + 1; j < len(out) && !covered; j++ {
+				covered = out[j].o.Option == m.o.Option && scopeContains(out[j].scope, m.scope)
+			}
+			if covered {
+				replaced = append(replaced, m.key+"'s override for files "+m.o.Files)
 				continue
 			}
-			spec, scope = g, " path="+o.Path
+			kept = append(kept, m)
 		}
-		add(key+" file_option="+o.FileOption+scope, spec, o.FileOption, o.Value)
+		out = kept
+		if len(replaced) > 0 {
+			report(mapped(key, "replacing "+strings.Join(replaced, ", ")))
+		}
 	}
+	add := func(key, scope, option, value string) {
+		emit(key, genfile.Override{Files: scopeGlob(scope), Option: option, Value: value}, scope, "")
+		settle(key)
+	}
+	// derive maps a prefix or suffix rule as buf reads it: per file
+	// and option buf keeps the prefix and the suffix the rules
+	// matching the file set in order, a prefix rule keeping the
+	// suffix and a suffix rule the prefix, a value rule clearing both,
+	// java_package starting from the prefix "com". The rule's override
+	// carries its axis and the other axis of the state the files had:
+	// one over its scope from buf's starting state, then one over the
+	// intersection with each earlier override of the option, in their
+	// order, with that override's other axis — the later entry wins
+	// the files it names, as the later rule does in buf.
+	derive := func(key, scope, name, value string) {
+		option, isPrefix, _ := derivation(name)
+		axis := "suffix"
+		if isPrefix {
+			axis = "prefix"
+		}
+		if value == "" {
+			report(unmapped(key, "an empty "+axis+", clearing what buf's earlier rules set for the files: pb clears no override"))
+			return
+		}
+		set := func(o *genfile.Override) {
+			if isPrefix {
+				o.Prefix = value
+			} else {
+				o.Suffix = value
+			}
+		}
+		type emission struct {
+			o     genfile.Override
+			scope string
+			note  string
+		}
+		other := map[bool]string{true: "suffix", false: "prefix"}[isPrefix]
+		var adds []emission
+		// From buf's starting state, for the files no earlier override
+		// of the option covers: none where one covers the scope whole.
+		covered := false
+		for _, m := range out {
+			covered = covered || m.o.Option == option && scopeContains(m.scope, scope)
+		}
+		if !covered {
+			start := genfile.Override{Files: scopeGlob(scope), Option: option}
+			note := ""
+			if option == "java_package" && !isPrefix {
+				start.Prefix = "com" // buf's starting java prefix
+				note = " (the prefix com, buf's default)"
+			}
+			set(&start)
+			adds = append(adds, emission{start, scope, note})
+		}
+		for _, m := range out {
+			if m.o.Option != option {
+				continue
+			}
+			var inter string
+			switch {
+			case scopeContains(scope, m.scope):
+				inter = m.scope
+			case scopeContains(m.scope, scope):
+				inter = scope
+			default:
+				continue
+			}
+			o := genfile.Override{Files: scopeGlob(inter), Option: option}
+			note := " (after " + m.key + "'s value, clearing the " + other + ")"
+			if m.o.Derived() {
+				o.Prefix, o.Suffix = m.o.Prefix, m.o.Suffix
+				note = " (after " + m.key + ", which set no " + other + ")"
+				if isPrefix && o.Suffix != "" || !isPrefix && o.Prefix != "" {
+					note = " (with " + m.key + "'s " + other + ")"
+				}
+			}
+			set(&o)
+			// The last state over a scope is the files' state: an
+			// earlier emission over the same scope is superseded before
+			// it is written or reported.
+			if n := len(adds); n > 0 && adds[n-1].scope == inter {
+				adds = adds[:n-1]
+			}
+			adds = append(adds, emission{o, inter, note})
+		}
+		for _, e := range adds {
+			emit(key, e.o, e.scope, e.note)
+		}
+		settle(key)
+	}
+	// v1's forms are its defaults; buf reads its booleans, then the
+	// forms, then the per-file map, whatever the document's order —
+	// forms and booleans name no option in common, so the forms go
+	// first here and the overrides (booleans, then the map, in buf's
+	// order) after.
 	for _, form := range m.Forms {
 		key := where + "." + form.Option
 		declared := form.Option == "optimize_for" || form.Option == "objc_class_prefix" || form.Option == "swift_prefix"
-		if declared && form.Default != "" {
-			add(key+".default "+form.Default, "**", form.Option, form.Default)
-		} else if !declared {
-			// A prefix, suffix or per-package form: buf computes each
-			// file's value from its package; pb declares values alone.
+		_, _, derived := derivation(form.Option)
+		switch {
+		case declared && form.Default != "":
+			add(key+".default "+form.Default, ".", form.Option, form.Default)
+		case derived && form.Default != "":
+			derive(key+".default "+form.Default, ".", form.Option, form.Default)
+		case !declared:
+			// A per-package form, or a prefix with no default: buf
+			// computes each file's value from its package; pb
+			// declares values alone.
 			spelled := form.Default
 			if spelled == "" {
 				spelled = "(no default)"
@@ -604,11 +738,42 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 			report(unmapped(key+".override "+mod+"="+form.Override[mod], "names a module, which a module-relative glob cannot"))
 		}
 	}
+	for i, o := range m.Overrides {
+		key := fmt.Sprintf("%s.override[%d]", where, i)
+		switch {
+		case o.FieldOption != "":
+			report(unmapped(key+" field_option="+o.FieldOption, "a field option: pb's overrides are file options"))
+			continue
+		case o.Module != "":
+			report(unmapped(key+" file_option="+o.FileOption+" module="+o.Module, "pb's override files are module-relative globs, naming no module"))
+			continue
+		}
+		scope, spelled := ".", ""
+		if o.Path != "" {
+			p, err := scopePath(o.Path)
+			if err != nil {
+				report(unmapped(key+" file_option="+o.FileOption+" path="+o.Path, "no path buf matches: "+err.Error()))
+				continue
+			}
+			scope, spelled = p, " path="+o.Path
+		}
+		if _, _, isDerivation := derivation(o.FileOption); isDerivation {
+			derive(key+" file_option="+o.FileOption+" value="+o.Value+spelled, scope, o.FileOption, o.Value)
+			continue
+		}
+		add(key+" file_option="+o.FileOption+spelled, scope, o.FileOption, o.Value)
+	}
 	for _, d := range m.Disables {
 		report(unmapped(file+" "+d, "buf's own heuristic: pb declares values alone, disabling nothing"))
 	}
-	if len(m.Overrides) == 0 && len(m.Forms) == 0 {
-		report(unmapped(where+".enabled true", "enabled with no explicit override: buf's own heuristic, pb declares values alone"))
+	// Enabled, buf computes a default per file for every option no rule
+	// of the file names — java_package under com, java_outer_classname,
+	// java_multiple_files, csharp_namespace, objc_class_prefix, the php
+	// namespaces, ruby_package and cc_enable_arenas among them.
+	report(unmapped(where+".enabled true", "buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone"))
+	overrides := make([]genfile.Override, len(out))
+	for i, m := range out {
+		overrides[i] = m.o
 	}
-	return out, facts
+	return overrides, facts
 }

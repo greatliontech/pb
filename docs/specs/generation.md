@@ -10,7 +10,9 @@ root, declaring generation configuration.
 
 **option override** (term): A declared assignment of a protobuf file
 option (such as `go_package`) applied to matching files' descriptors
-before plugins run.
+before plugins run: a value written out, or a derivation — a prefix
+or suffix declared, the value spelled from it and the file's own
+facts by a rule this document states, never inferred.
 
 **generation target** (term): A file an entry's plugin generates for
 — named in the request's `file_to_generate`: the workspace files the
@@ -32,12 +34,16 @@ workspace file where absent, and optional `include_imports`, `true` or
 `false` spelled so, `false` where absent; optionally `clean`, `true`
 or `false` spelled so, `false` where absent (REQ-gen-clean); and
 optionally `overrides`, a list of entries `{files, option, value}`
-where `files` is one such glob pattern over module-relative proto file
-paths within the workspace and its dependencies, `option` a protobuf
-option name in its navigable forms — a built-in option's dotted field
-name, or a parenthesized fully-qualified extension name with at most
-one field selector (`(pkg.ext)`, `(pkg.ext).field`) — and `value` the
-option value's spelling. No other top-level keys and no other entry
+or `{files, option, prefix, suffix}` where `files` is one such glob
+pattern over module-relative proto file paths within the workspace
+and its dependencies, `option` a protobuf option name in its
+navigable forms — a built-in option's dotted field name, or a
+parenthesized fully-qualified extension name with at most one field
+selector (`(pkg.ext)`, `(pkg.ext).field`) — and `value` the option
+value's spelling, or, for a derived override
+(REQ-gen-overrides-derived), `prefix` and `suffix` as the option
+admits them, each written non-empty, at least one written, and no
+`value` key. No other top-level keys and no other entry
 keys exist: there is no bare plugin-name key, and an entry with zero
 or several scheme keys is a schema violation — which scheme an entry
 lives in is always written, never inferred. A `ref` value is
@@ -65,8 +71,8 @@ indentation, `clean` (absent where false) then `plugins` then
 order given, a `plugins` entry's keys in the order `ref` or `local`,
 `out`, `opt` (absent where empty), `files` (absent where every file
 is a target, as a block sequence of the patterns), `include_imports`
-(absent where false) and an `overrides` entry's in the order `files`,
-`option`, `value`, each
+(absent where false) and an `overrides` entry's in the order `files`, `option`, `value` — or
+`prefix` then `suffix`, each absent where empty — each
 scalar spelled as `check-rules.md`
 REQ-lint-emission spells a scalar — a `local` with arguments a block
 sequence of them under the key, one without the scalar form, as its
@@ -92,7 +98,8 @@ filesystem iteration.
 
 **REQ-gen-overrides-declarative** (behavior): Option overrides MUST be
 applied exactly as declared to the descriptors of matching files —
-workspace and dependency files alike, matched by include-root-relative
+workspace and dependency files alike, never a well-known import (the
+toolchain's, its options its own), matched by include-root-relative
 path — before plugin invocation: entries apply in declaration order,
 later entries winning on overlap; a built-in option resolves by field
 name on the file options, a custom option through the compiled set's
@@ -101,6 +108,44 @@ extension declarations; scalar-kind values parse by the field's kind
 float syntax); a name resolving to nothing, a non-scalar target, or a
 value outside the kind fails — no option value is ever synthesized
 from a heuristic.
+
+**REQ-gen-overrides-derived** (behavior): A derived override MUST
+assign each matching file the value its rule spells from the
+declared prefix or suffix and the file's own facts — its
+module-relative path and the package it declares — and assign a
+file declaring no package nothing, where the rule reads the
+package; the options and their rules are exactly these, an option
+outside them, or a prefix or suffix its rule does not read, being a
+schema violation: `go_package` from a prefix, the prefix and the
+file's directory joined as path components and cleaned (the prefix
+alone, cleaned, for a file at the module root), followed by `;` and
+the package name where the package's last component is a version
+preceded by another component, the name being that component and
+the version joined as written — a version being `v` and a number,
+then nothing, `test` and any text, or an optional `p` and a number
+followed by `alpha` or `beta` and an optional number, a number being
+decimal digits worth at least one and at most 2147483647; `java_package` from a prefix
+and/or a suffix, the package with the prefix before it and the
+suffix after, `.`-joined; `csharp_namespace` from a prefix, the
+prefix, `.`, and the package's components in PascalCase, `.`-joined;
+`php_metadata_namespace` from a suffix, the package's components in
+PascalCase, one that lower-cased is a PHP reserved word or predefined
+class name (abstract, and, arithmeticerror, array, as, assertionerror,
+bool, break, callable, case, catch, class, clone, closure, const,
+continue, declare, default, die, directory, divisionbyzeroerror, do,
+echo, else, elseif, empty, enddeclare, endfor, endforeach, endif,
+endswitch, endwhile, error, errorexception, eval, exception, exit,
+extends, false, final, finally, float, fn, for, foreach, function,
+generator, global, goto, if, implements, include, include_once,
+instanceof, insteadof, int, interface, isset, iterable, list, match,
+namespace, new, null, or, parseerror, print, private, protected,
+public, require, require_once, return, static, string, switch, throw,
+throwable, trait, true, try, typeerror, unset, use, var, void, while,
+xor, yield) getting `_` appended, `\`-joined, then `\` and the
+suffix; `ruby_package` from a suffix, the components in PascalCase,
+`::`-joined, then `::` and the suffix — a component's PascalCase
+dropping its underscores and upper-casing its first letter and each
+letter that followed an underscore, the rest as written.
 
 **REQ-gen-request** (wire): The `CodeGeneratorRequest` delivered to a
 plugin MUST carry: `file_to_generate` — the entry's generation

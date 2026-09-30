@@ -6,10 +6,11 @@ buf.yaml.breaking -> enable: github.com/greatliontech/buf-rules:FILE (buf's defa
 buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
-buf.gen.yaml managed.override[0] file_option=go_package_prefix value=example.com/acme/service/gen/go !! buf's own heuristic, a value computed per file from its package: pb declares values alone
-buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen !! buf's own heuristic, a value computed per file from its package: pb declares values alone
+buf.gen.yaml managed.override[0] file_option=go_package_prefix value=example.com/acme/service/gen/go -> overrides: files ** option go_package prefix example.com/acme/service/gen/go
+buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen -> overrides: files ** option java_package prefix com.acme.gen
 buf.gen.yaml managed.override[2] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true
 buf.gen.yaml managed.disable[0] module=buf.build/googleapis/googleapis !! buf's own heuristic: pb declares values alone, disabling nothing
+buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written

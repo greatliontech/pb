@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"golang.org/x/mod/semver"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -978,8 +979,16 @@ func (r *reader) managed(n ast.Node, where string) (*Managed, error) {
 	// v1: a boolean option a value for every file; a per-package form
 	// a mapping of default, except and override, `java_package_prefix`
 	// and `optimize_for` taking a scalar as their default alone;
-	// `override` a map from option to a map from file to value.
+	// `override` a map from option to a map from file to value. The
+	// overrides hold buf's rule order, whatever the document's: the
+	// booleans, then the per-file map by option key as written and
+	// then by file path, in byte order.
 	fields := []contractfile.Field{enabled}
+	type perFile struct {
+		key string // the option key as written
+		o   Override
+	}
+	var perFiles []perFile
 	for _, opt := range v1Booleans {
 		option := opt
 		fields = append(fields, contractfile.Field{Name: option, Read: func(n ast.Node) error {
@@ -1051,12 +1060,24 @@ func (r *reader) managed(n ast.Node, where string) (*Managed, error) {
 				if !ok {
 					return fmt.Errorf("%w: %s.override.%s values must be scalars", ErrInvalid, where, option)
 				}
-				mg.Overrides = append(mg.Overrides, Override{FileOption: option, Value: v, Path: contractfile.Key(fkv.Key)})
+				perFiles = append(perFiles, perFile{contractfile.Key(okv.Key), Override{FileOption: option, Value: v, Path: contractfile.Key(fkv.Key)}})
 			}
 		}
 		return nil
 	}})
-	return mg, r.walk(n, where, fields...)
+	if err := r.walk(n, where, fields...); err != nil {
+		return nil, err
+	}
+	sort.SliceStable(perFiles, func(i, j int) bool {
+		if perFiles[i].key != perFiles[j].key {
+			return perFiles[i].key < perFiles[j].key
+		}
+		return perFiles[i].o.Path < perFiles[j].o.Path
+	})
+	for _, pf := range perFiles {
+		mg.Overrides = append(mg.Overrides, pf.o)
+	}
+	return mg, nil
 }
 
 // boolean reads a boolean as buf's YAML reader spells one — true or

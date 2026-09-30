@@ -257,6 +257,80 @@ func TestOverridesApply(t *testing.T) {
 	}
 }
 
+// A derived override lands on every matched file through the request,
+// spelled from the file's own path and package, later entries winning
+// per file whichever kind they are, a file with no package getting
+// nothing from a rule reading it, and a well-known import never
+// touched (REQ-gen-overrides-derived, REQ-gen-overrides-declarative).
+func TestDerive(t *testing.T) {
+	// Through the request: a derived go_package lands on every matched
+	// file from its own path and package, and a later plain value
+	// still wins.
+	files := fixture(t)
+	req, err := build(files, []genfile.Override{
+		{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
+		{Files: "**", Option: "java_package", Suffix: "pb"},
+		{Files: "a/b.proto", Option: "go_package", Value: "example.com/plain"},
+	}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fileOpts(t, req, "a/a.proto").GetGoPackage(); got != "example.com/gen/a" {
+		t.Errorf("a/a.proto go_package = %q", got)
+	}
+	if got := fileOpts(t, req, "m1/m1.proto").GetGoPackage(); got != "example.com/gen/m1" {
+		t.Errorf("m1/m1.proto go_package = %q", got)
+	}
+	if got := fileOpts(t, req, "a/b.proto").GetGoPackage(); got != "example.com/plain" {
+		t.Errorf("a/b.proto go_package = %q", got)
+	}
+	if got := fileOpts(t, req, "a/a.proto").GetJavaPackage(); got != "a.pb" {
+		t.Errorf("a/a.proto java_package = %q", got)
+	}
+	if got := fileOpts(t, req, "google/protobuf/empty.proto").GetGoPackage(); got != "google.golang.org/protobuf/types/known/emptypb" {
+		t.Errorf("well-known empty.proto go_package = %q, overridden", got)
+	}
+	// A plain value first and a derivation after: the derivation wins;
+	// a derivation matching no file changes nothing.
+	req, err = build(files, []genfile.Override{
+		{Files: "**", Option: "go_package", Value: "example.com/plain"},
+		{Files: "a/**", Option: "go_package", Prefix: "example.com/gen"},
+		{Files: "nowhere/**", Option: "ruby_package", Suffix: "PB"},
+	}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fileOpts(t, req, "a/a.proto").GetGoPackage(); got != "example.com/gen/a" {
+		t.Errorf("value then derived: a/a.proto go_package = %q", got)
+	}
+	if got := fileOpts(t, req, "m1/m1.proto").GetGoPackage(); got != "example.com/plain" {
+		t.Errorf("value then derived: m1/m1.proto go_package = %q", got)
+	}
+	for _, f := range []string{"a/a.proto", "m1/m1.proto"} {
+		if fileOpts(t, req, f).RubyPackage != nil {
+			t.Errorf("%s: a derivation matching no file set ruby_package", f)
+		}
+	}
+	// A file with no package gets nothing from a rule reading the
+	// package: what it declares stays; go_package's prefix and
+	// directory need no package.
+	nopkg := compileMods(t, []modfiles.Module{mod("example.com/n", "", true, map[string]string{
+		"n/n.proto": "syntax = \"proto3\";\noption java_package = \"declared\";\nmessage N {}\n",
+	})})
+	req, err = build(nopkg, []genfile.Override{
+		{Files: "**", Option: "java_package", Suffix: "pb"},
+		{Files: "**", Option: "ruby_package", Suffix: "PB"},
+		{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
+	}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := fileOpts(t, req, "n/n.proto")
+	if opts.GetJavaPackage() != "declared" || opts.RubyPackage != nil || opts.GetGoPackage() != "example.com/gen/n" {
+		t.Errorf("no package: java_package %q ruby_package %v go_package %q", opts.GetJavaPackage(), opts.RubyPackage, opts.GetGoPackage())
+	}
+}
+
 // One entry's overrides never leak into another's request: each Build
 // converts fresh descriptors (REQ-gen-request-determinism).
 func TestBuildIsolation(t *testing.T) {

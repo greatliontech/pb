@@ -373,6 +373,23 @@ plugins:
 	if m == nil || !m.Enabled || fmt.Sprint(m.Overrides) != wantOverrides || fmt.Sprint(m.Forms) != wantForms || join(g.Unmodeled) != "managed.ruby_package.default" {
 		t.Fatalf("v1 managed: %+v %v", m, g.Unmodeled)
 	}
+	// v1's overrides hold buf's rule order whatever the document's: the
+	// booleans, then the per-file map by option key as written, then by
+	// path, in byte order.
+	g, err = ParseGen([]byte("version: v1\nmanaged:\n  enabled: true\n  override:\n    JAVA_PACKAGE_PREFIX:\n      a/b.proto: org\n    java_package:\n      b: x\n      a/b.proto: y\n    JAVA_PACKAGE:\n      z: w\n  java_multiple_files: true\nplugins:\n  - name: go\n    out: o\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantOverrides = fmt.Sprint([]Override{
+		{FileOption: "java_multiple_files", Value: "true"},
+		{FileOption: "java_package", Value: "w", Path: "z"},
+		{FileOption: "java_package_prefix", Value: "org", Path: "a/b.proto"},
+		{FileOption: "java_package", Value: "y", Path: "a/b.proto"},
+		{FileOption: "java_package", Value: "x", Path: "b"},
+	})
+	if got := fmt.Sprint(g.Managed.Overrides); got != wantOverrides {
+		t.Fatalf("v1 order: %s", got)
+	}
 	for name, c := range map[string]struct{ in, want string }{
 		"two forms":        {"version: v2\nplugins:\n  - remote: buf.build/x/y\n    local: z\n    out: o\n", "buf.gen.yaml: plugins[0] names 2 plugin forms"},
 		"v1 two forms":     {"version: v1\nplugins:\n  - plugin: buf.build/x/y\n    name: go\n    out: o\n", "names 2 plugin forms"},

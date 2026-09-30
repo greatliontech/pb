@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -310,16 +311,17 @@ inputs:
 		"buf.gen.yaml plugins[8].local protoc-gen-up -> local: protoc-gen-up",
 		"buf.gen.yaml plugins[8].out ../up !! pb writes within the resolution root: \"../up\" escapes the resolution root",
 		"buf.gen.yaml inputs[0].directory proto !! under no workspace module: pb generates over the modules' own files",
-		"buf.gen.yaml managed.override[0] file_option=go_package_prefix value=github.com/acme/gen" + heuristic,
+		"buf.gen.yaml managed.override[0] file_option=go_package_prefix value=github.com/acme/gen -> overrides: files ** option go_package prefix github.com/acme/gen",
 		"buf.gen.yaml managed.override[1] file_option=java_package path=acme/v1 -> overrides: files acme/v1/** option java_package value com.acme",
 		"buf.gen.yaml managed.override[2] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true",
 		"buf.gen.yaml managed.override[3] field_option=jstype !! a field option: pb's overrides are file options",
 		"buf.gen.yaml managed.override[4] file_option=csharp_namespace module=buf.build/acme/petapis !! pb's override files are module-relative globs, naming no module",
-		"buf.gen.yaml managed.override[5] file_option=ruby_package_suffix value=Proto" + heuristic,
+		"buf.gen.yaml managed.override[5] file_option=ruby_package_suffix value=Proto -> overrides: files ** option ruby_package suffix Proto",
 		"buf.gen.yaml managed.override[6] file_option=objc_class_prefix path=. -> overrides: files ** option objc_class_prefix value ACM",
 		"buf.gen.yaml managed.override[7] file_option=php_namespace path=../up !! no path buf matches: \"../up\" escapes the module",
 		"buf.gen.yaml managed.override[8] file_option=swift_prefix path=v1[beta] -> overrides: files v1\\[beta\\]/** option swift_prefix value ACM",
 		"buf.gen.yaml managed.disable[0] file_option=go_package module=buf.build/googleapis/googleapis !! buf's own heuristic: pb declares values alone, disabling nothing",
+		"buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone",
 	}, "\n")
 	if got := factsOf(facts); got != want {
 		t.Fatalf("v2 facts:\n%s", got)
@@ -334,7 +336,8 @@ inputs:
 		"  - ref: ghcr.io/acme/protoc-gen-replaced:v2.0.0\n    out: gen/replaced\n" +
 		"  - local: protoc-gen-connect-go\n    out: gen/connect\n    opt: paths=source_relative,package_suffix=\n" +
 		"  - local:\n      - go\n      - run\n      - ./cmd/gen\n    out: gen/x\n" +
-		"overrides:\n  - files: acme/v1/**\n    option: java_package\n    value: com.acme\n  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: v1\\[beta\\]/**\n    option: swift_prefix\n    value: ACM\n"
+		"overrides:\n  - files: \"**\"\n    option: go_package\n    prefix: github.com/acme/gen\n  - files: acme/v1/**\n    option: java_package\n    value: com.acme\n  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n" +
+		"  - files: \"**\"\n    option: ruby_package\n    suffix: Proto\n  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: v1\\[beta\\]/**\n    option: swift_prefix\n    value: ACM\n"
 	if string(out) != wantFile {
 		t.Fatalf("v2 file:\n%s", out)
 	}
@@ -387,18 +390,19 @@ plugins:
 		"buf.gen.yaml plugins[1].out gen/go -> out: gen/go",
 		"buf.gen.yaml plugins[2].protoc_builtin cpp !! pb runs no protoc",
 		"buf.gen.yaml plugins[3].remote !! buf's alpha remote plugin, run by the BSR: pb runs every plugin itself",
-		"buf.gen.yaml managed.override[0] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true",
-		"buf.gen.yaml managed.override[1] file_option=java_package path=acme/v1/a.proto -> overrides: files acme/v1/a.proto/** option java_package value com.acme.a",
 		"buf.gen.yaml managed.optimize_for.default SPEED -> overrides: files ** option optimize_for value SPEED",
 		"buf.gen.yaml managed.optimize_for.except buf.build/acme/slow !! names a module, which a module-relative glob cannot",
 		"buf.gen.yaml managed.optimize_for.override buf.build/acme/fast=CODE_SIZE !! names a module, which a module-relative glob cannot",
-		"buf.gen.yaml managed.java_package_prefix com.acme" + heuristic,
-		"buf.gen.yaml managed.go_package_prefix github.com/acme/gen" + heuristic,
+		"buf.gen.yaml managed.java_package_prefix.default com.acme -> overrides: files ** option java_package prefix com.acme",
+		"buf.gen.yaml managed.go_package_prefix.default github.com/acme/gen -> overrides: files ** option go_package prefix github.com/acme/gen",
 		"buf.gen.yaml managed.objc_class_prefix.default ACM -> overrides: files ** option objc_class_prefix value ACM",
 		"buf.gen.yaml managed.objc_class_prefix.except buf.build/acme/other !! names a module, which a module-relative glob cannot",
 		"buf.gen.yaml managed.swift_prefix.default SWF -> overrides: files ** option swift_prefix value SWF",
 		"buf.gen.yaml managed.csharp_namespace (no default)" + heuristic,
 		"buf.gen.yaml managed.csharp_namespace.override buf.build/acme/x=Acme.X !! names a module, which a module-relative glob cannot",
+		"buf.gen.yaml managed.override[0] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true",
+		"buf.gen.yaml managed.override[1] file_option=java_package path=acme/v1/a.proto -> overrides: files acme/v1/a.proto/** option java_package value com.acme.a",
+		"buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone",
 	}, "\n")
 	if got := factsOf(facts); got != want {
 		t.Fatalf("v1 facts:\n%s", got)
@@ -408,8 +412,9 @@ plugins:
 		t.Fatal(err)
 	}
 	wantFile = "plugins:\n  - ref: " + pbgo + ":v1.34.2\n    out: gen/go\n  - local: protoc-gen-go-grpc\n    out: gen/go\n" +
-		"overrides:\n  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n  - files: acme/v1/a.proto/**\n    option: java_package\n    value: com.acme.a\n" +
-		"  - files: \"**\"\n    option: optimize_for\n    value: SPEED\n  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: \"**\"\n    option: swift_prefix\n    value: SWF\n"
+		"overrides:\n  - files: \"**\"\n    option: optimize_for\n    value: SPEED\n  - files: \"**\"\n    option: java_package\n    prefix: com.acme\n  - files: \"**\"\n    option: go_package\n    prefix: github.com/acme/gen\n" +
+		"  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: \"**\"\n    option: swift_prefix\n    value: SWF\n" +
+		"  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n  - files: acme/v1/a.proto/**\n    option: java_package\n    value: com.acme.a\n"
 	if string(out) != wantFile {
 		t.Fatalf("v1 file:\n%s", out)
 	}
@@ -431,9 +436,104 @@ plugins:
 	}
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\nplugins:\n  - local: gen\n    out: gen\n")
 	facts, err = Gen(context.Background(), g, nil, Replacements{}, &Layout{}, nil, nil)
-	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled true !! enabled with no explicit override: buf's own heuristic") {
+	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone") {
 		t.Fatalf("enabled alone: %v %s", err, factsOf(facts))
 	}
+	// Prefix and suffix rules map as buf reads them: per file the
+	// prefix and suffix the matching rules set in order, a value rule
+	// clearing both, java_package starting from the prefix com; an
+	// override a later one covers whole is dropped.
+	g = parseGen(t, `version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: java_package_suffix
+      value: pb
+      path: sub
+    - file_option: java_package_prefix
+      value: org
+    - file_option: java_package
+      value: com.fixed
+      path: sub/deep
+    - file_option: java_package_prefix
+      value: q
+      path: subway
+    - file_option: java_package_suffix
+      value: x
+      path: sub
+    - file_option: go_package_prefix
+      value: ""
+    - file_option: ruby_package_suffix
+      value: A
+      path: sub
+    - file_option: ruby_package
+      value: R
+plugins:
+  - local: gen
+    out: gen
+`)
+	l = &Layout{}
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
+	wantOverrides := []genfile.Override{
+		{Files: "**", Option: "java_package", Prefix: "org"},
+		{Files: "subway/**", Option: "java_package", Prefix: "q"},
+		{Files: "sub/**", Option: "java_package", Prefix: "org", Suffix: "x"},
+		{Files: "sub/deep/**", Option: "java_package", Suffix: "x"},
+		{Files: "**", Option: "ruby_package", Value: "R"},
+	}
+	if err != nil || l.Gen == nil || !reflect.DeepEqual(l.Gen.Overrides, wantOverrides) {
+		t.Fatalf("derivations: %v\n%+v", err, l.Gen)
+	}
+	wantFacts := strings.Join([]string{
+		"buf.gen.yaml managed.override[0] file_option=java_package_suffix value=pb path=sub -> overrides: files sub/** option java_package prefix com suffix pb (the prefix com, buf's default)",
+		"buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org -> overrides: files ** option java_package prefix org",
+		"buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org -> overrides: files sub/** option java_package prefix org suffix pb (with buf.gen.yaml managed.override[0] file_option=java_package_suffix value=pb path=sub's suffix)",
+		"buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org -> replacing buf.gen.yaml managed.override[0] file_option=java_package_suffix value=pb path=sub's override for files sub/**",
+		"buf.gen.yaml managed.override[2] file_option=java_package path=sub/deep -> overrides: files sub/deep/** option java_package value com.fixed",
+		"buf.gen.yaml managed.override[3] file_option=java_package_prefix value=q path=subway -> overrides: files subway/** option java_package prefix q (after buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org, which set no suffix)",
+		"buf.gen.yaml managed.override[4] file_option=java_package_suffix value=x path=sub -> overrides: files sub/** option java_package prefix org suffix x (with buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org's prefix)",
+		"buf.gen.yaml managed.override[4] file_option=java_package_suffix value=x path=sub -> overrides: files sub/deep/** option java_package suffix x (after buf.gen.yaml managed.override[2] file_option=java_package path=sub/deep's value, clearing the prefix)",
+		"buf.gen.yaml managed.override[4] file_option=java_package_suffix value=x path=sub -> replacing buf.gen.yaml managed.override[1] file_option=java_package_prefix value=org's override for files sub/**, buf.gen.yaml managed.override[2] file_option=java_package path=sub/deep's override for files sub/deep/**",
+		"buf.gen.yaml managed.override[5] file_option=go_package_prefix value= !! an empty prefix, clearing what buf's earlier rules set for the files: pb clears no override",
+		"buf.gen.yaml managed.override[6] file_option=ruby_package_suffix value=A path=sub -> overrides: files sub/** option ruby_package suffix A",
+		"buf.gen.yaml managed.override[7] file_option=ruby_package -> overrides: files ** option ruby_package value R",
+		"buf.gen.yaml managed.override[7] file_option=ruby_package -> replacing buf.gen.yaml managed.override[6] file_option=ruby_package_suffix value=A path=sub's override for files sub/**",
+	}, "\n")
+	if got := factsOf(facts); !strings.Contains(got, wantFacts) {
+		t.Fatalf("derivations facts:\n%s\nwant:\n%s", got, wantFacts)
+	}
+
+	// A rule whose intersections land on one scope twice writes and
+	// reports one override for it.
+	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package_prefix\n      value: A\n    - file_option: java_package_suffix\n      value: S\n      path: sub\n    - file_option: java_package_prefix\n      value: B\n      path: sub\nplugins:\n  - local: gen\n    out: gen\n")
+	l = &Layout{}
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
+	wantOverrides = []genfile.Override{
+		{Files: "**", Option: "java_package", Prefix: "A"},
+		{Files: "sub/**", Option: "java_package", Prefix: "B", Suffix: "S"},
+	}
+	r2 := "buf.gen.yaml managed.override[2] file_option=java_package_prefix value=B path=sub -> "
+	if got := factsOf(facts); err != nil || !reflect.DeepEqual(l.Gen.Overrides, wantOverrides) || strings.Count(got, r2) != 2 ||
+		!strings.Contains(got, r2+"overrides: files sub/** option java_package prefix B suffix S (with buf.gen.yaml managed.override[1] file_option=java_package_suffix value=S path=sub's suffix)\n"+r2+"replacing buf.gen.yaml managed.override[1] file_option=java_package_suffix value=S path=sub's override for files sub/**") {
+		t.Fatalf("one scope twice: %v %+v\n%s", err, l.Gen, got)
+	}
+
+	// v1's rules hold buf's order: the per-file map, by option key as
+	// written and then by path, after the forms and booleans, whatever
+	// the document says first.
+	g = parseGen(t, "version: v1\nmanaged:\n  enabled: true\n  override:\n    JAVA_PACKAGE_PREFIX:\n      a/b.proto: org\n    JAVA_PACKAGE:\n      a/b.proto: com.x\n    JAVA_MULTIPLE_FILES:\n      a/b.proto: \"false\"\n  java_multiple_files: true\n  java_package_prefix: com.acme\nplugins:\n  - name: go\n    out: gen\n")
+	l = &Layout{}
+	_, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
+	wantOverrides = []genfile.Override{
+		{Files: "**", Option: "java_package", Prefix: "com.acme"},
+		{Files: "**", Option: "java_multiple_files", Value: "true"},
+		{Files: "a/b.proto/**", Option: "java_multiple_files", Value: "false"},
+		{Files: "a/b.proto/**", Option: "java_package", Prefix: "org"},
+	}
+	if err != nil || !reflect.DeepEqual(l.Gen.Overrides, wantOverrides) {
+		t.Fatalf("v1 order: %v %+v", err, l.Gen)
+	}
+
 	// With no plugin mapped, a disabled or empty managed mode is what
 	// it would have been.
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: false\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
@@ -581,8 +681,8 @@ managed:
 		"buf.gen.yaml inputs[1].module buf.build/acme/petapis !! an input pb reads nothing from: pb generates over the workspace's own files\n",
 		"buf.gen.yaml inputs[2].paths[0] proto/acme/api -> files: acme/api/**\n",
 		"buf.gen.yaml clean true -> clean: true\n",
-		"buf.gen.a.yaml plugins[0].local gen3 -> local: gen3\nbuf.gen.a.yaml plugins[0].out gen3 -> out: gen3\nbuf.gen.a.yaml inputs[0].paths[0] proto/acme/x.proto -> files: acme/x.proto\nbuf.gen.a.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme\nbuf.gen.a.yaml managed -> the overrides buf.gen.yaml's managed mode gives\n",
-		"buf.gen.b.yaml plugins[0].out gen4 -> out: gen4\nbuf.gen.b.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none\nbuf.gen.b.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.other\nbuf.gen.b.yaml managed.override[1] file_option=go_package_prefix value=example.com/t !! buf's own heuristic, a value computed per file from its package: pb declares values alone\nbuf.gen.b.yaml managed !! differs from buf.gen.yaml's: pb's overrides are one set over every entry\n",
+		"buf.gen.a.yaml plugins[0].local gen3 -> local: gen3\nbuf.gen.a.yaml plugins[0].out gen3 -> out: gen3\nbuf.gen.a.yaml inputs[0].paths[0] proto/acme/x.proto -> files: acme/x.proto\nbuf.gen.a.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme\nbuf.gen.a.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone\nbuf.gen.a.yaml managed -> the overrides buf.gen.yaml's managed mode gives\n",
+		"buf.gen.b.yaml plugins[0].out gen4 -> out: gen4\nbuf.gen.b.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none\nbuf.gen.b.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.other\nbuf.gen.b.yaml managed.override[1] file_option=go_package_prefix value=example.com/t -> overrides: files ** option go_package prefix example.com/t\nbuf.gen.b.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone\nbuf.gen.b.yaml managed !! differs from buf.gen.yaml's: pb's overrides are one set over every entry\n",
 		"buf.gen.c.yaml plugins[0].out gen5 -> out: gen5\nbuf.gen.c.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none\nbuf.gen.c.yaml managed !! none, while buf.gen.yaml's gives overrides: pb's overrides are one set over every entry\n",
 		"buf.gen.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme",
 	} {

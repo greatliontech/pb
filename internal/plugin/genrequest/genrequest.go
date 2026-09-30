@@ -53,7 +53,7 @@ func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []
 	if err != nil {
 		return nil, err
 	}
-	if err := applyOverrides(order, protos, overrides, extensionResolver(order)); err != nil {
+	if err := applyOverrides(order, protos, overrides, extensionResolver(order), wellKnown); err != nil {
 		return nil, err
 	}
 	req := &pluginpb.CodeGeneratorRequest{FileToGenerate: targets}
@@ -179,7 +179,7 @@ func extensionResolver(order []protoreflect.FileDescriptor) func(protoreflect.Fu
 // order, later entries winning; matching is over include-root-relative
 // paths — the names proto_file carries — workspace and dependency
 // files alike.
-func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*descriptorpb.FileDescriptorProto, overrides []genfile.Override, ext func(protoreflect.FullName) (protoreflect.ExtensionDescriptor, bool)) error {
+func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*descriptorpb.FileDescriptorProto, overrides []genfile.Override, ext func(protoreflect.FullName) (protoreflect.ExtensionDescriptor, bool), wellKnown func(string) bool) error {
 	for _, o := range overrides {
 		p, err := glob.Compile(o.Files)
 		if err != nil {
@@ -188,14 +188,24 @@ func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*desc
 			return err
 		}
 		for _, fd := range order {
-			if !p.Match(fd.Path()) {
+			// A well-known import is the toolchain's, its options its
+			// own: never overridden (REQ-gen-overrides-declarative).
+			if wellKnown(fd.Path()) || !p.Match(fd.Path()) {
 				continue
+			}
+			value := o.Value
+			if o.Derived() {
+				v, ok := o.Derive(fd.Path(), string(fd.Package()))
+				if !ok {
+					continue
+				}
+				value = v
 			}
 			fdp := protos[fd.Path()]
 			if fdp.Options == nil {
 				fdp.Options = &descriptorpb.FileOptions{}
 			}
-			if err := setOption(fdp.Options, o.Option, o.Value, ext); err != nil {
+			if err := setOption(fdp.Options, o.Option, value, ext); err != nil {
 				return fmt.Errorf("override %q on %s: %w", o.Option, fd.Path(), err)
 			}
 		}

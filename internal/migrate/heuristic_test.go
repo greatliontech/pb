@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/goccy/go-yaml"
+	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
@@ -295,14 +296,81 @@ func TestNoHeuristicProperty(t *testing.T) {
 			}
 			for _, o := range list2(doc["overrides"]) {
 				ov := mapping(o)
-				if ov["option"] != "java_package" {
-					fail(genfile.FileName, data, "override option %v: buf's computed options declare no value", ov["option"])
-				}
-				if !g.overrideValues[fmt.Sprint(ov["value"])] {
-					fail(genfile.FileName, data, "override value %v given nowhere", ov["value"])
+				switch ov["option"] {
+				case "java_package":
+					if v, has := ov["value"]; has && !g.overrideValues[fmt.Sprint(v)] {
+						fail(genfile.FileName, data, "override value %v given nowhere", v)
+					}
+					if sfx, has := ov["suffix"]; has && !g.suffixes[fmt.Sprint(sfx)] {
+						fail(genfile.FileName, data, "override suffix %v given nowhere", sfx)
+					}
+					// buf's starting prefix, com, where no rule of the
+					// files cleared or replaced it.
+					if p, has := ov["prefix"]; has && fmt.Sprint(p) != "com" && !g.javaPrefixes[fmt.Sprint(p)] {
+						fail(genfile.FileName, data, "java_package prefix %v given nowhere", p)
+					}
+				case "go_package":
+					if _, has := ov["value"]; has || !g.prefixes[fmt.Sprint(ov["prefix"])] {
+						fail(genfile.FileName, data, "override go_package %v: a prefix given nowhere, or a value", ov)
+					}
+				default:
+					fail(genfile.FileName, data, "override option %v given nowhere", ov["option"])
 				}
 				if f := fmt.Sprint(ov["files"]); f != "**" && !g.overridePaths[strings.TrimSuffix(f, "/**")] {
 					fail(genfile.FileName, data, "override files %v given nowhere", f)
+				}
+			}
+			// Differential: buf reads each file's option from the rules
+			// matching it in order — a prefix rule keeping the suffix, a
+			// suffix rule the prefix, a value clearing both, java_package
+			// starting from the prefix com — and the written file's last
+			// matching override must say the same, none where no rule
+			// matched (the default is buf's own, unmapped).
+			var samples []string
+			for sc := range g.overridePaths {
+				samples = append(samples, sc+"/x.proto", sc+"way/x.proto", sc+"/deep/x.proto")
+			}
+			for _, file := range append(samples, "x.proto") {
+				for _, option := range []string{"java_package", "go_package"} {
+					var buf optionState
+					if option == "java_package" {
+						buf.prefix = "com"
+					}
+					matched := false
+					for _, r := range g.rules {
+						if r.option != option || !(r.scope == "" || file == r.scope || strings.HasPrefix(file, r.scope+"/")) {
+							continue
+						}
+						matched = true
+						switch r.axis {
+						case "value":
+							buf = optionState{value: r.value}
+						case "prefix":
+							buf = optionState{prefix: r.value, suffix: buf.suffix}
+						case "suffix":
+							buf = optionState{prefix: buf.prefix, suffix: r.value}
+						}
+					}
+					var pb optionState
+					found := false
+					for _, o := range list2(doc["overrides"]) {
+						ov := mapping(o)
+						if fmt.Sprint(ov["option"]) != option {
+							continue
+						}
+						pat, err := glob.Compile(fmt.Sprint(ov["files"]))
+						if err != nil {
+							fail(genfile.FileName, data, "override files %v: %v", ov["files"], err)
+						}
+						if !pat.Match(file) {
+							continue
+						}
+						found = true
+						pb = optionState{value: text(ov["value"]), prefix: text(ov["prefix"]), suffix: text(ov["suffix"])}
+					}
+					if matched != found || buf != pb && matched {
+						fail(genfile.FileName, data, "%s of %s: buf reads %+v (a rule matched: %v), pb gives %+v (an override matched: %v)", option, file, buf, matched, pb, found)
+					}
 				}
 			}
 		}
@@ -338,7 +406,20 @@ func anyTags(context.Context, string) ([]string, error) {
 }
 
 // given is what the input gave, by role.
+// managedRule is one managed-mode rule the input gave: an option's
+// value, prefix or suffix over every file or a path.
+type managedRule struct {
+	option, axis, value, scope string
+}
+
+// optionState is buf's reading of one option for one file: a value,
+// or a prefix and suffix.
+type optionState struct {
+	value, prefix, suffix string
+}
+
 type given struct {
+	rules          []managedRule // buf.gen.yaml's managed rules in order
 	modulePath     string
 	dirs           []string
 	depPaths       map[string]bool   // a table's, a closure's, a replacement's, the ruleset's
@@ -351,6 +432,9 @@ type given struct {
 	locals         map[string]bool
 	outs, opts     map[string]bool
 	overrideValues map[string]bool
+	prefixes       map[string]bool // go_package prefixes the managed mode gave
+	suffixes       map[string]bool // java_package suffixes the managed mode gave
+	javaPrefixes   map[string]bool // java_package prefixes the managed mode gave
 	overridePaths  map[string]bool
 	clean          bool            // the first file's clean
 	replaced       map[string]bool // catalog plugins a --plugin replacement names
@@ -362,7 +446,7 @@ func newGiven() *given {
 	return &given{
 		depPaths: map[string]bool{}, versions: map[string]string{}, entries: map[string]bool{"STANDARD": true, "FILE": true},
 		ignores: map[string]bool{}, refs: map[string]bool{}, patterns: map[string]bool{}, extra: map[string]string{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
-		overrideValues: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
+		overrideValues: map[string]bool{}, prefixes: map[string]bool{}, suffixes: map[string]bool{}, javaPrefixes: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
 	}
 }
 
@@ -694,19 +778,46 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 	if rapid.Bool().Draw(rt, "managed") {
 		b.WriteString("managed:\n  enabled: true\n")
 		if rapid.Bool().Draw(rt, "override") {
+			// Rules in order: values, prefixes and suffixes of
+			// java_package and go_package's prefix, each over every
+			// file or a path, nested sometimes, so buf's per-file
+			// reading has state to carry across scopes.
 			b.WriteString("  override:\n")
-			jv := g.draw(rt, "jv")
-			g.overrideValues[jv] = true
-			fmt.Fprintf(&b, "    - file_option: java_package\n      value: %s\n", jv)
-			if rapid.Bool().Draw(rt, "scoped") {
-				sc := g.draw(rt, "sc")
-				g.overridePaths[sc] = true
-				fmt.Fprintf(&b, "      path: %s\n", sc)
-			}
-			if rapid.Bool().Draw(rt, "computed") {
-				gp := g.draw(rt, "gp")
-				g.forbidden[gp] = true // buf's own heuristic: pb declares values alone
-				fmt.Fprintf(&b, "    - file_option: go_package_prefix\n      value: %s\n", gp)
+			for n := rapid.IntRange(1, 4).Draw(rt, "rules"); n > 0; n-- {
+				var r managedRule
+				switch rapid.IntRange(0, 3).Draw(rt, "rule kind") {
+				case 0:
+					r = managedRule{option: "java_package", axis: "value", value: g.draw(rt, "jv")}
+					g.overrideValues[r.value] = true
+				case 1:
+					r = managedRule{option: "java_package", axis: "prefix", value: g.draw(rt, "jp")}
+					g.javaPrefixes[r.value] = true
+				case 2:
+					r = managedRule{option: "java_package", axis: "suffix", value: g.draw(rt, "js")}
+					g.suffixes[r.value] = true
+				case 3:
+					r = managedRule{option: "go_package", axis: "prefix", value: g.draw(rt, "gp")}
+					g.prefixes[r.value] = true
+				}
+				name := r.option
+				if r.axis != "value" {
+					name += "_" + r.axis
+				}
+				fmt.Fprintf(&b, "    - file_option: %s\n      value: %s\n", name, r.value)
+				if rapid.Bool().Draw(rt, "scoped") {
+					// A path, one under it, or a sibling sharing its
+					// spelling as a prefix, which contains nothing of it.
+					r.scope = g.draw(rt, "sc")
+					switch rapid.IntRange(0, 2).Draw(rt, "nested") {
+					case 1:
+						r.scope += "/" + g.draw(rt, "sd")
+					case 2:
+						r.scope += "way"
+					}
+					g.overridePaths[r.scope] = true
+					fmt.Fprintf(&b, "      path: %s\n", r.scope)
+				}
+				g.rules = append(g.rules, r)
 			}
 		}
 		if rapid.Bool().Draw(rt, "disable") {
@@ -716,6 +827,14 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 		}
 	}
 	return b.String()
+}
+
+// text is a document scalar's text, "" where absent.
+func text(v any) string {
+	if v == nil {
+		return ""
+	}
+	return fmt.Sprint(v)
 }
 
 // indexOf is the index of s in list, -1 where absent.
