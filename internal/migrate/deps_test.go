@@ -140,7 +140,6 @@ func TestDepsDeclaresTheClosure(t *testing.T) {
 		"github.com/grpc/grpc-proto":       "v0.0.0-20240102030405-abcdefabcdef",
 		"github.com/acme/gateway":          "v3.0.0",
 		"github.com/googleapis/googleapis": "v0.0.0-20240102030405-123456123456",
-		Ruleset:                            "v0.1.0",
 	}
 	if got := l.Modules["a"].Deps; len(got) != len(want) {
 		t.Fatalf("deps %v, want %v", got, want)
@@ -200,7 +199,6 @@ func TestDeps(t *testing.T) {
 		otelPath:                  "v0.0.0-20240102030405-abcdefabcdef",
 		"github.com/acme/private": "v1.4.0",
 		"github.com/acme/pinned":  "v2.1.0",
-		Ruleset:                   "v0.1.0",
 	}
 	for dir, f := range l.Modules {
 		if len(f.Deps) != len(wantDeps) {
@@ -226,7 +224,7 @@ func TestDeps(t *testing.T) {
 		"buf.yaml deps[3] buf.build/acme/alias -> " + otelPath + "@v0.0.0-20240102030405-abcdefabcdef (--dep)\n" +
 		"buf.yaml deps[4] buf.build/nobody/knows !! no entry in the dependency table: pass --dep buf.build/nobody/knows=<module path>\n" +
 		"buf.yaml deps[5] buf.build/acme/unreachable !! no version discovered for github.com/acme/unreachable (no origin answers for github.com/acme/unreachable): pass --dep buf.build/acme/unreachable=github.com/acme/unreachable@<version>\n" +
-		"the lint file's rulesets " + Ruleset + " -> " + Ruleset + "@v0.1.0 (discovered; the ruleset, declared by every module)\n" +
+		"the lint file's rulesets " + Ruleset + " -> rulesets: path " + Ruleset + " version v0.1.0 alias " + RulesetAlias + " (discovered)\n" +
 		"buf.lock deps[0] " + otel + " abc123 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"
 	if got := factsOf(facts); got != want {
 		t.Fatalf("facts:\n%s", got)
@@ -248,10 +246,10 @@ func TestDeps(t *testing.T) {
 	}
 	d2 := &fakeDiscovery{latest: map[string]string{otelPath: "v1.0.0", Ruleset: "v0.1.0"}}
 	facts2, err := Deps(context.Background(), d2, src2, nil, pins, l2)
-	if err != nil || len(d2.asked) != 0 || l2.Modules["."].Deps[otelPath] != "v9.0.0" || l2.Modules["."].Deps[Ruleset] != "v0.2.0" {
+	if err != nil || len(d2.asked) != 0 || l2.Modules["."].Deps[otelPath] != "v9.0.0" || l2.RulesetVersion != "v0.2.0" || l2.Modules["."].Deps[Ruleset] != "" {
 		t.Fatalf("a pin over a discovered name: %v asked %v deps %v", err, d2.asked, l2.Modules["."].Deps)
 	}
-	if got := factsOf(facts2); got != "buf.yaml deps[0] "+otel+" -> "+otelPath+"@v9.0.0 (the dependency table, at --dep buf.build/acme/pin's version)\nbuf.yaml deps[1] buf.build/acme/pin -> "+otelPath+"@v9.0.0 (--dep)\nthe lint file's rulesets "+Ruleset+" -> "+Ruleset+"@v0.2.0 (--dep; the ruleset, declared by every module)" {
+	if got := factsOf(facts2); got != "buf.yaml deps[0] "+otel+" -> "+otelPath+"@v9.0.0 (the dependency table, at --dep buf.build/acme/pin's version)\nbuf.yaml deps[1] buf.build/acme/pin -> "+otelPath+"@v9.0.0 (--dep)\nthe lint file's rulesets "+Ruleset+" -> rulesets: path "+Ruleset+" version v0.2.0 alias "+RulesetAlias+" (--dep)" {
 		t.Fatalf("pinned facts:\n%s", got)
 	}
 	pins.Deps[Ruleset] = Dep{Path: "github.com/acme/fork", Version: "v1.0.0"}
@@ -322,7 +320,7 @@ func TestDeps(t *testing.T) {
 		t.Fatalf("workspace deps: %v asked %v facts %d", err, d.asked, len(facts))
 	}
 	for _, dir := range dirs {
-		if l.Modules[dir].Deps[otelPath] != "v1.3.2" || l.Modules[dir].Deps[Ruleset] != "v0.1.0" || len(l.Modules[dir].Deps) != 2 {
+		if l.Modules[dir].Deps[otelPath] != "v1.3.2" || l.RulesetVersion != "v0.1.0" || len(l.Modules[dir].Deps) != 1 {
 			t.Fatalf("%s: %v", dir, l.Modules[dir].Deps)
 		}
 	}

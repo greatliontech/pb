@@ -220,8 +220,9 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		}
 		facts = append(facts, mapped(e.from+" "+e.name, path+"@"+v+" ("+from+")"))
 	}
-	// The ruleset the lint file imports, declared by every module
-	// (REQ-migrate-rules) at the version pinned or discovered.
+	// The ruleset the lint file imports (REQ-migrate-rules), at the
+	// version a replacement pins or the highest discovered, declared
+	// in no module file: a ruleset is no protobuf dependency.
 	rulesetSource := "the lint file's rulesets " + Ruleset
 	v, ok := versions[Ruleset]
 	if !ok {
@@ -233,17 +234,12 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		}
 	}
 	if ok {
-		for _, f := range l.Modules {
-			if f.Deps == nil {
-				f.Deps = map[string]string{}
-			}
-			f.Deps[Ruleset] = v
-		}
+		l.RulesetVersion = v
 		from := "discovered"
 		if pinned[Ruleset] != "" {
 			from = "--dep"
 		}
-		facts = append(facts, mapped(rulesetSource, Ruleset+"@"+v+" ("+from+"; the ruleset, declared by every module)"))
+		facts = append(facts, mapped(rulesetSource, "rulesets: path "+Ruleset+" version "+v+" alias "+RulesetAlias+" ("+from+")"))
 	}
 	lockFacts := func(name string, lock *bufconfig.Lock) {
 		for i, dep := range lock.Deps {

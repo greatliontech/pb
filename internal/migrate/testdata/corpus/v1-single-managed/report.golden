@@ -1,11 +1,11 @@
 buf.yaml . -> pb.yaml module: example.com/acme/v1-single-managed
 buf.yaml.name buf.build/acme/core -> module: example.com/acme/v1-single-managed (a BSR name is no place pb fetches from)
 buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
-the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
 buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.yaml.lint.use DEFAULT -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's DEFAULT is STANDARD)
+buf.yaml.lint.use DEFAULT -> enable: buf:STANDARD (buf's DEFAULT is STANDARD)
 buf.yaml.lint.allow_comment_ignores true -> the module's suppression comments are rewritten to pb:ignore
-buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
+buf.yaml.breaking.use FILE -> enable: buf:FILE
 buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative

@@ -47,9 +47,9 @@ type File struct {
 
 // Rule is one declared check (check-rules.md, the rule term).
 type Rule struct {
-	// The id the rule file declares, and the module path of the
-	// ruleset that declares it, set when the rule is imported; the
-	// two spell the rule's name.
+	// The id the rule file declares, and the alias the lint file
+	// imports the declaring ruleset under, set when the rule is
+	// imported; the two spell the rule's name.
 	ID       string
 	Ruleset  string
 	Kind     check.Kind

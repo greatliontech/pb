@@ -5,23 +5,23 @@ buf.yaml modules[3] services/shipping/proto -> services/shipping/proto/pb.yaml m
 buf.yaml deps[0] buf.build/protocolbuffers/wellknowntypes !! no entry in the dependency table: pass --dep buf.build/protocolbuffers/wellknowntypes=<module path>
 buf.yaml deps[1] buf.build/bufbuild/protovalidate -> github.com/bufbuild/protovalidate/proto/protovalidate@v1.0.0 (the dependency table)
 buf.yaml deps[2] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
-the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
 buf.lock deps[0] buf.build/bufbuild/protovalidate 0000000000000000000000000000000000000001 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
 buf.lock deps[1] buf.build/googleapis/googleapis 0000000000000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
 buf.lock deps[2] buf.build/protocolbuffers/wellknowntypes 0000000000000000000000000000000000000003 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
-buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: github.com/greatliontech/buf-rules:PACKAGE_VERSION_SUFFIX
-buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true !! reshapes github.com/greatliontech/buf-rules:RPC_REQUEST_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
-buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true !! reshapes github.com/greatliontech/buf-rules:RPC_RESPONSE_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
-buf.yaml.lint.rpc_allow_same_request_response true !! reshapes github.com/greatliontech/buf-rules:RPC_REQUEST_RESPONSE_UNIQUE: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
-buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
-buf.yaml.lint.ignore_only.RPC_REQUEST_STANDARD_NAME services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [github.com/greatliontech/buf-rules:RPC_REQUEST_STANDARD_NAME]
-buf.yaml.lint.ignore_only.SERVICE_SUFFIX ./services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [github.com/greatliontech/buf-rules:SERVICE_SUFFIX]
-buf.yaml modules[2].lint.ignore_only.ENUM_VALUE_PREFIX services/orders/proto/acme/orders/v1/legacy.proto -> modules.services/orders/proto.ignore paths [acme/orders/v1/legacy.proto/**] rules [github.com/greatliontech/buf-rules:ENUM_VALUE_PREFIX]
-buf.yaml modules[2].lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
-buf.yaml modules[2].lint.except FIELD_LOWER_SNAKE_CASE -> exclude: github.com/greatliontech/buf-rules:FIELD_LOWER_SNAKE_CASE
-buf.yaml modules[2].breaking.use WIRE_JSON -> enable: github.com/greatliontech/buf-rules:WIRE_JSON
-buf.yaml.lint.ignore_only.SERVICE_SUFFIX services/shipping/proto/acme/shipping/v1/hooks/hooks.proto -> modules.services/shipping/proto.ignore paths [acme/shipping/v1/hooks/hooks.proto/**] rules [github.com/greatliontech/buf-rules:SERVICE_SUFFIX]
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: buf:PACKAGE_VERSION_SUFFIX
+buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true !! reshapes buf:RPC_REQUEST_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true !! reshapes buf:RPC_RESPONSE_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_same_request_response true !! reshapes buf:RPC_REQUEST_RESPONSE_UNIQUE: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.breaking.use FILE -> enable: buf:FILE
+buf.yaml.lint.ignore_only.RPC_REQUEST_STANDARD_NAME services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [buf:RPC_REQUEST_STANDARD_NAME]
+buf.yaml.lint.ignore_only.SERVICE_SUFFIX ./services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [buf:SERVICE_SUFFIX]
+buf.yaml modules[2].lint.ignore_only.ENUM_VALUE_PREFIX services/orders/proto/acme/orders/v1/legacy.proto -> modules.services/orders/proto.ignore paths [acme/orders/v1/legacy.proto/**] rules [buf:ENUM_VALUE_PREFIX]
+buf.yaml modules[2].lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml modules[2].lint.except FIELD_LOWER_SNAKE_CASE -> exclude: buf:FIELD_LOWER_SNAKE_CASE
+buf.yaml modules[2].breaking.use WIRE_JSON -> enable: buf:WIRE_JSON
+buf.yaml.lint.ignore_only.SERVICE_SUFFIX services/shipping/proto/acme/shipping/v1/hooks/hooks.proto -> modules.services/shipping/proto.ignore paths [acme/shipping/v1/hooks/hooks.proto/**] rules [buf:SERVICE_SUFFIX]
 buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.36.11 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.36.11 (the catalog)
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative,default_api_level=API_OPAQUE -> opt: paths=source_relative,default_api_level=API_OPAQUE

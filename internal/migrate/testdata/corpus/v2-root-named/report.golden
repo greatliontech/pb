@@ -1,8 +1,8 @@
 buf.yaml modules[0] . -> pb.yaml module: example.com/acme/v2-root-named
 buf.yaml modules[0].name buf.build/acme/root -> module: example.com/acme/v2-root-named (a BSR name is no place pb fetches from)
-the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
-buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
-buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.breaking.use FILE -> enable: buf:FILE
 pb.yaml -> written
 pb.lint.yaml -> written
 proto/acme/v1/thing.proto -> 1 suppression comments rewritten to pb:ignore

@@ -26,7 +26,7 @@ import (
 func (c *Client) Download(ctx context.Context, modPath string, v version.Version) error {
 	pin, ok := c.Lock.Module(modPath, v.String())
 	if !ok {
-		if _, err := c.firstUse(ctx, modPath, v); err != nil {
+		if _, err := c.firstUse(ctx, modPath, v, c.Lock.ModulePins()); err != nil {
 			return err
 		}
 		pin, _ = c.Lock.Module(modPath, v.String())

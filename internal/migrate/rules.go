@@ -9,6 +9,7 @@ import (
 	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/lintfile"
+	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/rootpath"
 )
@@ -190,7 +191,7 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 		}
 	}
 	canon(&root)
-	f := &lintfile.File{Rulesets: []string{Ruleset}}
+	f := &lintfile.File{Rulesets: []rules.Import{{Path: Ruleset, Version: l.RulesetVersion, Alias: RulesetAlias}}}
 	if several {
 		f.Modules = map[string]lintfile.ModuleSelection{}
 	}
@@ -354,15 +355,15 @@ func nameOf(kind check.Kind, s string) (string, bool) {
 	return "", false
 }
 
-// qualified spells a tag or id under the ruleset.
-func qualified(s string) string { return Ruleset + ":" + s }
+// qualified spells a tag or id under the ruleset's alias.
+func qualified(s string) string { return RulesetAlias + ":" + s }
 
 // ofKind is the qualified names of the list that are the kind's:
 // tags and ids of its rules.
 func ofKind(names []string, kind check.Kind) []string {
 	var out []string
 	for _, n := range names {
-		s := strings.TrimPrefix(n, Ruleset+":")
+		s := strings.TrimPrefix(n, RulesetAlias+":")
 		if r, ok := rulesetRules[s]; ok && r.kind == kind || rulesetTags[kind][s] {
 			out = append(out, n)
 		}
@@ -493,7 +494,7 @@ func ignoresOf(c kindConfig, d declared, several bool) (entries []lintfile.Ignor
 	for _, id := range sortedKeys(c.sec.IgnoreOnly) {
 		var rules []string
 		if name, ok := nameOf(c.kind, id); ok {
-			s := strings.TrimPrefix(name, Ruleset+":")
+			s := strings.TrimPrefix(name, RulesetAlias+":")
 			if _, isRule := rulesetRules[s]; isRule {
 				rules = []string{name}
 			} else {
@@ -530,7 +531,7 @@ func ignoresOf(c kindConfig, d declared, several bool) (entries []lintfile.Ignor
 			// package's first file, which a path reaches.
 			var reached []string
 			for _, r := range rules {
-				id := strings.TrimPrefix(r, Ruleset+":")
+				id := strings.TrimPrefix(r, RulesetAlias+":")
 				switch {
 				case !positionless(id):
 					reached = append(reached, r)

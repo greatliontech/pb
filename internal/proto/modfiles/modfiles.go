@@ -135,7 +135,7 @@ func WellKnown(path string) bool {
 func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Module, error) {
 	var out []Module
 	for _, m := range root.Modules {
-		files, rules, err := workspaceFiles(fsys, path.Join(root.Dir, m.Dir))
+		files, rules, err := WorkspaceFiles(fsys, path.Join(root.Dir, m.Dir))
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 	for _, r := range list {
 		src := root.Source(r.Path, r.Version)
 		if src.Module != nil {
-			files, rules, err := workspaceFiles(fsys, path.Join(root.Dir, src.Module.Dir))
+			files, rules, err := WorkspaceFiles(fsys, path.Join(root.Dir, src.Module.Dir))
 			if err != nil {
 				return nil, err
 			}
@@ -155,30 +155,41 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		if err != nil {
 			return nil, err
 		}
-		all, err := archive.ZipFiles(bytes.NewReader(b), int64(len(b)))
+		files, rules, declared, err := UnpackArchive(b)
 		if err != nil {
 			return nil, fmt.Errorf("%s@%s: %w", r.Path, r.Version, err)
-		}
-		files, rules := map[string][]byte{}, map[string][]byte{}
-		_, declared := all[module.ModuleFileName]
-		for p, content := range all {
-			switch {
-			case module.IsProtoFile(p):
-				files[p] = content
-			case module.IsRuleFile(p):
-				rules[p] = content
-			}
 		}
 		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files, Rules: rules, Synthesized: !declared})
 	}
 	return out, nil
 }
 
-// workspaceFiles walks a workspace module's directory for protobuf
+// UnpackArchive reads a verified archive's bytes as a module's file
+// set: its protobuf files and its rule files, each by archive-relative
+// path, and whether the archive declares a module file.
+func UnpackArchive(b []byte) (files, rules map[string][]byte, declared bool, err error) {
+	all, err := archive.ZipFiles(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
+		return nil, nil, false, err
+	}
+	_, declared = all[module.ModuleFileName]
+	files, rules = map[string][]byte{}, map[string][]byte{}
+	for p, content := range all {
+		switch {
+		case module.IsProtoFile(p):
+			files[p] = content
+		case module.IsRuleFile(p):
+			rules[p] = content
+		}
+	}
+	return files, rules, declared, nil
+}
+
+// WorkspaceFiles walks a workspace module's directory for protobuf
 // files and rule files, module-root-relative — the include root of a
 // workspace module is its own directory. A nested module's files
 // belong to the nested module and are skipped.
-func workspaceFiles(fsys fs.FS, base string) (map[string][]byte, map[string][]byte, error) {
+func WorkspaceFiles(fsys fs.FS, base string) (map[string][]byte, map[string][]byte, error) {
 	files, rules := map[string][]byte{}, map[string][]byte{}
 	err := fs.WalkDir(fsys, base, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {

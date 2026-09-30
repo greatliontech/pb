@@ -89,7 +89,6 @@ func TestNoHeuristicProperty(t *testing.T) {
 		var deps []string
 		repl := Replacements{}
 		latest := map[string]string{Ruleset: g.version(rt)}
-		g.depPaths[Ruleset] = true
 		g.versions[Ruleset] = latest[Ruleset]
 		for range rapid.IntRange(0, 2).Draw(rt, "table deps") {
 			name := rapid.SampledFrom(sortedKeys(Dependencies)).Draw(rt, "dep")
@@ -241,8 +240,14 @@ func TestNoHeuristicProperty(t *testing.T) {
 		}
 		if doc, data, ok := read(lintfile.FileName); ok {
 			checked++
-			if rs := list(doc["rulesets"]); len(rs) != 1 || rs[0] != Ruleset {
+			// One import: the ruleset at the discovered version under
+			// its alias (REQ-migrate-rules).
+			rs := list2(doc["rulesets"])
+			if len(rs) != 1 {
 				fail(lintfile.FileName, data, "rulesets %v", rs)
+			}
+			if imp := mapping(rs[0]); text(imp["path"]) != Ruleset || text(imp["version"]) != g.versions[Ruleset] || text(imp["alias"]) != RulesetAlias {
+				fail(lintfile.FileName, data, "the ruleset import %v: given %s at %s", imp, Ruleset, g.versions[Ruleset])
 			}
 			g.selection(rt, lintfile.FileName, data, doc)
 			for dir, sel := range mapping(doc["modules"]) {
@@ -487,7 +492,7 @@ func (g *given) whole(rt *rapid.T, name string, data []byte) {
 func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]any) {
 	for _, key := range []string{"enable", "exclude"} {
 		for _, e := range list(sel[key]) {
-			bare, ok := strings.CutPrefix(e, Ruleset+":")
+			bare, ok := strings.CutPrefix(e, RulesetAlias+":")
 			if !ok || !g.entries[bare] || !rulesetDeclares(bare) {
 				rt.Fatalf("%s: %s %q given nowhere\n%s", name, key, e, data)
 			}
@@ -503,7 +508,7 @@ func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]
 		for _, r := range list(m["rules"]) {
 			// A rule named, or one of a category named: an ignore_only
 			// over a category is the ruleset's rules carrying its tag.
-			bare, ok := strings.CutPrefix(r, Ruleset+":")
+			bare, ok := strings.CutPrefix(r, RulesetAlias+":")
 			tagged := false
 			for _, tag := range strings.Fields(rulesetRules[bare].tags) {
 				tagged = tagged || g.entries[tag]

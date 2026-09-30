@@ -12,7 +12,7 @@ import (
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 )
 
-const rs = Ruleset + ":"
+const rs = RulesetAlias + ":"
 
 func parseFile(t *testing.T, text string) *bufconfig.File {
 	t.Helper()
@@ -93,7 +93,7 @@ breaking:
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFile := "rulesets:\n  - " + Ruleset + "\nenable:\n  - " + rs + "COMMENTS\n  - " + rs + "STANDARD\n  - " + rs + "WIRE_JSON\nexclude:\n  - " + rs + "ENUM_VALUE_PREFIX\nignore:\n" +
+	wantFile := "rulesets:\n  - path: " + Ruleset + "\n    alias: " + RulesetAlias + "\nenable:\n  - " + rs + "COMMENTS\n  - " + rs + "STANDARD\n  - " + rs + "WIRE_JSON\nexclude:\n  - " + rs + "ENUM_VALUE_PREFIX\nignore:\n" +
 		"  - paths:\n      - gen/x.proto/**\n    kind: lint\n" +
 		"  - paths:\n      - legacy/**\n    rules:\n      - " + rs + "ENUM_ZERO_VALUE_SUFFIX\n" +
 		"  - paths:\n      - old/**\n    rules:\n"
@@ -182,7 +182,7 @@ breaking:
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFile = "rulesets:\n  - " + Ruleset + "\nenable:\n  - " + rs + "FILE\n  - " + rs + "STANDARD\nmodules:\n" +
+	wantFile = "rulesets:\n  - path: " + Ruleset + "\n    alias: " + RulesetAlias + "\nenable:\n  - " + rs + "FILE\n  - " + rs + "STANDARD\nmodules:\n" +
 		"  proto/a:\n    enable:\n      - " + rs + "FILE\n      - " + rs + "STANDARD\n    ignore:\n      - paths:\n          - gen/**\n        kind: lint\n      - paths:\n          - old.proto/**\n        rules:\n          - " + rs + "FIELD_SAME_TYPE\n" +
 		"  proto/b:\n    enable:\n      - " + rs + "BASIC\n      - " + rs + "FILE\n    ignore:\n      - paths:\n          - legacy/**\n        kind: lint\n" +
 		"  proto/c:\n    enable:\n      - " + rs + "FILE\n"

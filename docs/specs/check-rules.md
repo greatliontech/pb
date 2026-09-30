@@ -10,18 +10,43 @@ alignment computed by the engine, never by rules.
 CEL expression evaluating to a boolean (true meaning the check passes),
 and a message.
 
-**ruleset** (term): A module containing rule files; consumed through the
-ordinary module machinery — resolution, pinning, provenance.
+**ruleset** (term): A module containing rule files; acquired through the
+ordinary module machinery — resolution, pinning, provenance — and
+selected by an import: the lint file's, which contributes its rules
+to the check run, or a rule file's, which lends its functions to that
+file alone. A ruleset is never a protobuf dependency: it joins no
+build list, and a module file declares none.
+
+**ruleset import** (term): An entry `{path, version, alias}`: a module
+path, the exact tagged release or pseudo-version to read at, and the
+alias the importer names it by — a non-empty line of ASCII letters,
+digits and underscores opening with a letter, unique among the
+importer's imports. Every import is exact and isolated: the version
+written is the version read, never selected against another
+importer's (there is no build list to select in), two importers
+naming one path at two versions read two rulesets, and an importer
+sees exactly what it imports — save where the workspace replaces the
+path (`workspace.md` REQ-work-replace, REQ-work-replace-dir): every
+import of it then reads the replacement, as every requirement of it
+does, the version written kept as a declaration's is.
 
 **rule name** (term): The canonical identifier of an imported rule,
-`<module path>:<id>` — the ruleset's module path, a colon, the id the
-rule file declares — so two rulesets may declare one id and a fork
-needs no edit; a tag qualifies the same way. A bare id or tag names
-the rule or tag exactly one imported ruleset declares, and is an
-error naming the candidates where several do.
+`<alias>:<id>` — the alias the lint file's import gives the ruleset,
+a colon, the id the rule file declares — so two rulesets may declare
+one id and a fork needs no edit; a tag qualifies the same way. A bare
+id or tag names the rule or tag exactly one imported ruleset
+declares, and is an error naming the candidates where several do.
 
-**rule file** (term): A YAML file within a ruleset declaring rules and
-the CEL environment version they target.
+**function** (term): A named, typed, expression-bodied CEL function a
+rule file declares: a name, typed parameters, a return type, and a
+CEL expression over the parameters that evaluates to the return type.
+Called unqualified within its file, and as `<alias>.<name>` from a
+file importing the declaring ruleset; charged as any library function
+is, the body's cost the call's.
+
+**rule file** (term): A YAML file within a ruleset declaring the CEL
+environment version its expressions target, the rulesets it imports
+for their functions, its functions, and its rules.
 
 **CEL environment** (term): The contract a rule evaluates in: the
 bound variables, the descriptor types, pb's library of CEL functions
@@ -60,8 +85,16 @@ exclusions, and the breaking-change comparison base.
 ## Rules
 
 **REQ-rules-file-schema** (wire): A rule file MUST contain `celEnv`, the
-CEL environment version its rules target written as unquoted decimal
-digits with no sign and no leading zero, and `rules`, a list — possibly empty — of entries
+CEL environment version its expressions target written as unquoted
+decimal digits with no sign and no leading zero; optionally
+`imports`, a list of ruleset imports; optionally `functions`, a list
+of entries `{name, params, returns, cel}` where `name` is one
+non-empty line of ASCII letters, digits and underscores opening with a
+letter and unique within the file, `params` a possibly empty list of
+`{name, type}` with names unique within the function, `returns` and
+each `type` a type name of the environment's vocabulary
+(REQ-env1-types), and `cel` non-empty text, a block scalar included;
+and `rules`, a list — possibly empty — of entries
 `{id, kind, target, severity, tags, cel, message}` where every value
 is read as the text written in any YAML scalar spelling, `id` and
 `message` and each entry of the optional list `tags` are one non-empty
@@ -71,6 +104,31 @@ written in a suppression comment and a message on a finding line —
 `breaking`, `severity` is `error` or `warning`, `target` is a target,
 ids are unique within the file, and no id or tag holds a colon, the
 rule name's separator. No other keys exist.
+
+**REQ-rules-functions** (behavior): A rule file's functions MUST be
+compiled under the file's environment as typed, expression-bodied
+functions — each parameter bound at its declared type, the body
+refused when it does not evaluate to the declared return type, a
+body naming a function of the file or of an imported ruleset resolved
+as a rule's call is — before any rule of the file compiles, so a rule
+calls them as it calls the environment's own; a call's cost is the
+body's, charged under REQ-rules-bounded exactly as a library
+function's, and a function calling itself, directly or through
+another, is refused at compile time naming the cycle. A file's
+functions are visible to its own expressions unqualified and to a
+file importing its ruleset as `<alias>.<name>`; nothing else of a
+ruleset is visible through an import — its rules are contributed by
+the lint file's imports alone (REQ-lint-rulesets-imported).
+
+**REQ-rules-imports** (behavior): A rule file's imports MUST be read
+exactly as written: each at its version, from the module cache as
+any dependency is acquired, pinned and verified (`module-lockfile.md`
+REQ-lock-ruleset-entry, `provenance.md`), its rule files' functions
+the import lends; an import whose version does not resolve, whose
+ruleset declares no rule file, or whose alias another import of the
+file already uses fails the check run naming it; a chain of imports
+that returns to a ruleset already on it — at any version — is
+refused naming the cycle, so what a file sees is finite and exact.
 
 **REQ-rules-compile** (behavior): A rule whose expression does not
 compile under the environment it targets — an unknown function or
@@ -188,6 +246,18 @@ breaking rule each binding in two forms in place of the one — `old` and
 `new` for an entity target, `oldFile` and `newFile` beside them,
 `oldPackage`, `newPackage`, `oldFiles` and `newFiles` for `package`,
 `oldFiles` and `newFiles` for `set` — the absent side `null`.
+
+**REQ-env1-types** (wire): A function's parameter and return types
+MUST be spelled from environment 1's vocabulary: CEL's `bool`, `int`,
+`uint`, `double`, `string`, `bytes`, `null`, `dyn`, `list(T)` and
+`map(K, V)` over these, and the descriptor types REQ-env1-bindings
+binds by their full names (`google.protobuf.FileDescriptorProto`,
+`google.protobuf.DescriptorProto`, `google.protobuf.FieldDescriptorProto`,
+`google.protobuf.OneofDescriptorProto`, `google.protobuf.EnumDescriptorProto`,
+`google.protobuf.EnumValueDescriptorProto`,
+`google.protobuf.ServiceDescriptorProto`,
+`google.protobuf.MethodDescriptorProto`); any other spelling refuses
+the rule file at compile time naming the function and the type.
 
 **REQ-env1-library** (wire): Environment 1 MUST provide CEL's standard
 functions, CEL's optional values, cel-go's extension libraries at
@@ -330,7 +400,10 @@ the form and the cause; nothing degrades to an empty base.
 ## Configuration and suppression
 
 **REQ-lint-config-schema** (wire): The lint file MUST contain, each
-optional: `rulesets`, a list of module paths to import rules from;
+optional: `rulesets`, a list of ruleset imports whose rules the check
+run enables, each `{path, version, alias}` with `version` absent for a
+workspace module (REQ-lint-rulesets-imported), no alias repeated and
+no path repeated at one version;
 `enable` and `exclude`, lists of rule names, ids or tags; `severity`,
 a map from rule name or id to override; `ignore`, a list of `{paths,
 rules, kind}` entries excluding rules under path globs — `paths` one
@@ -381,7 +454,8 @@ is spelled `[]`; `rulesets` in the order given, `enable` and `exclude`
 sorted in raw-byte order, `severity` by key in raw-byte order,
 `ignore` entries by their `paths` sorted in raw-byte order, then by
 their `rules` so sorted, then by `kind`, each entry's keys in the
-order `paths`, `rules`, `kind`, `pinned` as `true`, `modules` by directory
+order `paths`, `rules`, `kind`, each `rulesets` entry's keys in the
+order `path`, `version`, `alias`, `pinned` as `true`, `modules` by directory
 in raw-byte order with each entry in the same form and `{}` where it
 holds nothing, a file holding nothing `{}`; a scalar plain where the
 lint file's reader reads its plain spelling back as exactly that text
@@ -412,13 +486,22 @@ suppresses more than the named rule; a finding without a position has
 no line to carry the comment, and a finding in the comparison base no
 working-tree line, and each is suppressed by configuration alone.
 
-**REQ-lint-rulesets-declared** (behavior): Each module path the lint
-file's `rulesets` names MUST be a module of the build — a dependency
-some workspace module declares, or a workspace module itself, whose
-rule files are read from the working tree — and a path naming
-neither fails the check run; a ruleset is acquired, pinned and
-verified exactly as any dependency (`module-lockfile.md`,
-`provenance.md`).
+**REQ-lint-rulesets-imported** (behavior): Each import the lint file's
+`rulesets` names MUST be read exactly as written, through the
+workspace's replacements as the build reads a module (`workspace.md`
+REQ-work-replace, REQ-work-replace-dir) — at its version, from the
+module cache, acquired, pinned and verified as any dependency
+(`module-lockfile.md` REQ-lock-ruleset-entry, `provenance.md`), a
+path replacement's pair in the path's place — or, where the path
+names a workspace module or a directory replacement serves it, from
+the working tree with no version written; its rule files' rules are
+the ones the import contributes, under its alias; the rulesets those
+files import lend their functions and contribute no rule. An import
+whose version does not resolve, that writes no version for a path
+read from no working tree, whose alias another import already uses,
+or whose path is read from the working tree while writing a version
+fails the check run naming it. A ruleset is never declared in a
+module file: it is no protobuf dependency and joins no build list.
 
 ## Verbs
 

@@ -27,9 +27,22 @@ record naming the evidence type and the verified identity.
 
 **REQ-lock-format** (wire): The lockfile MUST be UTF-8 YAML with LF line
 endings containing, in order: `version`, whose value is the integer `1`;
-`modules`, a block-style list of module entries; and, only when plugin
-pins exist, `plugins`, a block-style list of plugin entries. No other
-top-level keys exist.
+`modules`, a block-style list of module entries; only when ruleset
+pins exist, `rulesets`, a block-style list of ruleset entries; and,
+only when plugin pins exist, `plugins`, a block-style list of plugin
+entries. No other top-level keys exist.
+
+**REQ-lock-ruleset-entry** (wire): Each ruleset entry MUST carry
+exactly what a module entry carries, in the same order and under the
+same rules (REQ-lock-entry, REQ-lock-provenance-record,
+REQ-lock-pinned-key-record), for a (module path, version) pair a
+ruleset import names (`check-rules.md`); the pair is pinned there and
+never among the module entries, a ruleset being no member of the
+build list, and a pair both an import and a module declaration name
+is pinned in both lists, each by its own reader, under one digest: a first use in either list is held to the other's
+pin, a fetched archive differing from it failing as a mismatch
+(REQ-lock-digest-enforcement), and a lockfile holding the pair at two
+digests is invalid, so one pair never names two contents.
 
 **REQ-lock-entry** (wire): Each module entry MUST carry, in order: `path`
 (the module path), `version` (the version string), `digest` (the module

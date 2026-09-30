@@ -10,7 +10,6 @@
 package breaking
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,9 +23,9 @@ import (
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
-	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // ErrBase is wrapped when the base cannot be materialized: the form
@@ -113,15 +112,9 @@ func fromVersion(ctx context.Context, form lintfile.Base, m Module, v version.Ve
 	if err != nil {
 		return nil, fmt.Errorf("%w %s: %v", ErrBase, form, err)
 	}
-	all, err := archive.ZipFiles(bytes.NewReader(b), int64(len(b)))
+	files, _, _, err := modfiles.UnpackArchive(b)
 	if err != nil {
 		return nil, fmt.Errorf("%w %s: %s@%s: %v", ErrBase, form, m.Path, v, err)
-	}
-	files := map[string][]byte{}
-	for p, content := range all {
-		if module.IsProtoFile(p) {
-			files[p] = content
-		}
 	}
 	return &Base{Files: files, Label: m.Path + "@" + v.String()}, nil
 }

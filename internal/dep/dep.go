@@ -148,7 +148,7 @@ func (s *Session) SaveLock() error {
 	// A lockfile appears when a resolving verb first records a pin
 	// (REQ-dep-init's second half): an empty pin store never creates
 	// one.
-	if s.lockOrig == nil && len(s.Lock.Modules) == 0 && len(s.Lock.Plugins) == 0 {
+	if s.lockOrig == nil && len(s.Lock.Modules) == 0 && len(s.Lock.Rulesets) == 0 && len(s.Lock.Plugins) == 0 {
 		return nil
 	}
 	b, err := lockfile.Encode(s.Lock)

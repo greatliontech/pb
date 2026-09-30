@@ -149,7 +149,11 @@ type Layout struct {
 	Modules   map[string]*modfile.File
 	Workspace *workspace.File
 	Lint      *lintfile.File // set by Rules
-	Gen       *genfile.File  // set by Gen; nil where no plugin mapped
+	// RulesetVersion is the version the lint file imports the ruleset
+	// at, set by Deps: discovered, or a replacement's; "" where none
+	// was found, the import then written without one.
+	RulesetVersion string
+	Gen            *genfile.File // set by Gen; nil where no plugin mapped
 	// CommentIgnores, set by Rules, says per module directory whether
 	// buf honored its suppression comments, which the verb rewrites
 	// where it did (REQ-migrate-comments).

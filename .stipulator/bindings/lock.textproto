@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-lock-format"
-  content_hash: "c874934607e88ccc965b1ef6f1f71e03c6399b7daa1cb4f8de6a01923257b6d7"
-  source_hash: "cf463c98dae8181382a7b6de7bde29c14e13950df926e564ad35c12b29deca8f"
+  content_hash: "ebd26a766acdea0e5936673c32216488f54b0f278dac1479c0c523f1e97f735b"
+  source_hash: "b894c85663670c4a636fa0771a9c42b88f8d753aba303ae9cd9fd5d5d1afb983"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-format"
-  content_hash: "c874934607e88ccc965b1ef6f1f71e03c6399b7daa1cb4f8de6a01923257b6d7"
-  source_hash: "cf463c98dae8181382a7b6de7bde29c14e13950df926e564ad35c12b29deca8f"
+  content_hash: "ebd26a766acdea0e5936673c32216488f54b0f278dac1479c0c523f1e97f735b"
+  source_hash: "b894c85663670c4a636fa0771a9c42b88f8d753aba303ae9cd9fd5d5d1afb983"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestParseRejections"
   role: BINDING_ROLE_TESTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-format"
-  content_hash: "c874934607e88ccc965b1ef6f1f71e03c6399b7daa1cb4f8de6a01923257b6d7"
-  source_hash: "cf463c98dae8181382a7b6de7bde29c14e13950df926e564ad35c12b29deca8f"
+  content_hash: "ebd26a766acdea0e5936673c32216488f54b0f278dac1479c0c523f1e97f735b"
+  source_hash: "b894c85663670c4a636fa0771a9c42b88f8d753aba303ae9cd9fd5d5d1afb983"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestParseGoldenRoundTrip"
   role: BINDING_ROLE_TESTS
@@ -589,4 +589,34 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceStandsTheForkForTheOriginal"
   role: BINDING_ROLE_TESTS
   shape_hash: "f6d34832d0e5ff22d2191d68e4322e42c11bb95f9dd2f2ea0c1410f315b4661a"
+}
+
+bindings {
+  requirement_id: "REQ-lock-ruleset-entry"
+  content_hash: "7e39ded50117e43f440771fb77958d2a1617a9d574063df7143689b7d37a17d1"
+  source_hash: "713fa158d9c0eb7f6896b44153669001eb47b5c43d6a97e6149724c9e219a1dd"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.Pins.Add"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "514e906c0d1f28a3f29fbb2fb4a43b5575902e3a3862250cca342e0234e95810"
+}
+
+bindings {
+  requirement_id: "REQ-lock-ruleset-entry"
+  content_hash: "7e39ded50117e43f440771fb77958d2a1617a9d574063df7143689b7d37a17d1"
+  source_hash: "713fa158d9c0eb7f6896b44153669001eb47b5c43d6a97e6149724c9e219a1dd"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestRulesetPins"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1efc65cbee8bea9921e7957b1574dd55c2c059a0edf6aca6e79709c86092b01a"
+}
+
+bindings {
+  requirement_id: "REQ-lock-format"
+  content_hash: "ebd26a766acdea0e5936673c32216488f54b0f278dac1479c0c523f1e97f735b"
+  source_hash: "b894c85663670c4a636fa0771a9c42b88f8d753aba303ae9cd9fd5d5d1afb983"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestRulesetPins"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1efc65cbee8bea9921e7957b1574dd55c2c059a0edf6aca6e79709c86092b01a"
 }

@@ -438,7 +438,8 @@ func TestFixedPointProperty(t *testing.T) {
 		}
 		var f File
 		n := rapid.IntRange(0, 5).Draw(t, "n")
-		for i := range n {
+		rulesets := rapid.IntRange(0, 3).Draw(t, "rulesets")
+		for i := range n + rulesets {
 			pin := ModulePin{
 				Path:    fmt.Sprintf("example.com/m%d", i/2), // collide paths, differ versions
 				Version: fmt.Sprintf("v%d-", i) + plain("ver", printable),
@@ -471,7 +472,11 @@ func TestFixedPointProperty(t *testing.T) {
 					}
 				}
 			}
-			f.Modules = append(f.Modules, pin)
+			if i < n {
+				f.Modules = append(f.Modules, pin)
+			} else {
+				f.Rulesets = append(f.Rulesets, pin)
+			}
 		}
 		if rapid.Bool().Draw(t, "hasPlugin") {
 			if rapid.Bool().Draw(t, "pluginLocal") {
@@ -502,10 +507,14 @@ func TestFixedPointProperty(t *testing.T) {
 			t.Fatalf("Encode: %v", err)
 		}
 		// Order independence: shuffle input pins.
-		shuffled := File{Modules: slicesClone(f.Modules), Plugins: slicesClone(f.Plugins)}
+		shuffled := File{Modules: slicesClone(f.Modules), Rulesets: slicesClone(f.Rulesets), Plugins: slicesClone(f.Plugins)}
 		for i := len(shuffled.Modules) - 1; i > 0; i-- {
 			j := rapid.IntRange(0, i).Draw(t, "j")
 			shuffled.Modules[i], shuffled.Modules[j] = shuffled.Modules[j], shuffled.Modules[i]
+		}
+		for i := len(shuffled.Rulesets) - 1; i > 0; i-- {
+			j := rapid.IntRange(0, i).Draw(t, "jr")
+			shuffled.Rulesets[i], shuffled.Rulesets[j] = shuffled.Rulesets[j], shuffled.Rulesets[i]
 		}
 		out2, err := Encode(&shuffled)
 		if err != nil || string(out1) != string(out2) {
@@ -515,10 +524,13 @@ func TestFixedPointProperty(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Parse(Encode): %v\n%s", err, out1)
 		}
-		want := &File{Modules: slicesClone(f.Modules), Plugins: slicesClone(f.Plugins)}
+		want := &File{Modules: slicesClone(f.Modules), Rulesets: slicesClone(f.Rulesets), Plugins: slicesClone(f.Plugins)}
 		sortPins(want)
 		if len(want.Modules) == 0 {
 			want.Modules = nil
+		}
+		if len(want.Rulesets) == 0 {
+			want.Rulesets = nil
 		}
 		if len(want.Plugins) == 0 {
 			want.Plugins = nil
@@ -576,8 +588,8 @@ func TestPinsOnlyStructural(t *testing.T) {
 	// File carries store methods, so its field set is pinned by reflection
 	// in this same analyzer-classified test.
 	ft := reflect.TypeFor[File]()
-	if ft.NumField() != 2 || ft.Field(0).Name != "Modules" || ft.Field(1).Name != "Plugins" {
-		t.Fatalf("File fields changed: pins-only requires exactly Modules and Plugins")
+	if ft.NumField() != 3 || ft.Field(0).Name != "Modules" || ft.Field(1).Name != "Rulesets" || ft.Field(2).Name != "Plugins" {
+		t.Fatalf("File fields changed: pins-only requires exactly Modules, Rulesets and Plugins")
 	}
 	structural.ExportedData[ModulePin](t,
 		structural.FieldOf[string]("Path"),
@@ -1272,5 +1284,87 @@ func TestPluginRefPathStarts(t *testing.T) {
 		if err := (&File{}).AddPlugin(PluginPin{Ref: ref, Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h}}); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%q accepted: %v", ref, err)
 		}
+	}
+}
+
+// Ruleset pins are module pins of their own list (REQ-lock-format,
+// REQ-lock-ruleset-entry): emitted between the modules and the
+// plugins, only where any exist, sorted as the modules are; a pair
+// both a declaration and an import name is pinned in both lists,
+// each by its own reader, and a pair twice in one list is refused.
+func TestRulesetPins(t *testing.T) {
+	zeros := strings.Repeat("0", 64)
+	pin := func(path, version string) ModulePin {
+		return ModulePin{Path: path, Version: version, Digest: "pb1:" + zeros}
+	}
+	f := &File{
+		Modules:  []ModulePin{pin("example.com/std", "v1.0.0")},
+		Rulesets: []ModulePin{pin("example.com/std", "v1.1.0"), pin("example.com/std", "v1.0.0"), pin("example.com/house", "v0.1.0")},
+		Plugins:  []PluginPin{{Ref: "ghcr.io/x/y:v1", Scheme: SchemeOCI, Digest: "sha256:" + zeros}},
+	}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "version: 1\nmodules:\n  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"rulesets:\n  - path: example.com/house\n    version: v0.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"  - path: example.com/std\n    version: v1.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"plugins:\n  - ref: ghcr.io/x/y:v1\n    scheme: oci\n    digest: sha256:" + zeros + "\n    provenance: none\n"
+	if string(out) != want {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
+	}
+	again, err := Parse(out)
+	if err != nil || len(again.Rulesets) != 3 || len(again.Modules) != 1 || again.Rulesets[0].Path != "example.com/house" {
+		t.Fatalf("round trip: %+v %v", again, err)
+	}
+	// The lists answer apart: the modules' reader sees no ruleset pin
+	// and the rulesets' no module pin.
+	if _, ok := f.ModulePins().Module("example.com/house", "v0.1.0"); ok {
+		t.Fatal("a ruleset pin answered a module lookup")
+	}
+	if _, ok := f.RulesetPins().Module("example.com/std", "v1.1.0"); !ok {
+		t.Fatal("the rulesets' reader misses its own pin")
+	}
+	if err := f.RulesetPins().Add(pin("example.com/std", "v1.1.0")); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("a ruleset pin added twice: %v", err)
+	}
+	if err := f.ModulePins().Add(pin("example.com/std", "v1.1.0")); err != nil || len(f.Modules) != 2 {
+		t.Fatalf("the modules' list takes the pair the rulesets' holds: %v", err)
+	}
+	if err := f.RulesetPins().Verify("example.com/house", "v0.1.0", "pb1:"+strings.Repeat("1", 64), ""); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("a ruleset pin verified against other bytes: %v", err)
+	}
+	updated := pin("example.com/house", "v0.1.0")
+	updated.Modfile = "sha256:" + zeros
+	if err := f.RulesetPins().Update(updated); err != nil || f.Rulesets[2].Modfile != updated.Modfile || f.Modules[0].Modfile != "" {
+		t.Fatalf("update of a ruleset pin: %v %+v", err, f)
+	}
+	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n")); err == nil || !strings.Contains(err.Error(), "duplicate ruleset pin example.com/a@v1.0.0") {
+		t.Fatalf("a duplicate ruleset pin: %v", err)
+	}
+	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets: []\n")); err != nil {
+		t.Fatalf("an empty rulesets list parses: %v", err)
+	}
+	// One pair at two digests across the lists is no lockfile, read
+	// or written; the same digest, or one side digestless, is.
+	two := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + strings.Repeat("1", 64) + "\n    provenance: none\n"
+	if _, err := Parse([]byte(two)); err == nil || !strings.Contains(err.Error(), "example.com/a@v1.0.0 pinned as a module at pb1:"+zeros+" and as a ruleset at pb1:"+strings.Repeat("1", 64)) {
+		t.Fatalf("two digests for one pair: %v", err)
+	}
+	if _, err := Encode(&File{Modules: []ModulePin{pin("example.com/a", "v1.0.0")}, Rulesets: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Digest: "pb1:" + strings.Repeat("1", 64)}}}); err == nil {
+		t.Fatal("two digests for one pair encoded")
+	}
+	for _, ok := range []string{
+		strings.Replace(two, "pb1:"+strings.Repeat("1", 64), "pb1:"+zeros, 1),
+		strings.Replace(two, "    digest: pb1:"+strings.Repeat("1", 64)+"\n", "", 1),
+	} {
+		if _, err := Parse([]byte(ok)); err != nil {
+			t.Fatalf("one content, or one side digestless: %v", err)
+		}
+	}
+	// No ruleset pin, no rulesets key.
+	if out, err := Encode(&File{Modules: f.Modules}); err != nil || strings.Contains(string(out), "rulesets") {
+		t.Fatalf("a file without ruleset pins spelled the key: %v\n%s", err, out)
 	}
 }

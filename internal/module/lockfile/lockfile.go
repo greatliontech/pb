@@ -138,10 +138,106 @@ type PluginPin struct {
 	Binary     map[string]string // local: "<os>/<arch>" -> "sha256:" + 64 hex
 }
 
-// File is a parsed lockfile: pins only.
+// File is a parsed lockfile: pins only. Rulesets are module pins of
+// their own list (REQ-lock-ruleset-entry): the same facts under the
+// same rules, for the pairs ruleset imports name, never members of
+// the build list.
 type File struct {
-	Modules []ModulePin
-	Plugins []PluginPin
+	Modules  []ModulePin
+	Rulesets []ModulePin
+	Plugins  []PluginPin
+}
+
+// Pins is one of the lockfile's two module-pin lists, the modules' or
+// the rulesets' (REQ-lock-format, REQ-lock-ruleset-entry): a pair is
+// pinned in the list its reader keeps, a pair both a declaration and
+// an import name in both, each by its own.
+type Pins struct {
+	f        *File
+	rulesets bool
+}
+
+// ModulePins is the build list's pin list.
+func (f *File) ModulePins() Pins { return Pins{f, false} }
+
+// RulesetPins is the ruleset imports' pin list.
+func (f *File) RulesetPins() Pins { return Pins{f, true} }
+
+// Other is the lockfile's other list: the rulesets' for the modules'
+// and the modules' for the rulesets'.
+func (p Pins) Other() Pins { return Pins{p.f, !p.rulesets} }
+
+// Name is the list's name, "module" or "ruleset".
+func (p Pins) Name() string {
+	if p.rulesets {
+		return "ruleset"
+	}
+	return "module"
+}
+
+func (p Pins) list() *[]ModulePin {
+	if p.rulesets {
+		return &p.f.Rulesets
+	}
+	return &p.f.Modules
+}
+
+// Module returns the list's pin for (path, version).
+func (p Pins) Module(path, version string) (ModulePin, bool) {
+	for _, m := range *p.list() {
+		if m.Path == path && m.Version == version {
+			return m, true
+		}
+	}
+	return ModulePin{}, false
+}
+
+// Add records a first-use pin in the list (REQ-lock-first-use): it is
+// an error if a pin for (path, version) already exists — pins are only
+// added or explicitly updated, never silently rewritten.
+func (p Pins) Add(pin ModulePin) error {
+	if err := checkModulePin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	if _, exists := p.Module(pin.Path, pin.Version); exists {
+		return fmt.Errorf("%w: pin for %s@%s already exists", ErrPinMismatch, pin.Path, pin.Version)
+	}
+	*p.list() = append(*p.list(), pin)
+	return nil
+}
+
+// Update is the list's explicit update path
+// (REQ-lock-no-silent-downgrade): the only operation that may change
+// an existing pin, including weakening or altering its provenance
+// record.
+func (p Pins) Update(pin ModulePin) error {
+	if err := checkModulePin(pin); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	l := *p.list()
+	for i, m := range l {
+		if m.Path == pin.Path && m.Version == pin.Version {
+			l[i] = pin
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: no pin for %s@%s to update", ErrPinMismatch, pin.Path, pin.Version)
+}
+
+// Verify enforces a fetched artifact against the list's pin
+// (REQ-lock-digest-enforcement), as File.VerifyModule says.
+func (p Pins) Verify(path, version, computedDigest, computedModfile string) error {
+	pin, ok := p.Module(path, version)
+	if !ok {
+		return fmt.Errorf("%w: no pin for %s@%s", ErrPinMismatch, path, version)
+	}
+	if pin.Digest != "" && pin.Digest != computedDigest {
+		return fmt.Errorf("%w: %s@%s digest: expected %s, computed %s", ErrPinMismatch, path, version, pin.Digest, computedDigest)
+	}
+	if pin.Modfile != "" && computedModfile != "" && pin.Modfile != computedModfile {
+		return fmt.Errorf("%w: %s@%s modfile: expected %s, computed %s", ErrPinMismatch, path, version, pin.Modfile, computedModfile)
+	}
+	return nil
 }
 
 func hexOK(s string, n int) bool {
@@ -357,16 +453,32 @@ func checkPluginPin(p PluginPin) error {
 // the files that pass it. Entry uniqueness: one pin per (path, version) and
 // one per ref.
 func validate(f *File) error {
-	seenM := make(map[[2]string]struct{}, len(f.Modules))
+	for _, l := range []struct {
+		what string
+		pins []ModulePin
+	}{{"module", f.Modules}, {"ruleset", f.Rulesets}} {
+		seen := make(map[[2]string]struct{}, len(l.pins))
+		for _, m := range l.pins {
+			if err := checkModulePin(m); err != nil {
+				return fmt.Errorf("%w: %v", ErrInvalid, err)
+			}
+			k := [2]string{m.Path, m.Version}
+			if _, dup := seen[k]; dup {
+				return fmt.Errorf("%w: duplicate %s pin %s@%s", ErrInvalid, l.what, m.Path, m.Version)
+			}
+			seen[k] = struct{}{}
+		}
+	}
+	// One pair names one content: a pair pinned in both lists carries
+	// one digest (REQ-lock-ruleset-entry).
+	moduleDigest := make(map[[2]string]string, len(f.Modules))
 	for _, m := range f.Modules {
-		if err := checkModulePin(m); err != nil {
-			return fmt.Errorf("%w: %v", ErrInvalid, err)
+		moduleDigest[[2]string{m.Path, m.Version}] = m.Digest
+	}
+	for _, r := range f.Rulesets {
+		if d, ok := moduleDigest[[2]string{r.Path, r.Version}]; ok && d != "" && r.Digest != "" && d != r.Digest {
+			return fmt.Errorf("%w: %s@%s pinned as a module at %s and as a ruleset at %s: one pair names one content", ErrInvalid, r.Path, r.Version, d, r.Digest)
 		}
-		k := [2]string{m.Path, m.Version}
-		if _, dup := seenM[k]; dup {
-			return fmt.Errorf("%w: duplicate module pin %s@%s", ErrInvalid, m.Path, m.Version)
-		}
-		seenM[k] = struct{}{}
 	}
 	seenP := make(map[[2]string]struct{}, len(f.Plugins))
 	for _, p := range f.Plugins {
@@ -383,12 +495,14 @@ func validate(f *File) error {
 }
 
 func sortPins(f *File) {
-	slices.SortFunc(f.Modules, func(a, b ModulePin) int {
+	byPair := func(a, b ModulePin) int {
 		if c := strings.Compare(a.Path, b.Path); c != 0 {
 			return c
 		}
 		return strings.Compare(a.Version, b.Version)
-	})
+	}
+	slices.SortFunc(f.Modules, byPair)
+	slices.SortFunc(f.Rulesets, byPair)
 	slices.SortFunc(f.Plugins, func(a, b PluginPin) int {
 		if c := strings.Compare(a.Ref, b.Ref); c != 0 {
 			return c
@@ -398,8 +512,8 @@ func sortPins(f *File) {
 }
 
 // Encode renders the lockfile canonically (REQ-lock-canonical-emission,
-// REQ-lock-format): version 1, modules sorted by (path, version), plugins
-// sorted by ref, fixed key order, two-space indent, block style, LF,
+// REQ-lock-format): version 1, modules sorted by (path, version),
+// rulesets so sorted where any are pinned, plugins sorted by ref, fixed key order, two-space indent, block style, LF,
 // every value a plain scalar — the domain REQ-lock-scalar-values bounds
 // is what the reader takes raw, so no value is quoted — and the
 // rendering held to its reading. Emission is a pure function of the
@@ -408,22 +522,28 @@ func Encode(f *File) ([]byte, error) {
 	if err := validate(f); err != nil {
 		return nil, err
 	}
-	c := &File{Modules: slices.Clone(f.Modules), Plugins: slices.Clone(f.Plugins)}
+	c := &File{Modules: slices.Clone(f.Modules), Rulesets: slices.Clone(f.Rulesets), Plugins: slices.Clone(f.Plugins)}
 	sortPins(c)
 	return contractfile.Emit(func(w *contractfile.Writer) {
 		w.Literal("version", "1")
-		w.Sequence("modules", len(c.Modules), func(i int) {
-			m := c.Modules[i]
-			w.Literal("path", m.Path)
-			w.Literal("version", m.Version)
-			if m.Digest != "" {
-				w.Literal("digest", m.Digest)
-			}
-			if m.Modfile != "" {
-				w.Literal("modfile", m.Modfile)
-			}
-			writeProvenance(w, m.Provenance)
-		})
+		modulePins := func(key string, pins []ModulePin) {
+			w.Sequence(key, len(pins), func(i int) {
+				m := pins[i]
+				w.Literal("path", m.Path)
+				w.Literal("version", m.Version)
+				if m.Digest != "" {
+					w.Literal("digest", m.Digest)
+				}
+				if m.Modfile != "" {
+					w.Literal("modfile", m.Modfile)
+				}
+				writeProvenance(w, m.Provenance)
+			})
+		}
+		modulePins("modules", c.Modules)
+		if len(c.Rulesets) > 0 {
+			modulePins("rulesets", c.Rulesets)
+		}
 		if len(c.Plugins) > 0 {
 			w.Sequence("plugins", len(c.Plugins), func(i int) {
 				p := c.Plugins[i]
@@ -453,11 +573,14 @@ func Encode(f *File) ([]byte, error) {
 }
 
 // pinsOf is a file's pins as recorded facts, an absent list and an
-// empty one alike — a file may pin no module and no plugin.
+// empty one alike — a file may pin no module, no ruleset and no plugin.
 func pinsOf(f *File) File {
 	var out File
 	if len(f.Modules) > 0 {
 		out.Modules = f.Modules
+	}
+	if len(f.Rulesets) > 0 {
+		out.Rulesets = f.Rulesets
 	}
 	if len(f.Plugins) > 0 {
 		out.Plugins = f.Plugins
@@ -682,15 +805,16 @@ func pluginKeySets(mapping *ast.MappingNode) [][]string {
 }
 
 type rawFile struct {
-	Version int         `yaml:"version"`
-	Modules []rawModule `yaml:"modules"`
-	Plugins []rawPlugin `yaml:"plugins"`
+	Version  int         `yaml:"version"`
+	Modules  []rawModule `yaml:"modules"`
+	Rulesets []rawModule `yaml:"rulesets"`
+	Plugins  []rawPlugin `yaml:"plugins"`
 }
 
 // Parse decodes and validates lockfile bytes (REQ-lock-format,
-// REQ-lock-entry): exactly one YAML document, top-level keys version (the
-// integer 1), modules, and — only when plugin pins exist — plugins; no
-// merge keys anywhere.
+// REQ-lock-entry, REQ-lock-ruleset-entry): exactly one YAML document,
+// top-level keys version (the integer 1), modules, and — only when
+// such pins exist — rulesets and plugins; no merge keys anywhere.
 func Parse(data []byte) (*File, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
@@ -707,14 +831,20 @@ func Parse(data []byte) (*File, error) {
 		return nil, fmt.Errorf("%w: unsupported lockfile version %d", ErrInvalid, raw.Version)
 	}
 	f := &File{}
-	for _, m := range raw.Modules {
-		prov, err := m.Provenance.record()
-		if err != nil {
-			return nil, fmt.Errorf("%w: module %q: %v", ErrInvalid, m.Path, err)
+	for _, l := range []struct {
+		what string
+		raw  []rawModule
+		into *[]ModulePin
+	}{{"module", raw.Modules, &f.Modules}, {"ruleset", raw.Rulesets, &f.Rulesets}} {
+		for _, m := range l.raw {
+			prov, err := m.Provenance.record()
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s %q: %v", ErrInvalid, l.what, m.Path, err)
+			}
+			*l.into = append(*l.into, ModulePin{
+				Path: m.Path, Version: string(m.Version), Digest: m.Digest, Modfile: m.Modfile, Provenance: prov,
+			})
 		}
-		f.Modules = append(f.Modules, ModulePin{
-			Path: m.Path, Version: string(m.Version), Digest: m.Digest, Modfile: m.Modfile, Provenance: prov,
-		})
 	}
 	pluginKeys := pluginKeySets(mapping)
 	for i, p := range raw.Plugins {
@@ -751,14 +881,9 @@ func Parse(data []byte) (*File, error) {
 	return f, nil
 }
 
-// Module returns the pin for (path, version).
+// Module returns the modules' pin for (path, version).
 func (f *File) Module(path, version string) (ModulePin, bool) {
-	for _, m := range f.Modules {
-		if m.Path == path && m.Version == version {
-			return m, true
-		}
-	}
-	return ModulePin{}, false
+	return f.ModulePins().Module(path, version)
 }
 
 // Plugin returns the pin for (ref, scheme): a pin satisfies only lookups
@@ -826,35 +951,13 @@ func (f *File) SetPluginBinary(ref, platform, hash string) error {
 	return fmt.Errorf("%w: no local pin for plugin %s", ErrInvalid, ref)
 }
 
-// AddModule records a first-use pin (REQ-lock-first-use): it is an error if
-// any pin for (path, version) already exists — pins are only added or
-// explicitly updated, never silently rewritten.
-func (f *File) AddModule(pin ModulePin) error {
-	if err := checkModulePin(pin); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalid, err)
-	}
-	if _, exists := f.Module(pin.Path, pin.Version); exists {
-		return fmt.Errorf("%w: pin for %s@%s already exists", ErrPinMismatch, pin.Path, pin.Version)
-	}
-	f.Modules = append(f.Modules, pin)
-	return nil
-}
+// AddModule records a first-use module pin (REQ-lock-first-use), as
+// Pins.Add does.
+func (f *File) AddModule(pin ModulePin) error { return f.ModulePins().Add(pin) }
 
-// UpdateModule is the explicit update path (REQ-lock-no-silent-downgrade):
-// the only operation that may change an existing pin, including weakening
-// or altering its provenance record.
-func (f *File) UpdateModule(pin ModulePin) error {
-	if err := checkModulePin(pin); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalid, err)
-	}
-	for i, m := range f.Modules {
-		if m.Path == pin.Path && m.Version == pin.Version {
-			f.Modules[i] = pin
-			return nil
-		}
-	}
-	return fmt.Errorf("%w: no pin for %s@%s to update", ErrPinMismatch, pin.Path, pin.Version)
-}
+// UpdateModule is the modules' explicit update path
+// (REQ-lock-no-silent-downgrade), as Pins.Update is.
+func (f *File) UpdateModule(pin ModulePin) error { return f.ModulePins().Update(pin) }
 
 // UpdatePlugin replaces the oci pin for pin.Ref with pin: the explicit
 // user-invoked update REQ-lock-no-silent-downgrade sanctions, so no
@@ -874,7 +977,7 @@ func (f *File) UpdatePlugin(pin PluginPin) error {
 	return nil
 }
 
-// VerifyModule enforces a fetched artifact against its pin
+// VerifyModule enforces a fetched artifact against its module pin
 // (REQ-lock-digest-enforcement). A pinned digest must equal computedDigest
 // — including when computedDigest is empty; the digest spans the module's
 // whole file set, so a stripped or altered in-archive module file always
@@ -888,17 +991,7 @@ func (f *File) UpdatePlugin(pin PluginPin) error {
 // responsibility via AddModule/UpdateModule — silent success here is
 // absence of a pin, not verification.
 func (f *File) VerifyModule(path, version, computedDigest, computedModfile string) error {
-	pin, ok := f.Module(path, version)
-	if !ok {
-		return fmt.Errorf("%w: no pin for %s@%s", ErrPinMismatch, path, version)
-	}
-	if pin.Digest != "" && pin.Digest != computedDigest {
-		return fmt.Errorf("%w: %s@%s digest: expected %s, computed %s", ErrPinMismatch, path, version, pin.Digest, computedDigest)
-	}
-	if pin.Modfile != "" && computedModfile != "" && pin.Modfile != computedModfile {
-		return fmt.Errorf("%w: %s@%s modfile: expected %s, computed %s", ErrPinMismatch, path, version, pin.Modfile, computedModfile)
-	}
-	return nil
+	return f.ModulePins().Verify(path, version, computedDigest, computedModfile)
 }
 
 // CheckProvenanceTransition guards non-explicit re-resolution

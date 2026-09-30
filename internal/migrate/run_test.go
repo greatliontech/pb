@@ -65,9 +65,9 @@ func TestRun(t *testing.T) {
 	for _, line := range []string{
 		"buf.yaml modules[0] proto/a -> proto/a/pb.yaml module: github.com/acme/repo/proto/a\n",
 		"buf.yaml deps[0] buf.build/prometheus/client-model -> github.com/prometheus/client_model@v0.6.1 (the dependency table)\n",
-		"the lint file's rulesets " + Ruleset + " -> " + Ruleset + "@v0.1.0 (discovered; the ruleset, declared by every module)\n",
+		"the lint file's rulesets " + Ruleset + " -> rulesets: path " + Ruleset + " version v0.1.0 alias " + RulesetAlias + " (discovered)\n",
 		"buf.lock deps[0] buf.build/prometheus/client-model abc !! a BSR commit names no git commit",
-		"buf.yaml.lint.use STANDARD -> enable: " + Ruleset + ":STANDARD\n",
+		"buf.yaml.lint.use STANDARD -> enable: " + RulesetAlias + ":STANDARD\n",
 		"buf.yaml.lint.disallow_comment_ignores true -> the module's suppression comments are left as they are: buf honored none\n",
 		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)\n",
 		"buf.yaml unknown !! a key the migration does not model\n",
@@ -96,13 +96,13 @@ func TestRun(t *testing.T) {
 	// b's comment rewritten under its own section, a's left under the
 	// top-level one disallowing comment ignores, buf having honored
 	// none there; the buf files and the rest as they were.
-	if got := readTree(t, ws, "repo/proto/a/pb.yaml"); !strings.Contains(got, "module: github.com/acme/repo/proto/a\n") || !strings.Contains(got, "  github.com/prometheus/client_model: v0.6.1\n") || !strings.Contains(got, "  "+Ruleset+": v0.1.0\n") {
+	if got := readTree(t, ws, "repo/proto/a/pb.yaml"); !strings.Contains(got, "module: github.com/acme/repo/proto/a\n") || !strings.Contains(got, "  github.com/prometheus/client_model: v0.6.1\n") || strings.Contains(got, Ruleset) {
 		t.Errorf("a's module file:\n%s", got)
 	}
 	if got := readTree(t, ws, "repo/pb.work"); got != "use:\n  - proto/a\n  - proto/b\n" {
 		t.Errorf("the workspace file: %q", got)
 	}
-	if got := readTree(t, ws, "repo/pb.lint.yaml"); !strings.Contains(got, "modules:\n  proto/a:\n") || !strings.Contains(got, "  proto/b:\n    enable:\n      - "+Ruleset+":BASIC\n") {
+	if got := readTree(t, ws, "repo/pb.lint.yaml"); !strings.Contains(got, "modules:\n  proto/a:\n") || !strings.Contains(got, "  proto/b:\n    enable:\n      - "+RulesetAlias+":BASIC\n") {
 		t.Errorf("the lint file:\n%s", got)
 	}
 	if got := readTree(t, ws, "repo/pb.gen.yaml"); !strings.HasPrefix(got, "plugins:\n  - ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2\n") {
@@ -204,7 +204,7 @@ func TestRun(t *testing.T) {
 	out.Reset()
 	err = Run(context.Background(), inv)
 	report = out.String()
-	if err != nil || !strings.Contains(report, "buf.work.yaml directories[0] ./a -> a/pb.yaml module: github.com/acme/repo/a\n") || !strings.Contains(report, "a/buf.yaml.lint.use BASIC -> enable: "+Ruleset+":BASIC\n") || !strings.Contains(report, "b/buf.yaml.lint -> enable: "+Ruleset+":STANDARD (buf's default, no lint section)\n") || !strings.Contains(report, "buf.yaml.lint -> nothing: beside buf.work.yaml, buf reads the directories' files alone\n") {
+	if err != nil || !strings.Contains(report, "buf.work.yaml directories[0] ./a -> a/pb.yaml module: github.com/acme/repo/a\n") || !strings.Contains(report, "a/buf.yaml.lint.use BASIC -> enable: "+RulesetAlias+":BASIC\n") || !strings.Contains(report, "b/buf.yaml.lint -> enable: "+RulesetAlias+":STANDARD (buf's default, no lint section)\n") || !strings.Contains(report, "buf.yaml.lint -> nothing: beside buf.work.yaml, buf reads the directories' files alone\n") {
 		t.Fatalf("a v1 workspace: %v\n%s", err, report)
 	}
 	if got := readTree(t, ws, "repo/pb.work"); got != "use:\n  - a\n  - b\n" {

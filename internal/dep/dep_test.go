@@ -1455,69 +1455,43 @@ func TestTidyNamesAMalformedFile(t *testing.T) {
 	}
 }
 
-// Tidy keeps a declared ruleset the lint file names though no import
-// uses it — an external at the selected version, a workspace module
-// at its declared version; a workspace-module ruleset no module
-// declares needs no declaration; an external one that no workspace
-// module declares fails naming it, the module file untouched
-// (REQ-dep-tidy-rulesets).
-func TestTidyKeepsRulesets(t *testing.T) {
+// Tidy leaves rulesets alone (REQ-dep-ruleset-declarations): the lint
+// file's imports add no declaration, a declaration no import uses is
+// dropped like any other, and the rulesets' pins are never pruned —
+// a ruleset is no protobuf dependency.
+func TestTidyLeavesRulesetsAlone(t *testing.T) {
+	zeros := strings.Repeat("0", 64)
 	fx := newDep(t, map[string]string{
-		"pb.work":       "use:\n  - a\n  - b\n  - lib\n",
-		"pb.lint.yaml":  "rulesets:\n  - example.com/rules\n  - example.com/lib\n",
-		"a/pb.yaml":     ws("example.com/a", "  example.com/rules: v1.0.0\n  example.com/unused: v1.0.0\n  example.com/lib: v0.1.0\n"),
-		"b/pb.yaml":     ws("example.com/b", "  example.com/rules: v1.1.0\n"),
-		"b/y.proto":     "syntax = \"proto3\";\n",
+		"pb.work":       "use:\n  - a\n  - lib\n",
+		"pb.lint.yaml":  "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n    alias: rules\n  - path: example.com/lib\n    alias: lib\n",
+		"pb.lock":       "version: 1\nmodules: []\nrulesets:\n  - path: example.com/rules\n    version: v0.9.0\n    digest: pb1:" + zeros + "\n    provenance: none\n  - path: example.com/rules\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n",
+		"a/pb.yaml":     ws("example.com/a", "  example.com/unused: v1.0.0\n"),
 		"a/x.proto":     "syntax = \"proto3\";\n",
 		"lib/pb.yaml":   ws("example.com/lib", ""),
 		"lib/lib.proto": "syntax = \"proto3\";\n",
 	})
-	for _, v := range []string{"v1.0.0", "v1.1.0"} {
-		fx.serve(t, "example.com/rules", v, map[string]string{
-			"pb.yaml":           ws("example.com/rules", ""),
-			"naming.rules.yaml": "celEnv: 1\nrules: []\n",
-		})
-	}
-	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{
-		"pb.yaml": ws("example.com/unused", ""),
-	})
+	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/unused", "")})
 	s := fx.session(t, ".")
 	if err := Tidy(ctx, s, io.Discard); err != nil {
 		t.Fatalf("Tidy: %v", err)
 	}
-	// The external ruleset moves to the selected version, b's v1.1.0;
-	// the workspace-module ruleset keeps its declared version.
-	if got, want := fx.read(t, "a/pb.yaml"), "module: example.com/a\ndeps:\n  example.com/lib: v0.1.0\n  example.com/rules: v1.1.0\n"; got != want {
-		t.Fatalf("tidied a/pb.yaml = %q, want %q", got, want)
+	if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "") {
+		t.Fatalf("tidied a/pb.yaml = %q: the ruleset import is no declaration to keep", got)
 	}
-	if got := fx.read(t, "b/pb.yaml"); got != ws("example.com/b", "  example.com/rules: v1.1.0\n") {
-		t.Fatalf("b changed: %q", got)
+	// The imported pair's pin stays, the pair no import names goes,
+	// and no ruleset pin moves to the modules.
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/rules\n    version: v1.0.0\n") || strings.Contains(lock, "v0.9.0") || strings.Contains(lock, "modules:\n  - path: example.com/rules") {
+		t.Fatalf("the ruleset pins after tidy: %q", lock)
 	}
-	// Undeclared: refused, nothing rewritten.
-	fx = newDep(t, map[string]string{
-		"pb.work":      "use:\n  - a\n",
-		"pb.lint.yaml": "rulesets:\n  - example.com/rules\n",
-		"a/pb.yaml":    ws("example.com/a", "  example.com/unused: v1.0.0\n"),
-		"a/x.proto":    "syntax = \"proto3\";\n",
-	})
-	fx.serve(t, "example.com/unused", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/unused", "")})
-	s = fx.session(t, ".")
-	err := Tidy(ctx, s, io.Discard)
-	if err == nil || !strings.Contains(err.Error(), "ruleset example.com/rules is no workspace module and no workspace module declares it") {
-		t.Fatalf("undeclared ruleset: %v", err)
-	}
-	if got := fx.read(t, "a/pb.yaml"); got != ws("example.com/a", "  example.com/unused: v1.0.0\n") {
-		t.Fatalf("failed tidy rewrote the module file: %q", got)
-	}
-	// A malformed lint file is named.
+	// Tidy reads the lint file for the pins its imports name; one it
+	// cannot read is named.
 	fx = newDep(t, map[string]string{
 		"pb.work":      "use:\n  - a\n",
 		"pb.lint.yaml": "rulesets: 1\n",
 		"a/pb.yaml":    ws("example.com/a", ""),
 		"a/x.proto":    "syntax = \"proto3\";\n",
 	})
-	s = fx.session(t, ".")
-	if err := Tidy(ctx, s, io.Discard); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
+	if err := Tidy(ctx, fx.session(t, "."), io.Discard); err == nil || !errors.Is(err, lintfile.ErrInvalid) || !strings.Contains(err.Error(), "pb.lint.yaml") {
 		t.Fatalf("malformed lint file: %v", err)
 	}
 }
@@ -1563,57 +1537,59 @@ func newCheck(t *testing.T, lint string) *depFixture {
 // is said on standard error and passes (REQ-check-lint-verb,
 // REQ-check-findings-output, REQ-check-exit-status).
 func TestLint(t *testing.T) {
-	fx := newCheck(t, "rulesets:\n  - example.com/house\n  - example.com/std\nignore:\n  - paths: [\"vendor/**\"]\n")
+	fx := newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\nignore:\n  - paths: [\"vendor/**\"]\n")
 	s := fx.session(t, ".")
 	var out, diag strings.Builder
 	err := Lint(ctx, s, &out, &diag)
 	if !errors.Is(err, ErrFindings) {
 		t.Fatalf("Lint: %v", err)
 	}
-	want := "a.proto:5:3: error example.com/house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\nwarning example.com/house:MESSAGE_COUNT: too many messages\n"
+	want := "a.proto:5:3: error house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error house:FIELD_NAMES: field names are snake_case\nwarning house:MESSAGE_COUNT: too many messages\n"
 	if out.String() != want || diag.String() != "" {
 		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
 	}
-	// The external ruleset's first use is pinned and saved.
-	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "example.com/std") {
-		t.Fatalf("the ruleset was not pinned: %q", lock)
+	// The external ruleset's first use is pinned as a ruleset and
+	// saved (REQ-lock-ruleset-entry) — beside its module pin, a
+	// declaring dependency of a.
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n") || !strings.Contains(lock, "modules:\n  - path: example.com/std\n") {
+		t.Fatalf("the ruleset was not pinned as one: %q", lock)
 	}
 	// Warnings alone pass; a severity override turns the error down.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [naming]\nseverity:\n  FIELD_NAMES: warning\nignore:\n  - paths: [\"vendor/**\"]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nenable: [naming]\nseverity:\n  FIELD_NAMES: warning\nignore:\n  - paths: [\"vendor/**\"]\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning example.com/house:FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || !strings.Contains(out.String(), "warning house:FIELD_NAMES") || strings.Contains(out.String(), "MESSAGE_COUNT") {
 		t.Fatalf("warnings: %v %q", err, out.String())
 	}
 	// A module's own selection governs its files alone: a's entry
 	// enables nothing, b stays under the root, and the root's set
 	// rule counts b's messages alone.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: []\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    enable: []\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("per module: %v %q", err, out.String())
 	}
 	// An ignore naming a kind excludes that kind's findings alone: the
 	// breaking ignore over a.proto leaves its lint finding standing.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [naming]\nignore:\n  - paths: [a.proto, \"vendor/**\"]\n    kind: breaking\n  - paths: [\"vendor/**\"]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nenable: [naming]\nignore:\n  - paths: [a.proto, \"vendor/**\"]\n    kind: breaking\n  - paths: [\"vendor/**\"]\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "a.proto:5:3: error example.com/house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "a.proto:5:3: error house:FIELD_NAMES: field names are snake_case\nb.proto:6:3: error house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("an ignore of the other kind: %v %q", err, out.String())
 	}
 	// A module's own ignore excludes its files' findings alone: a's
 	// entry ignores a.proto, and b's finding under the root stands.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    ignore:\n      - paths: [a.proto, \"vendor/**\"]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    ignore:\n      - paths: [a.proto, \"vendor/**\"]\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, ErrFindings) || out.String() != "b.proto:6:3: error house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("a module's own ignore: %v %q", err, out.String())
 	}
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  nowhere:\n    enable: []\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  nowhere:\n    enable: []\n")
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), `modules names "nowhere", which is no workspace module`) {
 		t.Fatalf("an unknown module: %v", err)
 	}
 	// Every module with an entry leaves the root governing nothing; a
 	// set rule enabled for a module sees its files alone and its
 	// finding is located at the module's directory.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT]\n  b:\n    enable: [MESSAGE_COUNT]\n  house:\n    enable: []\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT]\n  b:\n    enable: [MESSAGE_COUNT]\n  house:\n    enable: []\n")
 	out.Reset()
 	diag.Reset()
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "" {
@@ -1622,7 +1598,7 @@ func TestLint(t *testing.T) {
 	// Every module's entry enabling nothing leaves zero rules enabled
 	// under every selection governing a file, whatever the root would
 	// enable for a module it does not govern.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: []\n  b:\n    enable: []\n  house:\n    enable: []\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    enable: []\n  b:\n    enable: []\n  house:\n    enable: []\n")
 	out.Reset()
 	diag.Reset()
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "pb lint: zero lint rules enabled\n" {
@@ -1630,15 +1606,15 @@ func TestLint(t *testing.T) {
 	}
 	// A package finding under a module's own selection is located
 	// there too, in place of the package's first file.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT, PACKAGE_SIZE]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    enable: [MESSAGE_COUNT, PACKAGE_SIZE]\n")
 	fx.write(t, "a/more.proto", "syntax = \"proto3\";\npackage a;\nmessage M2 {}\nmessage M3 {}\n")
 	out.Reset()
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a: warning example.com/house:MESSAGE_COUNT: too many messages\na: warning example.com/house:PACKAGE_SIZE: too many messages in a package\nb.proto:6:3: error example.com/house:FIELD_NAMES: field names are snake_case\n" {
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a: warning house:MESSAGE_COUNT: too many messages\na: warning house:PACKAGE_SIZE: too many messages in a package\nb.proto:6:3: error house:FIELD_NAMES: field names are snake_case\n" {
 		t.Fatalf("a module's set and package findings located at its directory: %v %q", err, out.String())
 	}
 	// Under the root, the package finding sits at the package's first
 	// file, and the root's ignore over that file drops it.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nenable: [PACKAGE_SIZE]\nignore:\n  - paths: [a.proto]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nenable: [PACKAGE_SIZE]\nignore:\n  - paths: [a.proto]\n")
 	fx.write(t, "a/more.proto", "syntax = \"proto3\";\npackage a;\nmessage M2 {}\nmessage M3 {}\n")
 	out.Reset()
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" {
@@ -1665,10 +1641,125 @@ func TestLint(t *testing.T) {
 	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "example.com/std") {
 		t.Fatalf("the served dependency's pin was lost with the failure: %q", lock)
 	}
-	// A ruleset the lint file names that no module declares fails.
-	fx = newCheck(t, "rulesets:\n  - example.com/nowhere\n")
-	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/nowhere") {
-		t.Fatalf("undeclared ruleset: %v", err)
+	// Imports are exact and isolated (the ruleset import term): one
+	// path at two versions under two aliases reads two rulesets, each
+	// rule under its import's alias, both pinned as rulesets — and an
+	// import no module declares is pinned among the rulesets alone.
+	fx = newCheck(t, "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: one\n  - path: example.com/std\n    version: v1.1.0\n    alias: two\n")
+	fx.serve(t, "example.com/std", "v1.1.0", map[string]string{
+		"pb.yaml":        ws("example.com/std", ""),
+		"std.rules.yaml": "celEnv: 1\nrules:\n  - id: PACKAGE_DEFINED\n    kind: lint\n    target: file\n    severity: error\n    cel: file.package != ''\n    message: files declare a package\n  - id: NEWER\n    kind: lint\n    target: file\n    severity: warning\n    cel: file.package != 'a'\n    message: the newer ruleset alone declares this\n",
+	})
+	out.Reset()
+	diag.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "a.proto:1:1: warning two:NEWER: the newer ruleset alone declares this\n" {
+		t.Fatalf("two versions of one ruleset: %v %q %q", err, out.String(), diag.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n") || !strings.Contains(lock, "  - path: example.com/std\n    version: v1.1.0\n") || strings.Contains(lock, "modules:\n  - path: example.com/std\n    version: v1.1.0") {
+		t.Fatalf("two versions pinned as rulesets: %q", lock)
+	}
+	// A first ruleset pin makes the lockfile, holding rulesets alone
+	// (REQ-lock-first-use); a pin made before a later import fails is
+	// saved; a pair the modules pin at another digest is refused, one
+	// pair naming one content (REQ-lock-ruleset-entry).
+	std := "  - path: example.com/std\n    version: v1.0.0\n    alias: std\n"
+	lean := func(lint, lock string) *depFixture {
+		files := map[string]string{
+			"pb.work":      "use:\n  - a\n",
+			"pb.lint.yaml": lint,
+			"a/pb.yaml":    ws("example.com/a", ""),
+			"a/a.proto":    "syntax = \"proto3\";\npackage a;\n",
+		}
+		if lock != "" {
+			files["pb.lock"] = lock
+		}
+		fx := newDep(t, files)
+		fx.serve(t, "example.com/std", "v1.0.0", map[string]string{
+			"pb.yaml":        ws("example.com/std", ""),
+			"std.rules.yaml": "celEnv: 1\nrules:\n  - id: PACKAGE_DEFINED\n    kind: lint\n    target: file\n    severity: error\n    cel: file.package != ''\n    message: files declare a package\n",
+		})
+		return fx
+	}
+	fx = lean("rulesets:\n"+std, "")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil {
+		t.Fatalf("lint with a ruleset alone: %v", err)
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.HasPrefix(lock, "version: 1\nmodules:\nrulesets:\n  - path: example.com/std\n    version: v1.0.0\n") {
+		t.Fatalf("the lockfile a ruleset pin makes: %q", lock)
+	}
+	fx = lean("rulesets:\n"+std+"  - path: example.com/nowhere\n    version: v1.0.0\n    alias: no\n", "")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/nowhere@v1.0.0") {
+		t.Fatalf("a later import failing: %v", err)
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n") {
+		t.Fatalf("the pin made before the failure was lost: %q", lock)
+	}
+	fx = lean("rulesets:\n"+std, "version: 1\nmodules:\n  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:"+strings.Repeat("0", 64)+"\n    provenance: none\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, lockfile.ErrPinMismatch) || !strings.Contains(err.Error(), "example.com/std@v1.0.0 digest: pinned as a module at pb1:"+strings.Repeat("0", 64)+", fetched pb1:") {
+		t.Fatalf("a pair the modules pin at another digest: %v", err)
+	}
+	if lock := fx.read(t, "pb.lock"); strings.Contains(lock, "rulesets:") {
+		t.Fatalf("the refused pair was pinned as a ruleset: %q", lock)
+	}
+	// And the other way: a module's first use held to the rulesets'
+	// pin of the pair.
+	fx = lean("rulesets:\n"+std, "version: 1\nmodules: []\nrulesets:\n  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:"+strings.Repeat("0", 64)+"\n    provenance: none\n")
+	fx.write(t, "a/pb.yaml", ws("example.com/a", "  example.com/std: v1.0.0\n"))
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !errors.Is(err, lockfile.ErrPinMismatch) || !strings.Contains(err.Error(), "example.com/std@v1.0.0 digest: pinned as a ruleset at pb1:"+strings.Repeat("0", 64)+", fetched pb1:") {
+		t.Fatalf("a pair the rulesets pin at another digest: %v", err)
+	}
+
+	// Imports read through the workspace's replacements as the build
+	// does: a directory replacement from the working tree, a version
+	// refused; a path replacement's pair in the path's place, pinned
+	// under its own path (REQ-lint-rulesets-imported).
+	forked := "celEnv: 1\nrules:\n  - id: FORKED\n    kind: lint\n    target: file\n    severity: error\n    cel: \"false\"\n    message: the fork's rule\n"
+	fx = newDep(t, map[string]string{
+		"pb.work":              "use:\n  - a\nreplace:\n  example.com/std: ./fork\n",
+		"pb.lint.yaml":         "rulesets:\n  - path: example.com/std\n    alias: std\n",
+		"a/pb.yaml":            ws("example.com/a", ""),
+		"a/a.proto":            "syntax = \"proto3\";\npackage a;\n",
+		"fork/pb.yaml":         ws("example.com/std", ""),
+		"fork/fork.rules.yaml": forked,
+	})
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:1:1: error std:FORKED: the fork's rule\n" {
+		t.Fatalf("a directory replacement's rules: %v %q", err, out.String())
+	}
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/std: replaced by a directory, read from the working tree: write no version (v1.0.0 written)") {
+		t.Fatalf("a directory replacement with a version: %v", err)
+	}
+	fx = newDep(t, map[string]string{
+		"pb.work":      "use:\n  - a\nreplace:\n  example.com/std: example.com/fork@v2.0.0\n",
+		"pb.lint.yaml": "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\n",
+		"a/pb.yaml":    ws("example.com/a", ""),
+		"a/a.proto":    "syntax = \"proto3\";\npackage a;\n",
+	})
+	fx.serve(t, "example.com/fork", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/fork", ""), "fork.rules.yaml": forked})
+	out.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:1:1: error std:FORKED: the fork's rule\n" {
+		t.Fatalf("a path replacement's rules: %v %q", err, out.String())
+	}
+	if lock := fx.read(t, "pb.lock"); !strings.Contains(lock, "rulesets:\n  - path: example.com/fork\n    version: v2.0.0\n") || strings.Contains(lock, "example.com/std") {
+		t.Fatalf("a path replacement's pin: %q", lock)
+	}
+
+	// An import whose version does not resolve fails naming it; a
+	// workspace module imported with a version, and an external one
+	// imported without, are refused as written (REQ-lint-rulesets-
+	// imported).
+	fx = newCheck(t, "rulesets:\n  - path: example.com/nowhere\n    version: v1.0.0\n    alias: nowhere\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/nowhere@v1.0.0") {
+		t.Fatalf("unresolved import: %v", err)
+	}
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    version: v1.0.0\n    alias: house\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/house: a workspace module, read from the working tree: write no version") {
+		t.Fatalf("workspace module with a version: %v", err)
+	}
+	fx = newCheck(t, "rulesets:\n  - path: example.com/std\n    alias: std\n")
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || !strings.Contains(err.Error(), "ruleset example.com/std: no workspace module: write the version to read") {
+		t.Fatalf("external without a version: %v", err)
 	}
 }
 
@@ -1679,7 +1770,7 @@ func TestLint(t *testing.T) {
 // naming the file; zero breaking rules is said on standard error
 // (REQ-check-breaking-verb, REQ-break-base).
 func TestBreaking(t *testing.T) {
-	fx := newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.9.0\n")
+	fx := newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    version: v0.9.0\n")
 	// The bases: a had a field since removed and a field whose type
 	// changed; b had a field since removed.
 	fx.serve(t, "example.com/a", "v0.9.0", map[string]string{
@@ -1700,7 +1791,7 @@ func TestBreaking(t *testing.T) {
 	if !errors.Is(err, ErrFindings) {
 		t.Fatalf("Breaking: %v", err)
 	}
-	want := "a.proto:7:3: warning example.com/house:FIELD_TYPE: type changed\na.proto:8:3: error example.com/house:FIELD_GONE: field removed [base]\nb.proto:7:3: error example.com/house:FIELD_GONE: field removed [base]\n"
+	want := "a.proto:7:3: warning house:FIELD_TYPE: type changed\na.proto:8:3: error house:FIELD_GONE: field removed [base]\nb.proto:7:3: error house:FIELD_GONE: field removed [base]\n"
 	if out.String() != want || diag.String() != "" {
 		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
 	}
@@ -1708,12 +1799,12 @@ func TestBreaking(t *testing.T) {
 		t.Fatalf("the version base was not pinned: %q", lock)
 	}
 	// No base configured.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\n")
 	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "names no breaking base") {
 		t.Fatalf("no base: %v", err)
 	}
 	// Zero breaking rules.
-	fx = newCheck(t, "rulesets:\n  - example.com/std\nbreaking:\n  base:\n    pinned: true\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\nbreaking:\n  base:\n    pinned: true\n")
 	out.Reset()
 	diag.Reset()
 	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err != nil || diag.String() != "pb breaking: zero breaking rules enabled\n" {
@@ -1721,7 +1812,7 @@ func TestBreaking(t *testing.T) {
 	}
 	// A base the origin does not serve fails naming the module and the
 	// form; a base pinned before the failure stays pinned.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.8.0\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    version: v0.8.0\n")
 	fx.serve(t, "example.com/a", "v0.8.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {}\n"})
 	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "breaking: example.com/b: breaking base version v0.8.0") {
 		t.Fatalf("unserved base: %v", err)
@@ -1732,10 +1823,10 @@ func TestBreaking(t *testing.T) {
 	// A module whose own selection enables no breaking rule needs no
 	// base: b's unserved base is never asked for, nothing of b is
 	// pinned, and a's findings under the root's rules stand.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  b:\n    enable: []\nbreaking:\n  base:\n    version: v0.8.0\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  b:\n    enable: []\nbreaking:\n  base:\n    version: v0.8.0\n")
 	fx.serve(t, "example.com/a", "v0.8.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {\n  string gone = 9;\n}\n"})
 	out.Reset()
-	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n" {
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error house:FIELD_GONE: field removed [base]\n" {
 		t.Fatalf("a module needing no base: %v %q", err, out.String())
 	}
 	if lock := fx.read(t, "pb.lock"); strings.Contains(lock, "example.com/b") || !strings.Contains(lock, "v0.8.0") {
@@ -1744,12 +1835,12 @@ func TestBreaking(t *testing.T) {
 	// The base compiles with the build's other modules resolving its
 	// imports and none other a target: a's base lacking a message b
 	// uses now is a's base still; an ignore drops a base finding.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.7.0\nignore:\n  - paths: [\"b.proto\"]\n    rules: [FIELD_GONE]\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    version: v0.7.0\nignore:\n  - paths: [\"b.proto\"]\n    rules: [FIELD_GONE]\n")
 	fx.serve(t, "example.com/a", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Former {\n  string gone = 1;\n}\n"})
 	fx.serve(t, "example.com/b", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": "syntax = \"proto3\";\npackage b;\nmessage Use {\n  string Loud = 2;\n  string dropped = 3;\n}\n"})
 	out.Reset()
 	err = Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
-	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n" {
+	if !errors.Is(err, ErrFindings) || out.String() != "a.proto:4:3: error house:FIELD_GONE: field removed [base]\n" {
 		t.Fatalf("base lacking what b uses: %v %q", err, out.String())
 	}
 	// A module's own ignore reaches its base's files: a's base held a
@@ -1757,9 +1848,9 @@ func TestBreaking(t *testing.T) {
 	// an entry naming another rule leaves it standing.
 	for _, c := range []struct{ rules, want string }{
 		{"", ""},
-		{"\n        rules: [FIELD_TYPE]", "former.proto:4:3: error example.com/house:FIELD_GONE: field removed [base]\n"},
+		{"\n        rules: [FIELD_TYPE]", "former.proto:4:3: error house:FIELD_GONE: field removed [base]\n"},
 	} {
-		fx = newCheck(t, "rulesets:\n  - example.com/house\nmodules:\n  a:\n    ignore:\n      - paths: [former.proto]"+c.rules+"\nbreaking:\n  base:\n    version: v0.6.0\n")
+		fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nmodules:\n  a:\n    ignore:\n      - paths: [former.proto]"+c.rules+"\nbreaking:\n  base:\n    version: v0.6.0\n")
 		fx.serve(t, "example.com/a", "v0.6.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": fx.read(t, "a/a.proto"), "former.proto": "syntax = \"proto3\";\npackage a;\nmessage Former {\n  string gone = 1;\n}\n"})
 		fx.serve(t, "example.com/b", "v0.6.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": fx.read(t, "b/b.proto")})
 		out.Reset()
@@ -1770,7 +1861,7 @@ func TestBreaking(t *testing.T) {
 	}
 	// A file a gained after its base, imported by b now: a's base run
 	// checks a's imports alone, b's being no requirer of it.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.7.0\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    version: v0.7.0\n")
 	fx.serve(t, "example.com/a", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/a", ""), "a.proto": "syntax = \"proto3\";\npackage a;\nmessage Thing {\n  string BadName = 1;\n}\n"})
 	fx.serve(t, "example.com/b", "v0.7.0", map[string]string{"pb.yaml": ws("example.com/b", "  example.com/a: v0.0.1\n"), "b.proto": "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nmessage Use {\n  a.Thing thing = 1;\n}\n"})
 	fx.write(t, "b/b.proto", "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"vendor/v.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  a.vendor.V v = 2;\n}\n")
@@ -1780,7 +1871,7 @@ func TestBreaking(t *testing.T) {
 	}
 	// A reference base with no repository source wired fails naming
 	// it.
-	fx = newCheck(t, "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    ref: HEAD\n")
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    ref: HEAD\n")
 	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "no repository source is wired") {
 		t.Fatalf("no repo source: %v", err)
 	}
@@ -1793,7 +1884,7 @@ func TestBreaking(t *testing.T) {
 func TestBreakingSkipsModuleWithoutFilesOfTheBuild(t *testing.T) {
 	fx := newDep(t, map[string]string{
 		"pb.work":                       "use:\n  - a\n  - b\n  - house\n",
-		"pb.lint.yaml":                  "rulesets:\n  - example.com/house\nbreaking:\n  base:\n    version: v0.9.0\n",
+		"pb.lint.yaml":                  "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    version: v0.9.0\n",
 		"a/pb.yaml":                     ws("example.com/a", ""),
 		"a/google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\nmessage Empty {}\n",
 		"b/pb.yaml":                     ws("example.com/b", ""),

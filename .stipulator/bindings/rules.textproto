@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
-  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
+  content_hash: "b695319182d1215a9161b26098fa3e5fde1573dbe1625f9a323b792b6ad9adb7"
+  source_hash: "6b24088615b3f81925989108815a53b6813c0a0fde13bd6d92432fe66ad0aa5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
-  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
+  content_hash: "b695319182d1215a9161b26098fa3e5fde1573dbe1625f9a323b792b6ad9adb7"
+  source_hash: "6b24088615b3f81925989108815a53b6813c0a0fde13bd6d92432fe66ad0aa5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRuleFile"
   role: BINDING_ROLE_TESTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
-  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
+  content_hash: "b695319182d1215a9161b26098fa3e5fde1573dbe1625f9a323b792b6ad9adb7"
+  source_hash: "6b24088615b3f81925989108815a53b6813c0a0fde13bd6d92432fe66ad0aa5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseRefusesSchemaDepartures"
   role: BINDING_ROLE_TESTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
-  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
+  content_hash: "b695319182d1215a9161b26098fa3e5fde1573dbe1625f9a323b792b6ad9adb7"
+  source_hash: "6b24088615b3f81925989108815a53b6813c0a0fde13bd6d92432fe66ad0aa5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseTakesEveryScalarSpelling"
   role: BINDING_ROLE_TESTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-file-schema"
-  content_hash: "75293c63ef298e125bb1afe2857960379a2aa7460c9c5f73463355d450ccb1c6"
-  source_hash: "032f671cc005dfabaa0987da024d24ccb5553f4813924d489aea730a29008664"
+  content_hash: "b695319182d1215a9161b26098fa3e5fde1573dbe1625f9a323b792b6ad9adb7"
+  source_hash: "6b24088615b3f81925989108815a53b6813c0a0fde13bd6d92432fe66ad0aa5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/contractfile.TestScalarReaders"
   role: BINDING_ROLE_TESTS

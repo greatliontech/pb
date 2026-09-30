@@ -1,18 +1,22 @@
 // Package lintfile parses pb.lint.yaml, the lint file at the resolution
-// root (check-rules.md §Configuration and suppression): the rulesets to
-// import, the rule selection and severity overrides — the root's, and a
-// module's own by its directory — the path ignores, and the
-// breaking-change base. It selects the enabled rules from the imported
-// rulesets' rule files, finds the rulesets among the build's modules,
-// and judges a finding's path against the ignores; the verbs assemble
-// the rest.
+// root (check-rules.md §Configuration and suppression): the ruleset
+// imports, the rule selection and severity overrides — the root's, and
+// a module's own by its directory — the path ignores, and the
+// breaking-change base. It reads each import exactly as written — a
+// workspace module from the working tree, any other at its version
+// through the caller's verified archive — selects the enabled rules
+// from the imported rule files under the imports' aliases, and judges
+// a finding's path against the ignores; the verbs assemble the rest.
 package lintfile
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
+	"path"
 	"reflect"
 	"slices"
 	"sort"
@@ -24,7 +28,6 @@ import (
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/contractfile"
-	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
@@ -44,14 +47,15 @@ var ErrInvalid = errors.New("invalid lint file")
 // (REQ-lint-selection).
 var ErrSelection = errors.New("invalid rule selection")
 
-// ErrRuleset is wrapped when a ruleset the lint file names is no
-// module of the build, or its rule files fail (REQ-lint-rulesets-
-// declared, REQ-rules-file-discovery).
+// ErrRuleset is wrapped when an import the lint file names cannot be
+// read as written — a workspace module with a version, another with
+// none, a version that does not resolve — or its rule files fail
+// (REQ-lint-rulesets-imported, REQ-rules-file-discovery).
 var ErrRuleset = errors.New("ruleset")
 
 // File is a parsed lint file, every part optional.
 type File struct {
-	Rulesets []string
+	Rulesets []rules.Import
 	Enable   []string // rule names, ids or tags; nil means every imported rule
 	Exclude  []string
 	Severity map[string]check.Severity
@@ -144,22 +148,9 @@ func Parse(data []byte) (*File, error) {
 	root := selection("", &f.Enable, &f.Exclude, &f.Severity)
 	err = contractfile.Mapping(m, "", ErrInvalid,
 		contractfile.Field{Name: "rulesets", Read: func(n ast.Node) error {
-			paths, err := contractfile.Strings(n, "rulesets", ErrInvalid)
-			if err != nil {
-				return err
-			}
-			seen := map[string]bool{}
-			for _, p := range paths {
-				if err := module.ValidatePath(p); err != nil {
-					return fmt.Errorf("%w: rulesets: %v", ErrInvalid, err)
-				}
-				if seen[p] {
-					return fmt.Errorf("%w: rulesets: %s listed twice", ErrInvalid, p)
-				}
-				seen[p] = true
-			}
-			f.Rulesets = paths
-			return nil
+			imports, err := rules.ParseImports(n, "rulesets", ErrInvalid)
+			f.Rulesets = imports
+			return err
 		}},
 		root[0], root[1], root[2],
 		contractfile.Field{Name: "modules", Read: func(n ast.Node) error {
@@ -311,21 +302,6 @@ func parseBreaking(n ast.Node) (*Breaking, error) {
 	return b, nil
 }
 
-// Declared reports whether a module path may be a ruleset of the
-// root: a workspace module, or a dependency some workspace module
-// declares (REQ-lint-rulesets-declared).
-func Declared(root *workspace.Root, path string) bool {
-	for _, m := range root.Modules {
-		if m.File.Module == path {
-			return true
-		}
-		if _, ok := m.File.Deps[path]; ok {
-			return true
-		}
-	}
-	return false
-}
-
 func contains(list []string, s string) bool {
 	for _, x := range list {
 		if x == s {
@@ -335,33 +311,67 @@ func contains(list []string, s string) bool {
 	return false
 }
 
-// Ruleset is an imported ruleset: the module and its rule files.
+// Ruleset is an imported ruleset: the import and its rule files.
 type Ruleset struct {
-	Path  string
-	Files []rules.Located
+	Path    string
+	Version string // "" for a workspace module
+	Alias   string
+	Files   []rules.Located
 }
 
-// Rulesets finds each ruleset the lint file names among the build's
-// modules and reads its rule files (REQ-lint-rulesets-declared,
-// REQ-rules-file-discovery): a path must be a workspace module or a
-// dependency some workspace module declares, and be among the
-// modules; a bad rule file fails naming the ruleset and the file.
-func Rulesets(f *File, root *workspace.Root, mods []modfiles.Module) ([]Ruleset, error) {
-	byPath := map[string]modfiles.Module{}
-	for _, m := range mods {
-		byPath[m.Path] = m
-	}
+// Rulesets reads each import the lint file names exactly as written
+// (REQ-lint-rulesets-imported, REQ-rules-file-discovery), through the
+// workspace's replacements as the build reads a module: a path naming
+// a workspace module, or one a directory replacement serves, from the
+// working tree, a version written for it refused; any other at its
+// version through zip — the caller's verified archive, pinned as a
+// ruleset, a path replacement's pair in the path's place — a version
+// missing refused; a bad rule file fails naming the ruleset and the
+// file. fsys is the working tree the root was loaded from.
+func Rulesets(ctx context.Context, f *File, root *workspace.Root, fsys fs.FS, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Ruleset, error) {
 	out := make([]Ruleset, 0, len(f.Rulesets))
-	for _, p := range f.Rulesets {
-		m, inBuild := byPath[p]
-		if !Declared(root, p) || !inBuild {
-			return nil, fmt.Errorf("%w %s: not a workspace module nor a dependency a workspace module declares", ErrRuleset, p)
+	for _, imp := range f.Rulesets {
+		var ruleFiles map[string][]byte
+		dir, local := root.IsLocal(imp.Path)
+		src := root.Source(imp.Path, version.Version{})
+		switch {
+		case local || src.Module != nil:
+			how := "a workspace module"
+			if !local {
+				how, dir = "replaced by a directory", src.Module.Dir
+			}
+			if imp.Version != "" {
+				return nil, fmt.Errorf("%w %s: %s, read from the working tree: write no version (%s written)", ErrRuleset, imp.Path, how, imp.Version)
+			}
+			_, rf, err := modfiles.WorkspaceFiles(fsys, path.Join(root.Dir, dir))
+			if err != nil {
+				return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
+			}
+			ruleFiles = rf
+		default:
+			if imp.Version == "" {
+				return nil, fmt.Errorf("%w %s: no workspace module: write the version to read", ErrRuleset, imp.Path)
+			}
+			v, err := version.Parse(imp.Version)
+			if err != nil {
+				return nil, fmt.Errorf("%w %s: %v", ErrRuleset, imp.Path, err)
+			}
+			pair := root.Source(imp.Path, v)
+			b, err := zip(ctx, pair.Path, pair.Version)
+			if err != nil {
+				return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
+			}
+			_, rf, _, err := modfiles.UnpackArchive(b)
+			if err != nil {
+				return nil, fmt.Errorf("%w %s@%s: %w", ErrRuleset, imp.Path, imp.Version, err)
+			}
+			ruleFiles = rf
 		}
-		files, err := rules.Discover(m.Rules)
+		files, err := rules.Discover(ruleFiles)
 		if err != nil {
-			return nil, fmt.Errorf("%w %s: %w", ErrRuleset, p, err)
+			return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
 		}
-		out = append(out, Ruleset{Path: p, Files: files})
+		out = append(out, Ruleset{Path: imp.Path, Version: imp.Version, Alias: imp.Alias, Files: files})
 	}
 	return out, nil
 }
@@ -417,8 +427,9 @@ func (s Selection) Ignored(dir, path, name string, kind check.Kind) bool {
 
 // Select is the enabled rules (REQ-lint-selection): every rule of
 // every imported ruleset when enable is absent, else the rules enable
-// names — by name, by qualified tag, or by a bare id or tag exactly
-// one ruleset declares — less those exclude names; each at the
+// names — by name (the import's alias and the id), by qualified tag,
+// or by a bare id or tag exactly one ruleset declares — less those
+// exclude names, each at the
 // severity the file overrides for it, severity and ignore naming
 // rules alone. The order is the rulesets', then the rule files' by
 // path, then declaration. A spelling no imported rule declares, a
@@ -432,8 +443,8 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 		tagsIn := map[string]string{}
 		for _, rf := range s.Files {
 			for _, r := range rf.File.Rules {
-				r.Ruleset = s.Path
-				where := s.Path + "/" + rf.Path
+				r.Ruleset = s.Alias
+				where := s.Alias + "'s " + rf.Path
 				if prior, dup := declaredIn[r.ID]; dup {
 					return Selection{}, fmt.Errorf("%w: %s declared by %s and %s", ErrSelection, r.Name(), prior, where)
 				}
@@ -447,7 +458,7 @@ func Select(f *File, sets []Ruleset) (Selection, error) {
 			}
 		}
 		for _, r := range all {
-			if r.Ruleset != s.Path {
+			if r.Ruleset != s.Alias {
 				continue
 			}
 			if by, clash := tagsIn[r.ID]; clash {
@@ -649,9 +660,10 @@ func (b Base) String() string {
 // their order, each absent where it holds nothing — save enable,
 // whose empty list means what its absence does not and is spelled
 // `[]`; an ignore's empty rules list, which the schema forbids, is
-// spelled the same so Parse refuses it by name — enable and exclude
-// sorted, severity by key, ignore entries by their sorted paths then
-// their sorted rules, modules by directory; each scalar spelled as
+// spelled the same so Parse refuses it by name — rulesets in the
+// order given, each entry's keys path, version, alias, enable and
+// exclude sorted, severity by key, ignore entries by their sorted
+// paths then their sorted rules, modules by directory; each scalar spelled as
 // contractfile.Spell has it. The rendering is
 // validated first through Parse — Encode never emits what Parse
 // rejects, nor what Parse reads as a different file.
@@ -693,7 +705,16 @@ func Encode(f *File) ([]byte, error) {
 				}
 			})
 		}
-		list("rulesets", orNil(f.Rulesets), false)
+		if len(f.Rulesets) > 0 {
+			w.Sequence("rulesets", len(f.Rulesets), func(i int) {
+				imp := f.Rulesets[i]
+				w.Scalar("path", imp.Path)
+				if imp.Version != "" {
+					w.Scalar("version", imp.Version)
+				}
+				w.Scalar("alias", imp.Alias)
+			})
+		}
 		list("enable", f.Enable, true)
 		list("exclude", orNil(f.Exclude), true)
 		severity(f.Severity)
@@ -778,11 +799,12 @@ func ignoreForms(igs []Ignore) []ignoreForm {
 // list order where order means nothing, an empty list where absence
 // means the same. Two files of one form render identically.
 type form struct {
-	Rulesets, Enable, Exclude []string
-	Severity                  map[string]check.Severity
-	Ignore                    []ignoreForm
-	Breaking                  *Breaking
-	Modules                   map[string]form
+	Rulesets        []rules.Import
+	Enable, Exclude []string
+	Severity        map[string]check.Severity
+	Ignore          []ignoreForm
+	Breaking        *Breaking
+	Modules         map[string]form
 }
 
 // formOf is the file's form, over every field of File and
@@ -821,7 +843,11 @@ func formOf(f *File) form {
 		slices.Sort(l)
 		return l
 	}
-	out := form{Rulesets: orNil(f.Rulesets), Enable: enable(f.Enable), Exclude: sorted(f.Exclude), Severity: severity(f.Severity), Ignore: ignores(f.Ignore), Breaking: f.Breaking}
+	rulesets := f.Rulesets
+	if len(rulesets) == 0 {
+		rulesets = nil
+	}
+	out := form{Rulesets: rulesets, Enable: enable(f.Enable), Exclude: sorted(f.Exclude), Severity: severity(f.Severity), Ignore: ignores(f.Ignore), Breaking: f.Breaking}
 	if len(f.Modules) > 0 {
 		out.Modules = map[string]form{}
 		for d, ms := range f.Modules {

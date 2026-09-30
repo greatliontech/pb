@@ -58,7 +58,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.firstUse"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "3d9a5fe246cd96600b42f863e8ed223a0f6a7c72cf60aaa656d40a1c66307671"
+  shape_hash: "a645c3327e97b8b0f4f576d4fedb3d63a4365c30541eb4df714bfb4486260b99"
 }
 
 bindings {
@@ -279,36 +279,6 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
   shape_hash: "c1d092f1c1dff57d9670f58b8c896eeb42591adeab1b7517f79e1d0849f3f1c0"
-}
-
-bindings {
-  requirement_id: "REQ-dep-tidy-rulesets"
-  content_hash: "031f6992b7eab2049eda092fa91b1630e9371daa9ad7b134e0e987fb7ae3ea7f"
-  source_hash: "62fe80f2df0fc6530e5c7a1324f1969263a13feca27f2527f66fc8f94226ffb4"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/dep.Session.rulesets"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "a954a03c1b92819df58d2a56ed14b4f9ad2a091c5de14db013c88aa9ec30ffba"
-}
-
-bindings {
-  requirement_id: "REQ-dep-tidy-rulesets"
-  content_hash: "031f6992b7eab2049eda092fa91b1630e9371daa9ad7b134e0e987fb7ae3ea7f"
-  source_hash: "62fe80f2df0fc6530e5c7a1324f1969263a13feca27f2527f66fc8f94226ffb4"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/dep.tidyOnce"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "57bd13074cccdb0b8248a123e87acc8d37fc756099327c68db28f5d106aaa218"
-}
-
-bindings {
-  requirement_id: "REQ-dep-tidy-rulesets"
-  content_hash: "031f6992b7eab2049eda092fa91b1630e9371daa9ad7b134e0e987fb7ae3ea7f"
-  source_hash: "62fe80f2df0fc6530e5c7a1324f1969263a13feca27f2527f66fc8f94226ffb4"
-  backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/dep.TestTidyKeepsRulesets"
-  role: BINDING_ROLE_TESTS
-  shape_hash: "dbfe5b4cde512cd99a29637193062e056edf966c08069c4bfefac1b9e3ff3f17"
 }
 
 bindings {
@@ -629,4 +599,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.IsModuleDir"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "5c4f5b0db8fb5bab67594caec3c31eb1a6e09bcb9d2cd29bc3635aafdefb4d0c"
+}
+
+bindings {
+  requirement_id: "REQ-dep-ruleset-declarations"
+  content_hash: "e05f3a49199517e0c22f444b8b28d3f66920e61652922e1ea7039087788b4f63"
+  source_hash: "b7814f65751ae0b9b8059a5aed988a6b2c0721b03615c6a66adba3e584391110"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Tidy"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "546b960cd2ae7ee37805a4aefe82b08cbf6575c841f5b43182a9f51931bf2ce5"
+}
+
+bindings {
+  requirement_id: "REQ-dep-ruleset-declarations"
+  content_hash: "e05f3a49199517e0c22f444b8b28d3f66920e61652922e1ea7039087788b4f63"
+  source_hash: "b7814f65751ae0b9b8059a5aed988a6b2c0721b03615c6a66adba3e584391110"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestTidyLeavesRulesetsAlone"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "5f2107f9398253cfec9dfe0185a18ad657e8e75d2e96bfd1c9993966029f7469"
 }

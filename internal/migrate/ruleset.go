@@ -12,6 +12,10 @@ import (
 // tagged with buf's categories.
 const Ruleset = "github.com/greatliontech/buf-rules"
 
+// RulesetAlias is the alias the lint file imports the ruleset under
+// (REQ-migrate-rules).
+const RulesetAlias = "buf"
+
 // rulesetRule is what the migration knows of one rule of the ruleset:
 // its kind, its target and the categories it carries as tags.
 type rulesetRule struct {

@@ -202,9 +202,14 @@ there, so no layout pb can name has every file resolving its imports.
 
 **REQ-migrate-rules** (behavior): buf's `lint` and `breaking`
 sections MUST become one lint file importing the ruleset
-`github.com/greatliontech/buf-rules` — declared as a dependency of
-every module the configuration declares, tidy keeping it
-(`dep-verbs.md` REQ-dep-tidy-rulesets) — spelling the selection buf
+`github.com/greatliontech/buf-rules` — at the highest release the
+migration discovers, or the version a replacement keyed by the
+ruleset's own path gives (`--dep github.com/greatliontech/buf-rules=github.com/greatliontech/buf-rules@<version>`,
+a replacement naming another path refused), under the alias `buf`,
+declared in no module file (`check-rules.md`
+REQ-lint-rulesets-imported); no version discovered and none given
+is an unmapped fact naming the flag, the import written without a
+version — spelling the selection buf
 applies to each module: `use` of either section joined into
 `enable`, each entry a buf category or rule id spelled as the
 ruleset's qualified tag or rule name, `DEFAULT` read as `STANDARD`,

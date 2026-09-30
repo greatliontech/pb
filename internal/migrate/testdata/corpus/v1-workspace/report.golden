@@ -2,16 +2,16 @@ buf.work.yaml directories[0] api -> api/pb.yaml module: example.com/acme/v1-work
 api/buf.yaml.name buf.build/acme/api -> module: example.com/acme/v1-workspace/api (a BSR name is no place pb fetches from)
 buf.work.yaml directories[1] internal/proto -> internal/proto/pb.yaml module: example.com/acme/v1-workspace/internal/proto
 api/buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
-the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
 api/buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
 api/buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
-api/buf.yaml.lint.use DEFAULT -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's DEFAULT is STANDARD)
-api/buf.yaml.lint.except RPC_RESPONSE_STANDARD_NAME -> exclude: github.com/greatliontech/buf-rules:RPC_RESPONSE_STANDARD_NAME
-api/buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
+api/buf.yaml.lint.use DEFAULT -> enable: buf:STANDARD (buf's DEFAULT is STANDARD)
+api/buf.yaml.lint.except RPC_RESPONSE_STANDARD_NAME -> exclude: buf:RPC_RESPONSE_STANDARD_NAME
+api/buf.yaml.breaking.use FILE -> enable: buf:FILE
 internal/proto/buf.yaml.lint.ignore acme/legacy -> modules.internal/proto.ignore paths [acme/legacy/**] kind lint
 internal/proto/buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
-internal/proto/buf.yaml.lint.use DEFAULT -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's DEFAULT is STANDARD)
-internal/proto/buf.yaml.breaking.use WIRE_JSON -> enable: github.com/greatliontech/buf-rules:WIRE_JSON
+internal/proto/buf.yaml.lint.use DEFAULT -> enable: buf:STANDARD (buf's DEFAULT is STANDARD)
+internal/proto/buf.yaml.breaking.use WIRE_JSON -> enable: buf:WIRE_JSON
 buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
 buf.gen.yaml plugins[0].out gen -> out: gen
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative

@@ -308,9 +308,9 @@ func TestLineComment(t *testing.T) {
 // fails the run naming them (REQ-lint-suppression).
 func TestSuppressionByName(t *testing.T) {
 	std := fieldNames
-	std.Ruleset = "example.com/std"
+	std.Ruleset = "std"
 	house := fieldNames
-	house.Ruleset = "example.com/house"
+	house.Ruleset = "house"
 	house.Message = "house names"
 	run := func(rs []rules.Rule, src string) (string, error) {
 		srcs := map[string]string{"p/n.proto": src}
@@ -326,12 +326,12 @@ func TestSuppressionByName(t *testing.T) {
 		check.Sort(r.Findings)
 		return strings.Join(lines(r), "\n"), nil
 	}
-	src := "syntax = \"proto3\";\npackage p;\nmessage M {\n  string A = 1; // pb:ignore example.com/std:FIELD_NAMES\n  string B = 2; // pb:ignore FIELD_NAMES\n  string C = 3;\n}\n"
+	src := "syntax = \"proto3\";\npackage p;\nmessage M {\n  string A = 1; // pb:ignore std:FIELD_NAMES\n  string B = 2; // pb:ignore FIELD_NAMES\n  string C = 3;\n}\n"
 	got, err := run([]rules.Rule{std}, src)
-	if err != nil || got != "p/n.proto:6:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+	if err != nil || got != "p/n.proto:6:3 error std:FIELD_NAMES: field names are snake_case" {
 		t.Fatalf("by name and by bare id: %q %v", got, err)
 	}
-	if _, err := run([]rules.Rule{std, house}, src); err == nil || !strings.Contains(err.Error(), "line 5: pb:ignore FIELD_NAMES names several enabled rules: example.com/std:FIELD_NAMES, example.com/house:FIELD_NAMES") {
+	if _, err := run([]rules.Rule{std, house}, src); err == nil || !strings.Contains(err.Error(), "line 5: pb:ignore FIELD_NAMES names several enabled rules: std:FIELD_NAMES, house:FIELD_NAMES") {
 		t.Fatalf("an ambiguous bare id: %v", err)
 	}
 	above := "syntax = \"proto3\";\npackage p;\nmessage M {\n  // pb:ignore FIELD_NAMES\n  string A = 1;\n}\n"
@@ -345,27 +345,27 @@ func TestSuppressionByName(t *testing.T) {
 	// among the lines of code, and a trailing comment on the line of
 	// code above belongs to that line.
 	stacked := "syntax = \"proto3\";\npackage p;\nmessage M {\n" +
-		"  // pb:ignore example.com/house:FIELD_NAMES\n" + // 4
+		"  // pb:ignore house:FIELD_NAMES\n" + // 4
 		"  /* a note\n" + // 5
 		"\n" + // 6: blank inside the block comment
-		"     more */ // pb:ignore example.com/std:FIELD_NAMES\n" + // 7
+		"     more */ // pb:ignore std:FIELD_NAMES\n" + // 7
 		"  string A = 1;\n" + // 8: suppressed for both
-		"  // pb:ignore example.com/std:FIELD_NAMES\n" + // 9
+		"  // pb:ignore std:FIELD_NAMES\n" + // 9
 		"\n" + // 10: blank
 		"  string B = 2;\n" + // 11: both
-		"  string C = 3; // pb:ignore example.com/std:FIELD_NAMES\n" + // 12: house
+		"  string C = 3; // pb:ignore std:FIELD_NAMES\n" + // 12: house
 		"  string D = 4;\n" + // 13: both
 		"  message N {\n" + // 14
-		"    // pb:ignore example.com/std:FIELD_NAMES\n" + // 15
+		"    // pb:ignore std:FIELD_NAMES\n" + // 15
 		"  }\n" + // 16: a line of code, the block above E
 		"  string E = 5;\n" + // 17: both
 		"}\n"
 	got, err = run([]rules.Rule{std, house}, stacked)
-	if err != nil || got != "p/n.proto:11:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:11:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:12:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:13:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:13:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:17:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:17:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+	if err != nil || got != "p/n.proto:11:3 error house:FIELD_NAMES: house names\np/n.proto:11:3 error std:FIELD_NAMES: field names are snake_case\np/n.proto:12:3 error house:FIELD_NAMES: house names\np/n.proto:13:3 error house:FIELD_NAMES: house names\np/n.proto:13:3 error std:FIELD_NAMES: field names are snake_case\np/n.proto:17:3 error house:FIELD_NAMES: house names\np/n.proto:17:3 error std:FIELD_NAMES: field names are snake_case" {
 		t.Fatalf("the leading block: %q %v", got, err)
 	}
-	got, err = run([]rules.Rule{std, house}, strings.Replace(src, "pb:ignore FIELD_NAMES", "pb:ignore example.com/house:FIELD_NAMES", 1))
-	if err != nil || got != "p/n.proto:4:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:5:3 error example.com/std:FIELD_NAMES: field names are snake_case\np/n.proto:6:3 error example.com/house:FIELD_NAMES: house names\np/n.proto:6:3 error example.com/std:FIELD_NAMES: field names are snake_case" {
+	got, err = run([]rules.Rule{std, house}, strings.Replace(src, "pb:ignore FIELD_NAMES", "pb:ignore house:FIELD_NAMES", 1))
+	if err != nil || got != "p/n.proto:4:3 error house:FIELD_NAMES: house names\np/n.proto:5:3 error std:FIELD_NAMES: field names are snake_case\np/n.proto:6:3 error house:FIELD_NAMES: house names\np/n.proto:6:3 error std:FIELD_NAMES: field names are snake_case" {
 		t.Fatalf("two rulesets, each named: %q %v", got, err)
 	}
 }

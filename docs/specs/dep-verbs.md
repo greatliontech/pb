@@ -97,12 +97,21 @@ replaced path, a pinned replacement's pin is inside the tidied graph
 and the replaced path's own is outside it, and a directory
 replacement has none.
 
-**REQ-dep-tidy-rulesets** (behavior): Tidy MUST keep, at the selected
-version, each declaration of a module the lint file's `rulesets`
-names (`check-rules.md`) as if a proto import of the declaring
-workspace module used it — never adding a ruleset declaration — and
-fail naming the ruleset when no workspace module declares it and it is
-no workspace module.
+**REQ-dep-ruleset-declarations** (behavior): The verbs that act on
+declared dependencies MUST act on ruleset imports where they live —
+the lint file's `rulesets` and each imported rule file's `imports`
+(`check-rules.md`) — exactly as they act on module files' `deps`:
+`download` fetches, verifies and pins every import's artifacts;
+`update` moves an import forward to the highest discovered release,
+rewriting the lint file canonically (an import in a fetched ruleset's
+rule file is that ruleset's own and is never rewritten); `verify`
+covers ruleset pins; `graph` prints each import as an edge from the
+lint file (`pb.lint.yaml <path>@<version>`) and from a rule file
+(`<path>@<version> <path>@<version>`); `why` answers over those edges too. Tidy leaves the imports alone:
+they are no protobuf dependency, so no module file declares one and
+nothing carries one; it removes the ruleset pins no import of the
+lint file names, as it removes module pins outside the tidied graph
+(`module-lockfile.md` REQ-lock-pins-only).
 
 **REQ-dep-download** (behavior): `download` MUST fetch, verify, and
 pin the artifacts of every non-local build-list module into the module

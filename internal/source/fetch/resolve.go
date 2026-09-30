@@ -41,7 +41,7 @@ func (c *Client) Module(ctx context.Context, modPath string, v version.Version) 
 		}
 		return c.pinnedModule(ctx, modPath, v, pin)
 	}
-	return c.firstUse(ctx, modPath, v)
+	return c.firstUse(ctx, modPath, v, c.Lock.ModulePins())
 }
 
 // pinGoverned holds a pinned pair to the policy of the day before it
@@ -134,12 +134,23 @@ func parseModfile(modPath string, b []byte) (*modfile.File, error) {
 // verification above the pipeline; they are already accepted, never
 // Unverified.
 func (c *Client) Zip(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
-	pin, ok := c.Lock.Module(modPath, v.String())
+	return c.zip(ctx, modPath, v, c.Lock.ModulePins())
+}
+
+// RulesetZip is Zip for a pair a ruleset import names: pinned in the
+// lockfile's rulesets list, never among the modules
+// (module-lockfile.md REQ-lock-ruleset-entry), the pipeline the same.
+func (c *Client) RulesetZip(ctx context.Context, modPath string, v version.Version) ([]byte, error) {
+	return c.zip(ctx, modPath, v, c.Lock.RulesetPins())
+}
+
+func (c *Client) zip(ctx context.Context, modPath string, v version.Version, pins lockfile.Pins) ([]byte, error) {
+	pin, ok := pins.Module(modPath, v.String())
 	if !ok {
-		if _, err := c.firstUse(ctx, modPath, v); err != nil {
+		if _, err := c.firstUse(ctx, modPath, v, pins); err != nil {
 			return nil, err
 		}
-		pin, _ = c.Lock.Module(modPath, v.String())
+		pin, _ = pins.Module(modPath, v.String())
 	}
 	if _, err := c.pinGoverned(modPath, v, pin); err != nil {
 		return nil, err
@@ -185,8 +196,8 @@ func (c *Client) pinnedZip(ctx context.Context, modPath string, v version.Versio
 // resolution reading the cache would let unverifiable local state pick
 // the content the pin then blesses (REQ-dep-cache-transparent) — then
 // digest, module facts, provenance evaluation, and the pin, recorded
-// complete in one step.
-func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version) (*modfile.File, error) {
+// complete in one step in the list the pair belongs to.
+func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version, pins lockfile.Pins) (*modfile.File, error) {
 	zip, err := c.fetch(ctx, modPath, v, KindZip)
 	if err != nil {
 		return nil, err
@@ -194,6 +205,12 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	digest, _, err := archive.DigestZip(bytes.NewReader(zip), int64(len(zip)))
 	if err != nil {
 		return nil, err
+	}
+	// One pair names one content: a pin of the pair in the other list
+	// is held to the same digest (REQ-lock-ruleset-entry), so a moved
+	// tag never serves one reader what the other refuses.
+	if other, ok := pins.Other().Module(modPath, v.String()); ok && other.Digest != "" && other.Digest != digest {
+		return nil, fmt.Errorf("%w: %s@%s digest: pinned as a %s at %s, fetched %s", lockfile.ErrPinMismatch, modPath, v, pins.Other().Name(), other.Digest, digest)
 	}
 	mb, hasMod, err := archive.ZipModuleFile(bytes.NewReader(zip), int64(len(zip)))
 	if err != nil {
@@ -215,7 +232,7 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	if hasMod {
 		pin.Modfile = ModfileHash(mb)
 	}
-	if err := c.Lock.AddModule(pin); err != nil {
+	if err := pins.Add(pin); err != nil {
 		return nil, err
 	}
 	if err := c.Cache.Put(modPath, v, KindZip, zip); err != nil {

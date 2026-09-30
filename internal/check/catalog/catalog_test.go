@@ -39,7 +39,7 @@ func catalog(t *testing.T, kind string) []rules.Rule {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sel, err := lintfile.Select(&lintfile.File{}, []lintfile.Ruleset{{Path: "buf/" + kind, Files: located}})
+	sel, err := lintfile.Select(&lintfile.File{}, []lintfile.Ruleset{{Path: "buf/" + kind, Alias: "buf", Files: located}})
 	if err != nil {
 		t.Fatal(err)
 	}

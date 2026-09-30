@@ -1,6 +1,14 @@
 package lintfile
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"maps"
+	"reflect"
+	"slices"
+	"testing/fstest"
+
 	"errors"
 	"strings"
 	"testing"
@@ -8,14 +16,18 @@ import (
 	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/rules"
+	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/module/workspace"
-	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 const full = `rulesets:
-  - example.com/std
-  - example.com/house
+  - path: example.com/std
+    version: v1.0.0
+    alias: std
+  - path: example.com/house
+    alias: house
 enable:
   - STANDARD
   - HOUSE_ONE
@@ -52,7 +64,7 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(f.Rulesets, ",") != "example.com/std,example.com/house" || strings.Join(f.Enable, ",") != "STANDARD,HOUSE_ONE" || strings.Join(f.Exclude, ",") != "FIELD_NAMES" {
+	if !reflect.DeepEqual(f.Rulesets, []rules.Import{{Path: "example.com/std", Version: "v1.0.0", Alias: "std"}, {Path: "example.com/house", Alias: "house"}}) || strings.Join(f.Enable, ",") != "STANDARD,HOUSE_ONE" || strings.Join(f.Exclude, ",") != "FIELD_NAMES" {
 		t.Fatalf("file = %+v", f)
 	}
 	if legacy, fresh := f.Modules["legacy/api"], f.Modules["fresh"]; len(f.Modules) != 3 || f.Modules["."].Enable != nil || strings.Join(legacy.Enable, ",") != "HOUSE_ONE" || legacy.Severity["HOUSE_ONE"] != check.SeverityWarning || fresh.Enable != nil || fresh.Exclude != nil || fresh.Severity != nil {
@@ -60,6 +72,12 @@ func TestParse(t *testing.T) {
 	}
 	if f.Severity["ENUM_NAMES"] != check.SeverityWarning || len(f.Ignore) != 3 || len(f.Ignore[0].Paths) != 2 || f.Ignore[1].Rules != nil || f.Ignore[1].Kind != "" || f.Ignore[2].Kind != check.KindBreaking || f.Breaking == nil || f.Breaking.Base != (Base{Form: BaseRef, Value: "main"}) || f.Breaking.Base.String() != "ref main" {
 		t.Fatalf("file = %+v", f)
+	}
+	// One path at two versions under two aliases: two imports, exact
+	// and isolated (the ruleset import term).
+	two, err := Parse([]byte("rulesets:\n  - path: example.com/x\n    version: v1.0.0\n    alias: one\n  - path: example.com/x\n    version: v2.0.0\n    alias: two\n"))
+	if err != nil || len(two.Rulesets) != 2 || two.Rulesets[0].Alias != "one" || two.Rulesets[1].Version != "v2.0.0" {
+		t.Fatalf("one path at two versions: %+v %v", two, err)
 	}
 	empty, err := Parse([]byte(""))
 	if err != nil || empty.Enable != nil || empty.Breaking != nil || len(empty.Rulesets) != 0 {
@@ -77,9 +95,15 @@ func TestParse(t *testing.T) {
 	cases := map[string]struct{ in, want string }{
 		"unknown key":        {"rules: []\n", `unknown key "rules"`},
 		"rulesets not list":  {"rulesets: example.com/x\n", "rulesets must be a list"},
-		"ruleset empty":      {"rulesets: [\"\"]\n", "rulesets must hold non-empty lines of text"},
-		"ruleset bad path":   {"rulesets: [\"not a path\"]\n", "rulesets:"},
-		"ruleset twice":      {"rulesets: [example.com/x, example.com/x]\n", "listed twice"},
+		"ruleset not map":    {"rulesets: [example.com/x]\n", "rulesets[0] must be a mapping"},
+		"ruleset empty":      {"rulesets:\n  - path: \"\"\n    alias: x\n", "rulesets[0].path must be a non-empty line of text"},
+		"ruleset bad path":   {"rulesets:\n  - path: not a path\n    alias: x\n", "rulesets[0].path:"},
+		"ruleset no alias":   {"rulesets:\n  - path: example.com/x\n", "rulesets[0]: missing alias"},
+		"ruleset bad alias":  {"rulesets:\n  - path: example.com/x\n    alias: 1x\n", "rulesets[0].alias: alias \"1x\""},
+		"ruleset bad ver":    {"rulesets:\n  - path: example.com/x\n    version: latest\n    alias: x\n", "rulesets[0].version:"},
+		"ruleset extra key":  {"rulesets:\n  - path: example.com/x\n    alias: x\n    rules: []\n", "rulesets[0]: unknown key \"rules\""},
+		"alias twice":        {"rulesets:\n  - path: example.com/x\n    alias: x\n  - path: example.com/y\n    alias: x\n", "rulesets[1]: alias x is another import's"},
+		"ruleset twice":      {"rulesets:\n  - path: example.com/x\n    version: v1.0.0\n    alias: x\n  - path: example.com/x\n    version: v1.0.0\n    alias: y\n", "rulesets[1]: example.com/x at this version is imported twice"},
 		"enable not list":    {"enable: X\n", "enable must be a list"},
 		"severity not map":   {"severity: [X]\n", "severity must be a mapping"},
 		"severity bad":       {"severity:\n  X: info\n", "severity.X must be error or warning"},
@@ -145,8 +169,8 @@ func TestIgnored(t *testing.T) {
 		{"legacy/api", "old/x.proto", "ENUM_NAMES", false},
 		{"other", "old/x.proto", "HOUSE", false},
 	}
-	std := Ruleset{Path: "example.com/std", Files: []rules.Located{located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD"), rule("NO_DELETE", "breaking", "STANDARD"))}}
-	house := Ruleset{Path: "example.com/house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
+	std := Ruleset{Path: "example.com/std", Alias: "std", Files: []rules.Located{located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD"), rule("NO_DELETE", "breaking", "STANDARD"))}}
+	house := Ruleset{Path: "example.com/house", Alias: "house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
 	sel, err := Select(f, []Ruleset{std, house})
 	if err != nil {
 		t.Fatal(err)
@@ -156,9 +180,9 @@ func TestIgnored(t *testing.T) {
 		switch name {
 		case "ANY":
 		case "HOUSE":
-			name = "example.com/house:HOUSE_ONE"
+			name = "house:HOUSE_ONE"
 		default:
-			name = "example.com/std:" + name
+			name = "std:" + name
 		}
 		if got := sel.Ignored(c.dir, c.path, name, check.KindLint); got != c.want {
 			t.Errorf("Ignored(%q, %q, %s) = %v", c.dir, c.path, name, got)
@@ -179,7 +203,7 @@ func TestIgnored(t *testing.T) {
 	}
 	// An entry naming a kind excludes that kind's findings alone; one
 	// naming none either kind's.
-	if !sel.Ignored("", "wire/x.proto", "example.com/std:ENUM_NAMES", check.KindBreaking) || sel.Ignored("", "wire/x.proto", "example.com/std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "gen/x.proto", "example.com/std:NO_DELETE", check.KindBreaking) {
+	if !sel.Ignored("", "wire/x.proto", "std:ENUM_NAMES", check.KindBreaking) || sel.Ignored("", "wire/x.proto", "std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "gen/x.proto", "std:NO_DELETE", check.KindBreaking) {
 		t.Fatal("the kind of an ignore entry")
 	}
 }
@@ -198,8 +222,11 @@ func TestEncode(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := `rulesets:
-  - example.com/std
-  - example.com/house
+  - path: example.com/std
+    version: v1.0.0
+    alias: std
+  - path: example.com/house
+    alias: house
 enable:
   - HOUSE_ONE
   - STANDARD
@@ -261,35 +288,36 @@ modules:
 	// asterisk among them.
 	g, _ := glob.Compile("*.proto")
 	f = &File{
-		Rulesets: []string{"example.com/x"},
-		Enable:   []string{"example.com/x:B", "example.com/x:A", "true"},
-		Ignore:   []Ignore{{Paths: []*glob.Pattern{g}, Rules: []string{"example.com/x:B", "example.com/x:A"}}},
+		Rulesets: []rules.Import{{Path: "example.com/x", Alias: "x"}},
+		Enable:   []string{"x:B", "x:A", "true"},
+		Ignore:   []Ignore{{Paths: []*glob.Pattern{g}, Rules: []string{"x:B", "x:A"}}},
 		Breaking: &Breaking{Base: Base{Form: BaseRef, Value: "origin/main"}},
-		Modules:  map[string]ModuleSelection{"b": {}, "a": {Exclude: []string{"example.com/x:A"}}},
+		Modules:  map[string]ModuleSelection{"b": {}, "a": {Exclude: []string{"x:A"}}},
 	}
 	out, err = Encode(f)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want = `rulesets:
-  - example.com/x
+  - path: example.com/x
+    alias: x
 enable:
-  - example.com/x:A
-  - example.com/x:B
   - "true"
+  - x:A
+  - x:B
 ignore:
   - paths:
       - "*.proto"
     rules:
-      - example.com/x:A
-      - example.com/x:B
+      - x:A
+      - x:B
 breaking:
   base:
     ref: origin/main
 modules:
   a:
     exclude:
-      - example.com/x:A
+      - x:A
   b: {}
 `
 	if string(out) != want {
@@ -298,7 +326,8 @@ modules:
 	// What Parse rejects, Encode refuses: a ruleset that is no path,
 	// an ignore with no paths, one whose rules list is empty.
 	for name, f := range map[string]*File{
-		"ruleset":  {Rulesets: []string{"not a path"}},
+		"ruleset":  {Rulesets: []rules.Import{{Path: "not a path", Alias: "x"}}},
+		"alias":    {Rulesets: []rules.Import{{Path: "example.com/x", Alias: "not an alias"}}},
 		"no paths": {Ignore: []Ignore{{}}},
 		"no rules": {Ignore: []Ignore{{Paths: []*glob.Pattern{g}, Rules: []string{}}}},
 	} {
@@ -326,11 +355,11 @@ func located(path string, rs ...rules.Rule) rules.Located {
 // both an id and a tag, and two severity spellings of one rule, fail
 // naming them (REQ-lint-selection).
 func TestSelect(t *testing.T) {
-	std := Ruleset{Path: "example.com/std", Files: []rules.Located{
+	std := Ruleset{Path: "example.com/std", Alias: "std", Files: []rules.Located{
 		located("a.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"), rule("ENUM_NAMES", "lint", "STANDARD")),
 		located("b.rules.yaml", rule("NO_DELETE", "breaking", "STANDARD")),
 	}}
-	house := Ruleset{Path: "example.com/house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
+	house := Ruleset{Path: "example.com/house", Alias: "house", Files: []rules.Located{located("h.rules.yaml", rule("HOUSE_ONE", "lint"), rule("HOUSE_TWO", "lint", "extra"))}}
 	ids := func(rs []rules.Rule) string {
 		var out []string
 		for _, r := range rs {
@@ -368,7 +397,7 @@ func TestSelect(t *testing.T) {
 	// candidates, a qualified spelling — of a rule or a tag — names
 	// its ruleset's alone, and severity and ignore take the canonical
 	// name (the rule name term).
-	dup := Ruleset{Path: "example.com/dup", Files: []rules.Located{located("d.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"))}}
+	dup := Ruleset{Path: "example.com/dup", Alias: "dup", Files: []rules.Located{located("d.rules.yaml", rule("FIELD_NAMES", "lint", "STANDARD"))}}
 	names := func(rs []rules.Rule) string {
 		var out []string
 		for _, r := range rs {
@@ -377,7 +406,7 @@ func TestSelect(t *testing.T) {
 		return strings.Join(out, " ")
 	}
 	both, err := Select(&File{}, []Ruleset{std, dup})
-	if err != nil || names(both.Rules) != "example.com/std:FIELD_NAMES:error example.com/std:ENUM_NAMES:error example.com/std:NO_DELETE:error example.com/dup:FIELD_NAMES:error" {
+	if err != nil || names(both.Rules) != "std:FIELD_NAMES:error std:ENUM_NAMES:error std:NO_DELETE:error dup:FIELD_NAMES:error" {
 		t.Fatalf("two rulesets: %s %v", names(both.Rules), err)
 	}
 	for name, f := range map[string]*File{
@@ -386,31 +415,31 @@ func TestSelect(t *testing.T) {
 		"exclude bare":  {Exclude: []string{"FIELD_NAMES"}},
 		"severity bare": {Severity: map[string]check.Severity{"FIELD_NAMES": check.SeverityWarning}},
 		"ignore bare":   {Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"FIELD_NAMES"}}}},
-		"severity tag":  {Severity: map[string]check.Severity{"example.com/std:STANDARD": check.SeverityWarning}},
-		"ignore tag":    {Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"example.com/std:STANDARD"}}}},
-		"unknown name":  {Enable: []string{"example.com/std:NOPE"}},
+		"severity tag":  {Severity: map[string]check.Severity{"std:STANDARD": check.SeverityWarning}},
+		"ignore tag":    {Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"std:STANDARD"}}}},
+		"unknown name":  {Enable: []string{"std:NOPE"}},
 	} {
 		_, err := Select(f, []Ruleset{std, dup})
 		switch {
 		case err == nil || !errors.Is(err, ErrSelection):
 			t.Errorf("%s: %v", name, err)
-		case strings.HasSuffix(name, "bare") && !strings.Contains(err.Error(), "example.com/std:FIELD_NAMES, example.com/dup:FIELD_NAMES"):
+		case strings.HasSuffix(name, "bare") && !strings.Contains(err.Error(), "std:FIELD_NAMES, dup:FIELD_NAMES"):
 			t.Errorf("%s names no candidates: %v", name, err)
-		case name == "enable tag" && !strings.Contains(err.Error(), "example.com/std:STANDARD, example.com/dup:STANDARD"):
+		case name == "enable tag" && !strings.Contains(err.Error(), "std:STANDARD, dup:STANDARD"):
 			t.Errorf("%s names no candidates: %v", name, err)
 		case strings.HasSuffix(name, "tag") && name != "enable tag" && !strings.Contains(err.Error(), "a tag where a rule is named"):
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	qualified := &File{Enable: []string{"example.com/dup:STANDARD", "ENUM_NAMES"}, Exclude: []string{"example.com/std:NO_DELETE"}, Severity: map[string]check.Severity{"example.com/dup:FIELD_NAMES": check.SeverityWarning}, Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"example.com/std:FIELD_NAMES", "ENUM_NAMES"}}}}
+	qualified := &File{Enable: []string{"dup:STANDARD", "ENUM_NAMES"}, Exclude: []string{"std:NO_DELETE"}, Severity: map[string]check.Severity{"dup:FIELD_NAMES": check.SeverityWarning}, Ignore: []Ignore{{Paths: []*glob.Pattern{glob.MustCompile("x/**")}, Rules: []string{"std:FIELD_NAMES", "ENUM_NAMES"}}}}
 	sel, err = Select(qualified, []Ruleset{std, dup})
-	if err != nil || names(sel.Rules) != "example.com/std:ENUM_NAMES:error example.com/dup:FIELD_NAMES:warning" {
+	if err != nil || names(sel.Rules) != "std:ENUM_NAMES:error dup:FIELD_NAMES:warning" {
 		t.Fatalf("qualified: %s %v", names(sel.Rules), err)
 	}
-	if !sel.Ignored("", "x/a.proto", "example.com/std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "x/a.proto", "example.com/std:FIELD_NAMES", check.KindLint) || sel.Ignored("", "x/a.proto", "example.com/dup:FIELD_NAMES", check.KindLint) {
+	if !sel.Ignored("", "x/a.proto", "std:ENUM_NAMES", check.KindLint) || !sel.Ignored("", "x/a.proto", "std:FIELD_NAMES", check.KindLint) || sel.Ignored("", "x/a.proto", "dup:FIELD_NAMES", check.KindLint) {
 		t.Fatal("ignore matches by canonical name")
 	}
-	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "example.com/std:FIELD_NAMES ENUM_NAMES" {
+	if got := qualified.Ignore[0].Rules; strings.Join(got, " ") != "std:FIELD_NAMES ENUM_NAMES" {
 		t.Fatalf("the file's own spellings changed: %v", got)
 	}
 	// A module's own selection replaces the root's for that module
@@ -431,54 +460,80 @@ func TestSelect(t *testing.T) {
 	}
 	// A ruleset declaring a name twice, in two files, or as both a
 	// rule and a tag; and two severity spellings of one rule.
-	twice := Ruleset{Path: "example.com/twice", Files: []rules.Located{located("a.rules.yaml", rule("X", "lint")), located("b.rules.yaml", rule("X", "lint"))}}
-	if _, err := Select(&File{}, []Ruleset{twice}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "example.com/twice:X declared by example.com/twice/a.rules.yaml and example.com/twice/b.rules.yaml") {
+	twice := Ruleset{Path: "example.com/twice", Alias: "twice", Files: []rules.Located{located("a.rules.yaml", rule("X", "lint")), located("b.rules.yaml", rule("X", "lint"))}}
+	if _, err := Select(&File{}, []Ruleset{twice}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "twice:X declared by twice's a.rules.yaml and twice's b.rules.yaml") {
 		t.Fatalf("twice: %v", err)
 	}
-	clash := Ruleset{Path: "example.com/clash", Files: []rules.Located{located("a.rules.yaml", rule("STANDARD", "lint"), rule("OTHER", "lint", "STANDARD"))}}
-	if _, err := Select(&File{}, []Ruleset{clash}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "example.com/clash:STANDARD is both a rule, declared by example.com/clash/a.rules.yaml, and a tag, first carried by a rule of example.com/clash/a.rules.yaml") {
+	clash := Ruleset{Path: "example.com/clash", Alias: "clash", Files: []rules.Located{located("a.rules.yaml", rule("STANDARD", "lint"), rule("OTHER", "lint", "STANDARD"))}}
+	if _, err := Select(&File{}, []Ruleset{clash}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), "clash:STANDARD is both a rule, declared by clash's a.rules.yaml, and a tag, first carried by a rule of clash's a.rules.yaml") {
 		t.Fatalf("rule and tag: %v", err)
 	}
-	if _, err := Select(&File{Severity: map[string]check.Severity{"ENUM_NAMES": check.SeverityError, "example.com/std:ENUM_NAMES": check.SeverityWarning}}, []Ruleset{std}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), `severity names example.com/std:ENUM_NAMES twice, as "ENUM_NAMES" and "example.com/std:ENUM_NAMES"`) {
+	if _, err := Select(&File{Severity: map[string]check.Severity{"ENUM_NAMES": check.SeverityError, "std:ENUM_NAMES": check.SeverityWarning}}, []Ruleset{std}); err == nil || !errors.Is(err, ErrSelection) || !strings.Contains(err.Error(), `severity names std:ENUM_NAMES twice, as "ENUM_NAMES" and "std:ENUM_NAMES"`) {
 		t.Fatalf("severity twice: %v", err)
 	}
 }
 
-// A ruleset is a workspace module or a dependency a workspace module
-// declares, among the build's modules, its rule files read; anything
-// else, and a bad rule file, fail naming the ruleset (REQ-lint-
-// rulesets-declared, REQ-rules-file-discovery).
+// An import is read exactly as written (REQ-lint-rulesets-imported,
+// REQ-rules-file-discovery): a workspace module from the working
+// tree, a version written for it refused; any other at its version
+// through the verified archive, no version refused; the rule files
+// in path order; a bad rule file, and an archive that does not
+// resolve, fail naming the ruleset.
 func TestRulesets(t *testing.T) {
-	root := &workspace.Root{Modules: []workspace.Module{
+	root := &workspace.Root{Dir: "ws", Modules: []workspace.Module{
 		{Dir: "a", File: &modfile.File{Module: "example.com/a", Deps: map[string]string{"example.com/std": "v1.0.0"}}},
 		{Dir: "lib", File: &modfile.File{Module: "example.com/lib"}},
 	}}
-	good := []byte("celEnv: 1\nrules:\n  - id: X\n    kind: lint\n    target: field\n    severity: error\n    cel: \"true\"\n    message: m\n")
-	mods := []modfiles.Module{
-		{Path: "example.com/a", Local: true},
-		{Path: "example.com/lib", Local: true, Rules: map[string][]byte{"lib.rules.yaml": good}},
-		{Path: "example.com/std", Version: "v1.0.0", Rules: map[string][]byte{"z.rules.yaml": good, "a/b.rules.yaml": []byte("celEnv: 1\nrules: []\n")}},
-		{Path: "example.com/transitive", Version: "v1.0.0", Rules: map[string][]byte{"t.rules.yaml": good}},
-		{Path: "example.com/bad", Version: "v1.0.0", Rules: map[string][]byte{"bad.rules.yaml": []byte("celEnv: 9\nrules: []\n")}},
+	good := "celEnv: 1\nrules:\n  - id: X\n    kind: lint\n    target: field\n    severity: error\n    cel: \"true\"\n    message: m\n"
+	fsys := fstest.MapFS{
+		"ws/a/pb.yaml":               {Data: []byte("module: example.com/a\n")},
+		"ws/lib/pb.yaml":             {Data: []byte("module: example.com/lib\n")},
+		"ws/lib/lib.rules.yaml":      {Data: []byte(good)},
+		"ws/lib/nested/pb.yaml":      {Data: []byte("module: example.com/nested\n")},
+		"ws/lib/nested/n.rules.yaml": {Data: []byte(good)},
 	}
-	sets, err := Rulesets(&File{Rulesets: []string{"example.com/std", "example.com/lib"}}, root, mods)
-	if err != nil || len(sets) != 2 || sets[0].Path != "example.com/std" || len(sets[0].Files) != 2 || sets[0].Files[0].Path != "a/b.rules.yaml" || len(sets[1].Files) != 1 {
-		t.Fatalf("rulesets: %+v %v", sets, err)
+	served := map[string]map[string]string{
+		"example.com/std@v1.0.0": {"pb.yaml": "module: example.com/std\n", "z.rules.yaml": good, "a/b.rules.yaml": "celEnv: 1\nrules: []\n"},
+		"example.com/bad@v1.0.0": {"pb.yaml": "module: example.com/bad\n", "bad.rules.yaml": "celEnv: 9\nrules: []\n"},
 	}
-	for name, path := range map[string]string{"transitive": "example.com/transitive", "absent": "example.com/nowhere"} {
-		_, err := Rulesets(&File{Rulesets: []string{path}}, root, mods)
-		if err == nil || !errors.Is(err, ErrRuleset) || !strings.Contains(err.Error(), path) {
+	var asked []string
+	zip := func(_ context.Context, modPath string, v version.Version) ([]byte, error) {
+		asked = append(asked, modPath+"@"+v.String())
+		files, ok := served[modPath+"@"+v.String()]
+		if !ok {
+			return nil, fmt.Errorf("no origin serves %s@%s", modPath, v)
+		}
+		var entries []archive.File
+		for _, p := range slices.Sorted(maps.Keys(files)) {
+			entries = append(entries, archive.File{Path: p, Body: strings.NewReader(files[p])})
+		}
+		var buf bytes.Buffer
+		if _, err := archive.WriteZip(&buf, entries); err != nil {
+			t.Fatal(err)
+		}
+		return buf.Bytes(), nil
+	}
+	imports := func(imps ...rules.Import) *File { return &File{Rulesets: imps} }
+	sets, err := Rulesets(context.Background(), imports(rules.Import{Path: "example.com/std", Version: "v1.0.0", Alias: "std"}, rules.Import{Path: "example.com/lib", Alias: "lib"}), root, fsys, zip)
+	if err != nil || len(sets) != 2 || sets[0].Alias != "std" || sets[0].Version != "v1.0.0" || len(sets[0].Files) != 2 || sets[0].Files[0].Path != "a/b.rules.yaml" ||
+		sets[1].Alias != "lib" || len(sets[1].Files) != 1 || sets[1].Files[0].Path != "lib.rules.yaml" || strings.Join(asked, ",") != "example.com/std@v1.0.0" {
+		t.Fatalf("rulesets: %+v %v asked %v", sets, err, asked)
+	}
+	for name, c := range map[string]struct {
+		imp  rules.Import
+		want string
+	}{
+		"workspace with a version": {rules.Import{Path: "example.com/lib", Version: "v1.0.0", Alias: "lib"}, "example.com/lib: a workspace module, read from the working tree: write no version (v1.0.0 written)"},
+		"external without":         {rules.Import{Path: "example.com/std", Alias: "std"}, "example.com/std: no workspace module: write the version to read"},
+		"unresolved":               {rules.Import{Path: "example.com/nowhere", Version: "v1.0.0", Alias: "no"}, "example.com/nowhere@v1.0.0: no origin serves example.com/nowhere@v1.0.0"},
+		"bad rule file":            {rules.Import{Path: "example.com/bad", Version: "v1.0.0", Alias: "bad"}, "example.com/bad: bad.rules.yaml"},
+	} {
+		_, err := Rulesets(context.Background(), imports(c.imp), root, fsys, zip)
+		if err == nil || !errors.Is(err, ErrRuleset) || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	// Declared but not in the build's modules: refused too.
-	root.Modules[0].File.Deps["example.com/bad"] = "v1.0.0"
-	root.Modules[0].File.Deps["example.com/missing"] = "v1.0.0"
-	if _, err := Rulesets(&File{Rulesets: []string{"example.com/missing"}}, root, mods); err == nil || !errors.Is(err, ErrRuleset) {
-		t.Fatalf("declared but absent from the build: %v", err)
-	}
-	_, err = Rulesets(&File{Rulesets: []string{"example.com/bad"}}, root, mods)
-	if err == nil || !errors.Is(err, ErrRuleset) || !errors.Is(err, rules.ErrEnvironment) || !strings.Contains(err.Error(), "example.com/bad: bad.rules.yaml") {
-		t.Fatalf("bad rule file: %v", err)
+	if _, err := Rulesets(context.Background(), imports(rules.Import{Path: "example.com/bad", Version: "v1.0.0", Alias: "bad"}), root, fsys, zip); !errors.Is(err, rules.ErrEnvironment) {
+		t.Fatalf("bad rule file's cause: %v", err)
 	}
 }

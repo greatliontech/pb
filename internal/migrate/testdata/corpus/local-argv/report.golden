@@ -1,7 +1,7 @@
 buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/local-argv/proto
-the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
-buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
-buf.yaml.breaking -> enable: github.com/greatliontech/buf-rules:FILE (buf's default, no breaking section)
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
 buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
 buf.gen.yaml plugins[0].out gen -> out: gen
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative

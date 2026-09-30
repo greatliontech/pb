@@ -64,10 +64,9 @@ type checkRun struct {
 
 // prepare assembles a check run of one kind (REQ-check-lint-verb,
 // REQ-check-breaking-verb): the build list and the modules' files,
-// the lint file, the rulesets it names found among the build's
-// modules, the checked modules grouped by the selection governing
-// each with its enabled rules of the kind, the checked schema
-// compiled.
+// the lint file, the rulesets it imports read as written, the
+// checked modules grouped by the selection governing each with its
+// enabled rules of the kind, the checked schema compiled.
 func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error) {
 	_, mods, err := s.Modules(ctx)
 	if err != nil {
@@ -77,8 +76,11 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	sets, err := lintfile.Rulesets(lf, s.Root, mods)
-	if err != nil {
+	// Each import read as written, an external one pinned as a
+	// ruleset on the way and the pins saved before anything follows
+	// (REQ-lint-rulesets-imported, REQ-lock-first-use).
+	sets, err := lintfile.Rulesets(ctx, lf, s.Root, iofs.New(s.WS), s.Client.RulesetZip)
+	if err := savePins(s, err); err != nil {
 		return nil, err
 	}
 	sel, err := lintfile.Select(lf, sets)
