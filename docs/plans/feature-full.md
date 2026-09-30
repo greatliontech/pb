@@ -68,7 +68,7 @@ formatter and the language server
       module-relative directory, and the java, csharp, ruby, php
       analogues), spelled explicitly, never inferred; migrate mapping
       `go_package_prefix` and its kin
-- [ ] 7. Rulesets decoupled from the build (the parked draft):
+- [x] 7. Rulesets decoupled from the build (the parked draft):
       ruleset imports `{path, version, alias}` in the lint file, rule
       names `<alias>:<id>`, a workspace module importable as a
       ruleset from the working tree, rule files with typed functions
