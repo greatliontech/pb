@@ -29,27 +29,31 @@ formatter and the language server
 - [ ] 3. The plugin catalog: a new private repository
       greatliontech/pb-plugins publishing
       `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>:<version>`
-      under buf's names — recipes from bufbuild/plugins at a pinned
-      commit, an own recipe of the same shape the escape hatch; a
-      per-platform matrix merged into a manifest list per tag —
-      linux/amd64 and linux/arm64 on native runners for every recipe,
-      and darwin/arm64, darwin/amd64, windows/amd64 and windows/arm64
-      cross-compiled for every recipe that takes TARGETOS (the Go
-      plugins), a native-toolchain recipe serving Linux alone until
-      built otherwise, per entry and visible in its list; every image
-      and list signed keyless under the release workflow's identity;
-      a scheduled bump of the pinned commit opening a pull request
-      for the versions the registry lacks, a published tag never
+      under buf's names from recipes of its own, no Dockerfile and no
+      container engine anywhere in its pipeline: a catalog naming
+      each plugin's upstream, its recipe kind and the versions
+      published, and a tool that plans, builds a platform tree per
+      recipe kind, and publishes through `pb plugin build`; the kinds
+      being a Go package cross-compiled to every platform, an npm
+      package compiled to a standalone executable per platform, an
+      upstream release's prebuilt executable per platform it ships,
+      and a C++ target built by bazel on a runner of each platform,
+      the Linux trees of the last three layered on a base image
+      pinned by digest; the platforms each plugin serves stated per
+      plugin in the catalog and visible in its list; every image and
+      list signed keyless under the publish workflow's identity; a
+      scheduled discovery of upstream versions opening a pull request
+      for the versions the catalog lacks, a published tag never
       rebuilt; the initial membership what the projects reference
       (protocolbuffers/go, grpc/go, connectrpc/go, bufbuild/es,
-      bufbuild/connect-es, grpc/web, protocolbuffers/js,
+      connectrpc/es, grpc/web, protocolbuffers/js,
       protocolbuffers/csharp, grpc/csharp). In pb: migrate's plugin
       table becomes the rename rule plus a committed copy of the
       catalog's names (versions passed through as spelled, a missing
-      build surfacing at the first generate), a test holding the copy
-      to the repository's catalog and the images reachable and
-      signed; the trust policy's identity rule for the catalog
-      documented
+      build surfacing at the first generate; a versionless reference
+      the highest tag the registry lists), a test holding the copy to
+      the repository's catalog and the images reachable and signed;
+      the trust policy's identity rule for the catalog documented
 - [ ] 4. `local` plugins with argv: `local: [command, args...]` in the
       generation file, the sandbox spawning the command with its
       arguments, migrate mapping buf's list form
