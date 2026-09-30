@@ -63,7 +63,7 @@ formatter and the language server
       emptying an entry's output directory of what generation wrote;
       migrate mapping `inputs.paths`, `include_imports` and `clean`,
       a second template becoming further entries
-- [ ] 6. Computed overrides: managed mode's prefix and suffix class
+- [x] 6. Computed overrides: managed mode's prefix and suffix class
       as declared derivations (`go_package` from a prefix and the
       module-relative directory, and the java, csharp, ruby, php
       analogues), spelled explicitly, never inferred; migrate mapping
