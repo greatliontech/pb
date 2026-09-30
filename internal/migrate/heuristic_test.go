@@ -157,8 +157,19 @@ func TestNoHeuristicProperty(t *testing.T) {
 			g.used["b5"] = true
 			files["repo/buf.lock"] = lb.String()
 		}
-		if rapid.Bool().Draw(rt, "gen") {
-			files["repo/buf.gen.yaml"] = g.gen(rt, &repl)
+		hasGen := rapid.Bool().Draw(rt, "gen")
+		if hasGen {
+			files["repo/buf.gen.yaml"] = g.gen(rt, &repl, true, false)
+		}
+		// A template beside the file, or alone: its entries follow
+		// the file's, its inputs its own; its managed mode and clean
+		// are held to the first file's — itself, where no
+		// buf.gen.yaml lies there.
+		if rapid.IntRange(0, 2).Draw(rt, "template") == 0 {
+			files["repo/buf.gen."+g.draw(rt, "tp")+".yaml"] = g.gen(rt, &repl, !hasGen, true)
+		}
+		for p, text := range g.extra {
+			files[p] = text
 		}
 		for _, d := range g.dirs {
 			files[path.Join("repo", d, g.draw(rt, "pr")+".proto")] = "syntax = \"proto3\";\n// buf:lint:ignore " + g.draw(rt, "id") + "\nmessage " + g.draw(rt, "ms") + " {}\n"
@@ -241,6 +252,9 @@ func TestNoHeuristicProperty(t *testing.T) {
 			}
 		}
 		if doc, data, ok := read(genfile.FileName); ok {
+			if c, has := doc["clean"]; has && (!g.clean || fmt.Sprint(c) != "true") {
+				fail(genfile.FileName, data, "clean %v given nowhere", c)
+			}
 			for _, p := range list2(doc["plugins"]) {
 				pl := mapping(p)
 				if ref, has := pl["ref"]; has && !g.refs[fmt.Sprint(ref)] {
@@ -266,6 +280,14 @@ func TestNoHeuristicProperty(t *testing.T) {
 				}
 				if !g.outs[fmt.Sprint(pl["out"])] {
 					fail(genfile.FileName, data, "out %v given nowhere", pl["out"])
+				}
+				for _, pat := range list2(pl["files"]) {
+					if !g.patterns[fmt.Sprint(pat)] {
+						fail(genfile.FileName, data, "files pattern %v given nowhere", pat)
+					}
+				}
+				if ii, has := pl["include_imports"]; has && fmt.Sprint(ii) != "true" {
+					fail(genfile.FileName, data, "include_imports %v: only a true one is written", ii)
 				}
 				if o, has := pl["opt"]; has && !g.opts[fmt.Sprint(o)] {
 					fail(genfile.FileName, data, "opt %v given nowhere", o)
@@ -324,10 +346,14 @@ type given struct {
 	entries        map[string]bool   // bare categories and ids the sections named, and buf's defaults
 	ignores        map[string]bool   // module-relative ignore paths under their module
 	refs           map[string]bool   // plugin references the flag or the table gave
+	patterns       map[string]bool   // files patterns the inputs' paths gave
+	extra          map[string]string // files the inputs' paths name, written with the tree
 	locals         map[string]bool
 	outs, opts     map[string]bool
 	overrideValues map[string]bool
 	overridePaths  map[string]bool
+	clean          bool            // the first file's clean
+	replaced       map[string]bool // catalog plugins a --plugin replacement names
 	used           map[string]bool // every marker drawn
 	forbidden      map[string]bool // markers no written file may hold
 }
@@ -335,7 +361,7 @@ type given struct {
 func newGiven() *given {
 	return &given{
 		depPaths: map[string]bool{}, versions: map[string]string{}, entries: map[string]bool{"STANDARD": true, "FILE": true},
-		ignores: map[string]bool{}, refs: map[string]bool{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
+		ignores: map[string]bool{}, refs: map[string]bool{}, patterns: map[string]bool{}, extra: map[string]string{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
 		overrideValues: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
 	}
 }
@@ -502,15 +528,78 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 	}
 }
 
-// gen writes a buf.gen.yaml: plugins from the catalog at a version or
-// none, a local one, a protoc builtin, each with an out and perhaps
-// an opt; a --plugin replacement for a catalog plugin sometimes;
-// managed mode with a declarative override, a computed option buf's
-// own heuristic would fill, and a disable.
-func (g *given) gen(rt *rapid.T, repl *Replacements) string {
+// gen writes a buf.gen.yaml, or a template — the first file where
+// no buf.gen.yaml lies there:
+// plugins from the catalog at a version or none, a local one, a
+// protoc builtin, each with an out and perhaps an opt, sometimes
+// include_imports (mapped) or include_wkt (unmapped); a --plugin
+// replacement for a catalog plugin sometimes; inputs naming a
+// directory under a module, created in the tree, each a files
+// pattern; clean; managed mode with a declarative override, a
+// computed option buf's own heuristic would fill, and a disable — on
+// a template beside a buf.gen.yaml, an override of its own or none,
+// neither written: the first file's overrides are every entry's.
+func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) string {
 	var b strings.Builder
-	b.WriteString("version: v2\nplugins:\n")
-	replaced := map[string]bool{}
+	b.WriteString("version: v2\n")
+	if template && rapid.Bool().Draw(rt, "template key") {
+		// A top-level key the reader passes over, reported among the
+		// keys no step models whatever the file's place.
+		fmt.Fprintf(&b, "%s: x\n", g.draw(rt, "tk"))
+	}
+	if first && rapid.Bool().Draw(rt, "clean") {
+		b.WriteString("clean: true\n")
+		g.clean = true
+	}
+	if rapid.Bool().Draw(rt, "inputs") {
+		b.WriteString("inputs:\n")
+		switch rapid.IntRange(0, 4).Draw(rt, "input form") {
+		case 0:
+			// An input of another kind: pb reads nothing from it.
+			fmt.Fprintf(&b, "  - module: buf.build/%s/%s\n", g.draw(rt, "own"), g.draw(rt, "own"))
+		case 1:
+			// The root, no paths: every workspace file.
+			b.WriteString("  - directory: .\n")
+		default:
+			b.WriteString("  - directory: .\n    paths:\n")
+			for range rapid.IntRange(1, 2).Draw(rt, "paths") {
+				dir := rapid.SampledFrom(g.dirs).Draw(rt, "input module")
+				sub := g.draw(rt, "ip")
+				switch rapid.IntRange(0, 4).Draw(rt, "path form") {
+				case 0:
+					// A whole module: every file where it is alone,
+					// unmapped among several; a pattern never.
+					fmt.Fprintf(&b, "      - %s\n", dir)
+				case 1:
+					// A missing path: unmapped, no pattern.
+					fmt.Fprintf(&b, "      - %s\n", path.Join(dir, sub))
+				case 2:
+					// The same relative path under two modules:
+					// unmapped, no pattern; alone, a pattern.
+					if len(g.dirs) > 1 {
+						other := g.dirs[(indexOf(g.dirs, dir)+1)%len(g.dirs)]
+						g.extra[path.Join("repo", other, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+					} else {
+						g.patterns[sub+"/**"] = true
+					}
+					g.extra[path.Join("repo", dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+					fmt.Fprintf(&b, "      - %s\n", path.Join(dir, sub))
+				default:
+					// The path exists in the tree, a directory holding
+					// a file, and in no other module: a pattern.
+					g.extra[path.Join("repo", dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+					g.patterns[sub+"/**"] = true
+					fmt.Fprintf(&b, "      - %s\n", path.Join(dir, sub))
+				}
+			}
+		}
+	}
+	b.WriteString("plugins:\n")
+	// A replacement is one per plugin across every generation file.
+	if g.replaced == nil {
+		g.replaced = map[string]bool{}
+	}
+	replaced := g.replaced
 	for range rapid.IntRange(1, 3).Draw(rt, "plugins") {
 		switch rapid.IntRange(0, 2).Draw(rt, "plugin form") {
 		case 0:
@@ -581,6 +670,26 @@ func (g *given) gen(rt *rapid.T, repl *Replacements) string {
 			g.opts[opt] = true
 			fmt.Fprintf(&b, "    opt: %s\n", opt)
 		}
+		if rapid.Bool().Draw(rt, "include_imports") {
+			b.WriteString("    include_imports: true\n")
+		}
+		if rapid.Bool().Draw(rt, "include_wkt") {
+			b.WriteString("    include_wkt: true\n")
+		}
+	}
+	if !first {
+		// A template's managed mode: none, or an override of its own
+		// — the file's overrides are the first file's, so a value
+		// given here only reaches a written file where the first
+		// gave it; a top-level key the reader passes over sometimes.
+		if rapid.Bool().Draw(rt, "template managed") {
+			// A role of its own, so the value never equals one the
+			// first file gave — which would be the first file's.
+			jv := g.draw(rt, "tjv")
+			g.forbidden[jv] = true
+			fmt.Fprintf(&b, "managed:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: %s\n", jv)
+		}
+		return b.String()
 	}
 	if rapid.Bool().Draw(rt, "managed") {
 		b.WriteString("managed:\n  enabled: true\n")
@@ -607,6 +716,16 @@ func (g *given) gen(rt *rapid.T, repl *Replacements) string {
 		}
 	}
 	return b.String()
+}
+
+// indexOf is the index of s in list, -1 where absent.
+func indexOf(list []string, s string) int {
+	for i, v := range list {
+		if v == s {
+			return i
+		}
+	}
+	return -1
 }
 
 // closure is a table name with every name its entry declares,

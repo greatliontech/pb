@@ -19,6 +19,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
+	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/pb/internal/provenance/image/discover"
@@ -282,7 +283,7 @@ inputs:
 		t.Fatal(err)
 	}
 	tags := fakeTags{CatalogRepository("buf.build/grpc/go"): {"latest", "v1.5.1", "v1.6.2", "sha256-ab.sig"}}
-	facts, err := Gen(context.Background(), v2, repl, l, tags.list)
+	facts, err := Gen(context.Background(), v2, nil, repl, l, tags.list, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +293,7 @@ inputs:
 		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: " + pbgo + ":v1.35.2 (the catalog)",
 		"buf.gen.yaml plugins[0].out gen/go -> out: gen/go",
 		"buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative",
-		"buf.gen.yaml plugins[0].include_imports !! pb generates over the workspace's own files under one strategy",
+		"buf.gen.yaml plugins[0].include_imports true -> include_imports: true",
 		"buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.2 (the catalog; no version named, the highest tag published)",
 		"buf.gen.yaml plugins[1].out gen/go -> out: gen/go",
 		"buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.36.0 -> ref: " + pbgo + ":v1.36.0 (the catalog)",
@@ -308,7 +309,7 @@ inputs:
 		"buf.gen.yaml plugins[7].protoc_builtin cpp !! pb runs no protoc",
 		"buf.gen.yaml plugins[8].local protoc-gen-up -> local: protoc-gen-up",
 		"buf.gen.yaml plugins[8].out ../up !! pb writes within the resolution root: \"../up\" escapes the resolution root",
-		"buf.gen.yaml inputs !! pb generates over the workspace's own files",
+		"buf.gen.yaml inputs[0].directory proto !! under no workspace module: pb generates over the modules' own files",
 		"buf.gen.yaml managed.override[0] file_option=go_package_prefix value=github.com/acme/gen" + heuristic,
 		"buf.gen.yaml managed.override[1] file_option=java_package path=acme/v1 -> overrides: files acme/v1/** option java_package value com.acme",
 		"buf.gen.yaml managed.override[2] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true",
@@ -327,7 +328,7 @@ inputs:
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFile := "plugins:\n  - ref: " + pbgo + ":v1.35.2\n    out: gen/go\n    opt: paths=source_relative\n" +
+	wantFile := "plugins:\n  - ref: " + pbgo + ":v1.35.2\n    out: gen/go\n    opt: paths=source_relative\n    include_imports: true\n" +
 		"  - ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.2\n    out: gen/go\n" +
 		"  - ref: " + pbgo + ":v1.36.0\n    out: gen/go36\n" +
 		"  - ref: ghcr.io/acme/protoc-gen-replaced:v2.0.0\n    out: gen/replaced\n" +
@@ -375,7 +376,7 @@ plugins:
     out: gen/alpha
 `)
 	l = &Layout{}
-	facts, err = Gen(context.Background(), v1, Replacements{}, l, nil)
+	facts, err = Gen(context.Background(), v1, nil, Replacements{}, l, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -418,25 +419,25 @@ plugins:
 	// reads the managed mode for nothing.
 	g := parseGen(t, "version: v2\nmanaged:\n  enabled: false\n  override:\n    - file_option: java_package\n      value: x\nplugins:\n  - local: gen\n    out: gen\n")
 	l = &Layout{}
-	facts, err = Gen(context.Background(), g, Replacements{}, l, nil)
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
 	if err != nil || l.Gen == nil || len(l.Gen.Overrides) != 0 || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled false -> nothing: managed mode is disabled") {
 		t.Fatalf("disabled: %v %+v\n%s", err, l.Gen, factsOf(facts))
 	}
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: x\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
 	l = &Layout{}
-	facts, err = Gen(context.Background(), g, Replacements{}, l, nil)
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
 	if got := factsOf(facts); err != nil || l.Gen != nil || strings.Contains(got, "overrides:") || !strings.Contains(got, "buf.gen.yaml plugins !! no plugin mapped: no generation file is written\nbuf.gen.yaml managed !! no generation file is written, no override with it") {
 		t.Fatalf("nothing mapped: %v %+v\n%s", err, l.Gen, got)
 	}
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\nplugins:\n  - local: gen\n    out: gen\n")
-	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, &Layout{}, nil, nil)
 	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled true !! enabled with no explicit override: buf's own heuristic") {
 		t.Fatalf("enabled alone: %v %s", err, factsOf(facts))
 	}
 	// With no plugin mapped, a disabled or empty managed mode is what
 	// it would have been.
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: false\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
-	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, &Layout{}, nil, nil)
 	if got := factsOf(facts); err != nil || !strings.HasSuffix(got, "buf.gen.yaml plugins !! no plugin mapped: no generation file is written\nbuf.gen.yaml managed.enabled false -> nothing: managed mode is disabled, its entries read for nothing") {
 		t.Fatalf("disabled, nothing mapped: %v\n%s", err, got)
 	}
@@ -450,7 +451,7 @@ plugins:
 			t.Fatal(err)
 		}
 	}
-	if _, err := Gen(context.Background(), g, unusedRepl, l, nil); err == nil || err.Error() != "--plugin buf.build/acme/u0, --plugin buf.build/acme/u1: buf.gen.yaml names no such plugin" {
+	if _, err := Gen(context.Background(), g, nil, unusedRepl, l, nil, nil); err == nil || err.Error() != "--plugin buf.build/acme/u0, --plugin buf.build/acme/u1: no generation file names such a plugin" {
 		t.Fatalf("unused replacements: %v", err)
 	}
 	var badRepl Replacements
@@ -458,7 +459,7 @@ plugins:
 		t.Fatal(err)
 	}
 	g = parseGen(t, "version: v2\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
-	if _, err := Gen(context.Background(), g, badRepl, l, nil); err == nil || !strings.Contains(err.Error(), "--plugin buf.build/nobody/knows=not-a-reference") {
+	if _, err := Gen(context.Background(), g, nil, badRepl, l, nil, nil); err == nil || !strings.Contains(err.Error(), "--plugin buf.build/nobody/knows=not-a-reference") {
 		t.Fatalf("a replacement that is no reference: %v", err)
 	}
 	if name, ref := bsrSplit("bsr.example.com:8443/acme/plugin:v1"); name != "bsr.example.com:8443/acme/plugin" || ref != "v1" {
@@ -467,7 +468,7 @@ plugins:
 	if name, ref := bsrSplit("bsr.example.com:8443/acme/plugin"); name != "bsr.example.com:8443/acme/plugin" || ref != "" {
 		t.Fatalf("bsrSplit without a ref: %q %q", name, ref)
 	}
-	if _, err := Gen(context.Background(), nil, Replacements{}, nil, nil); err == nil {
+	if _, err := Gen(context.Background(), nil, nil, Replacements{}, nil, nil, nil); err == nil {
 		t.Fatal("no file: no error")
 	}
 }
@@ -478,7 +479,7 @@ plugins:
 func TestGenLocalCommandRefused(t *testing.T) {
 	g := parseGen(t, "version: v2\nplugins:\n  - local: [tools//gen, x]\n    out: gen/a\n  - local: ./\n    out: gen/b\n  - local: [tools\\gen]\n    out: gen/c\n  - local: [ok, tools//x]\n    out: gen/d\n")
 	l := &Layout{}
-	facts, err := Gen(context.Background(), g, Replacements{}, l, nil)
+	facts, err := Gen(context.Background(), g, nil, Replacements{}, l, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -511,6 +512,153 @@ func (f fakeTags) list(_ context.Context, repo string) ([]string, error) {
 	return tags, nil
 }
 
+// A tree's paths, for the inputs' mapping: directories end in a
+// slash.
+func treeStat(entries ...string) StatFunc {
+	return func(rel string) (bool, bool) {
+		for _, e := range entries {
+			if strings.TrimSuffix(e, "/") == rel {
+				return true, strings.HasSuffix(e, "/")
+			}
+		}
+		return false, false
+	}
+}
+
+// v2 inputs map to the file's entries' files patterns: a directory
+// path under a module its module-relative path and everything under
+// it, a file path the file; a path under no module, a whole module
+// among several, a missing path, a module-relative path another
+// module holds too, an exclusion and an input of another kind are
+// unmapped facts; a whole module alone, or a directory input without
+// paths, restricts nothing; a path outside its input directory is
+// buf's own refusal. A template's entries follow the file's with its
+// own inputs; its managed mode maps where it gives the file's
+// overrides, its clean where it agrees (REQ-migrate-gen).
+func TestGenInputsAndTemplates(t *testing.T) {
+	l := &Layout{Modules: map[string]*modfile.File{"proto": {}, "other": {}}}
+	stat := treeStat("proto/acme/api/", "proto/acme/x.proto", "proto/acme/dup/", "other/acme/dup/", "elsewhere/")
+	g := parseGen(t, `version: v2
+clean: true
+inputs:
+  - directory: .
+    paths: [proto/acme/api, proto/acme/x.proto, proto/acme/dup, elsewhere, proto, proto/acme/missing]
+    exclude_paths: [proto/acme/api/old]
+    types: [acme.api.Ping]
+  - module: buf.build/acme/petapis
+  - directory: proto
+    paths: [proto/acme/api]
+plugins:
+  - local: gen
+    out: gen
+    include_imports: true
+  - local: gen2
+    out: gen2
+managed:
+  enabled: true
+  override:
+    - file_option: java_package
+      value: com.acme
+`)
+	same := parseGen(t, "version: v2\nclean: true\ninputs:\n  - directory: .\n    paths: [proto/acme/x.proto]\nplugins:\n  - local: gen3\n    out: gen3\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: com.acme\n")
+	differs := parseGen(t, "version: v2\nplugins:\n  - local: gen4\n    out: gen4\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: com.other\n    - file_option: go_package_prefix\n      value: example.com/t\n")
+	empty := parseGen(t, "version: v2\nbogus: x\nplugins:\n  - local: gen5\n    out: gen5\n")
+	facts, err := Gen(context.Background(), g, []Template{{"buf.gen.a.yaml", same}, {"buf.gen.b.yaml", differs}, {"buf.gen.c.yaml", empty}}, Replacements{}, l, nil, stat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := factsOf(facts)
+	for _, want := range []string{
+		"buf.gen.yaml plugins[0].local gen -> local: gen\nbuf.gen.yaml plugins[0].out gen -> out: gen\nbuf.gen.yaml plugins[0].include_imports true -> include_imports: true\n",
+		"buf.gen.yaml plugins[1].out gen2 -> out: gen2\nbuf.gen.yaml inputs[0].paths[0] proto/acme/api -> files: acme/api/**\n",
+		"buf.gen.yaml inputs[0].paths[1] proto/acme/x.proto -> files: acme/x.proto\n",
+		"buf.gen.yaml inputs[0].paths[2] proto/acme/dup !! the module-relative path acme/dup lies in other/acme/dup too: a pattern would name both\n",
+		"buf.gen.yaml inputs[0].paths[3] elsewhere !! under no workspace module: pb generates over the modules' own files\n",
+		"buf.gen.yaml inputs[0].paths[4] proto !! a whole module among several: pb's patterns are module-relative and name every module\n",
+		"buf.gen.yaml inputs[0].paths[5] proto/acme/missing !! no such path\n",
+		"buf.gen.yaml inputs[0].exclude_paths[0] proto/acme/api/old !! pb's patterns name what to generate for, excluding nothing\n",
+		"buf.gen.yaml inputs[0].types !! pb generates over the workspace's own files under one strategy\n",
+		"buf.gen.yaml inputs[1].module buf.build/acme/petapis !! an input pb reads nothing from: pb generates over the workspace's own files\n",
+		"buf.gen.yaml inputs[2].paths[0] proto/acme/api -> files: acme/api/**\n",
+		"buf.gen.yaml clean true -> clean: true\n",
+		"buf.gen.a.yaml plugins[0].local gen3 -> local: gen3\nbuf.gen.a.yaml plugins[0].out gen3 -> out: gen3\nbuf.gen.a.yaml inputs[0].paths[0] proto/acme/x.proto -> files: acme/x.proto\nbuf.gen.a.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme\nbuf.gen.a.yaml managed -> the overrides buf.gen.yaml's managed mode gives\n",
+		"buf.gen.b.yaml plugins[0].out gen4 -> out: gen4\nbuf.gen.b.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none\nbuf.gen.b.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.other\nbuf.gen.b.yaml managed.override[1] file_option=go_package_prefix value=example.com/t !! buf's own heuristic, a value computed per file from its package: pb declares values alone\nbuf.gen.b.yaml managed !! differs from buf.gen.yaml's: pb's overrides are one set over every entry\n",
+		"buf.gen.c.yaml plugins[0].out gen5 -> out: gen5\nbuf.gen.c.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none\nbuf.gen.c.yaml managed !! none, while buf.gen.yaml's gives overrides: pb's overrides are one set over every entry\n",
+		"buf.gen.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("facts lack %q:\n%s", want, got)
+		}
+	}
+	f := l.Gen
+	if f == nil || !f.Clean || len(f.Plugins) != 5 || len(f.Overrides) != 1 {
+		t.Fatalf("file %+v", f)
+	}
+	pats := func(i int) string { return strings.Join(f.Plugins[i].Files, ",") }
+	if pats(0) != "acme/api/**,acme/x.proto" || pats(1) != "acme/api/**,acme/x.proto" || !f.Plugins[0].IncludeImports || f.Plugins[1].IncludeImports {
+		t.Errorf("the file's entries: %+v", f.Plugins[:2])
+	}
+	if pats(2) != "acme/x.proto" || pats(3) != "" || pats(4) != "" || f.Plugins[2].Ref != "gen3" || f.Plugins[4].Ref != "gen5" {
+		t.Errorf("the templates' entries: %+v", f.Plugins[2:])
+	}
+
+	// One module: a path naming it whole restricts nothing, as an
+	// input without paths does; a template alone is the first file,
+	// its managed facts keyed by its name; a directory input naming
+	// no paths is a path naming its directory.
+	one := &Layout{Modules: map[string]*modfile.File{"proto": {}}}
+	g = parseGen(t, "version: v2\ninputs:\n  - directory: .\n    paths: [proto]\n  - directory: .\n  - directory: proto/acme\n  - directory: proto\n  - directory: ../shared\n    paths: [../shared/x.proto]\nplugins:\n  - local: gen\n    out: gen\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: com.acme\n")
+	facts, err = Gen(context.Background(), nil, []Template{{"buf.gen.only.yaml", g}}, Replacements{}, one, nil, treeStat("proto/", "proto/acme/"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = factsOf(facts)
+	for _, want := range []string{
+		"buf.gen.only.yaml inputs[0].paths[0] proto -> every file of the module\nbuf.gen.only.yaml inputs[1].directory . -> every workspace file",
+		"buf.gen.only.yaml inputs[2].directory proto/acme -> files: acme/**\nbuf.gen.only.yaml inputs[3].directory proto -> every file of the module\nbuf.gen.only.yaml inputs[4].directory ../shared !! outside the resolution root: pb generates over the workspace's own files\n",
+		"buf.gen.only.yaml managed.override[0] file_option=java_package -> overrides: files ** option java_package value com.acme",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("facts lack %q:\n%s", want, got)
+		}
+	}
+	if one.Gen == nil || one.Gen.Plugins[0].Files != nil || len(one.Gen.Overrides) != 1 {
+		t.Errorf("one module: %+v", one.Gen)
+	}
+	// A lone template's disable facts are keyed by its name too.
+	g = parseGen(t, "version: v2\nplugins:\n  - local: gen\n    out: gen\nmanaged:\n  enabled: true\n  disable:\n    - file_option: go_package\n")
+	facts, err = Gen(context.Background(), nil, []Template{{"buf.gen.only.yaml", g}}, Replacements{}, one, nil, treeStat("proto/"))
+	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.only.yaml managed.disable[0] file_option=go_package !! ") {
+		t.Errorf("a lone template's disable: %v\n%s", err, factsOf(facts))
+	}
+
+	// A directory naming a module among several is a whole module.
+	g = parseGen(t, "version: v2\ninputs:\n  - directory: proto\nplugins:\n  - local: gen\n    out: gen\n")
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, l, nil, stat)
+	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml inputs[0].directory proto !! a whole module among several") || l.Gen.Plugins[0].Files != nil {
+		t.Errorf("a module directory input: %v\n%s", err, factsOf(facts))
+	}
+	// The root module: a path's module-relative spelling is the path,
+	// a dot-led one included.
+	root := &Layout{Modules: map[string]*modfile.File{".": {}}}
+	g = parseGen(t, "version: v2\ninputs:\n  - directory: .\n    paths: [.gen/x.proto, api]\nplugins:\n  - local: gen\n    out: gen\n")
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, root, nil, treeStat(".gen/x.proto", "api/"))
+	if err != nil || strings.Join(root.Gen.Plugins[0].Files, ",") != ".gen/x.proto,api/**" {
+		t.Errorf("root module: %v %+v\n%s", err, root.Gen, factsOf(facts))
+	}
+
+	// A path outside its input directory is buf's own refusal; so is
+	// an escaping one.
+	for _, text := range []string{
+		"version: v2\ninputs:\n  - directory: proto\n    paths: [other/x]\nplugins:\n  - local: gen\n    out: gen\n",
+		"version: v2\ninputs:\n  - directory: .\n    paths: [../x]\nplugins:\n  - local: gen\n    out: gen\n",
+	} {
+		if _, err := Gen(context.Background(), parseGen(t, text), nil, Replacements{}, l, nil, stat); err == nil || !errors.Is(err, bufconfig.ErrInvalid) {
+			t.Errorf("outside the input: %v", err)
+		}
+	}
+}
+
 // A versionless plugin takes the highest version tag the registry
 // lists, listed once per name however many entries name it; a
 // listing that fails, or one holding no version tag, leaves the
@@ -525,7 +673,7 @@ func TestGenVersionlessPlugin(t *testing.T) {
 		CatalogRepository("buf.build/bufbuild/es"): {"latest"},
 	}
 	l := &Layout{}
-	facts, err := Gen(context.Background(), g, Replacements{}, l, tags.list)
+	facts, err := Gen(context.Background(), g, nil, Replacements{}, l, tags.list, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,7 +696,7 @@ func TestGenVersionlessPlugin(t *testing.T) {
 	if len(l.Gen.Plugins) != 2 || l.Gen.Plugins[1].Ref != "ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.10" {
 		t.Errorf("file %+v", l.Gen.Plugins)
 	}
-	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
+	facts, err = Gen(context.Background(), g, nil, Replacements{}, &Layout{}, nil, nil)
 	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml plugins[0].remote buf.build/grpc/go !! listing the catalog's tags failed: no registry access: name a version or pass --plugin buf.build/grpc/go=<reference>") {
 		t.Errorf("no lister: %v\n%s", err, factsOf(facts))
 	}

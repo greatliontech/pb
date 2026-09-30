@@ -183,7 +183,7 @@ func TestNullIsAbsent(t *testing.T) {
 		t.Fatalf("a required key with no value: %v", err)
 	}
 	g, err := ParseGen([]byte("version: v1\nplugins:\nmanaged:\n  ruby_package:\n  override:\ninputs:\n"))
-	if err != nil || g.Plugins != nil || g.Managed == nil || g.Managed.Forms != nil || g.Managed.Overrides != nil || g.Inputs || len(g.Unmodeled) != 0 {
+	if err != nil || g.Plugins != nil || g.Managed == nil || g.Managed.Forms != nil || g.Managed.Overrides != nil || g.Inputs != nil || len(g.Unmodeled) != 0 {
 		t.Fatalf("buf.gen.yaml nulls: %+v %v", g, err)
 	}
 	g, err = ParseGen([]byte("version: v2\nplugins:\n  - local: x\n    out: o\n    opt:\nmanaged:\n  override:\n  disable:\n"))
@@ -260,7 +260,7 @@ clean: true
 		t.Fatalf("plugins: %+v", g.Plugins)
 	}
 	p := g.Plugins
-	if p[0].Remote != "buf.build/protocolbuffers/go:v1.36.0" || p[0].Out != "gen/go" || p[0].Opt != "paths=source_relative" || join(p[0].Unmodeled) != "plugins[0].include_imports" {
+	if p[0].Remote != "buf.build/protocolbuffers/go:v1.36.0" || p[0].Out != "gen/go" || p[0].Opt != "paths=source_relative" || !p[0].IncludeImports || len(p[0].Unmodeled) != 0 {
 		t.Fatalf("remote: %+v", p[0])
 	}
 	if strings.Join(p[1].Local, " ") != "protoc-gen-connect-go" || p[1].Opt != "paths=source_relative,package_suffix=" || strings.Join(p[2].Local, " ") != "go run ./cmd/gen" || p[3].ProtocBuiltin != "cpp" || p[3].Out != "gen/cpp" {
@@ -270,7 +270,7 @@ clean: true
 	if m == nil || !m.Enabled || len(m.Overrides) != 5 || m.Overrides[0] != (Override{FileOption: "go_package_prefix", Value: "github.com/acme/gen"}) || m.Overrides[1] != (Override{FileOption: "java_package", Value: "com.acme", Path: "proto/acme"}) || m.Overrides[2] != (Override{FieldOption: "jstype", Value: "JS_STRING", Module: "buf.build/acme/petapis"}) || m.Overrides[3] != (Override{FieldOption: "jstype", Value: "JS_NORMAL", Field: "acme.v1.M.f"}) || m.Overrides[4] != (Override{FileOption: "java_string_check_utf8", Value: "false"}) {
 		t.Fatalf("managed: %+v", m)
 	}
-	if len(m.Disables) != 2 || m.Disables[0] != "managed.disable[0] file_option=go_package module=buf.build/googleapis/googleapis" || m.Disables[1] != "managed.disable[1] field=acme.v1.M.g" || !g.Inputs || join(g.Unmodeled) != "clean" {
+	if len(m.Disables) != 2 || m.Disables[0] != "managed.disable[0] file_option=go_package module=buf.build/googleapis/googleapis" || m.Disables[1] != "managed.disable[1] field=acme.v1.M.g" || len(g.Inputs) != 1 || g.Inputs[0].Kind != "directory" || g.Inputs[0].Value != "proto" || !g.Clean || len(g.Unmodeled) != 0 {
 		t.Fatalf("disables, inputs, unmodeled: %+v %v %v", m.Disables, g.Inputs, g.Unmodeled)
 	}
 	v1 := `version: v1
@@ -469,5 +469,74 @@ func TestIsGenTemplate(t *testing.T) {
 		if got := IsGenTemplate(name); got != want {
 			t.Errorf("IsGenTemplate(%q) = %v, want %v", name, got, want)
 		}
+	}
+}
+
+// v2's inputs read each entry's kind and value, its paths and
+// exclusions, and note the rest; a kind twice or none, an empty
+// value, a boolean spelled otherwise than true or false are buf's own
+// refusals; include_imports and clean read as booleans; v1 has none
+// of these keys.
+func TestParseGenInputs(t *testing.T) {
+	g, err := ParseGen([]byte(`version: v2
+clean: false
+inputs:
+  - directory: .
+    paths: [proto/a, proto/b.proto]
+    exclude_paths:
+      - proto/a/x
+    types: [a.b.C]
+  - module: buf.build/acme/petapis
+    include_types: [x]
+  - git_repo: https://example.com/r.git
+    branch: main
+plugins:
+  - remote: buf.build/acme/p:v1.0.0
+    out: gen
+    include_imports: false
+    include_wkt: true
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Clean || len(g.Inputs) != 3 {
+		t.Fatalf("gen: %+v", g)
+	}
+	in := g.Inputs
+	if in[0].Kind != "directory" || in[0].Value != "." || strings.Join(in[0].Paths, ",") != "proto/a,proto/b.proto" || strings.Join(in[0].ExcludePaths, ",") != "proto/a/x" || join(in[0].Unmodeled) != "inputs[0].types" {
+		t.Errorf("inputs[0] = %+v", in[0])
+	}
+	if in[1].Kind != "module" || in[1].Value != "buf.build/acme/petapis" || join(in[1].Unmodeled) != "inputs[1].include_types" {
+		t.Errorf("inputs[1] = %+v", in[1])
+	}
+	if in[2].Kind != "git_repo" || join(in[2].Unmodeled) != "inputs[2].branch" {
+		t.Errorf("inputs[2] = %+v", in[2])
+	}
+	if g.Plugins[0].IncludeImports || join(g.Plugins[0].Unmodeled) != "plugins[0].include_wkt" {
+		t.Errorf("plugin = %+v", g.Plugins[0])
+	}
+	for name, text := range map[string]string{
+		"two kinds":       "version: v2\ninputs:\n  - directory: .\n    module: buf.build/a/b\nplugins:\n  - local: x\n    out: o\n",
+		"no kind":         "version: v2\ninputs:\n  - paths: [a]\nplugins:\n  - local: x\n    out: o\n",
+		"empty kind":      "version: v2\ninputs:\n  - directory: \"\"\nplugins:\n  - local: x\n    out: o\n",
+		"paths not list":  "version: v2\ninputs:\n  - directory: .\n    paths: a\nplugins:\n  - local: x\n    out: o\n",
+		"clean word":      "version: v2\nclean: yes\nplugins:\n  - local: x\n    out: o\n",
+		"clean quoted":    "version: v2\nclean: \"true\"\nplugins:\n  - local: x\n    out: o\n",
+		"imports number":  "version: v2\nplugins:\n  - local: x\n    out: o\n    include_imports: 1\n",
+		"imports list":    "version: v2\nplugins:\n  - local: x\n    out: o\n    include_imports: [true]\n",
+		"inputs not list": "version: v2\ninputs: {directory: .}\nplugins:\n  - local: x\n    out: o\n",
+	} {
+		if _, err := ParseGen([]byte(text)); err == nil || !errors.Is(err, ErrInvalid) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// buf reads booleans in their title and upper case too.
+	cased, err := ParseGen([]byte("version: v2\nclean: True\nplugins:\n  - local: x\n    out: o\n    include_imports: TRUE\n"))
+	if err != nil || !cased.Clean || !cased.Plugins[0].IncludeImports {
+		t.Errorf("cased booleans: %+v %v", cased, err)
+	}
+	v1, err := ParseGen([]byte("version: v1\nclean: true\ninputs:\n  - directory: .\nplugins:\n  - name: go\n    out: o\n    include_imports: true\n"))
+	if err != nil || v1.Clean || v1.Inputs != nil || join(v1.Unmodeled) != "clean,inputs" || join(v1.Plugins[0].Unmodeled) != "plugins[0].include_imports" {
+		t.Errorf("v1: %+v %v", v1, err)
 	}
 }

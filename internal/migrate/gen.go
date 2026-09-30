@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -89,14 +91,13 @@ func tagLess(a, b string) bool {
 // keyReasons are the reasons a plugin entry's passed-over keys map to
 // nothing (REQ-migrate-gen), by key.
 var keyReasons = map[string]string{
-	"strategy":        "pb generates over the workspace's own files under one strategy",
-	"include_imports": "pb generates over the workspace's own files under one strategy",
-	"include_wkt":     "pb generates over the workspace's own files under one strategy",
-	"types":           "pb generates over the workspace's own files under one strategy",
-	"exclude_types":   "pb generates over the workspace's own files under one strategy",
-	"revision":        "pb pins a plugin by its image digest, not a build revision",
-	"protoc_path":     "pb runs no protoc",
-	"remote":          "buf's alpha remote plugin, run by the BSR: pb runs every plugin itself",
+	"strategy":      "pb generates over the workspace's own files under one strategy",
+	"include_wkt":   "pb generates for no well-known file: the toolchain's copy is never a target",
+	"types":         "pb generates over the workspace's own files under one strategy",
+	"exclude_types": "pb generates over the workspace's own files under one strategy",
+	"revision":      "pb pins a plugin by its image digest, not a build revision",
+	"protoc_path":   "pb runs no protoc",
+	"remote":        "buf's alpha remote plugin, run by the BSR: pb runs every plugin itself",
 }
 
 // computed are buf's managed-mode file options that are no protobuf
@@ -107,7 +108,20 @@ var computed = map[string]bool{
 	"csharp_namespace_prefix": true, "php_metadata_namespace_suffix": true, "ruby_package_suffix": true,
 }
 
-// Gen builds the generation file from buf.gen.yaml (REQ-migrate-gen).
+// Template is a generation template beside the configuration, read
+// as a `buf.gen.yaml` is (REQ-migrate-gen).
+type Template struct {
+	Name string
+	Gen  *bufconfig.Gen
+}
+
+// StatFunc reports whether a root-relative path exists in the tree
+// and whether it is a directory.
+type StatFunc func(rel string) (exists, isDir bool)
+
+// Gen builds the generation file from buf.gen.yaml and the templates
+// beside it (REQ-migrate-gen), the templates' entries after the
+// file's, each file's inputs and managed mode its own entries'.
 // Each plugin entry naming a BSR plugin is looked up among the
 // replacements and then in the plugin catalog, a name either holds
 // becoming a `ref` entry: the replacement's reference as given, or
@@ -119,34 +133,52 @@ var computed = map[string]bool{
 // unmapped fact naming the flag's form. A local entry becomes a
 // `local` entry of its command and arguments, an unmapped fact where
 // pb's schema refuses the command; a protoc builtin an unmapped
-// fact; out as written
-// where pb's schema takes it, an unmapped fact where not; opt as
-// joined; each key the reader passed over an unmapped fact naming
-// it, as is `inputs`. buf's managed mode becomes overrides where an
-// entry is declarative — a file option with a value over every file
-// or over the files a path names, the path relative to a file's
-// module as buf matches it and pb's globs are; v1's boolean options,
-// its `override` map of option to file to value, and the defaults of
+// fact; out as written where pb's schema takes it, an unmapped fact
+// where not; opt as joined; include_imports as itself; each key the
+// reader passed over an unmapped fact naming it. A file's directory
+// inputs' paths become the file's entries' files patterns
+// (inputPatterns), an input of another kind or an exclusion an
+// unmapped fact. buf's managed mode becomes overrides where an entry
+// is declarative — a file option with a value over every file or
+// over the files a path names, the path relative to a file's module
+// as buf matches it and pb's globs are; v1's boolean options, its
+// `override` map of option to file to value, and the defaults of
 // `optimize_for`, `objc_class_prefix` and `swift_prefix` — and an
-// unmapped fact where
-// it is buf's own heuristic or names a module, which a
-// module-relative glob cannot. The file is set on the layout, nil
-// where no plugin mapped, the managed mode then read for nothing,
-// and the facts returned.
-func Gen(ctx context.Context, gen *bufconfig.Gen, repl Replacements, l *Layout, tags TagLister) ([]Fact, error) {
-	if gen == nil || l == nil {
+// unmapped fact where it is buf's own heuristic or names a module,
+// which a module-relative glob cannot; a template's managed mode is
+// the file's own where it maps to the same overrides, an unmapped
+// fact where not, pb's overrides being one set over every entry, as
+// its clean is one for every output directory: the first file's,
+// a later file disagreeing an unmapped fact. The file is set on the
+// layout, nil where no plugin mapped, the managed mode then read for
+// nothing, and the facts returned.
+func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Replacements, l *Layout, tags TagLister, stat StatFunc) ([]Fact, error) {
+	if (gen == nil && len(templates) == 0) || l == nil {
 		return nil, fmt.Errorf("no buf.gen.yaml read")
 	}
-	// The replacements are refused first where one names a plugin the
-	// configuration never names, or is no plugin reference.
+	type genFile struct {
+		name string
+		gen  *bufconfig.Gen
+	}
+	var files []genFile
+	if gen != nil {
+		files = append(files, genFile{bufconfig.GenFileName, gen})
+	}
+	for _, t := range templates {
+		files = append(files, genFile{t.Name, t.Gen})
+	}
+	// The replacements are refused first where one names a plugin no
+	// file names, or is no plugin reference.
 	named := map[string]bool{}
-	for _, p := range gen.Plugins {
-		if p.Remote != "" {
-			name, _ := bsrSplit(p.Remote)
-			named[name] = true
+	for _, fl := range files {
+		for _, p := range fl.gen.Plugins {
+			if p.Remote != "" {
+				name, _ := bsrSplit(p.Remote)
+				named[name] = true
+			}
 		}
 	}
-	if err := unusedReplacements("plugin", repl.Plugins, named, bufconfig.GenFileName+" names no such plugin"); err != nil {
+	if err := unusedReplacements("plugin", repl.Plugins, named, "no generation file names such a plugin"); err != nil {
 		return nil, err
 	}
 	for _, name := range sortedKeys(repl.Plugins) {
@@ -158,81 +190,114 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, repl Replacements, l *Layout, 
 	report := func(f Fact) { facts = append(facts, f) }
 	f := &genfile.File{}
 	listed := map[string]listing{}
-	for i, p := range gen.Plugins {
-		key := fmt.Sprintf("%s plugins[%d]", bufconfig.GenFileName, i)
-		entry := genfile.Plugin{Out: p.Out, Opt: p.Opt}
-		kept := true
+	first := files[0]
+	for fi, fl := range files {
+		// The inputs' facts follow the file's entries, as buf's keys
+		// are read: the patterns first, their facts held back.
+		var inputFacts []Fact
+		patterns, restricted, err := inputPatterns(fl.name, fl.gen, l, stat, func(f Fact) { inputFacts = append(inputFacts, f) })
+		if err != nil {
+			return nil, err
+		}
+		for i, p := range fl.gen.Plugins {
+			key := fmt.Sprintf("%s plugins[%d]", fl.name, i)
+			entry := genfile.Plugin{Out: p.Out, Opt: p.Opt}
+			kept := true
+			switch {
+			case p.Remote != "":
+				name, version := bsrSplit(p.Remote)
+				ref, fact := pluginRef(ctx, key+".remote "+p.Remote, name, version, repl, tags, listed)
+				report(fact)
+				entry.Scheme, entry.Ref, kept = plugin.SchemeOCI, ref, ref != ""
+			case len(p.Local) > 0:
+				// The command as written where pb's schema takes it, as
+				// out below; buf takes any non-empty text.
+				if err := genfile.CheckLocal(p.Local[0]); err != nil {
+					report(unmapped(key+".local "+strings.Join(p.Local, " "), "pb's schema refuses the command: "+err.Error()))
+					kept = false
+					break
+				}
+				entry.Scheme, entry.Ref = plugin.SchemeLocal, p.Local[0]
+				if len(p.Local) > 1 {
+					entry.Args = p.Local[1:]
+				}
+				report(mapped(key+".local "+strings.Join(p.Local, " "), "local: "+strings.Join(p.Local, " ")))
+			case p.ProtocBuiltin != "":
+				report(unmapped(key+".protoc_builtin "+p.ProtocBuiltin, "pb runs no protoc"))
+				kept = false
+			default:
+				// No form pb runs: v1's alpha remote key, reported below
+				// among the keys passed over.
+				kept = false
+			}
+			if kept {
+				if err := genfile.CheckOut(p.Out); err != nil {
+					report(unmapped(key+".out "+p.Out, "pb writes within the resolution root: "+err.Error()))
+					kept = false
+				} else {
+					report(mapped(key+".out "+p.Out, "out: "+p.Out))
+				}
+			}
+			if kept && p.Opt != "" {
+				report(mapped(key+".opt "+p.Opt, "opt: "+p.Opt))
+			}
+			if kept && p.IncludeImports {
+				entry.IncludeImports = true
+				report(mapped(key+".include_imports true", "include_imports: true"))
+			}
+			if kept && restricted {
+				entry.Files = append([]string(nil), patterns...)
+			}
+			if kept {
+				f.Plugins = append(f.Plugins, entry)
+			}
+			reportKeys(report, key, p.Unmodeled)
+		}
+		facts = append(facts, inputFacts...)
+		// One clean for every output directory: the first file's.
 		switch {
-		case p.Remote != "":
-			name, version := bsrSplit(p.Remote)
-			ref, fact := pluginRef(ctx, key+".remote "+p.Remote, name, version, repl, tags, listed)
-			report(fact)
-			entry.Scheme, entry.Ref, kept = plugin.SchemeOCI, ref, ref != ""
-		case len(p.Local) > 0:
-			// The command as written where pb's schema takes it, as
-			// out below; buf takes any non-empty text.
-			if err := genfile.CheckLocal(p.Local[0]); err != nil {
-				report(unmapped(key+".local "+strings.Join(p.Local, " "), "pb's schema refuses the command: "+err.Error()))
-				kept = false
-				break
-			}
-			entry.Scheme, entry.Ref = plugin.SchemeLocal, p.Local[0]
-			if len(p.Local) > 1 {
-				entry.Args = p.Local[1:]
-			}
-			report(mapped(key+".local "+strings.Join(p.Local, " "), "local: "+strings.Join(p.Local, " ")))
-		case p.ProtocBuiltin != "":
-			report(unmapped(key+".protoc_builtin "+p.ProtocBuiltin, "pb runs no protoc"))
-			kept = false
-		default:
-			// No form pb runs: v1's alpha remote key, reported below
-			// among the keys passed over.
-			kept = false
+		case fi == 0 && fl.gen.Clean:
+			f.Clean = true
+			report(mapped(fl.name+" clean true", "clean: true"))
+		case fi > 0 && fl.gen.Clean != first.gen.Clean && len(fl.gen.Plugins) > 0:
+			report(unmapped(fl.name+" clean", "differs from "+first.name+"'s: pb empties every entry's output directory or none"))
 		}
-		if kept {
-			if err := genfile.CheckOut(p.Out); err != nil {
-				report(unmapped(key+".out "+p.Out, "pb writes within the resolution root: "+err.Error()))
-				kept = false
-			} else {
-				report(mapped(key+".out "+p.Out, "out: "+p.Out))
+		// One set of overrides over every entry: the first file's
+		// managed mode. A template's managed mode is read whole, its
+		// facts its own, and is the first file's where it gives the
+		// same overrides — none where the first gives none; a
+		// template giving other overrides, or none where the first
+		// gives some, is unmapped: its entries run under the first's.
+		if fi > 0 {
+			ov, fs := managedOverrides(fl.name, fl.gen.Managed)
+			base, _ := managedOverrides(first.name, first.gen.Managed)
+			facts = append(facts, fs...)
+			switch {
+			case slices.Equal(ov, base) && fl.gen.Managed != nil:
+				report(mapped(fl.name+" managed", "the overrides "+first.name+"'s managed mode gives"))
+			case slices.Equal(ov, base):
+			case fl.gen.Managed == nil:
+				report(unmapped(fl.name+" managed", "none, while "+first.name+"'s gives overrides: pb's overrides are one set over every entry"))
+			default:
+				report(unmapped(fl.name+" managed", "differs from "+first.name+"'s: pb's overrides are one set over every entry"))
 			}
 		}
-		if kept && p.Opt != "" {
-			report(mapped(key+".opt "+p.Opt, "opt: "+p.Opt))
-		}
-		if kept {
-			f.Plugins = append(f.Plugins, entry)
-		}
-		for _, u := range p.Unmodeled {
-			k := string(u)
-			if j := strings.LastIndexByte(k, '.'); j >= 0 {
-				k = k[j+1:]
-			}
-			reason, known := keyReasons[k]
-			if !known {
-				reason = "a key the migration does not model"
-			}
-			report(unmapped(key+"."+k, reason))
-		}
-	}
-	if gen.Inputs {
-		report(unmapped(bufconfig.GenFileName+" inputs", "pb generates over the workspace's own files"))
 	}
 	if len(f.Plugins) == 0 {
-		report(unmapped(bufconfig.GenFileName+" plugins", "no plugin mapped: no generation file is written"))
+		report(unmapped(first.name+" plugins", "no plugin mapped: no generation file is written"))
 		// The managed mode with it: disabled or empty, what it would
 		// have been; else read for nothing, with no file to hold it.
-		switch m := gen.Managed; {
+		switch m := first.gen.Managed; {
 		case m == nil:
 		case !m.Enabled || len(m.Overrides) == 0 && len(m.Forms) == 0:
-			_, fs := managedOverrides(m)
+			_, fs := managedOverrides(first.name, m)
 			facts = append(facts, fs...)
 		default:
-			report(unmapped(bufconfig.GenFileName+" managed", "no generation file is written, no override with it"))
+			report(unmapped(first.name+" managed", "no generation file is written, no override with it"))
 		}
 		return facts, nil
 	}
-	overrides, fs := managedOverrides(gen.Managed)
+	overrides, fs := managedOverrides(first.name, first.gen.Managed)
 	facts = append(facts, fs...)
 	f.Overrides = overrides
 	if _, err := genfile.Encode(f); err != nil {
@@ -240,6 +305,139 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, repl Replacements, l *Layout, 
 	}
 	l.Gen = f
 	return facts, nil
+}
+
+// reportKeys reports the keys the reader passed over under an entry,
+// each an unmapped fact under key naming the key's own reason where
+// keyReasons has one.
+func reportKeys(report func(Fact), key string, keys []bufconfig.Unmodeled) {
+	for _, u := range keys {
+		k := string(u)
+		if j := strings.LastIndexByte(k, '.'); j >= 0 {
+			k = k[j+1:]
+		}
+		reason, known := keyReasons[k]
+		if !known {
+			reason = "a key the migration does not model"
+		}
+		report(unmapped(key+"."+k, reason))
+	}
+}
+
+// inputPatterns maps a file's inputs to its entries' files patterns
+// (REQ-migrate-gen): each directory input's paths, root-relative and
+// within the input's directory, a path under one workspace module
+// becoming that module-relative path's pattern — the file's own, the
+// directory's and everything under it — a mapped fact naming it; a
+// path under no module, one that is a module's directory among
+// several, one that exists nowhere, or one whose module-relative path
+// exists under another module too an unmapped fact; a directory
+// input naming no paths read as a path of its own, the root every
+// workspace file; an exclusion, an input of another kind, or a
+// directory outside the root, an unmapped fact. restricted is false
+// where an input takes every workspace file, or where no input maps
+// to a pattern.
+func inputPatterns(file string, gen *bufconfig.Gen, l *Layout, stat StatFunc, report func(Fact)) ([]string, bool, error) {
+	var patterns []string
+	seen := map[string]bool{}
+	restricted := gen.Inputs != nil
+	dirs := sortedKeys(l.Modules)
+	for i, in := range gen.Inputs {
+		key := fmt.Sprintf("%s inputs[%d]", file, i)
+		if in.Kind != "directory" {
+			report(unmapped(key+"."+in.Kind+" "+in.Value, "an input pb reads nothing from: pb generates over the workspace's own files"))
+			continue
+		}
+		base, err := rootpath.Clean(in.Value, "the resolution root")
+		if err != nil {
+			// buf reads a directory anywhere; pb reads the root's
+			// modules alone.
+			report(unmapped(key+".directory "+in.Value, "outside the resolution root: pb generates over the workspace's own files"))
+			continue
+		}
+		// A directory naming no paths is read as a path of its own:
+		// the root is every workspace file, a module or a directory
+		// within one is what a path naming it is.
+		paths := in.Paths
+		keys := make([]string, len(paths))
+		for j, p := range paths {
+			keys[j] = fmt.Sprintf("%s.paths[%d] %s", key, j, p)
+		}
+		if len(paths) == 0 {
+			if base == "." {
+				restricted = false
+				report(mapped(key+".directory "+in.Value, "every workspace file: pb generates over the modules' own files"))
+				continue
+			}
+			paths, keys = []string{base}, []string{key + ".directory " + in.Value}
+		}
+		for j, p := range paths {
+			pkey := keys[j]
+			rel, err := rootpath.Clean(p, "the resolution root")
+			if err != nil {
+				return nil, false, fmt.Errorf("%w: %s: %v", bufconfig.ErrInvalid, pkey, err)
+			}
+			if base != "." && rel != base && !rootpath.Contains(base, rel) {
+				return nil, false, fmt.Errorf("%w: %s lies outside the input directory %s", bufconfig.ErrInvalid, pkey, base)
+			}
+			module := ""
+			for _, d := range dirs {
+				if d == rel || rootpath.Contains(d, rel) {
+					module = d
+				}
+			}
+			switch {
+			case module == "":
+				report(unmapped(pkey, "under no workspace module: pb generates over the modules' own files"))
+				continue
+			case module == rel && len(dirs) > 1:
+				report(unmapped(pkey, "a whole module among several: pb's patterns are module-relative and name every module"))
+				continue
+			case module == rel:
+				report(mapped(pkey, "every file of the module"))
+				restricted = false
+				continue
+			}
+			modRel := rel
+			if module != "." {
+				modRel = strings.TrimPrefix(rel, module+"/")
+			}
+			exists, isDir := stat(rel)
+			if !exists {
+				report(unmapped(pkey, "no such path"))
+				continue
+			}
+			var other string
+			for _, d := range dirs {
+				if d != module {
+					if ex, _ := stat(path.Join(d, modRel)); ex {
+						other = path.Join(d, modRel)
+					}
+				}
+			}
+			if other != "" {
+				report(unmapped(pkey, "the module-relative path "+modRel+" lies in "+other+" too: a pattern would name both"))
+				continue
+			}
+			pattern := glob.Quote(modRel)
+			if isDir {
+				pattern += "/**"
+			}
+			if !seen[pattern] {
+				seen[pattern] = true
+				patterns = append(patterns, pattern)
+			}
+			report(mapped(pkey, "files: "+pattern))
+		}
+		for j, p := range in.ExcludePaths {
+			report(unmapped(fmt.Sprintf("%s.exclude_paths[%d] %s", key, j, p), "pb's patterns name what to generate for, excluding nothing"))
+		}
+		reportKeys(report, key, in.Unmodeled)
+	}
+	if len(patterns) == 0 {
+		restricted = false
+	}
+	return patterns, restricted, nil
 }
 
 // bsrSplit splits a BSR name as buf spells it, `remote/owner/name`
@@ -346,11 +544,11 @@ func filesGlob(spelled string) (string, error) {
 // (REQ-migrate-gen): each declarative entry an override over every
 // file or over the files its path names, buf's own heuristics and
 // what names a module unmapped facts.
-func managedOverrides(m *bufconfig.Managed) ([]genfile.Override, []Fact) {
+func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []Fact) {
 	if m == nil {
 		return nil, nil
 	}
-	where := bufconfig.GenFileName + " managed"
+	where := file + " managed"
 	if !m.Enabled {
 		return nil, []Fact{mapped(where+".enabled false", "nothing: managed mode is disabled, its entries read for nothing")}
 	}
@@ -407,7 +605,7 @@ func managedOverrides(m *bufconfig.Managed) ([]genfile.Override, []Fact) {
 		}
 	}
 	for _, d := range m.Disables {
-		report(unmapped(bufconfig.GenFileName+" "+d, "buf's own heuristic: pb declares values alone, disabling nothing"))
+		report(unmapped(file+" "+d, "buf's own heuristic: pb declares values alone, disabling nothing"))
 	}
 	if len(m.Overrides) == 0 && len(m.Forms) == 0 {
 		report(unmapped(where+".enabled true", "enabled with no explicit override: buf's own heuristic, pb declares values alone"))

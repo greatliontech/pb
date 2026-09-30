@@ -182,21 +182,36 @@ func Run(ctx context.Context, d Invocation) error {
 		return err
 	}
 	facts = append(facts, more...)
-	if gen != nil {
-		if more, err = Gen(ctx, gen, d.Replacements, l, d.PluginTags); err != nil {
+	// The templates beside the file are read as it is, their entries
+	// following its own (REQ-migrate-gen).
+	var templates []Template
+	for _, name := range src.Templates {
+		b, err := util.ReadFile(d.WS, path.Join(d.Dir, name))
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", name, err)
+		}
+		g, err := bufconfig.ParseGen(b)
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		templates = append(templates, Template{Name: name, Gen: g})
+	}
+	stat := func(rel string) (exists, isDir bool) {
+		fi, err := d.WS.Stat(path.Join(d.Dir, rel))
+		if err != nil {
+			return false, false
+		}
+		return true, fi.IsDir()
+	}
+	if gen != nil || len(templates) > 0 {
+		if more, err = Gen(ctx, gen, templates, d.Replacements, l, d.PluginTags, stat); err != nil {
 			return err
 		}
 		facts = append(facts, more...)
 	} else if err := unusedReplacements("plugin", d.Replacements.Plugins, nil, "no "+bufconfig.GenFileName+" lies at the directory"); err != nil {
 		return err
 	}
-	// A generation template is a generation fact, after the file's
-	// entries (REQ-migrate-gen), whether or not a generation file lies
-	// at the directory.
-	for _, t := range src.Templates {
-		facts = append(facts, unmapped(t, "a generation template the migration does not model"))
-	}
-	facts = append(facts, unmodeledFacts(src, gen, lock)...)
+	facts = append(facts, unmodeledFacts(src, gen, templates, lock)...)
 	// The files, each refused where one exists already, then written.
 	type file struct {
 		name string
@@ -298,7 +313,7 @@ func Run(ctx context.Context, d Invocation) error {
 // file read, an unmapped fact naming it by file and key
 // (REQ-migrate-verb); a plugin entry's own keys are the generation
 // step's.
-func unmodeledFacts(src *Source, gen *bufconfig.Gen, lock *bufconfig.Lock) []Fact {
+func unmodeledFacts(src *Source, gen *bufconfig.Gen, templates []Template, lock *bufconfig.Lock) []Fact {
 	var facts []Fact
 	note := func(file string, keys []bufconfig.Unmodeled) {
 		for _, k := range keys {
@@ -316,6 +331,9 @@ func unmodeledFacts(src *Source, gen *bufconfig.Gen, lock *bufconfig.Lock) []Fac
 	}
 	if gen != nil {
 		note(bufconfig.GenFileName, gen.Unmodeled)
+	}
+	for _, t := range templates {
+		note(t.Name, t.Gen.Unmodeled)
 	}
 	if lock != nil {
 		note(bufconfig.LockFileName, lock.Unmodeled)

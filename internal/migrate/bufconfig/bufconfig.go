@@ -104,7 +104,19 @@ type Plugin struct {
 	ProtocBuiltin string
 	Out           string
 	Opt           string
-	Unmodeled     []Unmodeled
+	// IncludeImports is v2's include_imports.
+	IncludeImports bool
+	Unmodeled      []Unmodeled
+}
+
+// Input is one v2 `inputs` entry: the kind key naming it (`directory`,
+// `module`, `git_repo` and the rest buf takes) with its value, the
+// paths it restricts to and excludes, and the keys passed over.
+type Input struct {
+	Kind, Value  string
+	Paths        []string
+	ExcludePaths []string
+	Unmodeled    []Unmodeled
 }
 
 // Override is one managed-mode override as v2 spells it, or as v1's
@@ -142,12 +154,15 @@ type Managed struct {
 }
 
 // Gen is a buf.gen.yaml: its version, its plugins, its managed mode
-// where present, whether inputs were given, and the keys passed over.
+// where present, its inputs and clean, and the keys passed over.
 type Gen struct {
-	Version   string
-	Plugins   []Plugin
-	Managed   *Managed
-	Inputs    bool
+	Version string
+	Plugins []Plugin
+	Managed *Managed
+	// Inputs are v2's inputs in order, nil where the key is absent.
+	Inputs []Input
+	// Clean is v2's clean.
+	Clean     bool
 	Unmodeled []Unmodeled
 }
 
@@ -334,8 +349,24 @@ func ParseGen(data []byte) (*Gen, error) {
 		g.Managed = mg
 		return err
 	}}
-	inputs := contractfile.Field{Name: "inputs", Read: func(n ast.Node) error { g.Inputs = true; return nil }}
-	if err := r.walk(m, "", contractfile.Field{Name: "version"}, plugins, managed, inputs); err != nil {
+	fields := []contractfile.Field{{Name: "version"}, plugins, managed}
+	if r.version == "v2" {
+		fields = append(fields,
+			contractfile.Field{Name: "inputs", Read: func(n ast.Node) error {
+				g.Inputs = []Input{}
+				return contractfile.Sequence(n, "inputs", ErrInvalid, func(i int, item ast.Node) error {
+					in, err := r.input(item, fmt.Sprintf("inputs[%d]", i))
+					if err != nil {
+						return err
+					}
+					g.Inputs = append(g.Inputs, in)
+					return nil
+				})
+			}},
+			contractfile.Field{Name: "clean", Read: func(n ast.Node) error { return r.flag(n, "clean", &g.Clean) }},
+		)
+	}
+	if err := r.walk(m, "", fields...); err != nil {
 		return nil, r.named(err)
 	}
 	g.Unmodeled = r.unmodeled
@@ -479,6 +510,51 @@ func (r *reader) line(n ast.Node, where string, into *string) error {
 		return fmt.Errorf("%w: %s must be one line of text", ErrInvalid, where)
 	}
 	*into = s
+	return nil
+}
+
+// inputKinds are the keys naming a v2 input's kind, one per entry.
+var inputKinds = []string{"directory", "module", "git_repo", "tarball", "zip_archive", "proto_file", "binary_image", "json_image", "txt_image", "yaml_image"}
+
+// input reads one v2 inputs entry: its kind key and value, paths and
+// exclude_paths as lists, every other key passed over under the
+// entry; no kind key or two is buf's own refusal.
+func (r *reader) input(n ast.Node, where string) (Input, error) {
+	var in Input
+	forms := 0
+	fields := []contractfile.Field{
+		{Name: "paths", Read: func(n ast.Node) error { return r.strings(n, where+".paths", &in.Paths) }},
+		{Name: "exclude_paths", Read: func(n ast.Node) error { return r.strings(n, where+".exclude_paths", &in.ExcludePaths) }},
+	}
+	for _, k := range inputKinds {
+		fields = append(fields, contractfile.Field{Name: k, Read: func(n ast.Node) error {
+			forms++
+			in.Kind = k
+			return r.line(n, where+"."+k, &in.Value)
+		}})
+	}
+	before := len(r.unmodeled)
+	if err := r.walk(n, where, fields...); err != nil {
+		return in, err
+	}
+	if forms != 1 {
+		return in, fmt.Errorf("%w: %s names %d input kinds, one expected", ErrInvalid, where, forms)
+	}
+	if in.Value == "" {
+		return in, fmt.Errorf("%w: %s.%s names no input", ErrInvalid, where, in.Kind)
+	}
+	in.Unmodeled = append([]Unmodeled(nil), r.unmodeled[before:]...)
+	r.unmodeled = r.unmodeled[:before]
+	return in, nil
+}
+
+// flag reads a boolean as buf reads one (boolean).
+func (r *reader) flag(n ast.Node, where string, into *bool) error {
+	v, err := boolean(n, where)
+	if err != nil {
+		return err
+	}
+	*into = v == "true"
 	return nil
 }
 
@@ -738,7 +814,8 @@ func (r *reader) plugin(n ast.Node, where string) (Plugin, error) {
 				forms++
 				return command("local", &p.Local).Read(n)
 			}},
-			noted("include_imports"), noted("include_wkt"),
+			contractfile.Field{Name: "include_imports", Read: func(n ast.Node) error { return r.flag(n, where+".include_imports", &p.IncludeImports) }},
+			noted("include_wkt"),
 		)
 	case "v1":
 		fields = append(fields, naming("plugin", &short), naming("name", &short), command("path", &path))

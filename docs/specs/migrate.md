@@ -334,17 +334,38 @@ an unmapped fact, pb running no protoc; `out` as written where it is
 a clean relative path within the resolution root (`generation.md`
 REQ-gen-schema), the entry an unmapped fact naming it where not, as
 buf accepts what pb writes nowhere; `opt`, a string or a list, joined
-with commas as buf hands it to the plugin. `strategy`, `revision`,
-`protoc_path`, `include_imports`, `include_wkt`, `inputs` — `v2`'s
-`types` and `exclude_types` lying within it — and `v1`'s `types` are
-unmapped facts naming the key: pb generates over the workspace's own
-files under one strategy (`generation.md`). A generation template
-beside the configuration is an unmapped fact naming the file, a
-generation fact reported after the generation file's entries and
-before the keys no step models, whether or not a `buf.gen.yaml` lies
-there; the template is read for nothing — never parsed, so one that
-would not parse fails nothing — the generation file being one, and a
-template a second `buf.gen.yaml` the verb does not model. An entry buf itself refuses does
+with commas as buf hands it to the plugin; `include_imports` as
+itself (`generation.md` REQ-gen-schema); `clean` as itself, one for
+the generation file. `v2`'s `inputs` become the file's entries'
+`files` patterns: each `directory` input's `paths`, root-relative
+and within the input's directory as buf requires, a path under one
+workspace module becoming that module-relative path's pattern — the
+file's own, a directory's with everything under it — a mapped fact
+naming it, every entry of the file carrying the patterns; a path
+under no module, one naming a whole module among several (a
+module-relative pattern names every module), one that exists
+nowhere, or one whose module-relative path exists under another
+module too, is an unmapped fact naming it; a directory input naming
+no paths is read as a path naming its directory, the root leaving
+every workspace file a target; an `exclude_paths` entry, an input of
+any other kind, and a directory outside the root, an unmapped fact.
+`strategy`, `revision`, `protoc_path`, `include_wkt` — pb generates
+for no well-known file — and `types` and `exclude_types`, an input's
+or `v1`'s, are unmapped facts naming the key: pb generates over the
+workspace's own files under one strategy. A generation template
+beside the configuration is read as the generation file is, whether
+or not a `buf.gen.yaml` lies there — one that does not parse fails
+the verb naming it — its entries following the file's in the
+template files' name order, its inputs its own entries' patterns,
+its facts keyed by its name; pb's overrides being one set over every entry and its `clean` one
+for every output directory, a template's managed mode is read as
+the file's is, its entries the template's own facts, and is a
+mapped fact where it gives the overrides the first file's gives —
+none where the first gives none, its entries then running under the
+first file's — and an unmapped fact where not, a template without
+one among them where the first file's gives any; its `clean` is an
+unmapped fact where it differs from the first file's, the first
+file being `buf.gen.yaml` where present. An entry buf itself refuses does
 not parse under its version: no naming form, two, or an empty one; no
 `out`; a `v1` `name` spelled as a reference; a key its form takes no
 meaning from — `strategy` or `protoc_path` beside a remote plugin and,

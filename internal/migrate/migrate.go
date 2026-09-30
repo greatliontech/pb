@@ -131,8 +131,8 @@ type Source struct {
 	Work    *bufconfig.Work
 	Members map[string]*bufconfig.File
 	// Templates names the generation templates beside the
-	// configuration (`buf.gen.<name>.yaml`), sorted, read for
-	// nothing: each is an unmapped fact (REQ-migrate-gen).
+	// configuration (`buf.gen.<name>.yaml`), sorted; the verb reads
+	// each as it reads the generation file (REQ-migrate-gen).
 	Templates []string
 	// MemberLocks holds a v1 workspace member's own buf.lock by the
 	// member's directory, where one lies beside its buf.yaml.

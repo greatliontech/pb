@@ -28,7 +28,7 @@ buf.gen.yaml plugins[0].opt paths=source_relative,default_api_level=API_OPAQUE -
 buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.2.0 (the catalog; no version named, the highest tag published)
 buf.gen.yaml plugins[1].out gen/go -> out: gen/go
 buf.gen.yaml plugins[1].opt paths=source_relative,require_unimplemented_servers=false -> opt: paths=source_relative,require_unimplemented_servers=false
-buf.gen.yaml clean !! a key the migration does not model
+buf.gen.yaml clean true -> clean: true
 proto/pb.yaml -> written
 services/catalog/proto/pb.yaml -> written
 services/orders/proto/pb.yaml -> written

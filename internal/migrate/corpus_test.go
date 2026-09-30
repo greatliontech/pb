@@ -121,8 +121,8 @@ func TestReadSourceTemplatesAndMemberLocks(t *testing.T) {
 		"repo/buf.work.yaml":    "version: v1\ndirectories:\n  - api\n",
 		"repo/api/buf.yaml":     "version: v1\n",
 		"repo/api/buf.lock":     "version: v1\ndeps:\n  - remote: buf.build\n    owner: acme\n    repository: dep\n    commit: 00000000000000000000000000000002\nextra: x\n",
-		"repo/buf.gen.web.yaml": "not: parsed\n",
-		"repo/buf.gen.es.yaml":  "not: parsed\n",
+		"repo/buf.gen.web.yaml": "version: v2\nplugins:\n  - local: gen-web\n    out: gen/web\n",
+		"repo/buf.gen.es.yaml":  "version: v2\nbogus: x\nplugins:\n  - local: gen-es\n    out: gen/es\n",
 		"repo/buf.gen.x.yaml/f": "a directory bearing a template's name\n",
 	} {
 		if err := util.WriteFile(ws, p, []byte(text), 0o644); err != nil {
@@ -144,5 +144,23 @@ func TestReadSourceTemplatesAndMemberLocks(t *testing.T) {
 	err = Run(context.Background(), Invocation{WS: ws, Dir: "repo", ModulePath: "example.com/acme/w", Discovery: corpusDiscovery{}, PluginTags: corpusTags, Tidy: func(context.Context) error { return nil }, Out: &out})
 	if !errors.Is(err, ErrUnmapped) || !strings.Contains(out.String(), "api/buf.lock extra !! a key the migration does not model\n") {
 		t.Fatalf("Run = %v, report:\n%s", err, out.String())
+	}
+	// The templates are read as the generation file is, their
+	// entries in name order, whether or not a buf.gen.yaml lies there.
+	if !strings.Contains(out.String(), "buf.gen.es.yaml plugins[0].local gen-es -> local: gen-es\nbuf.gen.es.yaml plugins[0].out gen/es -> out: gen/es\nbuf.gen.web.yaml plugins[0].local gen-web -> local: gen-web\n") {
+		t.Fatalf("templates' entries:\n%s", out.String())
+	}
+	// A lone template's top-level keys the reader passed over are
+	// reported among the keys no step models, keyed by its name.
+	if !strings.Contains(out.String(), "buf.gen.es.yaml bogus !! a key the migration does not model\n") || strings.Index(out.String(), "bogus") < strings.Index(out.String(), "gen-web -> local") {
+		t.Fatalf("a template's top-level key:\n%s", out.String())
+	}
+	// One that does not parse fails the verb naming it.
+	if err := util.WriteFile(ws, "repo/buf.gen.web.yaml", []byte("not: parsed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = Run(context.Background(), Invocation{WS: ws, Dir: "repo", ModulePath: "example.com/acme/w", Discovery: corpusDiscovery{}, PluginTags: corpusTags, Tidy: func(context.Context) error { return nil }, Out: &strings.Builder{}})
+	if err == nil || !strings.HasPrefix(err.Error(), "buf.gen.web.yaml: ") {
+		t.Fatalf("a template that does not parse: %v", err)
 	}
 }
