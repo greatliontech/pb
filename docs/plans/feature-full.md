@@ -76,7 +76,7 @@ formatter and the language server
       section, the dep verbs acting on ruleset imports, tidy leaving
       rulesets alone; migrate emitting the alias form; a clean break
       from path-qualified names and module-file ruleset declarations
-- [ ] 8. Rule variants in buf-rules: the predicates the affected rules
+- [x] 8. Rule variants in buf-rules: the predicates the affected rules
       are built from exported as functions, buf's boolean shaping
       options (`rpc_allow_same_request_response`,
       `rpc_allow_google_protobuf_empty_requests`,
