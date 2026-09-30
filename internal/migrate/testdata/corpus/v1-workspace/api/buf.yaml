@@ -1,0 +1,12 @@
+version: v1
+name: buf.build/acme/api
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - DEFAULT
+  except:
+    - RPC_RESPONSE_STANDARD_NAME
+breaking:
+  use:
+    - FILE

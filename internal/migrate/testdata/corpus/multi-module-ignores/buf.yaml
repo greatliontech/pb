@@ -1,0 +1,38 @@
+version: v2
+modules:
+  - path: ./proto
+  - path: services/catalog/proto
+  - path: services/orders/proto
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_LOWER_SNAKE_CASE
+      ignore_only:
+        ENUM_VALUE_PREFIX:
+          - services/orders/proto/acme/orders/v1/legacy.proto
+    breaking:
+      use:
+        - WIRE_JSON
+  - path: services/shipping/proto
+deps:
+  - buf.build/protocolbuffers/wellknowntypes
+  - buf.build/bufbuild/protovalidate
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - STANDARD
+  except:
+    - PACKAGE_VERSION_SUFFIX
+  rpc_allow_same_request_response: true
+  rpc_allow_google_protobuf_empty_requests: true
+  rpc_allow_google_protobuf_empty_responses: true
+  ignore_only:
+    SERVICE_SUFFIX:
+      - ./services/catalog/proto/acme/catalog/v1/hooks/hooks.proto
+      - services/shipping/proto/acme/shipping/v1/hooks/hooks.proto
+    RPC_REQUEST_STANDARD_NAME:
+      - services/catalog/proto/acme/catalog/v1/hooks/hooks.proto
+breaking:
+  use:
+    - FILE

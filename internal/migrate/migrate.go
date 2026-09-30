@@ -130,6 +130,13 @@ type Source struct {
 	File    *bufconfig.File
 	Work    *bufconfig.Work
 	Members map[string]*bufconfig.File
+	// Templates names the generation templates beside the
+	// configuration (`buf.gen.<name>.yaml`), sorted, read for
+	// nothing: each is an unmapped fact (REQ-migrate-gen).
+	Templates []string
+	// MemberLocks holds a v1 workspace member's own buf.lock by the
+	// member's directory, where one lies beside its buf.yaml.
+	MemberLocks map[string]*bufconfig.Lock
 }
 
 // Layout is the modules step's result (REQ-migrate-modules): the module
@@ -227,7 +234,8 @@ func declarations(src *Source) ([]declared, error) {
 		if prior, dup := spelled[d.dir]; dup {
 			return nil, fmt.Errorf("%s: a module at %q is declared twice, first by %s", d.from, d.dir, prior)
 		}
-		for other, prior := range spelled {
+		for _, other := range sortedKeys(spelled) {
+			prior := spelled[other]
 			if rootpath.Contains(other, d.dir) || rootpath.Contains(d.dir, other) {
 				return nil, fmt.Errorf("%s: module %q lies within module %q (%s): the migration writes no module file the archive would refuse, the outer module never publishable with one beneath it", d.from, d.dir, other, prior)
 			}

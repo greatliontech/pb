@@ -1,0 +1,8 @@
+version: v2
+plugins:
+  - remote: pbr.example.com/acme/protoc-gen-ledger:v0.3.0
+    out: gen/go
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: gen/go
+    opt: paths=source_relative

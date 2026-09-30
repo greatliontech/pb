@@ -457,3 +457,17 @@ func TestParseGenAlphaRemote(t *testing.T) {
 		t.Fatalf("v2 swift_prefix: %+v %v", g.Managed, err)
 	}
 }
+
+// A generation template beside the configuration is `buf.gen.<name>.yaml`
+// with a non-empty name; the generation file itself is none, nor a
+// name that is only the frame (REQ-migrate-gen).
+func TestIsGenTemplate(t *testing.T) {
+	for name, want := range map[string]bool{
+		"buf.gen.web.yaml": true, "buf.gen.es.yaml": true, "buf.gen.a.b.yaml": true,
+		"buf.gen.yaml": false, "buf.gen..yaml": false, "buf.gen.yaml.bak": false, "buf.yaml": false, "gen.web.yaml": false, "buf.gen.web.yml": false,
+	} {
+		if got := IsGenTemplate(name); got != want {
+			t.Errorf("IsGenTemplate(%q) = %v, want %v", name, got, want)
+		}
+	}
+}

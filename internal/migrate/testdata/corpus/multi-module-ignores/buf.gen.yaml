@@ -1,0 +1,13 @@
+version: v2
+clean: true
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.36.11
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - default_api_level=API_OPAQUE
+  - remote: buf.build/grpc/go
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false

@@ -29,7 +29,12 @@ const (
 	FileName     = "buf.yaml"
 	WorkFileName = "buf.work.yaml"
 	GenFileName  = "buf.gen.yaml"
-	LockFileName = "buf.lock"
+	// genTemplatePrefix and genTemplateSuffix frame a generation
+	// template's name, `buf.gen.<name>.yaml`, the one `buf generate
+	// --template` names.
+	genTemplatePrefix = "buf.gen."
+	genTemplateSuffix = ".yaml"
+	LockFileName      = "buf.lock"
 )
 
 // ErrInvalid is wrapped by every refusal: a file that is no YAML
@@ -1002,4 +1007,13 @@ func keyed(n ast.Node, key string, into *[]string) error {
 	}
 	*into = append(*into, key+"="+v)
 	return nil
+}
+
+// IsGenTemplate reports whether a file name is a generation template
+// beside the configuration: `buf.gen.<name>.yaml` with a non-empty
+// name — the generation file itself, one character short of the
+// frame, is none.
+func IsGenTemplate(name string) bool {
+	return strings.HasPrefix(name, genTemplatePrefix) && strings.HasSuffix(name, genTemplateSuffix) &&
+		len(name) > len(genTemplatePrefix)+len(genTemplateSuffix)
 }

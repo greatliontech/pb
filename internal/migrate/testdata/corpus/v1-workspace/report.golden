@@ -1,0 +1,28 @@
+buf.work.yaml directories[0] api -> api/pb.yaml module: example.com/acme/v1-workspace/api
+api/buf.yaml.name buf.build/acme/api -> module: example.com/acme/v1-workspace/api (a BSR name is no place pb fetches from)
+buf.work.yaml directories[1] internal/proto -> internal/proto/pb.yaml module: example.com/acme/v1-workspace/internal/proto
+api/buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
+the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+api/buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
+api/buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
+api/buf.yaml.lint.use DEFAULT -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's DEFAULT is STANDARD)
+api/buf.yaml.lint.except RPC_RESPONSE_STANDARD_NAME -> exclude: github.com/greatliontech/buf-rules:RPC_RESPONSE_STANDARD_NAME
+api/buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
+internal/proto/buf.yaml.lint.ignore acme/legacy -> modules.internal/proto.ignore paths [acme/legacy/**] kind lint
+internal/proto/buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
+internal/proto/buf.yaml.lint.use DEFAULT -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's DEFAULT is STANDARD)
+internal/proto/buf.yaml.breaking.use WIRE_JSON -> enable: github.com/greatliontech/buf-rules:WIRE_JSON
+buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
+buf.gen.yaml plugins[0].out gen -> out: gen
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[1].local protoc-gen-go-grpc -> local: protoc-gen-go-grpc
+buf.gen.yaml plugins[1].out gen -> out: gen
+buf.gen.yaml plugins[1].opt paths=source_relative,require_unimplemented_servers=false -> opt: paths=source_relative,require_unimplemented_servers=false
+buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.34.2 (the plugin table)
+buf.gen.yaml plugins[2].out gen/remote -> out: gen/remote
+api/pb.yaml -> written
+internal/proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: unmapped

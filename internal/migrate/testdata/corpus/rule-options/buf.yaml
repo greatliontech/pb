@@ -1,0 +1,15 @@
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+  enum_zero_value_suffix: _NONE
+  service_suffix: Svc
+  rpc_allow_same_request_response: true
+  rpc_allow_google_protobuf_empty_requests: true
+  rpc_allow_google_protobuf_empty_responses: true
+breaking:
+  use:
+    - FILE
+  ignore_unstable_packages: true

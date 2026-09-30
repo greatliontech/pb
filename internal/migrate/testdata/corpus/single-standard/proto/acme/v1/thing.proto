@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package acme.v1;
+
+// buf:lint:ignore MESSAGE_PASCAL_CASE
+message thing {
+  // buf:lint:ignore FIELD_LOWER_SNAKE_CASE
+  string thingName = 1;
+}

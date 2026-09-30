@@ -1,0 +1,14 @@
+buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/rule-options/proto
+the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
+buf.yaml.lint.enum_zero_value_suffix _NONE !! reshapes github.com/greatliontech/buf-rules:ENUM_ZERO_VALUE_SUFFIX, which checks _UNSPECIFIED: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true !! reshapes github.com/greatliontech/buf-rules:RPC_REQUEST_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true !! reshapes github.com/greatliontech/buf-rules:RPC_RESPONSE_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_same_request_response true !! reshapes github.com/greatliontech/buf-rules:RPC_REQUEST_RESPONSE_UNIQUE: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.service_suffix Svc !! reshapes github.com/greatliontech/buf-rules:SERVICE_SUFFIX, which checks Service: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
+buf.yaml.breaking.ignore_unstable_packages true !! reshapes every breaking rule, which buf skips over a package with an unstable version suffix: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+-- status: unmapped

@@ -1,0 +1,10 @@
+version: v2
+clean: true
+inputs:
+  - directory: .
+    paths:
+      - proto/acme/api
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: gen
+    opt: paths=source_relative

@@ -1,0 +1,14 @@
+buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/local-argv/proto
+the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
+buf.yaml.breaking -> enable: github.com/greatliontech/buf-rules:FILE (buf's default, no breaking section)
+buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
+buf.gen.yaml plugins[0].out gen -> out: gen
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[1].local go tool protoc-gen-go-grpc !! a command with arguments: pb runs an executable alone
+buf.gen.yaml plugins[2].local bun web/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es !! a command with arguments: pb runs an executable alone
+proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: unmapped

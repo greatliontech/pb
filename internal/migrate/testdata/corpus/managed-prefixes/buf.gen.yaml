@@ -1,0 +1,16 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: example.com/acme/service/gen/go
+    - file_option: java_package_prefix
+      value: com.acme.gen
+    - file_option: java_multiple_files
+      value: true
+  disable:
+    - module: buf.build/googleapis/googleapis
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: gen/go
+    opt: paths=source_relative

@@ -13,7 +13,11 @@ documents place on such a file holds for a migrated one unchanged.
 
 **buf configuration** (term): The files buf reads at a directory:
 `buf.yaml` (version `v1` or `v2`), `buf.work.yaml` (`v1`),
-`buf.gen.yaml` (`v1` or `v2`) and `buf.lock` (`v1` or `v2`). A
+`buf.gen.yaml` (`v1` or `v2`), every generation template beside the
+configuration — a file named `buf.gen.<name>.yaml`, the convention
+under which a `buf generate --template` names one; a template named
+otherwise is a file the verb does not know — and `buf.lock` (`v1` or
+`v2`), a `v1` workspace member's beside its own `buf.yaml`. A
 `buf.yaml` of `v2` declares its modules under `modules`; one of `v1`
 declares one module at its directory, a `buf.work.yaml` beside it
 naming several. A key with no value is a key absent, as buf's decoder
@@ -319,7 +323,13 @@ with commas as buf hands it to the plugin. `strategy`, `revision`,
 `protoc_path`, `include_imports`, `include_wkt`, `inputs` — `v2`'s
 `types` and `exclude_types` lying within it — and `v1`'s `types` are
 unmapped facts naming the key: pb generates over the workspace's own
-files under one strategy (`generation.md`). An entry buf itself refuses does
+files under one strategy (`generation.md`). A generation template
+beside the configuration is an unmapped fact naming the file, a
+generation fact reported after the generation file's entries and
+before the keys no step models, whether or not a `buf.gen.yaml` lies
+there; the template is read for nothing — never parsed, so one that
+would not parse fails nothing — the generation file being one, and a
+template a second `buf.gen.yaml` the verb does not model. An entry buf itself refuses does
 not parse under its version: no naming form, two, or an empty one; no
 `out`; a `v1` `name` spelled as a reference; a key its form takes no
 meaning from — `strategy` or `protoc_path` beside a remote plugin and,

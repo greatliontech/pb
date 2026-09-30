@@ -1,0 +1,11 @@
+version: v2
+plugins:
+  - local: protoc-gen-go
+    out: gen
+    opt: paths=source_relative
+  - local: ["go", "tool", "protoc-gen-go-grpc"]
+    out: gen
+    opt: paths=source_relative
+  - local: ["bun", "web/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es"]
+    out: web/src/gen
+    opt: target=ts

@@ -6,7 +6,7 @@ docs/specs/check-rules.md, docs/specs/module-lockfile.md,
 docs/specs/dep-verbs.md, docs/specs/build.md; new documents for the
 formatter and the language server
 
-- [ ] 1. The migration corpus: a curated set of buf configurations
+- [x] 1. The migration corpus: a curated set of buf configurations
       under testdata, each named for the shape it exercises and
       written from scratch under example names (single module with
       the standard categories; multi-module v2 with per-module

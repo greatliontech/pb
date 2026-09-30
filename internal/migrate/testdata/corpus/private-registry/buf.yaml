@@ -1,0 +1,13 @@
+version: v2
+modules:
+  - path: proto
+deps:
+  - pbr.example.com/acme/validate
+  - pbr.example.com/acme/ledger
+  - buf.build/googleapis/googleapis
+lint:
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE

@@ -3,6 +3,7 @@ package migrate
 import (
 	"context"
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -244,10 +245,16 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		}
 		facts = append(facts, mapped(rulesetSource, Ruleset+"@"+v+" ("+from+"; the ruleset, declared by every module)"))
 	}
-	if lock != nil {
+	lockFacts := func(name string, lock *bufconfig.Lock) {
 		for i, dep := range lock.Deps {
-			facts = append(facts, unmapped(fmt.Sprintf("%s deps[%d] %s %s", bufconfig.LockFileName, i, dep.Name, dep.Commit), "a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"))
+			facts = append(facts, unmapped(fmt.Sprintf("%s deps[%d] %s %s", name, i, dep.Name, dep.Commit), "a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"))
 		}
+	}
+	if lock != nil {
+		lockFacts(bufconfig.LockFileName, lock)
+	}
+	for _, dir := range sortedKeys(src.MemberLocks) {
+		lockFacts(path.Join(dir, bufconfig.LockFileName), src.MemberLocks[dir])
 	}
 	return facts, nil
 }

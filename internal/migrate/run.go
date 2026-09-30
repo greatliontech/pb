@@ -97,11 +97,34 @@ func ReadSource(ws billy.Filesystem, dir string) (*Source, *bufconfig.Gen, *bufc
 				return nil, nil, nil, fmt.Errorf("%s: %w", path.Join(member, bufconfig.FileName), err)
 			}
 			src.Members[member] = f
+			// A v1 workspace keeps its lock per module.
+			if b, ok, err := read(path.Join(member, bufconfig.LockFileName)); err != nil {
+				return nil, nil, nil, err
+			} else if ok {
+				l, err := bufconfig.ParseLock(b)
+				if err != nil {
+					return nil, nil, nil, fmt.Errorf("%s: %w", path.Join(member, bufconfig.LockFileName), err)
+				}
+				if src.MemberLocks == nil {
+					src.MemberLocks = map[string]*bufconfig.Lock{}
+				}
+				src.MemberLocks[member] = l
+			}
 		}
 	}
 	if src.File == nil && src.Work == nil {
 		return nil, nil, nil, fmt.Errorf("no buf configuration at %s: neither %s nor %s", path.Clean(dir), bufconfig.FileName, bufconfig.WorkFileName)
 	}
+	entries, err := ws.ReadDir(dir)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("reading %s: %w", path.Clean(dir), err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() && bufconfig.IsGenTemplate(e.Name()) {
+			src.Templates = append(src.Templates, e.Name())
+		}
+	}
+	sort.Strings(src.Templates)
 	var gen *bufconfig.Gen
 	if b, ok, err := read(bufconfig.GenFileName); err != nil {
 		return nil, nil, nil, err
@@ -163,6 +186,12 @@ func Run(ctx context.Context, d Invocation) error {
 		facts = append(facts, more...)
 	} else if err := unusedReplacements("plugin", d.Replacements.Plugins, nil, "no "+bufconfig.GenFileName+" lies at the directory"); err != nil {
 		return err
+	}
+	// A generation template is a generation fact, after the file's
+	// entries (REQ-migrate-gen), whether or not a generation file lies
+	// at the directory.
+	for _, t := range src.Templates {
+		facts = append(facts, unmapped(t, "a generation template the migration does not model"))
 	}
 	facts = append(facts, unmodeledFacts(src, gen, lock)...)
 	// The files, each refused where one exists already, then written.
@@ -287,6 +316,9 @@ func unmodeledFacts(src *Source, gen *bufconfig.Gen, lock *bufconfig.Lock) []Fac
 	}
 	if lock != nil {
 		note(bufconfig.LockFileName, lock.Unmodeled)
+	}
+	for _, dir := range sortedKeys(src.MemberLocks) {
+		note(path.Join(dir, bufconfig.LockFileName), src.MemberLocks[dir].Unmodeled)
 	}
 	return facts
 }

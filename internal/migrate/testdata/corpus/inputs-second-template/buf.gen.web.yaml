@@ -1,0 +1,9 @@
+version: v2
+inputs:
+  - directory: .
+    paths:
+      - proto/acme/api
+plugins:
+  - remote: buf.build/bufbuild/es
+    out: web/src/gen
+    opt: target=ts

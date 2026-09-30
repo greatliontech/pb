@@ -1,0 +1,16 @@
+buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/include-imports-clean/proto
+buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
+the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
+buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
+buf.yaml.breaking -> enable: github.com/greatliontech/buf-rules:FILE (buf's default, no breaking section)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2 (the plugin table)
+buf.gen.yaml plugins[0].out gen/go -> out: gen/go
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[0].include_imports !! pb generates over the workspace's own files under one strategy
+buf.gen.yaml plugins[0].include_wkt !! pb generates over the workspace's own files under one strategy
+buf.gen.yaml clean !! a key the migration does not model
+proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: unmapped
