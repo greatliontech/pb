@@ -173,3 +173,30 @@ type Acquired struct {
 	// Image is the image's world; nil for a host binary.
 	Image Image
 }
+
+// Platforms are the platforms pb is built for, in the platform term's
+// spelling order (platforms.md).
+var Platforms = []Platform{
+	{OS: "darwin", Arch: "amd64"}, {OS: "darwin", Arch: "arm64"},
+	{OS: "linux", Arch: "amd64"}, {OS: "linux", Arch: "arm64"},
+	{OS: "windows", Arch: "amd64"}, {OS: "windows", Arch: "arm64"},
+}
+
+// ParsePlatform reads a platform's `<os>/<arch>` spelling, refusing
+// one pb is not built for.
+func ParsePlatform(s string) (Platform, error) {
+	for _, p := range Platforms {
+		if p.String() == s {
+			return p, nil
+		}
+	}
+	return Platform{}, fmt.Errorf("%q names no platform pb builds for (platforms.md: %s)", s, spelledPlatforms())
+}
+
+func spelledPlatforms() string {
+	names := make([]string, len(Platforms))
+	for i, p := range Platforms {
+		names[i] = p.String()
+	}
+	return strings.Join(names, ", ")
+}

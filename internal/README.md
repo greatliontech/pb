@@ -17,7 +17,7 @@ while the tree does another.
 | source | module-proxy.md, module-resolution.md (path resolution and private origins) | `source`, `source/netrc`, `source/proxy`, `source/origin`, `source/direct`, `source/fetch` |
 | proto | generation.md (the compile half), module-resolution.md (the import satisfaction half), export.md (the import closure), build.md (the descriptor set), check-rules.md (the reading of a source's lines its suppression clause takes) | `proto/modfiles`, `proto/compile`, `proto/importcheck`, `proto/lines` |
 | user configuration | user-config.md | `userconfig` |
-| plugin | plugin-execution.md, generation.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest` |
+| plugin | plugin-execution.md, generation.md, plugin-publish.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest`, `plugin/publish` |
 | check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
 | migrate | migrate.md | `migrate`, `migrate/bufconfig` |
 | driver | module-resolution.md | `resolve` |

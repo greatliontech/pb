@@ -3,17 +3,23 @@ package oci
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/registry"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/ocifs"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/publish"
 	"github.com/greatliontech/pb/internal/provenance/image"
 	"github.com/greatliontech/pb/internal/provenance/image/evidence"
 	"github.com/greatliontech/pb/internal/provenance/trust"
@@ -153,5 +159,41 @@ func TestAcquirerHoldsItsExportsThroughEmptying(t *testing.T) {
 	}
 	if _, err := os.Stat(rootfs); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("the export after the release: %v", err)
+	}
+}
+
+// An image pb publishes is one pb acquires: its uncompressed layer is
+// exported like any other and its entrypoint read from the
+// configuration (plugin-publish.md REQ-publish-image,
+// REQ-plugin-core-verifies).
+func TestAcquiresAPublishedImage(t *testing.T) {
+	host := fmt.Sprintf("published%d%s", fixtureSerial.Add(1), reservedDomain)
+	fixtures.serve(host, registry.New(registry.Logger(log.New(io.Discard, "", 0))))
+	t.Cleanup(func() { fixtures.serve(host, nil) })
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "protoc-gen-x"), []byte("the plugin"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := plugin.HostPlatform()
+	if _, err := publish.Build(ctx, publish.Request{
+		Reference: host + "/org/plugin:v1", Entrypoint: []string{"/protoc-gen-x", "--opt"},
+		Platforms: map[string]publish.Tree{p.String(): {Dir: dir}}, Transport: fixtures,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	a := newAcquirerAt(t, &fixture{host: host}, &lockfile.File{}, &trust.Policy{}, nil, t.TempDir(), "")
+	got, err := a.Acquire(ctx, host+"/org/plugin:v1")
+	if err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	if strings.Join(got.Process.Argv, " ") != "/protoc-gen-x --opt" {
+		t.Fatalf("process = %+v", got.Process)
+	}
+	b, err := os.ReadFile(filepath.Join(rootfsOf(t, got), "protoc-gen-x"))
+	if err != nil || string(b) != "the plugin" {
+		t.Fatalf("the export's entrypoint: %q, %v", b, err)
+	}
+	if fi, _ := os.Stat(filepath.Join(rootfsOf(t, got), "protoc-gen-x")); fi.Mode()&0o100 == 0 {
+		t.Fatal("the entrypoint is not executable in the export")
 	}
 }

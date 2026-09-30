@@ -18,7 +18,7 @@ formatter and the language server
       options), a golden of `pb migrate`'s report per entry, the
       suite running migrate over all of them; the goldens start as
       the gap list
-- [ ] 2. `pb plugin build`: the publisher of a plugin image, packaging
+- [x] 2. `pb plugin build`: the publisher of a plugin image, packaging
       only — per platform an entrypoint file and optionally a base
       image pinned by digest and extra files, one single-layer image
       per platform with the entrypoint set, a manifest list over
