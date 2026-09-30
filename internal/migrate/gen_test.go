@@ -102,7 +102,7 @@ func TestHighestVersionTag(t *testing.T) {
 
 // catalogCommit pins the catalog repository's commit the copy is
 // held to; it moves with an entry's addition.
-const catalogCommit = "f810965c8c02c2df56645394111718a56eb5b7e4"
+const catalogCommit = "8de44fb2bc92e130e6a8e5df999e54ed5361e2b5"
 
 // The catalog's identity: the publish workflow's, as migrate.md
 // states it for the trust policy rule.

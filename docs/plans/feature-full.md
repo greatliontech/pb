@@ -26,7 +26,7 @@ formatter and the language server
       digest reported; compiling and signing the publisher's own
       (its own spec: the image's shape as build writes it, the
       immutability of what it pushes, the report)
-- [ ] 3. The plugin catalog: a new private repository
+- [x] 3. The plugin catalog: a new repository
       greatliontech/pb-plugins publishing
       `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>:<version>`
       under buf's names from recipes of its own, no Dockerfile and no
