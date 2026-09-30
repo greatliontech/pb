@@ -40,3 +40,10 @@ seven by a 25-minute cap, pacing at about two hours for the run at
 the first quarter hour of every run spent before any mutant, so a
 chunk's close-out campaign is an hours-class background run on this
 host.
+
+The check-rules work's campaigns are in the same state: the rulesets
+change set's delta campaign was killed for memory (exit 137) before
+banking a record, and the rule variants change set ran none, its
+evidence the twenty-three hand probes through `gomutant ephemeral`
+recorded in its commit; both records are outstanding with the
+generation work's.
