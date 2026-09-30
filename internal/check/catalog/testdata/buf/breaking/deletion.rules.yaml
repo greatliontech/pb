@@ -1,171 +1,507 @@
 celEnv: 1
+functions:
+  - name: fileNoDelete
+    params:
+      - name: new
+        type: google.protobuf.FileDescriptorProto
+    returns: bool
+    cel: new != null
+  - name: packageNoDelete
+    params:
+      - name: newPackage
+        type: dyn
+    returns: bool
+    cel: newPackage != null
+  - name: messageNoDelete
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: old == null || (new != null && file(old).name == file(new).name)
+  - name: packageMessageNoDelete
+    params:
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: new != null
+  - name: enumNoDelete
+    params:
+      - name: old
+        type: google.protobuf.EnumDescriptorProto
+      - name: new
+        type: google.protobuf.EnumDescriptorProto
+    returns: bool
+    cel: old == null || (new != null && file(old).name == file(new).name)
+  - name: packageEnumNoDelete
+    params:
+      - name: new
+        type: google.protobuf.EnumDescriptorProto
+    returns: bool
+    cel: new != null
+  - name: serviceNoDelete
+    params:
+      - name: old
+        type: google.protobuf.ServiceDescriptorProto
+      - name: new
+        type: google.protobuf.ServiceDescriptorProto
+    returns: bool
+    cel: old == null || (new != null && file(old).name == file(new).name)
+  - name: packageServiceNoDelete
+    params:
+      - name: new
+        type: google.protobuf.ServiceDescriptorProto
+    returns: bool
+    cel: new != null
+  - name: extensionNoDelete
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: old == null || (new != null && file(old).name == file(new).name)
+  - name: packageExtensionNoDelete
+    params:
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: new != null
+  - name: rpcNoDelete
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: new != null || resolve(fullName(parent(old))) == null
+  - name: oneofNoDelete
+    params:
+      - name: new
+        type: google.protobuf.OneofDescriptorProto
+    returns: bool
+    cel: new != null
+  - name: enumValueNoDelete
+    params:
+      - name: old
+        type: google.protobuf.EnumValueDescriptorProto
+      - name: new
+        type: google.protobuf.EnumValueDescriptorProto
+    returns: bool
+    cel: new != null || resolve(fullName(parent(old))) == null
+  - name: enumValueNoDeleteUnlessNumberReserved
+    params:
+      - name: old
+        type: google.protobuf.EnumValueDescriptorProto
+      - name: new
+        type: google.protobuf.EnumValueDescriptorProto
+    returns: bool
+    cel: >-
+      new != null || resolve(fullName(parent(old))) == null ||
+      resolve(fullName(parent(old))).reserved_range.exists(r, r.start <=
+      old.number && old.number <= r.end)
+  - name: enumValueNoDeleteUnlessNameReserved
+    params:
+      - name: old
+        type: google.protobuf.EnumValueDescriptorProto
+      - name: new
+        type: google.protobuf.EnumValueDescriptorProto
+    returns: bool
+    cel: |-
+      new != null || resolve(fullName(parent(old))) == null || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number <= r.end)
+          && old.name in resolve(fullName(parent(old))).reserved_name)
+  - name: fieldNoDelete
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: new != null || resolve(fullName(parent(old))) == null
+  - name: fieldNoDeleteUnlessNumberReserved
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: >-
+      new != null || resolve(fullName(parent(old))) == null ||
+      resolve(fullName(parent(old))).reserved_range.exists(r, r.start <=
+      old.number && old.number < r.end)
+  - name: fieldNoDeleteUnlessNameReserved
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      new != null || resolve(fullName(parent(old))) == null || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number < r.end)
+          && old.name in resolve(fullName(parent(old))).reserved_name)
+  - name: reservedMessageNoDelete
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
+          && old.reserved_name.all(n, n in new.reserved_name))
+  - name: reservedEnumNoDelete
+    params:
+      - name: old
+        type: google.protobuf.EnumDescriptorProto
+      - name: new
+        type: google.protobuf.EnumDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
+          && old.reserved_name.all(n, n in new.reserved_name))
+  - name: extensionMessageNoDelete
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || old.extension_range.all(r,
+      new.extension_range.exists(n, n.start <= r.start && r.end <= n.end))
 rules:
   - id: FILE_NO_DELETE
     kind: breaking
     target: file
     severity: error
     tags: [FILE]
-    cel: new != null
+    cel: fileNoDelete(new)
+    message: a file was deleted
+  - id: FILE_NO_DELETE_STABLE
+    kind: breaking
+    target: file
+    severity: error
+    tags: [FILE_STABLE]
+    cel: "(old != null && unstablePackage(old.package)) || (new != null && unstablePackage(new.package)) || fileNoDelete(new)"
     message: a file was deleted
   - id: PACKAGE_NO_DELETE
     kind: breaking
     target: package
     severity: error
     tags: [PACKAGE]
-    cel: newPackage != null
+    cel: packageNoDelete(newPackage)
+    message: a package was deleted
+  - id: PACKAGE_NO_DELETE_STABLE
+    kind: breaking
+    target: package
+    severity: error
+    tags: [PACKAGE_STABLE]
+    cel: >-
+      (oldPackage != null && unstablePackage(oldPackage)) || (newPackage != null && unstablePackage(newPackage)) ||
+      packageNoDelete(newPackage)
     message: a package was deleted
   - id: MESSAGE_NO_DELETE
     kind: breaking
     target: message
     severity: error
     tags: [FILE]
-    cel: old == null || (new != null && file(old).name == file(new).name)
+    cel: messageNoDelete(old, new)
+    message: a message was deleted from, or moved out of, its file
+  - id: MESSAGE_NO_DELETE_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      messageNoDelete(old, new)
     message: a message was deleted from, or moved out of, its file
   - id: PACKAGE_MESSAGE_NO_DELETE
     kind: breaking
     target: message
     severity: error
     tags: [PACKAGE]
-    cel: new != null
+    cel: packageMessageNoDelete(new)
+    message: a message was deleted from its package
+  - id: PACKAGE_MESSAGE_NO_DELETE_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      packageMessageNoDelete(new)
     message: a message was deleted from its package
   - id: ENUM_NO_DELETE
     kind: breaking
     target: enum
     severity: error
     tags: [FILE]
-    cel: old == null || (new != null && file(old).name == file(new).name)
+    cel: enumNoDelete(old, new)
+    message: an enum was deleted from, or moved out of, its file
+  - id: ENUM_NO_DELETE_STABLE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumNoDelete(old, new)
     message: an enum was deleted from, or moved out of, its file
   - id: PACKAGE_ENUM_NO_DELETE
     kind: breaking
     target: enum
     severity: error
     tags: [PACKAGE]
-    cel: new != null
+    cel: packageEnumNoDelete(new)
+    message: an enum was deleted from its package
+  - id: PACKAGE_ENUM_NO_DELETE_STABLE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      packageEnumNoDelete(new)
     message: an enum was deleted from its package
   - id: SERVICE_NO_DELETE
     kind: breaking
     target: service
     severity: error
     tags: [FILE]
-    cel: old == null || (new != null && file(old).name == file(new).name)
+    cel: serviceNoDelete(old, new)
+    message: a service was deleted from, or moved out of, its file
+  - id: SERVICE_NO_DELETE_STABLE
+    kind: breaking
+    target: service
+    severity: error
+    tags: [FILE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      serviceNoDelete(old, new)
     message: a service was deleted from, or moved out of, its file
   - id: PACKAGE_SERVICE_NO_DELETE
     kind: breaking
     target: service
     severity: error
     tags: [PACKAGE]
-    cel: new != null
+    cel: packageServiceNoDelete(new)
+    message: a service was deleted from its package
+  - id: PACKAGE_SERVICE_NO_DELETE_STABLE
+    kind: breaking
+    target: service
+    severity: error
+    tags: [PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      packageServiceNoDelete(new)
     message: a service was deleted from its package
   - id: EXTENSION_NO_DELETE
     kind: breaking
     target: extension
     severity: error
     tags: [FILE]
-    cel: old == null || (new != null && file(old).name == file(new).name)
+    cel: extensionNoDelete(old, new)
+    message: an extension was deleted from, or moved out of, its file
+  - id: EXTENSION_NO_DELETE_STABLE
+    kind: breaking
+    target: extension
+    severity: error
+    tags: [FILE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      extensionNoDelete(old, new)
     message: an extension was deleted from, or moved out of, its file
   - id: PACKAGE_EXTENSION_NO_DELETE
     kind: breaking
     target: extension
     severity: error
     tags: [PACKAGE]
-    cel: new != null
+    cel: packageExtensionNoDelete(new)
+    message: an extension was deleted from its package
+  - id: PACKAGE_EXTENSION_NO_DELETE_STABLE
+    kind: breaking
+    target: extension
+    severity: error
+    tags: [PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      packageExtensionNoDelete(new)
     message: an extension was deleted from its package
   - id: RPC_NO_DELETE
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE]
-    cel: new != null || resolve(fullName(parent(old))) == null
+    cel: rpcNoDelete(old, new)
+    message: an rpc was deleted
+  - id: RPC_NO_DELETE_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcNoDelete(old, new)
     message: an rpc was deleted
   - id: ONEOF_NO_DELETE
     kind: breaking
     target: oneof
     severity: error
     tags: [FILE, PACKAGE]
-    cel: new != null
+    cel: oneofNoDelete(new)
+    message: a oneof was deleted
+  - id: ONEOF_NO_DELETE_STABLE
+    kind: breaking
+    target: oneof
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      oneofNoDelete(new)
     message: a oneof was deleted
   - id: ENUM_VALUE_NO_DELETE
     kind: breaking
     target: enum-value
     severity: error
     tags: [FILE, PACKAGE]
-    cel: new != null || resolve(fullName(parent(old))) == null
+    cel: enumValueNoDelete(old, new)
+    message: an enum value was deleted
+  - id: ENUM_VALUE_NO_DELETE_STABLE
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumValueNoDelete(old, new)
     message: an enum value was deleted
   - id: ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED
     kind: breaking
     target: enum-value
     severity: error
     tags: [WIRE, WIRE_JSON]
+    cel: enumValueNoDeleteUnlessNumberReserved(old, new)
+    message: an enum value was deleted without its number reserved
+  - id: ENUM_VALUE_NO_DELETE_UNLESS_NUMBER_RESERVED_STABLE
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [WIRE_STABLE, WIRE_JSON_STABLE]
     cel: >-
-      new != null
-      || resolve(fullName(parent(old))) == null
-      || resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number <= r.end)
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumValueNoDeleteUnlessNumberReserved(old, new)
     message: an enum value was deleted without its number reserved
   - id: ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED
     kind: breaking
     target: enum-value
     severity: error
     tags: [WIRE_JSON]
+    cel: enumValueNoDeleteUnlessNameReserved(old, new)
+    message: an enum value was deleted without its name and number reserved
+  - id: ENUM_VALUE_NO_DELETE_UNLESS_NAME_RESERVED_STABLE
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [WIRE_JSON_STABLE]
     cel: >-
-      new != null
-      || resolve(fullName(parent(old))) == null
-      || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number <= r.end)
-          && old.name in resolve(fullName(parent(old))).reserved_name)
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumValueNoDeleteUnlessNameReserved(old, new)
     message: an enum value was deleted without its name and number reserved
   - id: FIELD_NO_DELETE
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE]
-    cel: new != null || resolve(fullName(parent(old))) == null
+    cel: fieldNoDelete(old, new)
+    message: a field was deleted
+  - id: FIELD_NO_DELETE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldNoDelete(old, new)
     message: a field was deleted
   - id: FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED
     kind: breaking
     target: field
     severity: error
     tags: [WIRE, WIRE_JSON]
+    cel: fieldNoDeleteUnlessNumberReserved(old, new)
+    message: a field was deleted without its number reserved
+  - id: FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_STABLE, WIRE_JSON_STABLE]
     cel: >-
-      new != null
-      || resolve(fullName(parent(old))) == null
-      || resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number < r.end)
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldNoDeleteUnlessNumberReserved(old, new)
     message: a field was deleted without its number reserved
   - id: FIELD_NO_DELETE_UNLESS_NAME_RESERVED
     kind: breaking
     target: field
     severity: error
     tags: [WIRE_JSON]
+    cel: fieldNoDeleteUnlessNameReserved(old, new)
+    message: a field was deleted without its name and number reserved
+  - id: FIELD_NO_DELETE_UNLESS_NAME_RESERVED_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON_STABLE]
     cel: >-
-      new != null
-      || resolve(fullName(parent(old))) == null
-      || (resolve(fullName(parent(old))).reserved_range.exists(r, r.start <= old.number && old.number < r.end)
-          && old.name in resolve(fullName(parent(old))).reserved_name)
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldNoDeleteUnlessNameReserved(old, new)
     message: a field was deleted without its name and number reserved
   - id: RESERVED_MESSAGE_NO_DELETE
     kind: breaking
     target: message
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: reservedMessageNoDelete(old, new)
+    message: a reserved range or name was deleted from a message
+  - id: RESERVED_MESSAGE_NO_DELETE_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
     cel: >-
-      old == null || new == null
-      || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
-          && old.reserved_name.all(n, n in new.reserved_name))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      reservedMessageNoDelete(old, new)
     message: a reserved range or name was deleted from a message
   - id: RESERVED_ENUM_NO_DELETE
     kind: breaking
     target: enum
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: reservedEnumNoDelete(old, new)
+    message: a reserved range or name was deleted from an enum
+  - id: RESERVED_ENUM_NO_DELETE_STABLE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
     cel: >-
-      old == null || new == null
-      || (old.reserved_range.all(r, new.reserved_range.exists(n, n.start <= r.start && r.end <= n.end))
-          && old.reserved_name.all(n, n in new.reserved_name))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      reservedEnumNoDelete(old, new)
     message: a reserved range or name was deleted from an enum
   - id: EXTENSION_MESSAGE_NO_DELETE
     kind: breaking
     target: message
     severity: error
     tags: [FILE, PACKAGE]
+    cel: extensionMessageNoDelete(old, new)
+    message: an extension range was deleted from a message
+  - id: EXTENSION_MESSAGE_NO_DELETE_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
     cel: >-
-      old == null || new == null
-      || old.extension_range.all(r, new.extension_range.exists(n, n.start <= r.start && r.end <= n.end))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      extensionMessageNoDelete(old, new)
     message: an extension range was deleted from a message

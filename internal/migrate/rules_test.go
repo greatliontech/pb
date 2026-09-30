@@ -3,6 +3,7 @@ package migrate
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -73,8 +74,8 @@ breaking:
 		"buf.yaml.lint.use FILE_LAYOUT !! no lint rule or category of the ruleset " + Ruleset,
 		"buf.yaml.lint.except ENUM_VALUE_PREFIX -> exclude: " + rs + "ENUM_VALUE_PREFIX",
 		"buf.yaml.lint.except PROTOVALIDATE !! no lint rule or category of the ruleset " + Ruleset,
-		"buf.yaml.lint.enum_zero_value_suffix _NONE !! reshapes " + rs + "ENUM_ZERO_VALUE_SUFFIX, which checks _UNSPECIFIED: a pb rule has no parameters, so the option's meaning lives in a rule of one's own",
-		"buf.yaml.lint.rpc_allow_same_request_response true !! reshapes " + rs + "RPC_REQUEST_RESPONSE_UNIQUE: a pb rule has no parameters, so the option's meaning lives in a rule of one's own",
+		"buf.yaml.lint.rpc_allow_same_request_response true -> exclude: " + rs + "RPC_REQUEST_RESPONSE_UNIQUE, enable: " + rs + "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME",
+		"buf.yaml.lint.enum_zero_value_suffix _NONE !! reshapes " + rs + "ENUM_ZERO_VALUE_SUFFIX, which checks _UNSPECIFIED: a pb rule has no parameters — exclude " + rs + "ENUM_ZERO_VALUE_SUFFIX and declare, in a workspace ruleset importing " + Ruleset + " as " + RulesetAlias + ", a rule over enum-value with cel " + RulesetAlias + ".enumZeroValueSuffix(enumValue, '_NONE')",
 		"buf.yaml.lint.allow_comment_ignores true -> the module's suppression comments are rewritten to pb:ignore",
 		"buf.yaml.breaking.use WIRE_JSON -> enable: " + rs + "WIRE_JSON",
 		"buf.yaml.lint.ignore_only.NOPE x !! no lint rule or category of the ruleset " + Ruleset,
@@ -93,7 +94,7 @@ breaking:
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFile := "rulesets:\n  - path: " + Ruleset + "\n    alias: " + RulesetAlias + "\nenable:\n  - " + rs + "COMMENTS\n  - " + rs + "STANDARD\n  - " + rs + "WIRE_JSON\nexclude:\n  - " + rs + "ENUM_VALUE_PREFIX\nignore:\n" +
+	wantFile := "rulesets:\n  - path: " + Ruleset + "\n    alias: " + RulesetAlias + "\nenable:\n  - " + rs + "COMMENTS\n  - " + rs + "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME\n  - " + rs + "STANDARD\n  - " + rs + "WIRE_JSON\nexclude:\n  - " + rs + "ENUM_VALUE_PREFIX\n  - " + rs + "RPC_REQUEST_RESPONSE_UNIQUE\nignore:\n" +
 		"  - paths:\n      - gen/x.proto/**\n    kind: lint\n" +
 		"  - paths:\n      - legacy/**\n    rules:\n      - " + rs + "ENUM_ZERO_VALUE_SUFFIX\n" +
 		"  - paths:\n      - old/**\n    rules:\n"
@@ -292,14 +293,91 @@ breaking:
 	}
 }
 
+// A boolean option set stands a variant in for the rule it reads
+// where the selection enables the rule, and shapes nothing where the
+// selection lacks the rule or excludes it; the three uniqueness
+// allowances name one variant among seven; ignore_unstable_packages
+// reads every breaking name of a selection as its variant over
+// stable packages, ignored names included, the root's selection
+// carried into a module read once (REQ-migrate-rule-options).
+func TestRuleOptionVariants(t *testing.T) {
+	unique := rs + "RPC_REQUEST_RESPONSE_UNIQUE"
+	for _, c := range []struct{ options, variant string }{
+		{"rpc_allow_same_request_response: true\n", "ALLOW_SAME"},
+		{"rpc_allow_google_protobuf_empty_requests: true\n", "ALLOW_EMPTY_REQUESTS"},
+		{"rpc_allow_google_protobuf_empty_responses: true\n", "ALLOW_EMPTY_RESPONSES"},
+		{"rpc_allow_same_request_response: true\nrpc_allow_google_protobuf_empty_requests: true\n", "ALLOW_SAME_EMPTY_REQUESTS"},
+		{"rpc_allow_same_request_response: true\nrpc_allow_google_protobuf_empty_responses: true\n", "ALLOW_SAME_EMPTY_RESPONSES"},
+		{"rpc_allow_google_protobuf_empty_requests: true\nrpc_allow_google_protobuf_empty_responses: true\n", "ALLOW_EMPTY_REQUESTS_RESPONSES"},
+		{"rpc_allow_same_request_response: true\nrpc_allow_google_protobuf_empty_requests: true\nrpc_allow_google_protobuf_empty_responses: true\n", "ALLOW_SAME_EMPTY_REQUESTS_RESPONSES"},
+	} {
+		l, got := rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  "+strings.ReplaceAll(c.options, "\n", "\n  "))})
+		want := "-> exclude: " + unique + ", enable: " + unique + "_" + c.variant
+		if strings.Count(got, want) != strings.Count(c.options, "\n") || !slices.Contains(l.Lint.Enable, unique+"_"+c.variant) || !slices.Contains(l.Lint.Exclude, unique) {
+			t.Fatalf("%q: %s\n%+v", c.options, got, l.Lint)
+		}
+	}
+	// The rule not enabled: nothing shaped, the selection untouched;
+	// the rule excluded: the same, the other rule the option reads
+	// still shaped.
+	l, got := rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [COMMENTS]\n  rpc_allow_google_protobuf_empty_responses: true\n")})
+	if !strings.Contains(got, "buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true -> nothing: "+unique+" is not enabled, so the option shapes nothing") || !strings.Contains(got, "true -> nothing: "+rs+"RPC_RESPONSE_STANDARD_NAME is not enabled") || strings.Join(l.Lint.Enable, ",") != rs+"COMMENTS,"+rs+"FILE" || len(l.Lint.Exclude) != 0 {
+		t.Fatalf("the rule not enabled: %s\n%+v", got, l.Lint)
+	}
+	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  except: [RPC_REQUEST_RESPONSE_UNIQUE]\n  rpc_allow_google_protobuf_empty_responses: true\n")})
+	if !strings.Contains(got, "true -> nothing: "+unique+" is not enabled") || !strings.Contains(got, "true -> exclude: "+rs+"RPC_RESPONSE_STANDARD_NAME, enable: "+rs+"RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY") || strings.Join(l.Lint.Enable, ",") != rs+"FILE,"+rs+"RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY,"+rs+"STANDARD" || strings.Join(l.Lint.Exclude, ",") != unique+","+rs+"RPC_RESPONSE_STANDARD_NAME" {
+		t.Fatalf("the rule excluded: %s\n%+v", got, l.Lint)
+	}
+	// An ignore naming the rule, or a category carrying it, names the
+	// variant in its place, in the fact and in the file; a buf
+	// spelling naming a variant is no rule or category of buf's, a
+	// buf id merely spelling _ALLOW_ or _STABLE buf's own.
+	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD, RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY, FILE_STABLE]\n  except: [ENUM_NO_ALLOW_ALIAS]\n  rpc_allow_google_protobuf_empty_requests: true\n  ignore_only:\n    RPC_REQUEST_STANDARD_NAME: [legacy]\n    STANDARD: [old]\nbreaking:\n  use: [FILE_STABLE, FIELD_NO_DELETE_STABLE]\n")})
+	if !strings.Contains(got, "buf.yaml.lint.use RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY !! no lint rule or category of the ruleset "+Ruleset) || !strings.Contains(got, "buf.yaml.lint.use FILE_STABLE !! no lint rule") || !strings.Contains(got, "buf.yaml.breaking.use FILE_STABLE !! no breaking rule") || !strings.Contains(got, "buf.yaml.breaking.use FIELD_NO_DELETE_STABLE !! no breaking rule") || !strings.Contains(got, "buf.yaml.lint.except ENUM_NO_ALLOW_ALIAS -> exclude: "+rs+"ENUM_NO_ALLOW_ALIAS") || !strings.Contains(got, "buf.yaml.lint.ignore_only.RPC_REQUEST_STANDARD_NAME legacy -> ignore paths [legacy/**] rules ["+rs+"RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY]") || len(l.Lint.Ignore) != 2 {
+		t.Fatalf("an ignore naming the rule: %s\n%+v", got, l.Lint)
+	}
+	for _, ig := range l.Lint.Ignore {
+		if slices.Contains(ig.Rules, rs+"RPC_REQUEST_STANDARD_NAME") || !slices.Contains(ig.Rules, rs+"RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY") {
+			t.Fatalf("the ignore's rules: %v", ig.Rules)
+		}
+	}
+	// A value-bearing option: the recipe where the selection enables
+	// the rule, the value spelled as a CEL string; nothing otherwise.
+	_, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  service_suffix: \"It's\\\\Svc\"\n")})
+	if !strings.Contains(got, `with cel `+RulesetAlias+`.serviceSuffix(service, 'It\'s\\Svc')`) {
+		t.Fatalf("the value escaped: %s", got)
+	}
+	_, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [COMMENTS]\n  service_suffix: Svc\n")})
+	if !strings.Contains(got, "buf.yaml.lint.service_suffix Svc -> nothing: "+rs+"SERVICE_SUFFIX is not enabled, so the option shapes nothing") || strings.Contains(got, "!!") {
+		t.Fatalf("the rule not enabled: %s", got)
+	}
+	// Stable packages: the root's names read once for the root and
+	// once more for a module carrying its selection, the module's
+	// ignored names read too; a module with a breaking section of its
+	// own, the option unset there, keeps buf's names.
+	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nmodules:\n  - path: a\n  - path: b\n    breaking:\n      use: [FILE]\nbreaking:\n  use: [WIRE]\n  except: [FIELD_WIRE_COMPATIBLE_TYPE]\n  ignore_only:\n    FIELD_WIRE_COMPATIBLE_CARDINALITY: [a/old.proto]\n  ignore_unstable_packages: true\n")})
+	if strings.Count(got, "ignore_unstable_packages true -> every breaking name") != 1 || strings.Join(l.Lint.Enable, ",") != rs+"STANDARD,"+rs+"WIRE_STABLE" || strings.Join(l.Lint.Exclude, ",") != rs+"FIELD_WIRE_COMPATIBLE_TYPE_STABLE" {
+		t.Fatalf("stable packages at the root: %s\n%+v", got, l.Lint)
+	}
+	a, b := l.Lint.Modules["a"], l.Lint.Modules["b"]
+	if strings.Join(a.Enable, ",") != rs+"STANDARD,"+rs+"WIRE_STABLE" || strings.Join(a.Exclude, ",") != rs+"FIELD_WIRE_COMPATIBLE_TYPE_STABLE" || len(a.Ignore) != 1 || strings.Join(a.Ignore[0].Rules, ",") != rs+"FIELD_WIRE_COMPATIBLE_CARDINALITY_STABLE" {
+		t.Fatalf("stable packages carried into a module: %+v", a)
+	}
+	if strings.Join(b.Enable, ",") != rs+"FILE,"+rs+"STANDARD" || len(b.Exclude) != 0 {
+		t.Fatalf("a module's own section without the option: %+v", b)
+	}
+}
+
 // The ruleset table is the ruleset's own files, id for id, kind for
 // kind, tag for tag: held against a checkout of the ruleset where
 // PB_BUF_RULES names one. Every rule an option reshapes is a rule of
 // the ruleset, always.
 func TestRulesetTable(t *testing.T) {
 	for opt, o := range ruleOptions {
-		if _, ok := rulesetRules[o.rule]; !ok && !strings.Contains(o.rule, " ") {
-			t.Errorf("%s reshapes %s, which the ruleset lacks", opt, o.rule)
+		for _, r := range o.rules {
+			if _, ok := rulesetRules[r]; !ok {
+				t.Errorf("%s reshapes %s, which the ruleset lacks", opt, r)
+			}
 		}
 	}
 	root := os.Getenv("PB_BUF_RULES")

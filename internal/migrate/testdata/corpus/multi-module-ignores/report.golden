@@ -11,11 +11,13 @@ buf.lock deps[1] buf.build/googleapis/googleapis 0000000000000000000000000000000
 buf.lock deps[2] buf.build/protocolbuffers/wellknowntypes 0000000000000000000000000000000000000003 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
 buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
 buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: buf:PACKAGE_VERSION_SUFFIX
-buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true !! reshapes buf:RPC_REQUEST_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
-buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true !! reshapes buf:RPC_RESPONSE_STANDARD_NAME: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
-buf.yaml.lint.rpc_allow_same_request_response true !! reshapes buf:RPC_REQUEST_RESPONSE_UNIQUE: a pb rule has no parameters, so the option's meaning lives in a rule of one's own
+buf.yaml.lint.rpc_allow_same_request_response true -> exclude: buf:RPC_REQUEST_RESPONSE_UNIQUE, enable: buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES
+buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true -> exclude: buf:RPC_REQUEST_RESPONSE_UNIQUE, enable: buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES
+buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true -> exclude: buf:RPC_REQUEST_RESPONSE_UNIQUE, enable: buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES
+buf.yaml.lint.rpc_allow_google_protobuf_empty_requests true -> exclude: buf:RPC_REQUEST_STANDARD_NAME, enable: buf:RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY
+buf.yaml.lint.rpc_allow_google_protobuf_empty_responses true -> exclude: buf:RPC_RESPONSE_STANDARD_NAME, enable: buf:RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY
 buf.yaml.breaking.use FILE -> enable: buf:FILE
-buf.yaml.lint.ignore_only.RPC_REQUEST_STANDARD_NAME services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [buf:RPC_REQUEST_STANDARD_NAME]
+buf.yaml.lint.ignore_only.RPC_REQUEST_STANDARD_NAME services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [buf:RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY]
 buf.yaml.lint.ignore_only.SERVICE_SUFFIX ./services/catalog/proto/acme/catalog/v1/hooks/hooks.proto -> modules.services/catalog/proto.ignore paths [acme/catalog/v1/hooks/hooks.proto/**] rules [buf:SERVICE_SUFFIX]
 buf.yaml modules[2].lint.ignore_only.ENUM_VALUE_PREFIX services/orders/proto/acme/orders/v1/legacy.proto -> modules.services/orders/proto.ignore paths [acme/orders/v1/legacy.proto/**] rules [buf:ENUM_VALUE_PREFIX]
 buf.yaml modules[2].lint.use STANDARD -> enable: buf:STANDARD

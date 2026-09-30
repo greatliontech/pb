@@ -444,8 +444,8 @@ type loader struct {
 }
 
 // ruleset reads one import named by from, its rule files' imports
-// read in turn: the files, with every rule and function's scope lent
-// what its file imports.
+// read in turn: the files, their one scope lent what the ruleset
+// imports.
 func (l *loader) ruleset(from string, imp rules.Import) ([]rules.Located, error) {
 	res, err := Resolve(l.root, imp)
 	if err != nil {
@@ -486,36 +486,27 @@ func (l *loader) ruleset(from string, imp rules.Import) ([]rules.Located, error)
 	if err != nil {
 		return nil, fmt.Errorf("%w %s: %w", ErrRuleset, imp.Path, err)
 	}
-	// A ruleset's function names are one namespace across its files,
-	// as its rule ids are: what an import lends under one alias.
-	declaredIn := map[string]string{}
-	for _, rf := range files {
-		for _, fn := range rf.File.Functions {
-			if prior, dup := declaredIn[fn.Name]; dup {
-				return nil, fmt.Errorf("%w %s: function %s declared by %s and %s", ErrRuleset, imp.Path, fn.Name, prior, rf.Path)
-			}
-			declaredIn[fn.Name] = rf.Path
-		}
-	}
 	l.path = append(l.path, imp.Path)
 	defer func() { l.path = l.path[:len(l.path)-1] }()
-	for _, rf := range files {
-		rf.File.Scope.Where = to + "'s " + rf.Path
-		for _, dep := range rf.File.Imports {
+	// The ruleset's one scope, shared by its files: lent, under each
+	// alias, the functions of the ruleset the alias imports, with that
+	// ruleset's scope.
+	if len(files) > 0 {
+		scope := files[0].File.Scope
+		scope.Where = to
+		for _, dep := range scope.Imports {
 			lent, err := l.ruleset(to, dep)
 			if err != nil {
 				return nil, err
 			}
 			if len(lent) == 0 {
-				return nil, fmt.Errorf("%w %s: %s imports %s, which declares no rule file", ErrRuleset, imp.Path, rf.Path, dep.Path)
+				return nil, fmt.Errorf("%w %s: %s imports %s, which declares no rule file", ErrRuleset, imp.Path, dep.File, dep.Path)
 			}
-			if rf.File.Scope.Lent == nil {
-				rf.File.Scope.Lent = map[string][]rules.Lent{}
+			if scope.Lent == nil {
+				scope.Lent = map[string][]rules.Lent{}
 			}
-			for _, lf := range lent {
-				for _, fn := range lf.File.Functions {
-					rf.File.Scope.Lent[dep.Alias] = append(rf.File.Scope.Lent[dep.Alias], rules.Lent{Function: fn, Scope: lf.File.Scope})
-				}
+			for _, fn := range lent[0].File.Scope.Functions {
+				scope.Lent[dep.Alias] = append(scope.Lent[dep.Alias], rules.Lent{Function: fn, Scope: lent[0].File.Scope})
 			}
 		}
 	}

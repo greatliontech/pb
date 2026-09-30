@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package acme.v1beta1;
+
+message Preview {
+  string kept = 1;
+  string gone = 2;
+}
+
+enum Stage {
+  STAGE_UNSPECIFIED = 0;
+  STAGE_GONE = 1;
+}

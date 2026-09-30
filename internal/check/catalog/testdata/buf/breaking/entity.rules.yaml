@@ -1,91 +1,310 @@
 celEnv: 1
+functions:
+  - name: enumValueSameName
+    params:
+      - name: old
+        type: google.protobuf.EnumValueDescriptorProto
+      - name: new
+        type: google.protobuf.EnumValueDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.name == new.name
+  - name: enumSameType
+    params:
+      - name: old
+        type: google.protobuf.EnumDescriptorProto
+      - name: new
+        type: google.protobuf.EnumDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || features(old).enum_type ==
+      features(new).enum_type
+  - name: enumSameJsonFormat
+    params:
+      - name: old
+        type: google.protobuf.EnumDescriptorProto
+      - name: new
+        type: google.protobuf.EnumDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || features(old).json_format ==
+      features(new).json_format
+  - name: messageSameJsonFormat
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || features(old).json_format ==
+      features(new).json_format
+  - name: messageSameMessageSetWireFormat
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || (has(options(old).message_set_wire_format) ==
+      has(options(new).message_set_wire_format) &&
+      (!has(options(old).message_set_wire_format) ||
+      options(old).message_set_wire_format ==
+      options(new).message_set_wire_format))
+  - name: messageNoRemoveStandardDescriptorAccessor
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null ||
+      !(has(options(new).no_standard_descriptor_accessor) &&
+      options(new).no_standard_descriptor_accessor) ||
+      (has(options(old).no_standard_descriptor_accessor) &&
+      options(old).no_standard_descriptor_accessor)
+  - name: messageSameRequiredFields
+    params:
+      - name: old
+        type: google.protobuf.DescriptorProto
+      - name: new
+        type: google.protobuf.DescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || old.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
+         == new.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
+  - name: rpcSameRequestType
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.input_type == new.input_type
+  - name: rpcSameResponseType
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.output_type == new.output_type
+  - name: rpcSameClientStreaming
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.client_streaming == new.client_streaming
+  - name: rpcSameServerStreaming
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.server_streaming == new.server_streaming
+  - name: rpcSameIdempotencyLevel
+    params:
+      - name: old
+        type: google.protobuf.MethodDescriptorProto
+      - name: new
+        type: google.protobuf.MethodDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || (has(options(old).idempotency_level) ==
+      has(options(new).idempotency_level) && (!has(options(old).idempotency_level)
+      || options(old).idempotency_level == options(new).idempotency_level))
 rules:
   - id: ENUM_VALUE_SAME_NAME
     kind: breaking
     target: enum-value
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON]
-    cel: old == null || new == null || old.name == new.name
+    cel: enumValueSameName(old, new)
+    message: an enum value's name changed
+  - id: ENUM_VALUE_SAME_NAME_STABLE
+    kind: breaking
+    target: enum-value
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumValueSameName(old, new)
     message: an enum value's name changed
   - id: ENUM_SAME_TYPE
     kind: breaking
     target: enum
     severity: error
     tags: [FILE, PACKAGE]
-    cel: old == null || new == null || features(old).enum_type == features(new).enum_type
+    cel: enumSameType(old, new)
+    message: an enum changed between open and closed
+  - id: ENUM_SAME_TYPE_STABLE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumSameType(old, new)
     message: an enum changed between open and closed
   - id: ENUM_SAME_JSON_FORMAT
     kind: breaking
     target: enum
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON]
-    cel: old == null || new == null || features(old).json_format == features(new).json_format
+    cel: enumSameJsonFormat(old, new)
+    message: an enum's JSON format changed
+  - id: ENUM_SAME_JSON_FORMAT_STABLE
+    kind: breaking
+    target: enum
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      enumSameJsonFormat(old, new)
     message: an enum's JSON format changed
   - id: MESSAGE_SAME_JSON_FORMAT
     kind: breaking
     target: message
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON]
-    cel: old == null || new == null || features(old).json_format == features(new).json_format
+    cel: messageSameJsonFormat(old, new)
+    message: a message's JSON format changed
+  - id: MESSAGE_SAME_JSON_FORMAT_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      messageSameJsonFormat(old, new)
     message: a message's JSON format changed
   - id: MESSAGE_SAME_MESSAGE_SET_WIRE_FORMAT
     kind: breaking
     target: message
     severity: error
-    cel: old == null || new == null || (has(options(old).message_set_wire_format) == has(options(new).message_set_wire_format) && (!has(options(old).message_set_wire_format) || options(old).message_set_wire_format == options(new).message_set_wire_format))
+    cel: messageSameMessageSetWireFormat(old, new)
+    message: a message's message_set_wire_format changed
+  - id: MESSAGE_SAME_MESSAGE_SET_WIRE_FORMAT_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      messageSameMessageSetWireFormat(old, new)
     message: a message's message_set_wire_format changed
   - id: MESSAGE_NO_REMOVE_STANDARD_DESCRIPTOR_ACCESSOR
     kind: breaking
     target: message
     severity: error
     tags: [FILE, PACKAGE]
+    cel: messageNoRemoveStandardDescriptorAccessor(old, new)
+    message: a message's standard descriptor accessor was removed
+  - id: MESSAGE_NO_REMOVE_STANDARD_DESCRIPTOR_ACCESSOR_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
     cel: >-
-      old == null || new == null
-      || !(has(options(new).no_standard_descriptor_accessor) && options(new).no_standard_descriptor_accessor)
-      || (has(options(old).no_standard_descriptor_accessor) && options(old).no_standard_descriptor_accessor)
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      messageNoRemoveStandardDescriptorAccessor(old, new)
     message: a message's standard descriptor accessor was removed
   - id: MESSAGE_SAME_REQUIRED_FIELDS
     kind: breaking
     target: message
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: messageSameRequiredFields(old, new)
+    message: a message's required fields changed
+  - id: MESSAGE_SAME_REQUIRED_FIELDS_STABLE
+    kind: breaking
+    target: message
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
     cel: >-
-      old == null || new == null
-      || old.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
-         == new.field.filter(f, features(f).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED).map(f, f.number).sort()
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      messageSameRequiredFields(old, new)
     message: a message's required fields changed
   - id: RPC_SAME_REQUEST_TYPE
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || old.input_type == new.input_type
+    cel: rpcSameRequestType(old, new)
+    message: an rpc's request type changed
+  - id: RPC_SAME_REQUEST_TYPE_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcSameRequestType(old, new)
     message: an rpc's request type changed
   - id: RPC_SAME_RESPONSE_TYPE
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || old.output_type == new.output_type
+    cel: rpcSameResponseType(old, new)
+    message: an rpc's response type changed
+  - id: RPC_SAME_RESPONSE_TYPE_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcSameResponseType(old, new)
     message: an rpc's response type changed
   - id: RPC_SAME_CLIENT_STREAMING
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || old.client_streaming == new.client_streaming
+    cel: rpcSameClientStreaming(old, new)
+    message: an rpc's client streaming changed
+  - id: RPC_SAME_CLIENT_STREAMING_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcSameClientStreaming(old, new)
     message: an rpc's client streaming changed
   - id: RPC_SAME_SERVER_STREAMING
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || old.server_streaming == new.server_streaming
+    cel: rpcSameServerStreaming(old, new)
+    message: an rpc's server streaming changed
+  - id: RPC_SAME_SERVER_STREAMING_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcSameServerStreaming(old, new)
     message: an rpc's server streaming changed
   - id: RPC_SAME_IDEMPOTENCY_LEVEL
     kind: breaking
     target: method
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || (has(options(old).idempotency_level) == has(options(new).idempotency_level) && (!has(options(old).idempotency_level) || options(old).idempotency_level == options(new).idempotency_level))
+    cel: rpcSameIdempotencyLevel(old, new)
+    message: an rpc's idempotency level changed
+  - id: RPC_SAME_IDEMPOTENCY_LEVEL_STABLE
+    kind: breaking
+    target: method
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      rpcSameIdempotencyLevel(old, new)
     message: an rpc's idempotency level changed

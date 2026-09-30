@@ -19,6 +19,9 @@ type Function struct {
 	Params  []Param
 	Returns Type
 	CEL     string // the body as written
+	// File is the rule file declaring the function, module-relative,
+	// set when the ruleset's files are discovered together.
+	File string
 }
 
 // Param is one typed parameter of a function.
@@ -112,14 +115,14 @@ var identifier = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]*$`)
 // (REQ-rules-functions, REQ-rules-imports): its own functions,
 // unqualified; and the functions the rulesets it imports lend, as
 // `<alias>.<name>` — each with the scope its own body compiles in.
-// Every rule and function of a file shares the file's scope.
+// Every rule and function of a ruleset shares the ruleset's scope.
 type Scope struct {
 	Where     string // the file, for messages: <ruleset>'s <path>
 	Functions []Function
 	Imports   []Import
 	// Lent is filled when the file's imports are read: by alias, the
 	// functions the imported ruleset's rule files declare, each with
-	// its own file's scope.
+	// its own ruleset's scope.
 	Lent map[string][]Lent
 }
 

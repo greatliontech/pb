@@ -30,7 +30,11 @@ import (
 // under the module's directory; a dependency's path a table's, a
 // closure's, a replacement's or the ruleset's, its version the one
 // discovery or the flag gave that path; a rule the qualified spelling
-// of a category or id the input named or buf's default; an ignore
+// of a category or id the input named or buf's default, or the
+// variant a boolean rule-shaping option the input set names — the
+// uniqueness variant named for the allowances set together, the
+// `_STABLE` reading of a breaking name where a section ignores
+// unstable packages — beside the rule it stands in for; an ignore
 // the subtree of a path the input named under its module; a plugin
 // reference the flag's or the catalog's at the version the input
 // named, or at the highest tag the registry listed where it named
@@ -249,12 +253,12 @@ func TestNoHeuristicProperty(t *testing.T) {
 			if imp := mapping(rs[0]); text(imp["path"]) != Ruleset || text(imp["version"]) != g.versions[Ruleset] || text(imp["alias"]) != RulesetAlias {
 				fail(lintfile.FileName, data, "the ruleset import %v: given %s at %s", imp, Ruleset, g.versions[Ruleset])
 			}
-			g.selection(rt, lintfile.FileName, data, doc)
+			g.selection(rt, lintfile.FileName, data, doc, "")
 			for dir, sel := range mapping(doc["modules"]) {
 				if !contains(g.dirs, dir) {
 					fail(lintfile.FileName, data, "module %s given nowhere", dir)
 				}
-				g.selection(rt, lintfile.FileName, data, mapping(sel))
+				g.selection(rt, lintfile.FileName, data, mapping(sel), dir)
 			}
 		}
 		if doc, data, ok := read(genfile.FileName); ok {
@@ -429,7 +433,9 @@ type given struct {
 	dirs           []string
 	depPaths       map[string]bool   // a table's, a closure's, a replacement's, the ruleset's
 	versions       map[string]string // path -> the version discovery or the flag gave it
-	entries        map[string]bool   // bare categories and ids the sections named, and buf's defaults
+	entries        map[string]bool   // bare categories and ids the sections named, buf's defaults, and the variants the options set name
+	stable         map[string]bool   // breaking sections ignoring unstable packages, the file's under "top", a module's own under its dir: their names read as _STABLE variants
+	ownBreaking    map[string]bool   // modules with a breaking section of their own
 	ignores        map[string]bool   // module-relative ignore paths under their module
 	refs           map[string]bool   // plugin references the flag or the table gave
 	patterns       map[string]bool   // files patterns the inputs' paths gave
@@ -452,6 +458,7 @@ func newGiven() *given {
 		depPaths: map[string]bool{}, versions: map[string]string{}, entries: map[string]bool{"STANDARD": true, "FILE": true},
 		ignores: map[string]bool{}, refs: map[string]bool{}, patterns: map[string]bool{}, extra: map[string]string{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
 		overrideValues: map[string]bool{}, prefixes: map[string]bool{}, suffixes: map[string]bool{}, javaPrefixes: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
+		stable: map[string]bool{}, ownBreaking: map[string]bool{},
 	}
 }
 
@@ -486,14 +493,15 @@ func (g *given) whole(rt *rapid.T, name string, data []byte) {
 	}
 }
 
-// selection checks one selection of the lint file: enable and exclude
-// the ruleset's qualified spellings of named entries, ignores over
-// named paths, kinds pb's.
-func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]any) {
+// selection checks one selection of the lint file — the root's, or a
+// module's entry under its dir: enable and exclude the ruleset's
+// qualified spellings of named entries, ignores over named paths,
+// kinds pb's.
+func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]any, dir string) {
 	for _, key := range []string{"enable", "exclude"} {
 		for _, e := range list(sel[key]) {
 			bare, ok := strings.CutPrefix(e, RulesetAlias+":")
-			if !ok || !g.entries[bare] || !rulesetDeclares(bare) {
+			if !ok || !g.named(bare, dir) || !rulesetDeclares(bare) {
 				rt.Fatalf("%s: %s %q given nowhere\n%s", name, key, e, data)
 			}
 		}
@@ -511,9 +519,9 @@ func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]
 			bare, ok := strings.CutPrefix(r, RulesetAlias+":")
 			tagged := false
 			for _, tag := range strings.Fields(rulesetRules[bare].tags) {
-				tagged = tagged || g.entries[tag]
+				tagged = tagged || g.named(tag, dir)
 			}
-			if !ok || !rulesetDeclares(bare) || !g.entries[bare] && !tagged {
+			if !ok || !rulesetDeclares(bare) || !g.named(bare, dir) && !tagged {
 				rt.Fatalf("%s: ignore rule %q given nowhere\n%s", name, r, data)
 			}
 		}
@@ -521,6 +529,32 @@ func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]
 			rt.Fatalf("%s: kind %v\n%s", name, k, data)
 		}
 	}
+}
+
+// named reports whether a section named a bare category or id, or
+// an option set names it: where the breaking section governing the
+// selection — a module's own, else the file's — ignores unstable
+// packages, a breaking name read as its _STABLE variant is named by
+// its base.
+func (g *given) named(bare, dir string) bool {
+	if g.entries[bare] {
+		return true
+	}
+	base, stable := strings.CutSuffix(bare, "_STABLE")
+	return stable && g.stableFor(dir) && g.entries[base]
+}
+
+// stableFor reports whether the breaking section governing a
+// selection ignores unstable packages: the root's is a lone module's
+// own where it has one, the file's otherwise.
+func (g *given) stableFor(dir string) bool {
+	if dir == "" && len(g.dirs) == 1 {
+		dir = g.dirs[0]
+	}
+	if g.ownBreaking[dir] {
+		return g.stable[dir]
+	}
+	return g.stable["top"]
 }
 
 // declared reports whether the ruleset declares a rule or a tag by
@@ -574,11 +608,15 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 		return p
 	}
 	fmt.Fprintf(b, "%s%s:\n", indent, kind)
+	// A v2 module's section saying nothing — no entry, no option off
+	// its default — is no section of its own, the file's standing in.
+	said := false
 	for _, key := range []string{"use", "except", "ignore"} {
 		n := rapid.IntRange(0, 2).Draw(rt, key)
 		if n == 0 {
 			continue
 		}
+		said = true
 		var entries []string
 		for i := 0; i < n; i++ {
 			e := entry(key)
@@ -600,19 +638,70 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 		}
 	}
 	if rapid.Bool().Draw(rt, "ignore_only") {
+		said = true
 		fmt.Fprintf(b, "%s  ignore_only:\n%s    %s:\n", indent, indent, entry("only"))
 		for range rapid.IntRange(1, 2).Draw(rt, "only paths") {
 			fmt.Fprintf(b, "%s      - %s\n", indent, under("only path"))
 		}
 	}
 	if kind == "lint" {
-		if rapid.Bool().Draw(rt, "suffix") {
-			sx := g.draw(rt, "sx")
-			g.forbidden[sx] = true // a rule-shaping option's value is unmapped, never a value of pb's
-			fmt.Fprintf(b, "%s  enum_zero_value_suffix: %s\n", indent, sx)
+		for _, o := range []string{"enum_zero_value_suffix", "service_suffix"} {
+			if rapid.Bool().Draw(rt, o) {
+				sx := g.draw(rt, "sx")
+				g.forbidden[sx] = true // a rule-shaping option's value is unmapped, never a value of pb's
+				fmt.Fprintf(b, "%s  %s: %s\n", indent, o, sx)
+			}
+		}
+		// The uniqueness allowances and the empties, each spelled true
+		// or false: set, they name the variant standing in for the rule
+		// they read, the uniqueness variant named for the allowances
+		// set together, beside the rule excluded.
+		set := map[string]bool{}
+		for _, o := range []string{"rpc_allow_same_request_response", "rpc_allow_google_protobuf_empty_requests", "rpc_allow_google_protobuf_empty_responses"} {
+			if rapid.Bool().Draw(rt, o) {
+				set[o] = rapid.Bool().Draw(rt, o+" true")
+				fmt.Fprintf(b, "%s  %s: %v\n", indent, o, set[o])
+			}
+		}
+		same, reqs, resps := set["rpc_allow_same_request_response"], set["rpc_allow_google_protobuf_empty_requests"], set["rpc_allow_google_protobuf_empty_responses"]
+		if same || reqs || resps {
+			id := "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW"
+			if same {
+				id += "_SAME"
+			}
+			if reqs || resps {
+				id += "_EMPTY"
+			}
+			if reqs {
+				id += "_REQUESTS"
+			}
+			if resps {
+				id += "_RESPONSES"
+			}
+			g.entries["RPC_REQUEST_RESPONSE_UNIQUE"], g.entries[id] = true, true
+		}
+		if reqs {
+			g.entries["RPC_REQUEST_STANDARD_NAME"], g.entries["RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY"] = true, true
+		}
+		if resps {
+			g.entries["RPC_RESPONSE_STANDARD_NAME"], g.entries["RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY"] = true, true
 		}
 		if rapid.Bool().Draw(rt, "comments") {
 			fmt.Fprintf(b, "%s  disallow_comment_ignores: %v\n", indent, rapid.Bool().Draw(rt, "disallow"))
+		}
+	} else {
+		at := "top"
+		if indent != "" {
+			at = dir
+		}
+		if rapid.Bool().Draw(rt, "unstable") {
+			v := rapid.Bool().Draw(rt, "ignore unstable")
+			fmt.Fprintf(b, "%s  ignore_unstable_packages: %v\n", indent, v)
+			g.stable[at] = g.stable[at] || v
+			said = said || v
+		}
+		if indent != "" && said {
+			g.ownBreaking[dir] = true
 		}
 	}
 }

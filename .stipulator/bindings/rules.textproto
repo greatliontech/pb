@@ -383,8 +383,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-functions"
-  content_hash: "7651dac3a395bbeb2d2b6cec90eb4a4bb4a125fd6fded222a1cc4c3b71d332e7"
-  source_hash: "1e3ccc4888d16950e91d6d025729a4b28f7b2d78e9d1aca0dff41fa24fb8c841"
+  content_hash: "ffe1f9b73db61b8b08145f6230a8b4ceb39667cda1193b7d9214e8157ee0bf1d"
+  source_hash: "86ca636a61528b75349d319c20c639bbff4e2e446c6d6b4652b9d1316bdbaa9c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.Env.scope"
   role: BINDING_ROLE_IMPLEMENTS
@@ -393,8 +393,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-functions"
-  content_hash: "7651dac3a395bbeb2d2b6cec90eb4a4bb4a125fd6fded222a1cc4c3b71d332e7"
-  source_hash: "1e3ccc4888d16950e91d6d025729a4b28f7b2d78e9d1aca0dff41fa24fb8c841"
+  content_hash: "ffe1f9b73db61b8b08145f6230a8b4ceb39667cda1193b7d9214e8157ee0bf1d"
+  source_hash: "86ca636a61528b75349d319c20c639bbff4e2e446c6d6b4652b9d1316bdbaa9c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestFunctions"
   role: BINDING_ROLE_TESTS
@@ -403,8 +403,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-imports"
-  content_hash: "33ecb4a464bb012e45fe7fb2283d11d42f6bdd57c58f32f64dd2311f2848e2ff"
-  source_hash: "eeee73439a135b139b08f84b1a853aa65f150eda1237ebbd0a1814685274e460"
+  content_hash: "9eb13e25c616e7594b25bbbc9bbe316df1c407f669f647a8745ec651dc82e699"
+  source_hash: "b842e9a97c991b1ef5fb7775b362d1573db851e656327000865c386485d853f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Load"
   role: BINDING_ROLE_IMPLEMENTS
@@ -413,8 +413,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-imports"
-  content_hash: "33ecb4a464bb012e45fe7fb2283d11d42f6bdd57c58f32f64dd2311f2848e2ff"
-  source_hash: "eeee73439a135b139b08f84b1a853aa65f150eda1237ebbd0a1814685274e460"
+  content_hash: "9eb13e25c616e7594b25bbbc9bbe316df1c407f669f647a8745ec651dc82e699"
+  source_hash: "b842e9a97c991b1ef5fb7775b362d1573db851e656327000865c386485d853f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestRulesets"
   role: BINDING_ROLE_TESTS
@@ -423,8 +423,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-rules-imports"
-  content_hash: "33ecb4a464bb012e45fe7fb2283d11d42f6bdd57c58f32f64dd2311f2848e2ff"
-  source_hash: "eeee73439a135b139b08f84b1a853aa65f150eda1237ebbd0a1814685274e460"
+  content_hash: "9eb13e25c616e7594b25bbbc9bbe316df1c407f669f647a8745ec651dc82e699"
+  source_hash: "b842e9a97c991b1ef5fb7775b362d1573db851e656327000865c386485d853f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/env1.TestFunctions"
   role: BINDING_ROLE_TESTS
@@ -439,4 +439,34 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/check/rules.TestParseImportsAndFunctions"
   role: BINDING_ROLE_TESTS
   shape_hash: "0f27d32efea9340b0f096132fd554a3c0d9af7dfefb21790e8fa08f416d4b4d2"
+}
+
+bindings {
+  requirement_id: "REQ-rules-functions"
+  content_hash: "ffe1f9b73db61b8b08145f6230a8b4ceb39667cda1193b7d9214e8157ee0bf1d"
+  source_hash: "86ca636a61528b75349d319c20c639bbff4e2e446c6d6b4652b9d1316bdbaa9c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestDiscoverScope"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "54fa49e5cd5104289090161167bcc2fff46141d6a701b9d673c7c31d3adb0308"
+}
+
+bindings {
+  requirement_id: "REQ-rules-imports"
+  content_hash: "9eb13e25c616e7594b25bbbc9bbe316df1c407f669f647a8745ec651dc82e699"
+  source_hash: "b842e9a97c991b1ef5fb7775b362d1573db851e656327000865c386485d853f7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.TestDiscoverScope"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "54fa49e5cd5104289090161167bcc2fff46141d6a701b9d673c7c31d3adb0308"
+}
+
+bindings {
+  requirement_id: "REQ-rules-functions"
+  content_hash: "ffe1f9b73db61b8b08145f6230a8b4ceb39667cda1193b7d9214e8157ee0bf1d"
+  source_hash: "86ca636a61528b75349d319c20c639bbff4e2e446c6d6b4652b9d1316bdbaa9c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/rules.Discover"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "518acd1733d0305bd459ee6af18a06e5613dca0e75415fe790c6aa82fa71566a"
 }

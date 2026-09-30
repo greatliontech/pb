@@ -302,3 +302,50 @@ func TestParseImportsAndFunctions(t *testing.T) {
 		}
 	}
 }
+
+// A ruleset's files share one scope: its functions one namespace
+// across its files, each visible to every file's expressions, and
+// its imports one, an alias bound to one pair — a name two files
+// declare, or an alias two files bind to different pairs, refused
+// naming both files; one alias for one pair declared twice is one
+// import (REQ-rules-functions, REQ-rules-imports).
+func TestDiscoverScope(t *testing.T) {
+	fn := func(name string) string {
+		return "  - name: " + name + "\n    returns: bool\n    cel: \"true\"\n"
+	}
+	imp := func(alias, path, version string) string {
+		return "  - path: " + path + "\n    version: " + version + "\n    alias: " + alias + "\n"
+	}
+	rule := "rules:\n  - id: R\n    kind: lint\n    target: file\n    severity: error\n    cel: g()\n    message: m\n"
+	files := map[string][]byte{
+		"a.rules.yaml": []byte("celEnv: 1\nimports:\n" + imp("std", "example.com/std", "v1.0.0") + "functions:\n" + fn("f") + rule),
+		"b.rules.yaml": []byte("celEnv: 1\nimports:\n" + imp("std", "example.com/std", "v1.0.0") + imp("util", "example.com/util", "v2.0.0") + "functions:\n" + fn("g") + "rules: []\n"),
+	}
+	located, err := Discover(files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope := located[0].File.Scope
+	if len(located) != 2 || located[1].File.Scope != scope || located[0].File.Rules[0].Scope != scope {
+		t.Fatalf("scopes: %p %p %p", scope, located[1].File.Scope, located[0].File.Rules[0].Scope)
+	}
+	if len(scope.Functions) != 2 || scope.Functions[0].Name != "f" || scope.Functions[0].File != "a.rules.yaml" || scope.Functions[1].Name != "g" || scope.Functions[1].File != "b.rules.yaml" {
+		t.Fatalf("functions: %+v", scope.Functions)
+	}
+	if len(scope.Imports) != 2 || scope.Imports[0] != (Import{Path: "example.com/std", Version: "v1.0.0", Alias: "std", File: "a.rules.yaml"}) || scope.Imports[1] != (Import{Path: "example.com/util", Version: "v2.0.0", Alias: "util", File: "b.rules.yaml"}) {
+		t.Fatalf("imports: %+v", scope.Imports)
+	}
+	if len(located[0].File.Functions) != 1 || len(located[1].File.Imports) != 2 {
+		t.Fatalf("a file's own declarations kept: %+v %+v", located[0].File.Functions, located[1].File.Imports)
+	}
+	for name, c := range map[string]struct{ b, want string }{
+		"function twice":        {"celEnv: 1\nfunctions:\n" + fn("f") + "rules: []\n", "function f declared by a.rules.yaml and b.rules.yaml"},
+		"alias to another pair": {"celEnv: 1\nimports:\n" + imp("std", "example.com/std", "v2.0.0") + "rules: []\n", "alias std bound to example.com/std@v1.0.0 by a.rules.yaml and to example.com/std@v2.0.0 by b.rules.yaml"},
+		"alias to another path": {"celEnv: 1\nimports:\n" + imp("std", "example.com/other", "v1.0.0") + "rules: []\n", "alias std bound to example.com/std@v1.0.0 by a.rules.yaml and to example.com/other@v1.0.0 by b.rules.yaml"},
+	} {
+		files["b.rules.yaml"] = []byte(c.b)
+		if _, err := Discover(files); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

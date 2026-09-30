@@ -537,8 +537,8 @@ func TestRulesets(t *testing.T) {
 		t.Fatalf("bad rule file's cause: %v", err)
 	}
 
-	// A rule file's imports lend their rulesets' functions to that
-	// file alone, each with its own file's scope; every import is an
+	// A ruleset's imports lend their rulesets' functions to the
+	// ruleset's one scope, each with its own ruleset's scope; every import is an
 	// edge and every fetched pair is read once; a chain of imports
 	// returning to a path, and an import declaring no rule file, are
 	// refused naming them (REQ-rules-imports).
@@ -557,14 +557,16 @@ func TestRulesets(t *testing.T) {
 		t.Fatal(err)
 	}
 	house := loaded.Rulesets[0].Files[0].File.Scope
-	if len(loaded.Rulesets) != 2 || house.Where != "example.com/lib's lib.rules.yaml" || len(house.Lent["std"]) != 1 || house.Lent["std"][0].Function.Name != "fieldOk" || len(house.Lent["older"]) != 1 || house.Lent["older"][0].Function.Name != "isSnake" {
+	if len(loaded.Rulesets) != 2 || house.Where != "example.com/lib" || len(house.Lent["std"]) != 1 || house.Lent["std"][0].Function.Name != "fieldOk" || len(house.Lent["older"]) != 1 || house.Lent["older"][0].Function.Name != "isSnake" {
 		t.Fatalf("lent scopes: %+v", house)
 	}
-	if stdScope := house.Lent["std"][0].Scope; stdScope.Where != "example.com/std@v2.0.0's s.rules.yaml" || len(stdScope.Lent["util"]) != 1 || stdScope.Lent["util"][0].Scope != house.Lent["older"][0].Scope {
+	if stdScope := house.Lent["std"][0].Scope; stdScope.Where != "example.com/std@v2.0.0" || len(stdScope.Lent["util"]) != 1 || stdScope.Lent["util"][0].Scope != house.Lent["older"][0].Scope {
 		t.Fatalf("the lent function's own scope: %+v", stdScope)
 	}
-	if len(loaded.Rulesets[1].Files) != 2 || loaded.Rulesets[1].Files[1].File.Scope.Lent != nil {
-		t.Fatalf("a file importing nothing is lent nothing: %+v", loaded.Rulesets[1].Files)
+	// A ruleset's files share its one scope: what one file imports,
+	// every file of the ruleset sees.
+	if std := loaded.Rulesets[1].Files; len(std) != 2 || std[1].File.Scope != std[0].File.Scope || std[1].File.Scope != house.Lent["std"][0].Scope {
+		t.Fatalf("a ruleset's files share one scope: %+v", std)
 	}
 	wantEdges := []Edge{{"pb.lint.yaml", "example.com/lib", ""}, {"example.com/lib", "example.com/std", "v2.0.0"}, {"example.com/std@v2.0.0", "example.com/util", "v1.0.0"}, {"example.com/lib", "example.com/util", "v1.0.0"}, {"pb.lint.yaml", "example.com/std", "v2.0.0"}}
 	if !reflect.DeepEqual(loaded.Edges, wantEdges) {

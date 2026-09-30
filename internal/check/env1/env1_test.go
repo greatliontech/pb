@@ -1109,6 +1109,34 @@ func TestPairs(t *testing.T) {
 	if _, err := Pairs(check.TargetField, oldSet, newSet, []string{"nonesuch"}, newChecked); err == nil {
 		t.Error("a path outside the old set paired")
 	}
+	// An entity on one side alone binds, for the absent side, the file
+	// at its file's path where that side checks one — the file a
+	// deletion's or an addition's finding is placed in — and null
+	// where the file itself is on one side alone.
+	oldOnly := compileSet(t, map[string]string{"m/m.proto": "syntax = \"proto3\";\npackage m;\nmessage M {}\nmessage Gone {}\n", "g/g.proto": "syntax = \"proto3\";\npackage g;\nmessage G {}\n"})
+	newOnly := compileSet(t, map[string]string{"m/m.proto": "syntax = \"proto3\";\npackage m;\nmessage M {}\nmessage Added {}\n"})
+	ps, err = Pairs(check.TargetMessage, oldOnly, newOnly, []string{"g/g.proto", "m/m.proto"}, []string{"m/m.proto"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileOf := func(v any) string {
+		if f, ok := v.(*descriptorpb.FileDescriptorProto); ok {
+			return f.GetName()
+		}
+		return "<null>"
+	}
+	var got []string
+	for _, p := range ps {
+		d := p.New
+		if d == nil {
+			d = p.Old
+		}
+		got = append(got, string(d.FullName())+": "+fileOf(p.Vars[BindOldFile])+" "+fileOf(p.Vars[BindNewFile]))
+	}
+	sort.Strings(got)
+	if want := "g.G: g/g.proto <null>|m.Added: m/m.proto m/m.proto|m.Gone: m/m.proto m/m.proto|m.M: m/m.proto m/m.proto"; strings.Join(got, "|") != want {
+		t.Errorf("the absent side's file: %v", got)
+	}
 	// Aliases on one side alone: a number either side holds several
 	// values at pairs by name on both, so adding or removing an alias
 	// is one addition or one removal, the unchanged value still paired.
@@ -1391,9 +1419,12 @@ func TestFunctions(t *testing.T) {
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "true", "set")}}, "w: function f returns: type set is none of environment 1's"},
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("a", "b()", "bool"), fn("b", "c()", "bool"), fn("c", "a()", "bool")}}, "w: functions call in a cycle: a -> b -> c -> a"},
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "f()", "bool")}}, "w: functions call in a cycle: f -> f"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{{Name: "a", File: "a.rules.yaml", Returns: rules.Type{Name: "bool"}, CEL: "b()"}, {Name: "b", File: "b.rules.yaml", Returns: rules.Type{Name: "bool"}, CEL: "a()"}}}, "w: functions call in a cycle: a (a.rules.yaml) -> b (b.rules.yaml) -> a (a.rules.yaml)"},
+		{&rules.Scope{Where: "w", Functions: []rules.Function{{Name: "f", File: "a.rules.yaml", Returns: rules.Type{Name: "bool"}, CEL: "1"}}}, "w's a.rules.yaml: function f: the body yields int, not the declared bool"},
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("comments", "true", "bool")}}, "w: function comments shadows the environment's"},
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("size", "true", "bool")}}, "w: function size shadows the environment's"},
 		{&rules.Scope{Where: "w", Imports: []rules.Import{{Path: "example.com/std", Alias: "file"}}, Lent: map[string][]rules.Lent{"file": {{Function: lent.Functions[0], Scope: lent}}}}, "w: import alias file is a binding's name"},
+		{&rules.Scope{Where: "w", Imports: []rules.Import{{Path: "example.com/std", Alias: "files", File: "b.rules.yaml"}}}, "w's b.rules.yaml: import alias files is a binding's name"},
 		{&rules.Scope{Where: "w", Functions: []rules.Function{fn("f", "nope(1)", "bool")}}, "w: function f: "},
 	} {
 		if _, err := env.Compile(rule(c.sc, "true")); err == nil || !errors.Is(err, ErrCompile) || !strings.Contains(err.Error(), c.want) {

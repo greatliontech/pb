@@ -85,8 +85,9 @@ func (r Rule) Name() string {
 // mapping of celEnv, rules and, optionally, imports and functions,
 // every key known, every scalar the text written; the environment
 // version refused unless provided (REQ-rules-env-versioned). The
-// file's scope is built and shared by its rules, its imports' lent
-// functions left for the reader of the imports to fill.
+// file's own scope is built and shared by its rules — the ruleset's,
+// shared by its files, Discover's to build, its imports' lent
+// functions the reader of the imports' to fill.
 func Parse(data []byte) (*File, error) {
 	mapping, err := contractfile.Doc(data)
 	if err != nil {
@@ -245,7 +246,13 @@ type Located struct {
 // at any depth, by module-relative path — in path order, the byte
 // order of the paths; a file that fails to parse fails the discovery
 // naming it (REQ-rules-file-discovery). A ruleset with none yields no
-// files.
+// files. The files share one scope, the ruleset's: its functions one
+// namespace across its files, visible to every expression of the
+// ruleset, and its imports one, an alias bound to one pair — a
+// function name two files declare, or an alias two files bind to
+// different pairs, fails the discovery naming both (REQ-rules-functions,
+// REQ-rules-imports). The scope's Where is the ruleset's, left to the
+// caller that knows it.
 func Discover(files map[string][]byte) ([]Located, error) {
 	paths := make([]string, 0, len(files))
 	for p := range files {
@@ -253,12 +260,37 @@ func Discover(files map[string][]byte) ([]Located, error) {
 	}
 	sort.Strings(paths)
 	out := make([]Located, 0, len(paths))
+	scope := &Scope{}
+	declaredIn := map[string]string{}
+	aliasIn := map[string]Import{}
 	for _, p := range paths {
 		f, err := Parse(files[p])
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", p, err)
 		}
-		f.Scope.Where = p
+		for _, fn := range f.Functions {
+			if prior, dup := declaredIn[fn.Name]; dup {
+				return nil, fmt.Errorf("function %s declared by %s and %s", fn.Name, prior, p)
+			}
+			declaredIn[fn.Name] = p
+			fn.File = p
+			scope.Functions = append(scope.Functions, fn)
+		}
+		for _, imp := range f.Imports {
+			if prior, bound := aliasIn[imp.Alias]; bound {
+				if prior.Path != imp.Path || prior.Version != imp.Version {
+					return nil, fmt.Errorf("alias %s bound to %s by %s and to %s by %s", imp.Alias, prior.pair(), prior.File, imp.pair(), p)
+				}
+				continue
+			}
+			imp.File = p
+			aliasIn[imp.Alias] = imp
+			scope.Imports = append(scope.Imports, imp)
+		}
+		f.Scope = scope
+		for i := range f.Rules {
+			f.Rules[i].Scope = scope
+		}
 		out = append(out, Located{Path: p, File: f})
 	}
 	return out, nil

@@ -19,6 +19,19 @@ type Import struct {
 	Path    string
 	Version string
 	Alias   string
+	// File is the rule file declaring the import, module-relative,
+	// set when the ruleset's files are discovered together; two files
+	// of a ruleset declaring one alias for one pair are one import.
+	File string
+}
+
+// pair spells the import's module pair, the path alone where the
+// import names no version.
+func (i Import) pair() string {
+	if i.Version == "" {
+		return i.Path
+	}
+	return i.Path + "@" + i.Version
 }
 
 // aliasForm is an alias's spelling: ASCII letters, digits and

@@ -30,7 +30,7 @@ type userFunction struct {
 	lastCost uint64
 }
 
-// compiledScope is a rule file's scope compiled: the declarations a
+// compiledScope is a ruleset's scope compiled: the declarations a
 // rule of the file compiles against — its own functions unqualified,
 // its imports' as `<alias>.<name>`.
 type compiledScope struct {
@@ -104,12 +104,12 @@ func typeOf(t rules.Type) (*cel.Type, error) {
 	return nil, fmt.Errorf("type %s is none of environment 1's", t)
 }
 
-// scope compiles a rule file's scope once: its own functions in an
+// scope compiles a ruleset's scope once: its own functions in an
 // order their calls admit — a function calling itself, directly or
-// through another of the file, refused naming the cycle — each body
+// through another of the ruleset, refused naming the cycle — each body
 // type-checked against its parameters and refused unless it yields
-// its declared return type, then declared for the file's rules; an
-// import's functions compiled in their own file's scope and declared
+// its declared return type, then declared for the ruleset's rules; an
+// import's functions compiled in their own ruleset's scope and declared
 // under the alias (REQ-rules-functions, REQ-rules-imports).
 func (e *Env) scope(sc *rules.Scope) ([]cel.EnvOption, error) {
 	if sc == nil {
@@ -133,11 +133,15 @@ func (e *Env) scope(sc *rules.Scope) ([]cel.EnvOption, error) {
 func (e *Env) compileScope(sc *rules.Scope) ([]cel.EnvOption, error) {
 	var opts []cel.EnvOption
 	// The imports' functions first: what the file's own may call. Each
-	// lent function is compiled through its own file's scope — in that
-	// file's call order, under its own imports — then declared here.
+	// lent function is compiled through its own ruleset's scope — in that
+	// ruleset's call order, under its own imports — then declared here.
 	for _, imp := range sc.Imports {
 		if reserved[imp.Alias] {
-			return nil, fmt.Errorf("%w: %s: import alias %s is a binding's name", ErrCompile, sc.Where, imp.Alias)
+			where := sc.Where
+			if imp.File != "" {
+				where += "'s " + imp.File
+			}
+			return nil, fmt.Errorf("%w: %s: import alias %s is a binding's name", ErrCompile, where, imp.Alias)
 		}
 	}
 	aliases := make([]string, 0, len(sc.Lent))
@@ -172,6 +176,15 @@ func (e *Env) compileScope(sc *rules.Scope) ([]cel.EnvOption, error) {
 	return opts, nil
 }
 
+// at names a function's place for a message: the scope's, and the
+// file declaring the function where the ruleset's files are known.
+func at(sc *rules.Scope, f rules.Function) string {
+	if f.File == "" {
+		return sc.Where
+	}
+	return sc.Where + "'s " + f.File
+}
+
 // function compiles one function of a scope once: its body under the
 // environment with the parameters bound at their types and the
 // functions the scope sees before it — the imports' declarations
@@ -182,21 +195,21 @@ func (e *Env) function(sc *rules.Scope, f rules.Function, lent []cel.EnvOption) 
 		return uf, nil
 	}
 	if e.base.HasFunction(f.Name) || e.macros[f.Name] {
-		return nil, fmt.Errorf("%w: %s: function %s shadows the environment's", ErrCompile, sc.Where, f.Name)
+		return nil, fmt.Errorf("%w: %s: function %s shadows the environment's", ErrCompile, at(sc, f), f.Name)
 	}
 	uf := &userFunction{name: f.Name, overload: fmt.Sprintf("%s.%s#%d", sc.Where, f.Name, len(e.functions))}
 	var opts []cel.EnvOption
 	for _, p := range f.Params {
 		pt, err := typeOf(p.Type)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s: function %s, parameter %s: %v", ErrCompile, sc.Where, f.Name, p.Name, err)
+			return nil, fmt.Errorf("%w: %s: function %s, parameter %s: %v", ErrCompile, at(sc, f), f.Name, p.Name, err)
 		}
 		uf.params, uf.ptypes = append(uf.params, p.Name), append(uf.ptypes, pt)
 		opts = append(opts, cel.Variable(p.Name, pt))
 	}
 	ret, err := typeOf(f.Returns)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s: function %s returns: %v", ErrCompile, sc.Where, f.Name, err)
+		return nil, fmt.Errorf("%w: %s: function %s returns: %v", ErrCompile, at(sc, f), f.Name, err)
 	}
 	uf.ret = ret
 	// What the body sees: the scope's imports and the functions of the
@@ -207,21 +220,21 @@ func (e *Env) function(sc *rules.Scope, f rules.Function, lent []cel.EnvOption) 
 	}
 	env, err := e.base.Extend(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, sc.Where, f.Name, err)
+		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, at(sc, f), f.Name, err)
 	}
 	ast, iss := env.Compile(f.CEL)
 	if iss != nil && iss.Err() != nil {
-		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, sc.Where, f.Name, iss.Err())
+		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, at(sc, f), f.Name, iss.Err())
 	}
 	// The declared type must admit the body's: an exact match, or a
 	// body of no fixed type (dyn, or a list or map over dyn), which
 	// each call holds to the declared type.
 	if !admits(ret, ast.OutputType()) {
-		return nil, fmt.Errorf("%w: %s: function %s: the body yields %s, not the declared %s", ErrCompile, sc.Where, f.Name, ast.OutputType(), f.Returns)
+		return nil, fmt.Errorf("%w: %s: function %s: the body yields %s, not the declared %s", ErrCompile, at(sc, f), f.Name, ast.OutputType(), f.Returns)
 	}
 	prg, err := env.Program(ast, cel.CostLimit(e.limit), cel.CostTracking(costs{e}), cel.EvalOptions(cel.OptOptimize))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, sc.Where, f.Name, err)
+		return nil, fmt.Errorf("%w: %s: function %s: %v", ErrCompile, at(sc, f), f.Name, err)
 	}
 	uf.prg = prg
 	e.functions[key] = uf
@@ -384,6 +397,10 @@ func (e *Env) callOrder(sc *rules.Scope) ([]rules.Function, error) {
 		done
 	)
 	state := map[string]int{}
+	files := map[string]string{}
+	for _, f := range sc.Functions {
+		files[f.Name] = f.File
+	}
 	var order []rules.Function
 	var path []string
 	var visit func(name string) error
@@ -399,6 +416,11 @@ func (e *Env) callOrder(sc *rules.Scope) ([]rules.Function, error) {
 				}
 			}
 			cycle := append(append([]string(nil), path[start:]...), name)
+			for i, n := range cycle {
+				if file := files[n]; file != "" {
+					cycle[i] = n + " (" + file + ")"
+				}
+			}
 			return fmt.Errorf("%w: %s: functions call in a cycle: %s", ErrCompile, sc.Where, strings.Join(cycle, " -> "))
 		}
 		state[name] = onPath

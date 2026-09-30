@@ -1,97 +1,102 @@
 celEnv: 1
-rules:
-  - id: FIELD_SAME_NAME
-    kind: breaking
-    target: field
-    severity: error
-    tags: [FILE, PACKAGE, WIRE_JSON]
+functions:
+  - name: fieldSameName
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
     cel: old == null || new == null || old.name == new.name
-    message: a field's name changed
-  - id: FIELD_SAME_JSON_NAME
-    kind: breaking
-    target: field
-    severity: error
-    tags: [FILE, PACKAGE, WIRE_JSON]
+  - name: fieldSameJsonName
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
     cel: old == null || new == null || old.json_name == new.json_name
-    message: a field's json_name changed
-  - id: FIELD_SAME_TYPE
-    kind: breaking
-    target: field
-    severity: error
-    tags: [FILE, PACKAGE]
-    cel: old == null || new == null || (old.type == new.type && old.type_name == new.type_name)
-    message: a field's type changed
-  - id: FIELD_SAME_LABEL
-    kind: breaking
-    target: field
-    severity: error
-    cel: old == null || new == null || old.label == new.label
-    message: a field's label changed
-  - id: FIELD_SAME_CARDINALITY
-    kind: breaking
-    target: field
-    severity: error
-    tags: [FILE, PACKAGE]
+  - name: fieldSameType
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
     cel: >-
-      old == null || new == null
-      || (old.label == new.label
+      old == null || new == null || (old.type == new.type && old.type_name ==
+      new.type_name)
+  - name: fieldSameLabel
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.label == new.label
+  - name: fieldSameCardinality
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.label == new.label
           && features(old).field_presence == features(new).field_presence
           && parent(old).nested_type.exists(n, has(n.options) && n.options.map_entry && old.type_name == '.' + fullName(parent(old)) + '.' + n.name)
              == parent(new).nested_type.exists(n, has(n.options) && n.options.map_entry && new.type_name == '.' + fullName(parent(new)) + '.' + n.name))
-    message: a field's cardinality changed
-  - id: FIELD_WIRE_COMPATIBLE_CARDINALITY
-    kind: breaking
-    target: field
-    severity: error
-    tags: [WIRE]
-    cel: >-
-      old == null || new == null
-      || (old.label == new.label
+  - name: fieldWireCompatibleCardinality
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.label == new.label
           && (features(old).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
              == (features(new).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED))
-    message: a field's cardinality changed beyond wire compatibility
-  - id: FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY
-    kind: breaking
-    target: field
-    severity: error
-    tags: [WIRE_JSON]
-    cel: >-
-      old == null || new == null
-      || (old.label == new.label
+  - name: fieldWireJsonCompatibleCardinality
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.label == new.label
           && (features(old).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
              == (features(new).field_presence == google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED)
           && parent(old).nested_type.exists(n, has(n.options) && n.options.map_entry && old.type_name == '.' + fullName(parent(old)) + '.' + n.name)
              == parent(new).nested_type.exists(n, has(n.options) && n.options.map_entry && new.type_name == '.' + fullName(parent(new)) + '.' + n.name))
-    message: a field's cardinality changed beyond JSON compatibility
-  - id: FIELD_WIRE_COMPATIBLE_TYPE
-    kind: breaking
-    target: field
-    severity: error
-    tags: [WIRE]
-    cel: >-
-      old == null || new == null
-      || (old.type == new.type && old.type_name == new.type_name)
-      || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32, google.protobuf.FieldDescriptorProto.Type.TYPE_INT64, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT64, google.protobuf.FieldDescriptorProto.Type.TYPE_BOOL],
+  - name: fieldWireCompatibleType
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.type == new.type && old.type_name == new.type_name) || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32, google.protobuf.FieldDescriptorProto.Type.TYPE_INT64, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT64, google.protobuf.FieldDescriptorProto.Type.TYPE_BOOL],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_SINT32, google.protobuf.FieldDescriptorProto.Type.TYPE_SINT64],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED32, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED32],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED64, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED64]]
          .exists(g, old.type in g && new.type in g)
-      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_STRING && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES)
-      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM
+      || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_STRING && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES) || (old.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM && new.type == google.protobuf.FieldDescriptorProto.Type.TYPE_ENUM
           && resolve(new.type_name) != null
           && enums(visible(file(old))).exists(e, '.' + fullName(e) == old.type_name
                && e.name == resolve(new.type_name).name
                && e.value.all(v, resolve(new.type_name).value.exists(w, w.name == v.name && w.number == v.number))))
-    message: a field's type changed beyond wire compatibility
-  - id: FIELD_WIRE_JSON_COMPATIBLE_TYPE
-    kind: breaking
-    target: field
-    severity: error
-    tags: [WIRE_JSON]
-    cel: >-
-      old == null || new == null
-      || (old.type == new.type && old.type_name == new.type_name)
-      || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32],
+  - name: fieldWireJsonCompatibleType
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || (old.type == new.type && old.type_name == new.type_name) || [[google.protobuf.FieldDescriptorProto.Type.TYPE_INT32, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT32],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_INT64, google.protobuf.FieldDescriptorProto.Type.TYPE_UINT64],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED32, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED32],
           [google.protobuf.FieldDescriptorProto.Type.TYPE_FIXED64, google.protobuf.FieldDescriptorProto.Type.TYPE_SFIXED64]]
@@ -101,77 +106,359 @@ rules:
           && enums(visible(file(old))).exists(e, '.' + fullName(e) == old.type_name
                && e.name == resolve(new.type_name).name
                && e.value.all(v, resolve(new.type_name).value.exists(w, w.name == v.name && w.number == v.number))))
+  - name: fieldSameOneof
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || ((has(old.oneof_index) && !old.proto3_optional) == (has(new.oneof_index) && !new.proto3_optional)
+          && (!(has(old.oneof_index) && !old.proto3_optional)
+              || parent(old).oneof_decl[old.oneof_index].name == parent(new).oneof_decl[new.oneof_index].name))
+  - name: fieldSameDefault
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: old == null || new == null || old.default_value == new.default_value
+  - name: fieldSameJstype
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || (has(options(old).jstype) ==
+      has(options(new).jstype) && (!has(options(old).jstype) ||
+      options(old).jstype == options(new).jstype))
+  - name: fieldSameCtype
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || (has(options(old).ctype) ==
+      has(options(new).ctype) && (!has(options(old).ctype) || options(old).ctype
+      == options(new).ctype))
+  - name: fieldSameCppStringType
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || !(old.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES]) || !(new.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES]) || cel.bind(o, has(options(old).ctype) && options(old).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(old), pb.cpp).string_type,
+         cel.bind(n, has(options(new).ctype) && options(new).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(new), pb.cpp).string_type,
+         o == n))
+  - name: fieldSameUtf8Validation
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || old.type !=
+      google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type !=
+      google.protobuf.FieldDescriptorProto.Type.TYPE_STRING ||
+      features(old).utf8_validation == features(new).utf8_validation
+  - name: fieldSameJavaUtf8Validation
+    params:
+      - name: old
+        type: google.protobuf.FieldDescriptorProto
+      - name: new
+        type: google.protobuf.FieldDescriptorProto
+    returns: bool
+    cel: |-
+      old == null || new == null || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || cel.bind(o, has(options(file(old)).java_string_check_utf8) && options(file(old)).java_string_check_utf8
+                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(old), pb.java).utf8_validation,
+         cel.bind(n, has(options(file(new)).java_string_check_utf8) && options(file(new)).java_string_check_utf8
+                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(new), pb.java).utf8_validation,
+         o == n))
+  - name: fileSameJavaStringCheckUtf8
+    params:
+      - name: old
+        type: google.protobuf.FileDescriptorProto
+      - name: new
+        type: google.protobuf.FileDescriptorProto
+    returns: bool
+    cel: >-
+      old == null || new == null || (has(options(old).java_string_check_utf8) ==
+      has(options(new).java_string_check_utf8) &&
+      (!has(options(old).java_string_check_utf8) ||
+      options(old).java_string_check_utf8 == options(new).java_string_check_utf8))
+rules:
+  - id: FIELD_SAME_NAME
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: fieldSameName(old, new)
+    message: a field's name changed
+  - id: FIELD_SAME_NAME_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameName(old, new)
+    message: a field's name changed
+  - id: FIELD_SAME_JSON_NAME
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE, WIRE_JSON]
+    cel: fieldSameJsonName(old, new)
+    message: a field's json_name changed
+  - id: FIELD_SAME_JSON_NAME_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameJsonName(old, new)
+    message: a field's json_name changed
+  - id: FIELD_SAME_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: fieldSameType(old, new)
+    message: a field's type changed
+  - id: FIELD_SAME_TYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameType(old, new)
+    message: a field's type changed
+  - id: FIELD_SAME_LABEL
+    kind: breaking
+    target: field
+    severity: error
+    cel: fieldSameLabel(old, new)
+    message: a field's label changed
+  - id: FIELD_SAME_LABEL_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameLabel(old, new)
+    message: a field's label changed
+  - id: FIELD_SAME_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE, PACKAGE]
+    cel: fieldSameCardinality(old, new)
+    message: a field's cardinality changed
+  - id: FIELD_SAME_CARDINALITY_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameCardinality(old, new)
+    message: a field's cardinality changed
+  - id: FIELD_WIRE_COMPATIBLE_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE]
+    cel: fieldWireCompatibleCardinality(old, new)
+    message: a field's cardinality changed beyond wire compatibility
+  - id: FIELD_WIRE_COMPATIBLE_CARDINALITY_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldWireCompatibleCardinality(old, new)
+    message: a field's cardinality changed beyond wire compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON]
+    cel: fieldWireJsonCompatibleCardinality(old, new)
+    message: a field's cardinality changed beyond JSON compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldWireJsonCompatibleCardinality(old, new)
+    message: a field's cardinality changed beyond JSON compatibility
+  - id: FIELD_WIRE_COMPATIBLE_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE]
+    cel: fieldWireCompatibleType(old, new)
+    message: a field's type changed beyond wire compatibility
+  - id: FIELD_WIRE_COMPATIBLE_TYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldWireCompatibleType(old, new)
+    message: a field's type changed beyond wire compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_TYPE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON]
+    cel: fieldWireJsonCompatibleType(old, new)
+    message: a field's type changed beyond JSON compatibility
+  - id: FIELD_WIRE_JSON_COMPATIBLE_TYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [WIRE_JSON_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldWireJsonCompatibleType(old, new)
     message: a field's type changed beyond JSON compatibility
   - id: FIELD_SAME_ONEOF
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
+    cel: fieldSameOneof(old, new)
+    message: a field moved into, out of, or between oneofs
+  - id: FIELD_SAME_ONEOF_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
     cel: >-
-      old == null || new == null
-      || ((has(old.oneof_index) && !old.proto3_optional) == (has(new.oneof_index) && !new.proto3_optional)
-          && (!(has(old.oneof_index) && !old.proto3_optional)
-              || parent(old).oneof_decl[old.oneof_index].name == parent(new).oneof_decl[new.oneof_index].name))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameOneof(old, new)
     message: a field moved into, out of, or between oneofs
   - id: FIELD_SAME_DEFAULT
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE, WIRE_JSON, WIRE]
-    cel: old == null || new == null || old.default_value == new.default_value
+    cel: fieldSameDefault(old, new)
+    message: a field's default value changed
+  - id: FIELD_SAME_DEFAULT_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE, WIRE_JSON_STABLE, WIRE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameDefault(old, new)
     message: a field's default value changed
   - id: FIELD_SAME_JSTYPE
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE]
-    cel: old == null || new == null || (has(options(old).jstype) == has(options(new).jstype) && (!has(options(old).jstype) || options(old).jstype == options(new).jstype))
+    cel: fieldSameJstype(old, new)
+    message: a field's jstype changed
+  - id: FIELD_SAME_JSTYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameJstype(old, new)
     message: a field's jstype changed
   - id: FIELD_SAME_CTYPE
     kind: breaking
     target: field
     severity: error
-    cel: old == null || new == null || (has(options(old).ctype) == has(options(new).ctype) && (!has(options(old).ctype) || options(old).ctype == options(new).ctype))
+    cel: fieldSameCtype(old, new)
+    message: a field's ctype changed
+  - id: FIELD_SAME_CTYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    cel: >-
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameCtype(old, new)
     message: a field's ctype changed
   - id: FIELD_SAME_CPP_STRING_TYPE
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE]
+    cel: fieldSameCppStringType(old, new)
+    message: a field's C++ string type changed
+  - id: FIELD_SAME_CPP_STRING_TYPE_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
     cel: >-
-      old == null || new == null
-      || !(old.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES]) || !(new.type in [google.protobuf.FieldDescriptorProto.Type.TYPE_STRING, google.protobuf.FieldDescriptorProto.Type.TYPE_BYTES])
-      || cel.bind(o, has(options(old).ctype) && options(old).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(old), pb.cpp).string_type,
-         cel.bind(n, has(options(new).ctype) && options(new).ctype == 'CORD' ? pb.CppFeatures.StringType.CORD : proto.getExt(features(new), pb.cpp).string_type,
-         o == n))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameCppStringType(old, new)
     message: a field's C++ string type changed
   - id: FIELD_SAME_UTF8_VALIDATION
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE]
+    cel: fieldSameUtf8Validation(old, new)
+    message: a field's UTF-8 validation changed
+  - id: FIELD_SAME_UTF8_VALIDATION_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
     cel: >-
-      old == null || new == null
-      || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING
-      || features(old).utf8_validation == features(new).utf8_validation
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameUtf8Validation(old, new)
     message: a field's UTF-8 validation changed
   - id: FIELD_SAME_JAVA_UTF8_VALIDATION
     kind: breaking
     target: field
     severity: error
     tags: [FILE, PACKAGE]
+    cel: fieldSameJavaUtf8Validation(old, new)
+    message: a field's Java UTF-8 validation changed
+  - id: FIELD_SAME_JAVA_UTF8_VALIDATION_STABLE
+    kind: breaking
+    target: field
+    severity: error
+    tags: [FILE_STABLE, PACKAGE_STABLE]
     cel: >-
-      old == null || new == null
-      || old.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING || new.type != google.protobuf.FieldDescriptorProto.Type.TYPE_STRING
-      || cel.bind(o, has(options(file(old)).java_string_check_utf8) && options(file(old)).java_string_check_utf8
-                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(old), pb.java).utf8_validation,
-         cel.bind(n, has(options(file(new)).java_string_check_utf8) && options(file(new)).java_string_check_utf8
-                    ? pb.JavaFeatures.Utf8Validation.VERIFY : proto.getExt(features(new), pb.java).utf8_validation,
-         o == n))
+      (oldFile != null && unstablePackage(oldFile.package)) || (newFile != null && unstablePackage(newFile.package)) ||
+      fieldSameJavaUtf8Validation(old, new)
     message: a field's Java UTF-8 validation changed
   - id: FILE_SAME_JAVA_STRING_CHECK_UTF8
     kind: breaking
     target: file
     severity: error
-    cel: old == null || new == null || (has(options(old).java_string_check_utf8) == has(options(new).java_string_check_utf8) && (!has(options(old).java_string_check_utf8) || options(old).java_string_check_utf8 == options(new).java_string_check_utf8))
+    cel: fileSameJavaStringCheckUtf8(old, new)
+    message: a file's java_string_check_utf8 changed
+  - id: FILE_SAME_JAVA_STRING_CHECK_UTF8_STABLE
+    kind: breaking
+    target: file
+    severity: error
+    cel: >-
+      (old != null && unstablePackage(old.package)) || (new != null && unstablePackage(new.package)) ||
+      fileSameJavaStringCheckUtf8(old, new)
     message: a file's java_string_check_utf8 changed

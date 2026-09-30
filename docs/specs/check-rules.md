@@ -110,7 +110,7 @@ compiled under the file's environment as typed, expression-bodied
 functions — each parameter bound at its declared type, the body
 refused when it does not evaluate to the declared return type, a
 body naming a function of the file or of an imported ruleset resolved
-as a rule's call is — before any rule of the file compiles — a file no enabled rule draws
+as a rule's call is — before any rule of the ruleset compiles — a ruleset no enabled rule draws
 on compiles nothing — so a rule calls them as it calls the
 environment's own; a function named as one of the environment's, a
 macro's name included, is refused, shadowing none; a call's cost is the body's,
@@ -118,18 +118,24 @@ charged under REQ-rules-bounded exactly as a library function's, and
 a function calling itself, directly or through another, is refused
 at compile time naming the cycle; a body compiling to a value of no
 fixed type is held to the declared type at each call, a call yielding
-another failing the rule's evaluation. A file's
-functions are visible to its own expressions unqualified and to a
-file importing its ruleset as `<alias>.<name>`; nothing else of a
-ruleset is visible through an import — its rules are contributed by
-the lint file's imports alone (REQ-lint-rulesets-imported).
+another failing the rule's evaluation. A ruleset's
+functions are one namespace across its rule files, as its rule ids
+are — a name two of its files declare fails the check run naming
+both — visible unqualified to every expression of the ruleset's
+files, and to a file importing the ruleset as `<alias>.<name>`;
+nothing else of a ruleset is visible through an import — its rules
+are contributed by the lint file's imports alone
+(REQ-lint-rulesets-imported).
 
 **REQ-rules-imports** (behavior): A rule file's imports MUST be read
 exactly as written: each at its version, from the module cache as
 any dependency is acquired, pinned and verified (`module-lockfile.md`
 REQ-lock-ruleset-entry, `provenance.md`), its rule files' functions
-the import lends; an import whose version does not resolve, whose ruleset declares no
-rule file, whose alias another import of the file already uses or
+the import lends — to every file of the importing ruleset, whose
+imports are one namespace as its functions are: an alias two of its
+files bind to one pair is one import, seen by both; an import whose version does not resolve, whose ruleset declares no
+rule file, whose alias another import of the file already uses, or
+another file of the ruleset binds to a different pair, or
 spells a binding's name (REQ-env1-bindings), or that writes a version
 for a path read from the working tree, or none for a fetched one,
 fails the check run naming it; a chain of imports
@@ -249,7 +255,10 @@ files as `files`, and for `set` the checked
 modules' files as `files`; a breaking run binds, on each side, only the
 files of the module under check, for `package` and `set` alike; for a
 breaking rule each binding in two forms in place of the one — `old` and
-`new` for an entity target, `oldFile` and `newFile` beside them,
+`new` for an entity target, `oldFile` and `newFile` beside them —
+an entity on one side alone binding, for the absent side, the file
+at its own file's path where that side checks one, the file a
+finding over the entity is placed in —
 `oldPackage`, `newPackage`, `oldFiles` and `newFiles` for `package`,
 `oldFiles` and `newFiles` for `set` — the absent side `null`.
 

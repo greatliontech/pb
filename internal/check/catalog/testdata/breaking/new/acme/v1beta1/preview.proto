@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package acme.v1beta1;
+
+message Preview {
+  string kept = 1;
+}
+
+enum Stage {
+  STAGE_UNSPECIFIED = 0;
+}

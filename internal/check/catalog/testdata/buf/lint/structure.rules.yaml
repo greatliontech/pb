@@ -1,4 +1,52 @@
 celEnv: 1
+functions:
+  - name: rpcRequestStandardName
+    params:
+      - name: method
+        type: google.protobuf.MethodDescriptorProto
+      - name: allowEmpty
+        type: bool
+    returns: bool
+    cel: >-
+      (allowEmpty && method.input_type == '.google.protobuf.Empty') ||
+      method.input_type.substring(method.input_type.lastIndexOf('.') + 1) ==
+      method.name + 'Request' ||
+      method.input_type.substring(method.input_type.lastIndexOf('.') + 1) ==
+      parent(method).name + method.name + 'Request'
+  - name: rpcResponseStandardName
+    params:
+      - name: method
+        type: google.protobuf.MethodDescriptorProto
+      - name: allowEmpty
+        type: bool
+    returns: bool
+    cel: >-
+      (allowEmpty && method.output_type == '.google.protobuf.Empty') ||
+      method.output_type.substring(method.output_type.lastIndexOf('.') + 1) ==
+      method.name + 'Response' ||
+      method.output_type.substring(method.output_type.lastIndexOf('.') + 1) ==
+      parent(method).name + method.name + 'Response'
+  - name: rpcRequestResponseUnique
+    params:
+      - name: files
+        type: list(google.protobuf.FileDescriptorProto)
+      - name: allowSame
+        type: bool
+      - name: allowEmptyRequests
+        type: bool
+      - name: allowEmptyResponses
+        type: bool
+    returns: bool
+    cel: >-
+      cel.bind(ms, files.map(f, services(f).map(s, s.method)).flatten(2),
+      (allowSame || ms.all(m, m.input_type != m.output_type || (m.input_type ==
+      '.google.protobuf.Empty' && allowEmptyRequests && allowEmptyResponses))) &&
+      unique(ms.map(m, [m.input_type, m.output_type]).flatten(1)).all(t,
+      ms.filter(m, m.input_type == t || m.output_type == t).size() == 1 || (t ==
+      '.google.protobuf.Empty' && (allowEmptyRequests || allowEmptyResponses) &&
+      ((allowEmptyRequests && allowEmptyResponses) || ((allowEmptyRequests ||
+      ms.filter(m, m.input_type == t).size() <= 1) && (allowEmptyResponses ||
+      ms.filter(m, m.output_type == t).size() <= 1))))))
 rules:
   - id: ENUM_FIRST_VALUE_ZERO
     kind: lint
@@ -12,14 +60,16 @@ rules:
     target: enum
     severity: error
     tags: [BASIC, STANDARD]
-    cel: '!has(options(enum).allow_alias) || !options(enum).allow_alias'
+    cel: "!has(options(enum).allow_alias) || !options(enum).allow_alias"
     message: enums do not allow aliases
   - id: FIELD_NOT_REQUIRED
     kind: lint
     target: field
     severity: error
     tags: [BASIC, STANDARD]
-    cel: features(field).field_presence != google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED
+    cel: >-
+      features(field).field_presence !=
+      google.protobuf.FeatureSet.FieldPresence.LEGACY_REQUIRED
     message: fields are not required
   - id: IMPORT_NO_PUBLIC
     kind: lint
@@ -39,7 +89,7 @@ rules:
     target: file
     severity: error
     tags: [BASIC, STANDARD]
-    cel: >-
+    cel: |-
       imports(file).all(i,
         file.public_dependency.exists(p, file.dependency[p] == i.name)
         || references(file).exists(r, resolve(r) != null && visible(i).exists(v, v.name == file(resolve(r)).name)))
@@ -49,39 +99,103 @@ rules:
     target: method
     severity: error
     tags: [UNARY_RPC]
-    cel: '!method.client_streaming'
+    cel: "!method.client_streaming"
     message: rpcs do not stream from the client
   - id: RPC_NO_SERVER_STREAMING
     kind: lint
     target: method
     severity: error
     tags: [UNARY_RPC]
-    cel: '!method.server_streaming'
+    cel: "!method.server_streaming"
     message: rpcs do not stream to the client
   - id: RPC_REQUEST_STANDARD_NAME
     kind: lint
     target: method
     severity: error
     tags: [STANDARD]
-    cel: >-
-      method.input_type.substring(method.input_type.lastIndexOf('.') + 1) == method.name + 'Request'
-      || method.input_type.substring(method.input_type.lastIndexOf('.') + 1) == parent(method).name + method.name + 'Request'
+    cel: rpcRequestStandardName(method, false)
     message: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+  - id: RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY
+    kind: lint
+    target: method
+    severity: error
+    cel: rpcRequestStandardName(method, true)
+    message: >-
+      a request is named after its rpc, MethodRequest or ServiceMethodRequest, or
+      google.protobuf.Empty
   - id: RPC_RESPONSE_STANDARD_NAME
     kind: lint
     target: method
     severity: error
     tags: [STANDARD]
-    cel: >-
-      method.output_type.substring(method.output_type.lastIndexOf('.') + 1) == method.name + 'Response'
-      || method.output_type.substring(method.output_type.lastIndexOf('.') + 1) == parent(method).name + method.name + 'Response'
+    cel: rpcResponseStandardName(method, false)
     message: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+  - id: RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY
+    kind: lint
+    target: method
+    severity: error
+    cel: rpcResponseStandardName(method, true)
+    message: >-
+      a response is named after its rpc, MethodResponse or ServiceMethodResponse,
+      or google.protobuf.Empty
   - id: RPC_REQUEST_RESPONSE_UNIQUE
     kind: lint
     target: set
     severity: error
     tags: [STANDARD]
-    cel: >-
-      cel.bind(l, files.map(f, services(f).map(s, s.method.map(m, [m.input_type, m.output_type]))).flatten(3),
-        l.size() == unique(l).size())
+    cel: rpcRequestResponseUnique(files, false, false, false)
     message: every request and response is used by one rpc
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_RESPONSES
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, false, false, true)
+    message: >-
+      every request and response is used by one rpc; google.protobuf.Empty is free
+      as a response
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_REQUESTS
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, false, true, false)
+    message: >-
+      every request and response is used by one rpc; google.protobuf.Empty is free
+      as a request
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_REQUESTS_RESPONSES
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, false, true, true)
+    message: every request and response is used by one rpc; google.protobuf.Empty is free
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, true, false, false)
+    message: >-
+      every request and response is used by one rpc; one rpc may use one type for
+      both
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_RESPONSES
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, true, false, true)
+    message: >-
+      every request and response is used by one rpc; one rpc may use one type for
+      both; google.protobuf.Empty is free as a response
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, true, true, false)
+    message: >-
+      every request and response is used by one rpc; one rpc may use one type for
+      both; google.protobuf.Empty is free as a request
+  - id: RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES
+    kind: lint
+    target: set
+    severity: error
+    cel: rpcRequestResponseUnique(files, true, true, true)
+    message: >-
+      every request and response is used by one rpc; one rpc may use one type for
+      both; google.protobuf.Empty is free

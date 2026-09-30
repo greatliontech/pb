@@ -251,21 +251,42 @@ top-level section's assigned to the module holding each, one in no
 module an unmapped fact, as buf skips it; a `v1` file's paths are
 relative to its module.
 
-**REQ-migrate-rule-options** (behavior): buf's rule-shaping options
-MUST be unmapped facts where set to anything but their default —
-`enum_zero_value_suffix` (`_UNSPECIFIED`), `service_suffix`
-(`Service`), `rpc_allow_same_request_response`,
-`rpc_allow_google_protobuf_empty_requests`,
-`rpc_allow_google_protobuf_empty_responses`,
-`ignore_unstable_packages` (each `false`) and buf's own check
-plugins — each naming the option and the rule it
-would have reshaped: a pb rule has no parameters, so an option's
-meaning lives in a rule of one's own, which the report says; a key
-spelled at its default is no fact. `disallow_comment_ignores` and
-`v1`'s `allow_comment_ignores` are mapped facts deciding whether a
-module's suppression comments are rewritten (REQ-migrate-comments),
-`v1`'s absent switch, under which buf honored none, a fact all the
-same.
+**REQ-migrate-rule-options** (behavior): buf's boolean rule-shaping
+options MUST map, where set and where the selection enables the rule
+they shape, to an exclusion of the rule and an enabling of the
+ruleset's variant reading the option — `rpc_allow_same_request_response`,
+`rpc_allow_google_protobuf_empty_requests` and
+`rpc_allow_google_protobuf_empty_responses` together to the one
+variant of `RPC_REQUEST_RESPONSE_UNIQUE` named for the options set, the
+two empties each to the `_ALLOW_EMPTY` variant of the request or
+response standard-name rule — an `ignore` entry naming the rule
+naming the variant in its place, so buf's suppression carries over —
+and `ignore_unstable_packages` to every
+breaking name enabled, excluded or ignored read as its `_STABLE`
+variant, which skips a finding whose file, on either side of the
+pair, lies in a package with an unstable version suffix — its last
+component `v<major>` followed by `test<anything>`, or by an optional
+`p<patch>` and `alpha` or `beta` with an optional number, as buf
+reads it, a one-component package no version; an
+option shaping a rule the selection does not enable is a mapped fact
+saying so. A value-bearing option — `enum_zero_value_suffix`
+(`_UNSPECIFIED`), `service_suffix` (`Service`) — set to anything but
+its default, where the selection enables the rule it reshapes, is an
+unmapped fact — the selection untouched, the
+ruleset's rule still checking buf's default — naming the rule and
+the recipe standing in for the option: the
+rule excluded, and a workspace ruleset declaring a one-line rule
+over the ruleset's function of that name
+(`buf.serviceSuffix(service, '<value>')`,
+`buf.enumZeroValueSuffix(enumValue, '<value>')`, the value spelled
+as a CEL string); a buf spelling naming a variant of the ruleset,
+which buf never declared, is no rule or category of buf's;
+buf's own check plugins and an option the migration does not model
+are unmapped facts; a key spelled at its default is no fact.
+`disallow_comment_ignores` and `v1`'s `allow_comment_ignores` are
+mapped facts deciding whether a module's suppression comments are
+rewritten (REQ-migrate-comments), `v1`'s absent switch, under which
+buf honored none, a fact all the same.
 
 **REQ-migrate-comments** (behavior): buf's suppression comments MUST
 be rewritten in place as buf read them. buf honors

@@ -21,11 +21,15 @@ acme/shop/v1/BadFile.proto:13:3: error buf:COMMENT_RPC: rpcs have a non-empty le
 acme/shop/v1/BadFile.proto:13:3: error buf:RPC_NO_SERVER_STREAMING: rpcs do not stream to the client
 acme/shop/v1/BadFile.proto:13:3: error buf:RPC_PASCAL_CASE: rpc names are PascalCase
 acme/shop/v1/BadFile.proto:13:3: error buf:RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+acme/shop/v1/BadFile.proto:13:3: error buf:RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY: a request is named after its rpc, MethodRequest or ServiceMethodRequest, or google.protobuf.Empty
 acme/shop/v1/BadFile.proto:13:3: error buf:RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+acme/shop/v1/BadFile.proto:13:3: error buf:RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY: a response is named after its rpc, MethodResponse or ServiceMethodResponse, or google.protobuf.Empty
 acme/shop/v1/BadFile.proto:14:3: error buf:COMMENT_RPC: rpcs have a non-empty leading comment
 acme/shop/v1/BadFile.proto:14:3: error buf:RPC_NO_CLIENT_STREAMING: rpcs do not stream from the client
 acme/shop/v1/BadFile.proto:14:3: error buf:RPC_REQUEST_STANDARD_NAME: a request is named after its rpc, MethodRequest or ServiceMethodRequest
+acme/shop/v1/BadFile.proto:14:3: error buf:RPC_REQUEST_STANDARD_NAME_ALLOW_EMPTY: a request is named after its rpc, MethodRequest or ServiceMethodRequest, or google.protobuf.Empty
 acme/shop/v1/BadFile.proto:14:3: error buf:RPC_RESPONSE_STANDARD_NAME: a response is named after its rpc, MethodResponse or ServiceMethodResponse
+acme/shop/v1/BadFile.proto:14:3: error buf:RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY: a response is named after its rpc, MethodResponse or ServiceMethodResponse, or google.protobuf.Empty
 acme/shop/v1/BadFile.proto:17:1: error buf:COMMENT_MESSAGE: messages have a non-empty leading comment
 acme/shop/v1/BadFile.proto:17:1: error buf:MESSAGE_PASCAL_CASE: message names are PascalCase
 acme/shop/v1/BadFile.proto:18:3: error buf:COMMENT_FIELD: fields have a non-empty leading comment
@@ -74,3 +78,10 @@ wrong/nopackage.proto:2:3: error buf:COMMENT_FIELD: fields have a non-empty lead
 error buf:DIRECTORY_SAME_PACKAGE: files in one directory declare one package
 error buf:PACKAGE_NO_IMPORT_CYCLE: packages import no cycle
 error buf:RPC_REQUEST_RESPONSE_UNIQUE: every request and response is used by one rpc
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_REQUESTS: every request and response is used by one rpc; google.protobuf.Empty is free as a request
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_REQUESTS_RESPONSES: every request and response is used by one rpc; google.protobuf.Empty is free
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_EMPTY_RESPONSES: every request and response is used by one rpc; google.protobuf.Empty is free as a response
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME: every request and response is used by one rpc; one rpc may use one type for both
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS: every request and response is used by one rpc; one rpc may use one type for both; google.protobuf.Empty is free as a request
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES: every request and response is used by one rpc; one rpc may use one type for both; google.protobuf.Empty is free
+error buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_RESPONSES: every request and response is used by one rpc; one rpc may use one type for both; google.protobuf.Empty is free as a response

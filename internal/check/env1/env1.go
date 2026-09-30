@@ -1148,6 +1148,10 @@ func Pairs(t check.Target, old, new *Set, oldChecked, newChecked []string) ([]Bi
 		}
 		slots = append(slots, &side{old: &oldSide[i]})
 	}
+	// An entity on one side alone binds, for the absent side, the
+	// file at its own file's path where that side checks one — the
+	// file a finding over the entity is placed in, as buf places it.
+	oldFiles, newFiles := old.filesByPath(oldChecked), new.filesByPath(newChecked)
 	out := make([]Binding, 0, len(slots))
 	for _, s := range slots {
 		b := Binding{Vars: targets[t].pair(s.old, s.new)}
@@ -1160,9 +1164,32 @@ func Pairs(t check.Target, old, new *Set, oldChecked, newChecked []string) ([]Bi
 				b.Path, b.Base = s.old.Path, true
 			}
 		}
+		if _, hasFile := b.Vars[BindOldFile]; hasFile {
+			if s.old == nil {
+				if f, ok := oldFiles[s.new.Path]; ok {
+					b.Vars[BindOldFile] = f
+				}
+			}
+			if s.new == nil {
+				if f, ok := newFiles[s.old.Path]; ok {
+					b.Vars[BindNewFile] = f
+				}
+			}
+		}
 		out = append(out, b)
 	}
 	return out, nil
+}
+
+// filesByPath is the side's checked files by path, as bound.
+func (s *Set) filesByPath(checked []string) map[string]any {
+	out := map[string]any{}
+	for _, p := range checked {
+		if f := s.byPath[p]; f != nil {
+			out[p] = f.proto
+		}
+	}
+	return out
 }
 
 // pairKeys is what aligns each side's entities with their

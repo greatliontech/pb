@@ -1,4 +1,21 @@
 celEnv: 1
+functions:
+  - name: serviceSuffix
+    params:
+      - name: service
+        type: google.protobuf.ServiceDescriptorProto
+      - name: suffix
+        type: string
+    returns: bool
+    cel: service.name.endsWith(suffix)
+  - name: enumZeroValueSuffix
+    params:
+      - name: enumValue
+        type: google.protobuf.EnumValueDescriptorProto
+      - name: suffix
+        type: string
+    returns: bool
+    cel: enumValue.number != 0 || enumValue.name.endsWith(suffix)
 rules:
   - id: ENUM_PASCAL_CASE
     kind: lint
@@ -26,7 +43,7 @@ rules:
     target: enum-value
     severity: error
     tags: [STANDARD]
-    cel: enumValue.number != 0 || enumValue.name.endsWith('_UNSPECIFIED')
+    cel: enumZeroValueSuffix(enumValue, '_UNSPECIFIED')
     message: the zero value of an enum ends in _UNSPECIFIED
   - id: FIELD_LOWER_SNAKE_CASE
     kind: lint
@@ -40,7 +57,7 @@ rules:
     target: file
     severity: error
     tags: [STANDARD]
-    cel: >-
+    cel: |-
       case(file.name.substring(file.name.lastIndexOf('/') + 1, file.name.size() - 6), 'snake')
         == file.name.substring(file.name.lastIndexOf('/') + 1, file.name.size() - 6)
     message: file names are lower_snake_case.proto
@@ -84,5 +101,5 @@ rules:
     target: service
     severity: error
     tags: [STANDARD]
-    cel: service.name.endsWith('Service')
+    cel: serviceSuffix(service, 'Service')
     message: service names end in Service
