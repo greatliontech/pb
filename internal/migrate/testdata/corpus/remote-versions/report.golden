@@ -2,16 +2,20 @@ buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/remote-versi
 the lint file's rulesets github.com/greatliontech/buf-rules -> github.com/greatliontech/buf-rules@v1.0.0 (discovered; the ruleset, declared by every module)
 buf.yaml.lint.use STANDARD -> enable: github.com/greatliontech/buf-rules:STANDARD
 buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
-buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2 (the plugin table; no version named, the highest the fork builds)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.2.0 (the catalog; no version named, the highest tag published)
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
-buf.gen.yaml plugins[1].remote buf.build/grpc/go:v1.5.1 -> ref: ghcr.io/greatliontech/pbr-plugins/grpc/go:v1.5.1 (the plugin table)
+buf.gen.yaml plugins[1].remote buf.build/grpc/go:v1.5.1 -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.5.1 (the catalog)
 buf.gen.yaml plugins[1].out gen/go -> out: gen/go
 buf.gen.yaml plugins[1].opt paths=source_relative -> opt: paths=source_relative
-buf.gen.yaml plugins[2].remote buf.build/connectrpc/go !! no entry in the plugin table: pass --plugin buf.build/connectrpc/go=<reference>
-buf.gen.yaml plugins[3].remote buf.build/bufbuild/es !! no entry in the plugin table: pass --plugin buf.build/bufbuild/es=<reference>
+buf.gen.yaml plugins[2].remote buf.build/connectrpc/go -> ref: ghcr.io/greatliontech/pb-plugins/connectrpc/go:v1.2.0 (the catalog; no version named, the highest tag published)
+buf.gen.yaml plugins[2].out gen/go -> out: gen/go
+buf.gen.yaml plugins[2].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[3].remote buf.build/bufbuild/es -> ref: ghcr.io/greatliontech/pb-plugins/bufbuild/es:v1.2.0 (the catalog; no version named, the highest tag published)
+buf.gen.yaml plugins[3].out gen/ts -> out: gen/ts
+buf.gen.yaml plugins[3].opt target=ts -> opt: target=ts
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

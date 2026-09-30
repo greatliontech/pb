@@ -27,8 +27,9 @@ reads a null, a required key excepted.
 configuration uses, giving the pb form of that name and, where pb
 carries less than buf did, what is lost. Two tables exist: the
 dependency table, from a BSR module name to a module path, and the
-plugin table, from a BSR plugin name to a plugin reference. A table
-grows by pb's own releases, never at run time.
+plugin catalog, the BSR plugin names pb's catalog publishes, each
+mapping to its repository under the catalog's registry by one rename
+rule. A table grows by pb's own releases, never at run time.
 
 **migration report** (term): What the verb prints: every buf fact
 mapped, the pb form it took; every fact it could not map, with its
@@ -303,13 +304,25 @@ file importing one ruleset.
 generation file: each plugin entry naming a BSR plugin (`remote` in
 `v2`; in `v1`, `plugin` spelled as buf's plugin reference,
 `remote/owner/plugin` with a `:version` or none) looked up among the
-replacements and then in the plugin table, a name either holds
+replacements and then in the plugin catalog, a name either holds
 becoming a `ref` entry at the reference given for that name and
-version — the replacement's as given; the table's repository tagged
-with the version named where the table lists it, or with the highest
-listed where none is named, a mapped fact naming the choice — a name
-neither holds, or a version the table does not list, an unmapped
-fact naming the plugin and the flag's form; a
+version — the replacement's as given; the catalog's repository for
+the name, `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>` for
+`buf.build/<owner>/<plugin>`, tagged with the version exactly as buf
+spells it, the catalog publishing buf's versions under buf's tags (a
+version the catalog has not published surfaces at the first
+generate, the tag absent, never at the migration, which carries no
+versions; a version no tag can spell — buf admits a build suffix's
+`+`, which a tag cannot carry — an unmapped fact naming the flag's
+form), or, where none is named, with the highest version tag the
+registry lists for the repository — a tag of `v` and dot-separated
+decimal numbers with no leading zero, so one number has one
+spelling, the highest by number component by component, a tag equal
+so far but shorter the lesser — listed once
+per name, a mapped fact naming the choice, a listing that fails or
+holds no version tag an unmapped fact naming the flag's form — a
+name neither holds an unmapped fact naming the plugin and the flag's
+form; a
 `local` entry naming one executable becoming a `local` entry, one
 naming a command with arguments an unmapped fact — a `v1` entry's
 `path` its command, and its bare `plugin` or `name` the executable
@@ -363,40 +376,48 @@ naming nothing, both options, an option buf does not know, or a
 `file_option` with a `field`, and a `v1` `override` map keyed by an
 option buf does not know, are buf's own refusals and do not parse.
 `v1`'s alpha `remote` plugin key is one the verb does not model, an
-unmapped fact naming it. The plugin table names, for each entry, the
-image repository and the versions built, each version the image's
-tag:
+unmapped fact naming it. The plugin catalog is the list of names pb
+carries, a copy of the names the catalog repository
+(greatliontech/pb-plugins, its `catalog.yaml`) publishes under
+`ghcr.io/greatliontech/pb-plugins`:
 
-| BSR name | image repository | versions |
-|---|---|---|
-| `buf.build/grpc/csharp` | `ghcr.io/greatliontech/pbr-plugins/grpc/csharp` | `v1.68.2` |
-| `buf.build/grpc/go` | `ghcr.io/greatliontech/pbr-plugins/grpc/go` | `v1.4.0` `v1.5.1` |
-| `buf.build/grpc/web` | `ghcr.io/greatliontech/pbr-plugins/grpc/web` | `v1.4.2` |
-| `buf.build/protocolbuffers/csharp` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/csharp` | `v29.2` |
-| `buf.build/protocolbuffers/go` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go` | `v1.34.2` `v1.35.2` |
-| `buf.build/protocolbuffers/js` | `ghcr.io/greatliontech/pbr-plugins/protocolbuffers/js` | `v3.21.2` |
+- `buf.build/bufbuild/es`
+- `buf.build/connectrpc/es`
+- `buf.build/connectrpc/go`
+- `buf.build/grpc/csharp`
+- `buf.build/grpc/go`
+- `buf.build/grpc/web`
+- `buf.build/protocolbuffers/csharp`
+- `buf.build/protocolbuffers/go`
+- `buf.build/protocolbuffers/js`
 
-The table's entries in pb's first release of the verb are the
-plugins greatliontech's fork of buf's plugin repository builds — each
-of buf's plugin images rebuilt from buf's own build and published
-under the repository above at its version; an entry enters the table
-with every image verified reachable, the image test the migrate
-package carries (TestPluginImages) run against the registry at entry.
-A plugin an author publishes under their own registry enters the
-table by a pull request naming the reference.
+The copy is held to the repository's catalog and the registry by the
+migrate package's live test (TestPluginCatalog), run at each entry's
+addition: the names equal the catalog's at the commit the test pins,
+and each name's highest published tag names a list the registry
+answers, signed under the catalog's identity. The catalog signs every
+list and image keyless under its publish workflow's identity, the
+subject `https://github.com/greatliontech/pb-plugins/.github/workflows/publish.yaml@refs/heads/main`
+issued by `https://token.actions.githubusercontent.com`; a trust
+policy accepts the catalog's images with a `plugins` rule of prefix
+`ghcr.io/greatliontech/pb-plugins/` naming that `san` and `issuer`
+(`provenance.md` REQ-prov-trust-schema, REQ-prov-plugin-identity: a
+plugin image has no default identity, so without the rule its
+evidence is never judged).
 
 ## What the verb never does
 
 **REQ-migrate-no-network-but-tidy** (invariant): The verb MUST reach
 no network but through the discovery of its declarations' versions
-(REQ-migrate-deps) and the tidy that ends it: the tables are pb's own,
-a BSR is never consulted, and no buf file is fetched.
+(REQ-migrate-deps), the listing of a versionless plugin's tags
+(REQ-migrate-gen) and the tidy that ends it: the tables are pb's
+own, a BSR is never consulted, and no buf file is fetched.
 
 **REQ-migrate-no-heuristic** (invariant): The verb MUST synthesize no
 value it was not given: a module path, a version, an option value or
 a plugin reference comes from the command line, the buf file, the
-repository's `origin` remote, the tables, the ruleset or resolution,
-never from a guess — buf's defaults and pb's own file schemas being
+repository's `origin` remote, the tables, the registry's tag listing,
+the ruleset or resolution, never from a guess — buf's defaults and pb's own file schemas being
 this document's constants, given by it; where none supplies it, the
 fact is unmapped. The tables and the replacements are the whole of
 the verb's knowledge of buf's names: pb reads no buf file after the

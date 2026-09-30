@@ -31,6 +31,12 @@ func (corpusDiscovery) Latest(context.Context, string) (version.Version, error) 
 	return version.Parse("v1.0.0")
 }
 
+// corpusTags answers every plugin repository with the same tags, so a
+// versionless plugin resolves to v1.2.0 whatever its name.
+func corpusTags(context.Context, string) ([]string, error) {
+	return []string{"latest", "v1.0.0", "v1.2.0", "sha256-ab.sig"}, nil
+}
+
 // The migration corpus (REQ-migrate-verb, REQ-migrate-report): each
 // entry under testdata/corpus is one shape a buf configuration takes,
 // written under example names, and its golden is the verb's whole
@@ -73,9 +79,9 @@ func TestCorpus(t *testing.T) {
 			var out strings.Builder
 			err := Run(context.Background(), Invocation{
 				WS: ws, Dir: "repo", ModulePath: "example.com/acme/" + e.Name(),
-				Discovery: corpusDiscovery{},
-				Tidy:      func(context.Context) error { return nil },
-				Out:       &out,
+				Discovery: corpusDiscovery{}, PluginTags: corpusTags,
+				Tidy: func(context.Context) error { return nil },
+				Out:  &out,
 			})
 			// Every entry is a configuration buf accepts, so a refusal is
 			// the verb's defect, never a gap a golden may record.
@@ -135,7 +141,7 @@ func TestReadSourceTemplatesAndMemberLocks(t *testing.T) {
 	}
 	// The member lock's unmodeled key is a fact of the run.
 	var out strings.Builder
-	err = Run(context.Background(), Invocation{WS: ws, Dir: "repo", ModulePath: "example.com/acme/w", Discovery: corpusDiscovery{}, Tidy: func(context.Context) error { return nil }, Out: &out})
+	err = Run(context.Background(), Invocation{WS: ws, Dir: "repo", ModulePath: "example.com/acme/w", Discovery: corpusDiscovery{}, PluginTags: corpusTags, Tidy: func(context.Context) error { return nil }, Out: &out})
 	if !errors.Is(err, ErrUnmapped) || !strings.Contains(out.String(), "api/buf.lock extra !! a key the migration does not model\n") {
 		t.Fatalf("Run = %v, report:\n%s", err, out.String())
 	}

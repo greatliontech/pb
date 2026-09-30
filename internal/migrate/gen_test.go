@@ -2,22 +2,32 @@ package migrate
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"io"
+	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/greatliontech/gitprov"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
+	"github.com/greatliontech/pb/internal/provenance/image"
+	"github.com/greatliontech/pb/internal/provenance/image/discover"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 )
 
-// specRows reads a three-column table of backticked cells under one
-// heading of a spec, the third column's cells space-separated.
-func specRows(t *testing.T, file, heading string) map[string][2]string {
+// specNames reads the backticked `buf.build/` names listed under one
+// heading of a spec document.
+func specNames(t *testing.T, file, heading string) []string {
 	t.Helper()
 	text, err := os.ReadFile(file)
 	if err != nil {
@@ -27,72 +37,168 @@ func specRows(t *testing.T, file, heading string) map[string][2]string {
 	if section == nil {
 		t.Fatalf("%s has no section %q", file, heading)
 	}
-	rows := map[string][2]string{}
-	for _, r := range regexp.MustCompile("(?m)^\\| `([^`]+)` \\| `([^`]+)` \\| ((?:`[^`]+` ?)+) \\|$").FindAllStringSubmatch(section[1], -1) {
-		rows[r[1]] = [2]string{r[2], strings.TrimSpace(strings.ReplaceAll(r[3], "`", ""))}
+	var names []string
+	for _, m := range regexp.MustCompile("(?m)^- `(buf\\.build/[^`]+)`$").FindAllStringSubmatch(section[1], -1) {
+		names = append(names, m[1])
 	}
-	return rows
+	return names
 }
 
-// tagLess orders buf's plugin tags, `v` and dot-separated numbers
-// (v29.2, v1.34.2): by number, component by component, a shorter tag
-// equal so far the lesser.
-func tagLess(a, b string) bool {
-	as, bs := strings.Split(strings.TrimPrefix(a, "v"), "."), strings.Split(strings.TrimPrefix(b, "v"), ".")
-	for i := 0; i < len(as) && i < len(bs); i++ {
-		var x, y int
-		fmt.Sscan(as[i], &x)
-		fmt.Sscan(bs[i], &y)
-		if x != y {
-			return x < y
+// The plugin catalog is the spec's list, name for name and in order,
+// each name buf's `buf.build/<owner>/<plugin>` whose repository under
+// the rename rule is one a plugin reference's grammar accepts.
+func TestPluginCatalogMatchesSpec(t *testing.T) {
+	names := specNames(t, "../../docs/specs/migrate.md", "Generation")
+	if strings.Join(names, " ") != strings.Join(Catalog, " ") || len(names) == 0 {
+		t.Fatalf("the spec lists %v, the code %v", names, Catalog)
+	}
+	if !sort.StringsAreSorted(Catalog) {
+		t.Errorf("the catalog is not sorted: %v", Catalog)
+	}
+	for _, n := range Catalog {
+		if !strings.HasPrefix(n, "buf.build/") || strings.Count(n, "/") != 2 {
+			t.Errorf("%s: not buf.build/<owner>/<plugin>", n)
+		}
+		if err := genfile.CheckReference(CatalogRepository(n) + ":v1.0.0"); err != nil {
+			t.Errorf("%s: %v", n, err)
+		}
+		if !inCatalog(n) || inCatalog(n+"x") || inCatalog("buf.build/"+n) {
+			t.Errorf("%s: membership", n)
 		}
 	}
-	return len(as) < len(bs)
-}
-
-// The plugin table is the spec's table, entry for entry, each
-// repository a plugin reference's repository, each version a tag the
-// reference grammar accepts, the versions ascending.
-func TestPluginTableMatchesSpec(t *testing.T) {
-	rows := specRows(t, "../../docs/specs/migrate.md", "Generation")
-	if len(rows) != len(Plugins) || len(rows) == 0 {
-		t.Fatalf("the spec's table has %d rows, the code's %d", len(rows), len(Plugins))
-	}
-	for name, row := range rows {
-		e, ok := Plugins[name]
-		if !ok || e.repo != row[0] || strings.Join(e.versions, " ") != row[1] {
-			t.Errorf("%s: spec %v, code %+v", name, row, e)
-		}
-		for i, v := range e.versions {
-			if err := genfile.CheckReference(e.repo + ":" + v); err != nil {
-				t.Errorf("%s: %v", name, err)
-			}
-			if i > 0 && tagLess(v, e.versions[i-1]) || i > 0 && v == e.versions[i-1] {
-				t.Errorf("%s: %s follows %s, not ascending", name, v, e.versions[i-1])
-			}
-		}
+	if got := CatalogRepository("buf.build/grpc/go"); got != "ghcr.io/greatliontech/pb-plugins/grpc/go" {
+		t.Errorf("rename: %s", got)
 	}
 }
 
-// Every image the plugin table names is reachable at its tag: the
-// registry answers a manifest for each. Runs only where
-// PB_LIVE_IMAGES is set — at an entry's addition.
-func TestPluginImages(t *testing.T) {
+// The highest version tag is the highest by number, component by
+// component, among the tags spelled as versions alone; tags of
+// another shape — a signature tag, `latest`, a digest — are passed
+// over, and a listing without a version tag yields none.
+func TestHighestVersionTag(t *testing.T) {
+	cases := []struct {
+		tags []string
+		want string
+	}{
+		{[]string{"v1.2.3", "v1.10.0", "v1.9.9", "sha256-ab.sig", "latest", "v2", "1.0.0", "v1.10.0-rc1"}, "v1.10.0"},
+		{[]string{"v36.2", "v36.10", "v36.1.1"}, "v36.10"},
+		{[]string{"v1.10.0", "v1.11.0-rc1", "v1.12.0+build"}, "v1.10.0"},
+		{[]string{"v1.010.0", "v1.9.0", "v1.08.0", "v01.20.0"}, "v1.9.0"},
+		{[]string{"v1.99999999999999999999", "v1.5", "v1.100000000000000000000"}, "v1.100000000000000000000"},
+		{[]string{"v0.1", "v0.0.1", "v0"}, "v0.1"},
+		{[]string{"v1.2", "v1.2.0"}, "v1.2.0"},
+		{[]string{"latest", "sha256-ab.sig"}, ""},
+		{nil, ""},
+	}
+	for _, tc := range cases {
+		if got := highestVersionTag(tc.tags); got != tc.want {
+			t.Errorf("%v: %q, want %q", tc.tags, got, tc.want)
+		}
+	}
+	if !tagLess("v1.35.2", "v1.36.0") || tagLess("v1.36.0", "v1.35.2") || !tagLess("v29", "v29.2") || tagLess("v29.2", "v29.2") || !tagLess("v1.9", "v1.10") || tagLess("v1.10", "v1.9") {
+		t.Error("tagLess")
+	}
+}
+
+// catalogCommit pins the catalog repository's commit the copy is
+// held to; it moves with an entry's addition.
+const catalogCommit = "f810965c8c02c2df56645394111718a56eb5b7e4"
+
+// The catalog's identity: the publish workflow's, as migrate.md
+// states it for the trust policy rule.
+const (
+	catalogSAN    = "https://github.com/greatliontech/pb-plugins/.github/workflows/publish.yaml@refs/heads/main"
+	catalogIssuer = "https://token.actions.githubusercontent.com"
+)
+
+// The catalog copy is the repository's catalog at the pinned commit,
+// name for name, and each name's highest published tag names a list
+// the registry answers, signed under the catalog's identity. Runs
+// only where PB_LIVE_IMAGES is set — at an entry's addition — with
+// GITHUB_TOKEN reading the private repository, the registry's
+// credentials in the ambient store, and PBTRUSTEDROOT naming the
+// trusted root the signatures are verified against.
+func TestPluginCatalog(t *testing.T) {
 	if os.Getenv("PB_LIVE_IMAGES") == "" {
 		t.Skip("PB_LIVE_IMAGES unset: the registry is not reached")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	for _, k := range sortedKeys(Plugins) {
-		e := Plugins[k]
-		for _, v := range e.versions {
-			ref, err := name.ParseReference(e.repo + ":" + v)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, err := remote.Head(ref, remote.WithContext(ctx)); err != nil {
-				t.Errorf("%s: %v", ref, err)
-			}
+	root, err := gitprov.LoadTrustedRoot(os.Getenv("PBTRUSTEDROOT"))
+	if err != nil {
+		t.Fatalf("PBTRUSTEDROOT: %v", err)
+	}
+	id, err := trust.ExplicitIdentity(trust.IdentityRule{SAN: catalogSAN, Issuer: catalogIssuer})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The repository's catalog at the pinned commit.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/greatliontech/pb-plugins/contents/catalog.yaml?ref="+catalogCommit, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.raw+json")
+	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("the catalog at %s: %s %v", catalogCommit, resp.Status, err)
+	}
+	var doc struct {
+		Registry string                    `yaml:"registry"`
+		Plugins  map[string]map[string]any `yaml:"plugins"`
+	}
+	if err := yaml.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Registry != CatalogRegistry {
+		t.Errorf("the catalog publishes under %s, the copy names %s", doc.Registry, CatalogRegistry)
+	}
+	var names []string
+	for n := range doc.Plugins {
+		names = append(names, "buf.build/"+n)
+	}
+	sort.Strings(names)
+	if strings.Join(names, " ") != strings.Join(Catalog, " ") {
+		t.Errorf("the catalog lists %v, the copy %v", names, Catalog)
+	}
+	// Each name's highest tag: reachable and signed.
+	keychain := remote.WithAuthFromKeychain(authn.DefaultKeychain)
+	for _, n := range Catalog {
+		repo, err := name.NewRepository(CatalogRepository(n))
+		if err != nil {
+			t.Fatal(err)
+		}
+		tags, err := remote.List(repo, remote.WithContext(ctx), keychain)
+		if err != nil {
+			t.Errorf("%s: %v", repo, err)
+			continue
+		}
+		highest := highestVersionTag(tags)
+		if highest == "" {
+			t.Errorf("%s: no version tag among %v", repo, tags)
+			continue
+		}
+		desc, err := remote.Head(repo.Tag(highest), remote.WithContext(ctx), keychain)
+		if err != nil {
+			t.Errorf("%s:%s: %v", repo, highest, err)
+			continue
+		}
+		if !desc.MediaType.IsIndex() {
+			t.Errorf("%s:%s: %s is no list", repo, highest, desc.MediaType)
+		}
+		h, err := v1.NewHash(desc.Digest.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := image.Judge(ctx, desc.Digest.String(), discover.Discover(ctx, repo, h, keychain), id, root, nil); err != nil {
+			t.Errorf("%s:%s@%s: %v", repo, highest, desc.Digest, err)
 		}
 	}
 }
@@ -175,21 +281,23 @@ inputs:
 	if err := repl.Replace("plugin", "buf.build/acme/replaced=ghcr.io/acme/protoc-gen-replaced:v2.0.0"); err != nil {
 		t.Fatal(err)
 	}
-	facts, err := Gen(v2, repl, l)
+	tags := fakeTags{CatalogRepository("buf.build/grpc/go"): {"latest", "v1.5.1", "v1.6.2", "sha256-ab.sig"}}
+	facts, err := Gen(context.Background(), v2, repl, l, tags.list)
 	if err != nil {
 		t.Fatal(err)
 	}
-	pbgo := "ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go"
+	pbgo := "ghcr.io/greatliontech/pb-plugins/protocolbuffers/go"
 	heuristic := " !! buf's own heuristic, a value computed per file from its package: pb declares values alone"
 	want := strings.Join([]string{
-		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: " + pbgo + ":v1.35.2 (the plugin table)",
+		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: " + pbgo + ":v1.35.2 (the catalog)",
 		"buf.gen.yaml plugins[0].out gen/go -> out: gen/go",
 		"buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative",
 		"buf.gen.yaml plugins[0].include_imports !! pb generates over the workspace's own files under one strategy",
-		"buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pbr-plugins/grpc/go:v1.5.1 (the plugin table; no version named, the highest the fork builds)",
+		"buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.2 (the catalog; no version named, the highest tag published)",
 		"buf.gen.yaml plugins[1].out gen/go -> out: gen/go",
-		"buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.36.0 !! the fork builds v1.34.2, v1.35.2, not v1.36.0: pass --plugin buf.build/protocolbuffers/go=<reference>",
-		"buf.gen.yaml plugins[3].remote buf.build/acme/custom:v1.0.0 !! no entry in the plugin table: pass --plugin buf.build/acme/custom=<reference>",
+		"buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.36.0 -> ref: " + pbgo + ":v1.36.0 (the catalog)",
+		"buf.gen.yaml plugins[2].out gen/go36 -> out: gen/go36",
+		"buf.gen.yaml plugins[3].remote buf.build/acme/custom:v1.0.0 !! not in the plugin catalog: pass --plugin buf.build/acme/custom=<reference>",
 		"buf.gen.yaml plugins[4].remote buf.build/acme/replaced:v2 -> ref: ghcr.io/acme/protoc-gen-replaced:v2.0.0 (--plugin)",
 		"buf.gen.yaml plugins[4].out gen/replaced -> out: gen/replaced",
 		"buf.gen.yaml plugins[5].local protoc-gen-connect-go -> local: protoc-gen-connect-go",
@@ -219,7 +327,8 @@ inputs:
 		t.Fatal(err)
 	}
 	wantFile := "plugins:\n  - ref: " + pbgo + ":v1.35.2\n    out: gen/go\n    opt: paths=source_relative\n" +
-		"  - ref: ghcr.io/greatliontech/pbr-plugins/grpc/go:v1.5.1\n    out: gen/go\n" +
+		"  - ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.2\n    out: gen/go\n" +
+		"  - ref: " + pbgo + ":v1.36.0\n    out: gen/go36\n" +
 		"  - ref: ghcr.io/acme/protoc-gen-replaced:v2.0.0\n    out: gen/replaced\n" +
 		"  - local: protoc-gen-connect-go\n    out: gen/connect\n    opt: paths=source_relative,package_suffix=\n" +
 		"overrides:\n  - files: acme/v1/**\n    option: java_package\n    value: com.acme\n  - files: \"**\"\n    option: java_multiple_files\n    value: \"true\"\n  - files: \"**\"\n    option: objc_class_prefix\n    value: ACM\n  - files: v1\\[beta\\]/**\n    option: swift_prefix\n    value: ACM\n"
@@ -264,12 +373,12 @@ plugins:
     out: gen/alpha
 `)
 	l = &Layout{}
-	facts, err = Gen(v1, Replacements{}, l)
+	facts, err = Gen(context.Background(), v1, Replacements{}, l, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want = strings.Join([]string{
-		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: " + pbgo + ":v1.34.2 (the plugin table)",
+		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: " + pbgo + ":v1.34.2 (the catalog)",
 		"buf.gen.yaml plugins[0].out gen/go -> out: gen/go",
 		"buf.gen.yaml plugins[1].local protoc-gen-go-grpc -> local: protoc-gen-go-grpc",
 		"buf.gen.yaml plugins[1].out gen/go -> out: gen/go",
@@ -307,25 +416,25 @@ plugins:
 	// reads the managed mode for nothing.
 	g := parseGen(t, "version: v2\nmanaged:\n  enabled: false\n  override:\n    - file_option: java_package\n      value: x\nplugins:\n  - local: gen\n    out: gen\n")
 	l = &Layout{}
-	facts, err = Gen(g, Replacements{}, l)
+	facts, err = Gen(context.Background(), g, Replacements{}, l, nil)
 	if err != nil || l.Gen == nil || len(l.Gen.Overrides) != 0 || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled false -> nothing: managed mode is disabled") {
 		t.Fatalf("disabled: %v %+v\n%s", err, l.Gen, factsOf(facts))
 	}
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\n  override:\n    - file_option: java_package\n      value: x\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
 	l = &Layout{}
-	facts, err = Gen(g, Replacements{}, l)
+	facts, err = Gen(context.Background(), g, Replacements{}, l, nil)
 	if got := factsOf(facts); err != nil || l.Gen != nil || strings.Contains(got, "overrides:") || !strings.Contains(got, "buf.gen.yaml plugins !! no plugin mapped: no generation file is written\nbuf.gen.yaml managed !! no generation file is written, no override with it") {
 		t.Fatalf("nothing mapped: %v %+v\n%s", err, l.Gen, got)
 	}
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: true\nplugins:\n  - local: gen\n    out: gen\n")
-	facts, err = Gen(g, Replacements{}, &Layout{})
+	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
 	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml managed.enabled true !! enabled with no explicit override: buf's own heuristic") {
 		t.Fatalf("enabled alone: %v %s", err, factsOf(facts))
 	}
 	// With no plugin mapped, a disabled or empty managed mode is what
 	// it would have been.
 	g = parseGen(t, "version: v2\nmanaged:\n  enabled: false\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
-	facts, err = Gen(g, Replacements{}, &Layout{})
+	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
 	if got := factsOf(facts); err != nil || !strings.HasSuffix(got, "buf.gen.yaml plugins !! no plugin mapped: no generation file is written\nbuf.gen.yaml managed.enabled false -> nothing: managed mode is disabled, its entries read for nothing") {
 		t.Fatalf("disabled, nothing mapped: %v\n%s", err, got)
 	}
@@ -339,7 +448,7 @@ plugins:
 			t.Fatal(err)
 		}
 	}
-	if _, err := Gen(g, unusedRepl, l); err == nil || err.Error() != "--plugin buf.build/acme/u0, --plugin buf.build/acme/u1: buf.gen.yaml names no such plugin" {
+	if _, err := Gen(context.Background(), g, unusedRepl, l, nil); err == nil || err.Error() != "--plugin buf.build/acme/u0, --plugin buf.build/acme/u1: buf.gen.yaml names no such plugin" {
 		t.Fatalf("unused replacements: %v", err)
 	}
 	var badRepl Replacements
@@ -347,7 +456,7 @@ plugins:
 		t.Fatal(err)
 	}
 	g = parseGen(t, "version: v2\nplugins:\n  - remote: buf.build/nobody/knows\n    out: gen\n")
-	if _, err := Gen(g, badRepl, l); err == nil || !strings.Contains(err.Error(), "--plugin buf.build/nobody/knows=not-a-reference") {
+	if _, err := Gen(context.Background(), g, badRepl, l, nil); err == nil || !strings.Contains(err.Error(), "--plugin buf.build/nobody/knows=not-a-reference") {
 		t.Fatalf("a replacement that is no reference: %v", err)
 	}
 	if name, ref := bsrSplit("bsr.example.com:8443/acme/plugin:v1"); name != "bsr.example.com:8443/acme/plugin" || ref != "v1" {
@@ -356,7 +465,63 @@ plugins:
 	if name, ref := bsrSplit("bsr.example.com:8443/acme/plugin"); name != "bsr.example.com:8443/acme/plugin" || ref != "" {
 		t.Fatalf("bsrSplit without a ref: %q %q", name, ref)
 	}
-	if _, err := Gen(nil, Replacements{}, nil); err == nil {
+	if _, err := Gen(context.Background(), nil, Replacements{}, nil, nil); err == nil {
 		t.Fatal("no file: no error")
+	}
+}
+
+// fakeTags lists the tags given per repository, counting the
+// listings; a repository given none fails the listing.
+type fakeTags map[string][]string
+
+func (f fakeTags) list(_ context.Context, repo string) ([]string, error) {
+	tags, ok := f[repo]
+	if !ok {
+		return nil, errors.New("registry unreachable")
+	}
+	f[repo+" listed"] = append(f[repo+" listed"], "")
+	return tags, nil
+}
+
+// A versionless plugin takes the highest version tag the registry
+// lists, listed once per name however many entries name it; a
+// listing that fails, or one holding no version tag, leaves the
+// entry unmapped naming the flag's form; with no registry access the
+// listing fails as such. A version named that no tag can spell —
+// buf admits semver's build suffix — is unmapped, never a file pb
+// refuses.
+func TestGenVersionlessPlugin(t *testing.T) {
+	g := parseGen(t, "version: v2\nplugins:\n  - remote: buf.build/grpc/go\n    out: gen/a\n  - remote: buf.build/grpc/go\n    out: gen/b\n  - remote: buf.build/bufbuild/es\n    out: gen/es\n  - remote: buf.build/grpc/web\n    out: gen/web\n  - remote: buf.build/protocolbuffers/go:v1.36.0+meta\n    out: gen/meta\n")
+	tags := fakeTags{
+		CatalogRepository("buf.build/grpc/go"):     {"v1.5.1", "sha256-ab.sig", "v1.6.2", "v1.6.10"},
+		CatalogRepository("buf.build/bufbuild/es"): {"latest"},
+	}
+	l := &Layout{}
+	facts, err := Gen(context.Background(), g, Replacements{}, l, tags.list)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := factsOf(facts)
+	for _, want := range []string{
+		"buf.gen.yaml plugins[0].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.10 (the catalog; no version named, the highest tag published)",
+		"buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.10 (the catalog; no version named, the highest tag published)",
+		"buf.gen.yaml plugins[2].remote buf.build/bufbuild/es !! the catalog publishes no version of it yet: pass --plugin buf.build/bufbuild/es=<reference>",
+		"buf.gen.yaml plugins[3].remote buf.build/grpc/web !! listing the catalog's tags failed: registry unreachable: name a version or pass --plugin buf.build/grpc/web=<reference>",
+		"buf.gen.yaml plugins[4].remote buf.build/protocolbuffers/go:v1.36.0+meta !! no tag spells the version: ",
+		"contains '+': pass --plugin buf.build/protocolbuffers/go=<reference>",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("facts lack %q:\n%s", want, got)
+		}
+	}
+	if n := len(tags[CatalogRepository("buf.build/grpc/go")+" listed"]); n != 1 {
+		t.Errorf("grpc/go listed %d times", n)
+	}
+	if len(l.Gen.Plugins) != 2 || l.Gen.Plugins[1].Ref != "ghcr.io/greatliontech/pb-plugins/grpc/go:v1.6.10" {
+		t.Errorf("file %+v", l.Gen.Plugins)
+	}
+	facts, err = Gen(context.Background(), g, Replacements{}, &Layout{}, nil)
+	if err != nil || !strings.Contains(factsOf(facts), "buf.gen.yaml plugins[0].remote buf.build/grpc/go !! listing the catalog's tags failed: no registry access: name a version or pass --plugin buf.build/grpc/go=<reference>") {
+		t.Errorf("no lister: %v\n%s", err, factsOf(facts))
 	}
 }

@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 		"buf.lock deps[0] buf.build/prometheus/client-model abc !! a BSR commit names no git commit",
 		"buf.yaml.lint.use STANDARD -> enable: " + Ruleset + ":STANDARD\n",
 		"buf.yaml.lint.disallow_comment_ignores true -> the module's suppression comments are left as they are: buf honored none\n",
-		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2 (the plugin table)\n",
+		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)\n",
 		"buf.yaml unknown !! a key the migration does not model\n",
 		"proto/a/pb.yaml -> written\nproto/b/pb.yaml -> written\npb.work -> written\npb.lint.yaml -> written\npb.gen.yaml -> written\n",
 		"proto/b/b.proto -> 1 suppression comments rewritten to pb:ignore\n",
@@ -105,7 +105,7 @@ func TestRun(t *testing.T) {
 	if got := readTree(t, ws, "repo/pb.lint.yaml"); !strings.Contains(got, "modules:\n  proto/a:\n") || !strings.Contains(got, "  proto/b:\n    enable:\n      - "+Ruleset+":BASIC\n") {
 		t.Errorf("the lint file:\n%s", got)
 	}
-	if got := readTree(t, ws, "repo/pb.gen.yaml"); !strings.HasPrefix(got, "plugins:\n  - ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2\n") {
+	if got := readTree(t, ws, "repo/pb.gen.yaml"); !strings.HasPrefix(got, "plugins:\n  - ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2\n") {
 		t.Errorf("the generation file:\n%s", got)
 	}
 	if got := readTree(t, ws, "repo/proto/b/b.proto"); !strings.Contains(got, "// pb:ignore MESSAGE_PASCAL_CASE\n") {

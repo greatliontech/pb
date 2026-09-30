@@ -1,7 +1,11 @@
 package migrate
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/greatliontech/glob"
@@ -11,26 +15,75 @@ import (
 	"github.com/greatliontech/pb/internal/rootpath"
 )
 
-// pluginEntry is one row of the plugin table: the image repository a
-// BSR plugin's versions are published under and the versions built,
-// ascending as versions, the highest last.
-type pluginEntry struct {
-	repo     string
-	versions []string
+// CatalogRegistry is the registry the plugin catalog publishes under
+// (migrate.md, the plugin catalog).
+const CatalogRegistry = "ghcr.io/greatliontech/pb-plugins"
+
+// Catalog is the plugin catalog (migrate.md, the mapping table term):
+// buf's plugin names the catalog repository publishes, sorted. The
+// spec's list is the same, held to this one by
+// TestPluginCatalogMatchesSpec; the repository's catalog and the
+// registry are held to it by TestPluginCatalog, live.
+var Catalog = []string{
+	"buf.build/bufbuild/es",
+	"buf.build/connectrpc/es",
+	"buf.build/connectrpc/go",
+	"buf.build/grpc/csharp",
+	"buf.build/grpc/go",
+	"buf.build/grpc/web",
+	"buf.build/protocolbuffers/csharp",
+	"buf.build/protocolbuffers/go",
+	"buf.build/protocolbuffers/js",
 }
 
-// Plugins is the plugin table (migrate.md, the mapping table term):
-// buf's plugins as greatliontech's fork of buf's plugin repository
-// builds them, each version an image tagged with it. The spec's table
-// is the same list, held to this one by TestPluginTableMatchesSpec,
-// which holds each entry's versions ascending too.
-var Plugins = map[string]pluginEntry{
-	"buf.build/grpc/csharp":            {"ghcr.io/greatliontech/pbr-plugins/grpc/csharp", []string{"v1.68.2"}},
-	"buf.build/grpc/go":                {"ghcr.io/greatliontech/pbr-plugins/grpc/go", []string{"v1.4.0", "v1.5.1"}},
-	"buf.build/grpc/web":               {"ghcr.io/greatliontech/pbr-plugins/grpc/web", []string{"v1.4.2"}},
-	"buf.build/protocolbuffers/csharp": {"ghcr.io/greatliontech/pbr-plugins/protocolbuffers/csharp", []string{"v29.2"}},
-	"buf.build/protocolbuffers/go":     {"ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go", []string{"v1.34.2", "v1.35.2"}},
-	"buf.build/protocolbuffers/js":     {"ghcr.io/greatliontech/pbr-plugins/protocolbuffers/js", []string{"v3.21.2"}},
+// CatalogRepository is the rename rule: `buf.build/<owner>/<plugin>`
+// is published at `<CatalogRegistry>/<owner>/<plugin>`.
+func CatalogRepository(name string) string {
+	return CatalogRegistry + strings.TrimPrefix(name, "buf.build")
+}
+
+func inCatalog(name string) bool {
+	i := sort.SearchStrings(Catalog, name)
+	return i < len(Catalog) && Catalog[i] == name
+}
+
+// TagLister lists a repository's tags at its registry.
+type TagLister func(ctx context.Context, repository string) ([]string, error)
+
+// versionTag is a tag spelled as a version: `v` and dot-separated
+// decimal numbers with no leading zero, buf's spelling of a plugin's
+// version (REQ-migrate-gen).
+var versionTag = regexp.MustCompile(`^v(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))+$`)
+
+// highestVersionTag is the highest version tag among tags, by number
+// component by component, a shorter tag equal so far the lesser;
+// none where no tag is a version. Two version tags never compare
+// equal: the grammar admits one spelling per number.
+func highestVersionTag(tags []string) string {
+	best := ""
+	for _, t := range tags {
+		if versionTag.MatchString(t) && (best == "" || tagLess(best, t)) {
+			best = t
+		}
+	}
+	return best
+}
+
+// tagLess orders version tags by number, component by component, a
+// shorter tag equal so far the lesser. A component is compared as
+// its decimal digits — the shorter run of digits the lesser, equal
+// runs by their text — so no number is too large to order.
+func tagLess(a, b string) bool {
+	as, bs := strings.Split(strings.TrimPrefix(a, "v"), "."), strings.Split(strings.TrimPrefix(b, "v"), ".")
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		if len(as[i]) != len(bs[i]) {
+			return len(as[i]) < len(bs[i])
+		}
+		if as[i] != bs[i] {
+			return as[i] < bs[i]
+		}
+	}
+	return len(as) < len(bs)
 }
 
 // keyReasons are the reasons a plugin entry's passed-over keys map to
@@ -56,13 +109,16 @@ var computed = map[string]bool{
 
 // Gen builds the generation file from buf.gen.yaml (REQ-migrate-gen).
 // Each plugin entry naming a BSR plugin is looked up among the
-// replacements and then in the plugin table, a name either holds
+// replacements and then in the plugin catalog, a name either holds
 // becoming a `ref` entry: the replacement's reference as given, or
-// the table's repository at the version named where the fork builds
-// it, at the highest built where none is named; a name neither
-// holds, or a version the fork does not build, an unmapped fact
-// naming the flag's form. A local entry naming one executable
-// becomes a `local` entry, one naming a command with arguments an
+// the catalog's repository for the name at the version named as buf
+// spells it (one no tag can spell an unmapped fact), at the highest
+// version tag the registry lists where none is named — listed once
+// per name through tags, nil for no registry access; a name neither
+// holds, or a listing that fails or holds no version tag, an
+// unmapped fact naming the flag's form. A local entry naming one
+// executable becomes a `local` entry, one naming a command with
+// arguments an
 // unmapped fact; a protoc builtin an unmapped fact; out as written
 // where pb's schema takes it, an unmapped fact where not; opt as
 // joined; each key the reader passed over an unmapped fact naming
@@ -77,7 +133,7 @@ var computed = map[string]bool{
 // module-relative glob cannot. The file is set on the layout, nil
 // where no plugin mapped, the managed mode then read for nothing,
 // and the facts returned.
-func Gen(gen *bufconfig.Gen, repl Replacements, l *Layout) ([]Fact, error) {
+func Gen(ctx context.Context, gen *bufconfig.Gen, repl Replacements, l *Layout, tags TagLister) ([]Fact, error) {
 	if gen == nil || l == nil {
 		return nil, fmt.Errorf("no buf.gen.yaml read")
 	}
@@ -101,6 +157,7 @@ func Gen(gen *bufconfig.Gen, repl Replacements, l *Layout) ([]Fact, error) {
 	var facts []Fact
 	report := func(f Fact) { facts = append(facts, f) }
 	f := &genfile.File{}
+	listed := map[string]listing{}
 	for i, p := range gen.Plugins {
 		key := fmt.Sprintf("%s plugins[%d]", bufconfig.GenFileName, i)
 		entry := genfile.Plugin{Out: p.Out, Opt: p.Opt}
@@ -108,7 +165,7 @@ func Gen(gen *bufconfig.Gen, repl Replacements, l *Layout) ([]Fact, error) {
 		switch {
 		case p.Remote != "":
 			name, version := bsrSplit(p.Remote)
-			ref, fact := pluginRef(key+".remote "+p.Remote, name, version, repl)
+			ref, fact := pluginRef(ctx, key+".remote "+p.Remote, name, version, repl, tags, listed)
 			report(fact)
 			entry.Scheme, entry.Ref, kept = plugin.SchemeOCI, ref, ref != ""
 		case len(p.Local) == 1:
@@ -207,27 +264,59 @@ func unusedReplacements[V any](flag string, repl map[string]V, declared map[stri
 }
 
 // pluginRef is a BSR plugin's reference: the replacement's, or the
-// table's repository at the version — the one named where the fork
-// builds it, the highest built where none is named — with the fact
-// either way; "" with an unmapped fact where neither holds.
-func pluginRef(key, name, version string, repl Replacements) (string, Fact) {
+// catalog's repository at the version — the one named as spelled, the
+// highest tag the registry lists where none is named, listed once
+// per repository through listed — with the fact either way; "" with
+// an unmapped fact where neither holds or the listing gives no
+// version.
+func pluginRef(ctx context.Context, key, name, version string, repl Replacements, tags TagLister, listed map[string]listing) (string, Fact) {
 	if ref, ok := repl.Plugins[name]; ok {
 		return ref, mapped(key, "ref: "+ref+" (--plugin)")
 	}
-	e, ok := Plugins[name]
-	if !ok {
-		return "", unmapped(key, "no entry in the plugin table: pass --plugin "+name+"=<reference>")
+	if !inCatalog(name) {
+		return "", unmapped(key, "not in the plugin catalog: pass --plugin "+name+"=<reference>")
 	}
-	if version == "" {
-		v := e.versions[len(e.versions)-1]
-		return e.repo + ":" + v, mapped(key, "ref: "+e.repo+":"+v+" (the plugin table; no version named, the highest the fork builds)")
-	}
-	for _, v := range e.versions {
-		if v == version {
-			return e.repo + ":" + v, mapped(key, "ref: "+e.repo+":"+v+" (the plugin table)")
+	repo := CatalogRepository(name)
+	if version != "" {
+		// buf accepts a version no tag can spell (a build suffix's
+		// `+`): such an entry is unmapped, never a file pb refuses.
+		if err := genfile.CheckReference(repo + ":" + version); err != nil {
+			return "", unmapped(key, "no tag spells the version: "+err.Error()+": pass --plugin "+name+"=<reference>")
 		}
+		return repo + ":" + version, mapped(key, "ref: "+repo+":"+version+" (the catalog)")
 	}
-	return "", unmapped(key, "the fork builds "+strings.Join(e.versions, ", ")+", not "+version+": pass --plugin "+name+"=<reference>")
+	l, ok := listed[repo]
+	if !ok {
+		l = listTags(ctx, tags, repo)
+		listed[repo] = l
+	}
+	switch {
+	case l.err != nil:
+		return "", unmapped(key, "listing the catalog's tags failed: "+l.err.Error()+": name a version or pass --plugin "+name+"=<reference>")
+	case l.highest == "":
+		return "", unmapped(key, "the catalog publishes no version of it yet: pass --plugin "+name+"=<reference>")
+	}
+	return repo + ":" + l.highest, mapped(key, "ref: "+repo+":"+l.highest+" (the catalog; no version named, the highest tag published)")
+}
+
+// listing is what one listing of a repository's tags gave: the
+// highest version tag, or why none.
+type listing struct {
+	highest string
+	err     error
+}
+
+// listTags lists a repository's version tags once (REQ-migrate-gen), no
+// lister being no registry access.
+func listTags(ctx context.Context, tags TagLister, repo string) listing {
+	if tags == nil {
+		return listing{err: errors.New("no registry access")}
+	}
+	all, err := tags(ctx, repo)
+	if err != nil {
+		return listing{err: err}
+	}
+	return listing{highest: highestVersionTag(all)}
 }
 
 // filesGlob is the generation file's glob for a managed path: the

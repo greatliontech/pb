@@ -82,7 +82,8 @@ on the list's entry as on the configuration.
 **REQ-publish-list** (wire): The manifest list published MUST be an
 OCI image index whose entries are exactly the platforms given, one
 each, every entry's descriptor naming its platform as the image's
-configuration does, in the platform term's spelling order; a list
+configuration does, in the lexical order of their `os/arch`
+spellings; a list
 with two entries for one `os/arch` is never built, as
 `plugin-execution.md` REQ-plugin-platform-strict would refuse it.
 

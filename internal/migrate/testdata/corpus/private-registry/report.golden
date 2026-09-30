@@ -9,8 +9,8 @@ buf.lock deps[2] pbr.example.com/acme/validate 000000000000000000000000000000000
 buf.yaml.lint -> enable: github.com/greatliontech/buf-rules:STANDARD (buf's default, no use)
 buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: github.com/greatliontech/buf-rules:PACKAGE_VERSION_SUFFIX
 buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
-buf.gen.yaml plugins[0].remote pbr.example.com/acme/protoc-gen-ledger:v0.3.0 !! no entry in the plugin table: pass --plugin pbr.example.com/acme/protoc-gen-ledger=<reference>
-buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2 (the plugin table)
+buf.gen.yaml plugins[0].remote pbr.example.com/acme/protoc-gen-ledger:v0.3.0 !! not in the plugin catalog: pass --plugin pbr.example.com/acme/protoc-gen-ledger=<reference>
+buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[1].out gen/go -> out: gen/go
 buf.gen.yaml plugins[1].opt paths=source_relative -> opt: paths=source_relative
 proto/pb.yaml -> written

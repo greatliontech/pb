@@ -22,8 +22,10 @@ buf.yaml modules[2].lint.use STANDARD -> enable: github.com/greatliontech/buf-ru
 buf.yaml modules[2].lint.except FIELD_LOWER_SNAKE_CASE -> exclude: github.com/greatliontech/buf-rules:FIELD_LOWER_SNAKE_CASE
 buf.yaml modules[2].breaking.use WIRE_JSON -> enable: github.com/greatliontech/buf-rules:WIRE_JSON
 buf.yaml.lint.ignore_only.SERVICE_SUFFIX services/shipping/proto/acme/shipping/v1/hooks/hooks.proto -> modules.services/shipping/proto.ignore paths [acme/shipping/v1/hooks/hooks.proto/**] rules [github.com/greatliontech/buf-rules:SERVICE_SUFFIX]
-buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.36.11 !! the fork builds v1.34.2, v1.35.2, not v1.36.11: pass --plugin buf.build/protocolbuffers/go=<reference>
-buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pbr-plugins/grpc/go:v1.5.1 (the plugin table; no version named, the highest the fork builds)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.36.11 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.36.11 (the catalog)
+buf.gen.yaml plugins[0].out gen/go -> out: gen/go
+buf.gen.yaml plugins[0].opt paths=source_relative,default_api_level=API_OPAQUE -> opt: paths=source_relative,default_api_level=API_OPAQUE
+buf.gen.yaml plugins[1].remote buf.build/grpc/go -> ref: ghcr.io/greatliontech/pb-plugins/grpc/go:v1.2.0 (the catalog; no version named, the highest tag published)
 buf.gen.yaml plugins[1].out gen/go -> out: gen/go
 buf.gen.yaml plugins[1].opt paths=source_relative,require_unimplemented_servers=false -> opt: paths=source_relative,require_unimplemented_servers=false
 buf.gen.yaml clean !! a key the migration does not model

@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/migrate"
 	"github.com/spf13/cobra"
@@ -44,6 +47,7 @@ func migrateCmd() *cobra.Command {
 			}
 			return migrate.Run(c.Context(), migrate.Invocation{
 				WS: ws, Dir: dir, HostDir: cwd, ModulePath: modulePath, Replacements: repl, Discovery: client,
+				PluginTags: pluginTags,
 				Tidy: func(ctx context.Context) error {
 					session, err := dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
 					if err != nil {
@@ -59,4 +63,14 @@ func migrateCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&deps, "dep", nil, "NAME=PATH[@VERSION]: a BSR module name's module path, and the version to declare; repeatable")
 	cmd.Flags().StringArrayVar(&plugins, "plugin", nil, "NAME=REFERENCE: a BSR plugin name's plugin reference; repeatable")
 	return cmd
+}
+
+// pluginTags lists a plugin repository's tags under the ambient
+// credential store, as `pb plugin build` publishes to the registry.
+func pluginTags(ctx context.Context, repository string) ([]string, error) {
+	repo, err := name.NewRepository(repository)
+	if err != nil {
+		return nil, err
+	}
+	return remote.List(repo, remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain))
 }

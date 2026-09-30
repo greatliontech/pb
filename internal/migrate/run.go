@@ -40,8 +40,11 @@ type Invocation struct {
 	ModulePath   string
 	Replacements Replacements
 	Discovery    Discovery
-	Tidy         func(ctx context.Context) error
-	Out          io.Writer
+	// PluginTags lists a plugin repository's tags, for a versionless
+	// plugin (REQ-migrate-gen); nil is no registry access.
+	PluginTags TagLister
+	Tidy       func(ctx context.Context) error
+	Out        io.Writer
 }
 
 // ReadSource reads the buf configuration at a directory: the buf.yaml
@@ -180,7 +183,7 @@ func Run(ctx context.Context, d Invocation) error {
 	}
 	facts = append(facts, more...)
 	if gen != nil {
-		if more, err = Gen(gen, d.Replacements, l); err != nil {
+		if more, err = Gen(ctx, gen, d.Replacements, l, d.PluginTags); err != nil {
 			return err
 		}
 		facts = append(facts, more...)

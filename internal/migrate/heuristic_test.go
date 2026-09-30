@@ -31,13 +31,13 @@ import (
 // discovery or the flag gave that path; a rule the qualified spelling
 // of a category or id the input named or buf's default; an ignore
 // the subtree of a path the input named under its module; a plugin
-// reference the flag's or the table's at a version the input named
-// and the fork builds, or the highest built where it named none; an
-// override's value and path the input's. Containment by role, no
-// oracle: a module path made from a BSR name, a dependency guessed
-// for an unknown name, a version taken from another path, a plugin
-// at a version the fork never built, a computed option declared as a
-// value, each fails it. A BSR name's tokens, buf's computed-option
+// reference the flag's or the catalog's at the version the input
+// named, or at the highest tag the registry listed where it named
+// none; an override's value and path the input's. Containment by
+// role, no oracle: a module path made from a BSR name, a dependency
+// guessed for an unknown name, a version taken from another path, a
+// plugin at a version neither named nor listed, a computed option
+// declared as a value, each fails it. A BSR name's tokens, buf's computed-option
 // values, a rule-shaping option's value and an ignore outside every
 // module reach no written file; a marker the input never drew
 // appears in no written file and no line of the report; every
@@ -173,9 +173,9 @@ func TestNoHeuristicProperty(t *testing.T) {
 		var out strings.Builder
 		err := Run(context.Background(), Invocation{
 			WS: ws, Dir: "repo", ModulePath: g.modulePath, Replacements: repl,
-			Discovery: &anyDiscovery{latest: latest},
-			Tidy:      func(context.Context) error { return nil },
-			Out:       &out,
+			Discovery: &anyDiscovery{latest: latest}, PluginTags: anyTags,
+			Tidy: func(context.Context) error { return nil },
+			Out:  &out,
 		})
 		if err != nil && !errors.Is(err, ErrUnmapped) {
 			rt.Fatalf("Run over\n%s\n%v", files["repo/buf.yaml"], err)
@@ -292,6 +292,12 @@ func (a *anyDiscovery) Latest(_ context.Context, path string) (version.Version, 
 		return version.Parse(s)
 	}
 	return version.Parse("v7.7.7")
+}
+
+// anyTags lists every plugin repository's tags as the same three, the
+// highest version among them v8.8.8.
+func anyTags(context.Context, string) ([]string, error) {
+	return []string{"v8.8.8", "v8.8.10-rc1", "sha256-ab.sig", "v8.8.7"}, nil
 }
 
 // given is what the input gave, by role.
@@ -481,11 +487,11 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 	}
 }
 
-// gen writes a buf.gen.yaml: plugins from the table at a built, an
-// unbuilt or no version, a local one, a protoc builtin, each with an
-// out and perhaps an opt; a --plugin replacement for a table plugin
-// sometimes; managed mode with a declarative override, a computed
-// option buf's own heuristic would fill, and a disable.
+// gen writes a buf.gen.yaml: plugins from the catalog at a version or
+// none, a local one, a protoc builtin, each with an out and perhaps
+// an opt; a --plugin replacement for a catalog plugin sometimes;
+// managed mode with a declarative override, a computed option buf's
+// own heuristic would fill, and a disable.
 func (g *given) gen(rt *rapid.T, repl *Replacements) string {
 	var b strings.Builder
 	b.WriteString("version: v2\nplugins:\n")
@@ -493,18 +499,25 @@ func (g *given) gen(rt *rapid.T, repl *Replacements) string {
 	for range rapid.IntRange(1, 3).Draw(rt, "plugins") {
 		switch rapid.IntRange(0, 2).Draw(rt, "plugin form") {
 		case 0:
-			name := rapid.SampledFrom(sortedKeys(Plugins)).Draw(rt, "plugin")
-			e := Plugins[name]
+			name := rapid.SampledFrom(Catalog).Draw(rt, "plugin")
+			repo := CatalogRepository(name)
 			spelled := name
 			switch rapid.IntRange(0, 2).Draw(rt, "version form") {
 			case 0:
-				v := rapid.SampledFrom(e.versions).Draw(rt, "built")
+				v := g.version(rt)
 				spelled += ":" + v
-				g.refs[e.repo+":"+v] = true
+				g.refs[repo+":"+v] = true
 			case 1:
-				spelled += ":" + g.version(rt) // built by no fork: unmapped, no reference of the table's
+				// buf admits semver's suffixes; a prerelease is a tag,
+				// a build suffix's `+` is none, so its entry is
+				// unmapped and no reference of the catalog's.
+				v := g.version(rt) + rapid.SampledFrom([]string{"-rc1", "-beta.2", "+meta", "-rc1+meta"}).Draw(rt, "suffix")
+				spelled += ":" + v
+				if !strings.Contains(v, "+") {
+					g.refs[repo+":"+v] = true
+				}
 			default:
-				g.refs[e.repo+":"+e.versions[len(e.versions)-1]] = true
+				g.refs[repo+":v8.8.8"] = true // the highest tag anyTags lists
 			}
 			fmt.Fprintf(&b, "  - remote: %s\n", spelled)
 			if !replaced[name] && rapid.Bool().Draw(rt, "replace plugin") {

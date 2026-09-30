@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-list"
-  content_hash: "2267cfeef5215c00306b0b9a473a52ec9cc7494ad209f90d959c762e816b61f1"
-  source_hash: "5074e4b2e9961da6a054264e8b3b066f5501ceae9a692aee30e707d9229fc9f1"
+  content_hash: "576ec79c4015009da6151eebac3f1f0dc0f652365752c0047b9724ae6ed44236"
+  source_hash: "5dd66ca3bc081a4f6b8cb6825427ac1fa443471572dd436f23c40c965862d95a"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestBuildPublishesTheListOverTheTrees"
   role: BINDING_ROLE_TESTS

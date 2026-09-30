@@ -18,7 +18,7 @@ buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
 buf.gen.yaml plugins[1].local protoc-gen-go-grpc -> local: protoc-gen-go-grpc
 buf.gen.yaml plugins[1].out gen -> out: gen
 buf.gen.yaml plugins[1].opt paths=source_relative,require_unimplemented_servers=false -> opt: paths=source_relative,require_unimplemented_servers=false
-buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.34.2 (the plugin table)
+buf.gen.yaml plugins[2].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.34.2 (the catalog)
 buf.gen.yaml plugins[2].out gen/remote -> out: gen/remote
 api/pb.yaml -> written
 internal/proto/pb.yaml -> written

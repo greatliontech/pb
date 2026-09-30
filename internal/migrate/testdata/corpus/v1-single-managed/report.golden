@@ -9,7 +9,7 @@ buf.yaml.breaking.use FILE -> enable: github.com/greatliontech/buf-rules:FILE
 buf.gen.yaml plugins[0].local protoc-gen-go -> local: protoc-gen-go
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
-buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pbr-plugins/protocolbuffers/go:v1.35.2 (the plugin table)
+buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[1].out gen/remote -> out: gen/remote
 buf.gen.yaml managed.override[0] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true
 buf.gen.yaml managed.go_package_prefix example.com/acme/core/gen/go !! buf's own heuristic, a value computed per file from its package: pb declares values alone
