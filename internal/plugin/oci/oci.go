@@ -61,7 +61,6 @@ type Config struct {
 	Policy      *trust.Policy
 	TrustedRoot *gitprov.TrustedRoot
 	Platform    plugin.Platform
-	Credentials map[string]authn.AuthConfig
 	// Transport carries every round trip to a registry outside this
 	// process; nil is the registry client's own. A suite serving its
 	// registries in this process hands the transport serving them.
@@ -133,10 +132,18 @@ func New(cfg Config) (*Acquirer, error) {
 		pull:     cfg.Pull,
 		pending:  map[string]*acquisition{},
 	}
+	// The ambient credential store answers every registry
+	// (REQ-plugin-registry-credentials): a pull, a tag listing and a
+	// publish read the same logins. The override staging is this
+	// process's own registry, no registry the user named: it is read
+	// anonymously, so the store's credential helper, which may not
+	// run on this host, is never asked for it.
 	opts := []ocifs.Option{
 		ocifs.WithWorkDir(cfg.WorkDir),
 		ocifs.WithDefaultPlatform(v1Platform(platform)),
 		ocifs.WithVerifier(a.verify),
+		ocifs.WithEnableDefaultKeychain(),
+		ocifs.WithAuthSource(stagingHost, authn.AuthConfig{}),
 	}
 	// The override staging is a registry in this process, served by
 	// the acquirer's own transport ahead of the one the caller hands.
@@ -147,9 +154,6 @@ func New(cfg Config) (*Acquirer, error) {
 	a.transport = newInProcessTransport(base)
 	a.transport.serve(stagingHost, newStagingRegistry())
 	opts = append(opts, ocifs.WithTransport(a.transport))
-	for prefix, auth := range cfg.Credentials {
-		opts = append(opts, ocifs.WithAuthSource(prefix, auth))
-	}
 	fs, err := ocifs.New(opts...)
 	if err != nil {
 		return nil, err

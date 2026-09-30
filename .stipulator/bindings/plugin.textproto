@@ -890,3 +890,23 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "f69de3c2049c514c56868fc8688ee7e1725af31622c82c88292e355790932a9b"
 }
+
+bindings {
+  requirement_id: "REQ-plugin-registry-credentials"
+  content_hash: "103c73992bb554cb891e56eb042dde8511f4687e949af1679d1a17c698f6a9ac"
+  source_hash: "6c171316abb715ecb8f20ac2ec086f079be4c20fd89c78598314a3ba38f3a9e0"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireReadsTheAmbientCredentialStore"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "07efe27880965194ae8b6d3cc51e6b8500daff22055016115902e25d60b4ac3f"
+}
+
+bindings {
+  requirement_id: "REQ-plugin-registry-credentials"
+  content_hash: "103c73992bb554cb891e56eb042dde8511f4687e949af1679d1a17c698f6a9ac"
+  source_hash: "6c171316abb715ecb8f20ac2ec086f079be4c20fd89c78598314a3ba38f3a9e0"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.New"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "67420834ebd302cae78a08f6f701cb4e8af58c33d95c278c6382bc3bd44511d3"
+}

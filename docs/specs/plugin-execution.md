@@ -92,6 +92,20 @@ short-name expansion — a reference is fetched at the repository path
 exactly as written (`docker.io/ubuntu` is `/v2/ubuntu`, never rewritten
 to `library/ubuntu`).
 
+**REQ-plugin-registry-credentials** (behavior): Acquisition MUST read a
+registry under the ambient credential store — the container tooling's
+configuration as the host's registry login writes it: `config.json` in
+the directory `DOCKER_CONFIG` names, else in `~/.docker`, its stored
+logins and credential helpers, or, where neither directory holds
+one, podman's `auth.json` (`REGISTRY_AUTH_FILE`, else
+`$XDG_RUNTIME_DIR/containers/auth.json`, else the configuration
+directory's) — the store `pb plugin build` publishes under and the
+migration lists a catalog repository's tags under, so a private
+repository the host is logged into serves its images and its evidence,
+and a registry refusing a request as unauthorized with no login for it
+fails the acquisition naming the registry and the refusal, never a
+silent retry without credentials.
+
 **REQ-plugin-digest-pin** (invariant): A plugin MUST execute only at the
 manifest-list digest its reference is pinned to in the lockfile; a tag is
 resolved to a digest when the pin is created, and never re-resolved

@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -44,8 +45,9 @@ var ctx = context.Background()
 // round trips are calls, which is what lets a mutation oracle over
 // the acquirer be attributed.
 type fixture struct {
-	host   string
-	digest string // the index digest as pushed
+	host    string
+	digest  string       // the index digest as pushed
+	handler http.Handler // the registry, for a test to serve wrapped
 }
 
 // fixtures serves every fixture registry in this process, at a
@@ -117,13 +119,162 @@ func pushIndexEnv(t *testing.T, ref string, env []string, platforms ...v1.Platfo
 	return h.String()
 }
 
+// TestMain keeps the suite off the developer's own container
+// configuration: the ambient credential store is an empty one unless
+// a test writes its own.
+func TestMain(m *testing.M) {
+	dir, err := os.MkdirTemp("", "pb-oci-docker-config-")
+	if err != nil {
+		panic(err)
+	}
+	// An empty configuration file: a directory holding none would
+	// let the store fall through to the host's podman logins.
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte("{}"), 0o600); err != nil {
+		panic(err)
+	}
+	os.Setenv("DOCKER_CONFIG", dir)
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
+}
+
+// authenticated wraps a registry handler behind HTTP basic
+// authentication: a request without the credential is answered 401
+// with the challenge, as a private registry answers.
+func authenticated(h http.Handler, user, pass string) http.Handler {
+	return authenticatedWhere(h, user, pass, func(*http.Request) bool { return true })
+}
+
+// authenticatedWhere is authenticated for the requests guarded
+// admits, the rest served openly.
+func authenticatedWhere(h http.Handler, user, pass string, guarded func(*http.Request) bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, p, ok := r.BasicAuth(); guarded(r) && (!ok || u != user || p != pass) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="fixture"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+// dockerConfig points the ambient credential store at a directory
+// holding the configuration given, for the test's duration.
+func dockerConfig(t *testing.T, config string) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DOCKER_CONFIG", dir)
+}
+
+// login is a configuration holding one basic login for host.
+func login(host, user, pass string) string {
+	return fmt.Sprintf(`{"auths":{"%s":{"auth":"%s"}}}`, host, base64.StdEncoding.EncodeToString([]byte(user+":"+pass)))
+}
+
+// A registry demanding a login is read under the ambient credential
+// store (REQ-plugin-registry-credentials): with the host's login in
+// the container tooling's configuration the acquisition succeeds and
+// pins as any; with no login for the registry it fails naming the
+// registry and the refusal.
+func TestAcquireReadsTheAmbientCredentialStore(t *testing.T) {
+	fx := newFixture(t)
+	fixtures.serve(fx.host, authenticated(fx.handler, "reader", "s3cret"))
+	ref := fx.host + "/org/plugin:v1"
+
+	// No login: refused, the registry named.
+	dockerConfig(t, `{}`)
+	lock := &lockfile.File{}
+	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
+	if _, err := a.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
+		t.Fatalf("no login: %v", err)
+	}
+	if _, ok := lock.Plugin(ref, lockfile.SchemeOCI); ok {
+		t.Fatal("a refused acquisition pinned")
+	}
+	a.Close()
+
+	// The host's login in the ambient store: served and pinned.
+	dockerConfig(t, login(fx.host, "reader", "s3cret"))
+	lock = &lockfile.File{}
+	a = newAcquirer(t, fx, lock, &trust.Policy{}, nil)
+	if _, err := a.Acquire(ctx, ref); err != nil {
+		t.Fatalf("with the login: %v", err)
+	}
+	if pin := pinOf(t, a, ref); pin.Digest != fx.digest {
+		t.Fatalf("pin = %+v, want digest %s", pin, fx.digest)
+	}
+}
+
+// A private repository serves its evidence under the same login
+// (REQ-plugin-registry-credentials): with the image itself served
+// openly and the evidence routes alone behind the login, the
+// signature carriers are fetched with it and the record is made;
+// without it the acquisition fails naming the registry and the
+// refusal — never as an unsigned image, which allow-unsigned would
+// pin with no record.
+func TestAcquireEvidenceReadsTheAmbientCredentialStore(t *testing.T) {
+	fx := newSignedFixture(t, true)
+	bundle := fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
+	evidence := func(r *http.Request) bool {
+		return strings.Contains(r.URL.Path, "/referrers/") || strings.Contains(r.URL.Path, bundle.String())
+	}
+	fixtures.serve(fx.host, authenticatedWhere(fx.handler, "reader", "s3cret", evidence))
+	ref := fx.host + "/org/plugin:v1"
+	for _, posture := range []trust.Mode{trust.RequireProvenance, trust.AllowUnsigned} {
+		governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", posture, signerSAN)}}
+
+		dockerConfig(t, login(fx.host, "reader", "s3cret"))
+		lock := &lockfile.File{}
+		a := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
+		if _, err := a.Acquire(ctx, ref); err != nil {
+			t.Fatalf("%v with the login: %v", posture, err)
+		}
+		if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Provenance != imageRecord(signerSAN) {
+			t.Fatalf("%v: recorded pin = %+v %v", posture, pin, ok)
+		}
+		a.Close()
+
+		dockerConfig(t, `{}`)
+		lock = &lockfile.File{}
+		a = newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
+		if _, err := a.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
+			t.Fatalf("%v with no login: %v", posture, err)
+		}
+		if _, ok := lock.Plugin(ref, lockfile.SchemeOCI); ok {
+			t.Fatalf("%v with no login pinned", posture)
+		}
+		a.Close()
+	}
+}
+
+// The override staging is read anonymously: a credential helper the
+// ambient store names but the host cannot run stops no override
+// (REQ-plugin-registry-credentials names registries, and the staging
+// is none the user named).
+func TestAcquireOverrideReadsNoCredentialStore(t *testing.T) {
+	dockerConfig(t, `{"credsStore":"pbnonexistenthelper"}`)
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	layoutDir := t.TempDir()
+	if _, err := layout.Write(layoutDir, indexFor(t, hostPlatform())); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", layoutDir); err != nil {
+		t.Fatalf("an override under a broken credential helper: %v", err)
+	}
+}
+
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
-	fixtures.serve(host, imagetest.Handler(false))
+	h := imagetest.Handler(false)
+	fixtures.serve(host, h)
 	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform(), v1.Platform{OS: "plan9", Architecture: "mips"})
-	return &fixture{host: host, digest: digest}
+	return &fixture{host: host, digest: digest, handler: h}
 }
 
 // pinOf reads the pin an acquisition recorded from the acquirer's own
@@ -344,14 +495,15 @@ type signedFixture struct {
 func newSignedFixture(t *testing.T, referrersAPI bool) *signedFixture {
 	t.Helper()
 	host := fmt.Sprintf("fixture%d%s", fixtureSerial.Add(1), reservedDomain)
-	fixtures.serve(host, imagetest.Handler(referrersAPI))
+	h := imagetest.Handler(referrersAPI)
+	fixtures.serve(host, h)
 	t.Cleanup(func() { fixtures.serve(host, nil) })
 	digest := pushIndex(t, host+"/org/plugin:v1", hostPlatform())
 	repo, err := name.NewRepository(host + "/org/plugin")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &signedFixture{fixture: &fixture{host: host, digest: digest}, sig: sigstoretest.New(t), repo: repo}
+	return &signedFixture{fixture: &fixture{host: host, digest: digest, handler: h}, sig: sigstoretest.New(t), repo: repo}
 }
 
 func (fx *signedFixture) hash(t *testing.T) v1.Hash {
