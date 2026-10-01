@@ -86,7 +86,7 @@ formatter and the language server
       enable, the value-bearing options (`service_suffix`,
       `enum_zero_value_suffix`) unmapped facts naming the one-line
       rule a workspace ruleset declares
-- [ ] 9. The formatter: a canonical protobuf format — buf's fixed
+- [x] 9. The formatter: a canonical protobuf format — buf's fixed
       style, no options — its own spec, `pb format` with `--diff`,
       `--exit-code` and `--write`, over the workspace's own files
 - [ ] 10. `breaking.base.file: <path>`, a fourth form beside `ref`,
