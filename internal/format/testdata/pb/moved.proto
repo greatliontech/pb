@@ -1,0 +1,47 @@
+syntax = "proto2";
+
+message A {
+  // c
+  ;
+  optional int32 a = 1;
+  ; // d
+  repeated int32 b = 2;
+  ; // g
+  optional group G = 3 {}
+  option (x) = { a: -1, // c1
+    b: 2 };
+  option (y) = { a: "x" "y", // c2
+    b: 2 };
+  option (z) = { a: -inf /* l */ ; // c3
+    b: 2 };
+  option (w) = { a: {b: 1} // t
+    , // c4
+    d: 2 };
+  optional int32 h = 4 [(o) = // x */ y
+    1];
+  optional int32 f = 5 [(p) = 1, (o) = "a" "b" // c5
+  ];
+  option (v) = { a: "x" "y" // t6
+    , // c6
+    b: 2 };
+  option (u) = { a: [1, 2] // t7
+    , // c7
+    b: 2 };
+  option (s) = { a: 1 ; // c8
+  };
+  option (r) = { a: 1 // t9
+    ; // c9
+  };
+  option (q) = { a: {b: 1} // x */ y
+    c: 2 };
+  option (n) = { a: [1, 2] // x */ y
+    , // c10
+    b: 1 };
+  optional int32 m = 6 [(p) = 1, (o) = {a: 1 b: 2} // x */ y
+  ];
+}
+
+message B {}
+// top
+;
+message C {}

@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+message Outer {
+  optional group Inner = 1 [deprecated = true] {
+    optional string name = 2;
+    extensions 100 to max;
+    extend Outer { optional int32 ext = 200; }
+  }
+  repeated group Items = 3 {}
+  oneof choice {
+    string a = 4;
+    int32 b = 5;
+  }
+  map<string, Outer> by_name = 6 [deprecated = true, json_name = "byName"];
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "custom.proto";
+
+message M {
+  int32 a = 1 [
+    (o) /* c */ = 1,
+    (p) = 2
+  ];
+  option (x) = { // c
+    a: 1
+  };
+  option (y) = {
+    a: {
+      b:
+        "x"
+        "y"
+    }
+  };
+  option (z) = {
+    a: [
+      {b: 1},
+      {b: 2}
+    ]
+  };
+  int32 f = 2 [(o) = {}];
+  int32 h = // x */ y
+  4;
+}

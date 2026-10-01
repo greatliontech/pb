@@ -1,0 +1,13 @@
+syntax = "proto3";
+import weak "d.proto";
+import public "c.proto";
+import "b.proto";
+import "a.proto";
+import "a.proto";
+// kept: the duplicate carries a comment
+import "a.proto";
+package imports.v1;
+option (custom.z) = 1;
+option java_package = "z";
+option (custom.a) = 2;
+option cc_enable_arenas = true;

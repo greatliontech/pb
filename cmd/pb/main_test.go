@@ -41,6 +41,9 @@ func TestFailure(t *testing.T) {
 	if got := failure(errors.New("boom")); got != "pb: boom" {
 		t.Errorf("failure = %q", got)
 	}
+	if got := failure(fmt.Errorf("format: %w", dep.ErrUnformatted)); got != "" {
+		t.Fatalf("the format verb's failing status is silent: %q", got)
+	}
 	if got := failure(fmt.Errorf("lint: %w", dep.ErrFindings)); got != "" {
 		t.Errorf("findings = %q", got)
 	}

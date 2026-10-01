@@ -20,8 +20,9 @@ while the tree does another.
 | plugin | plugin-execution.md, generation.md, plugin-publish.md | `plugin/local`, `plugin/oci`, `plugin/runner`, `plugin/genfile`, `plugin/genrequest`, `plugin/publish` |
 | check | check-rules.md | `check`, `check/rules`, `check/env1`, `check/eval`, `check/lintfile`, `check/breaking` |
 | migrate | migrate.md | `migrate`, `migrate/bufconfig` |
+| format | format.md | `format` |
 | driver | module-resolution.md | `resolve` |
-| verbs | dep-verbs.md, check-rules.md §Verbs, export.md, build.md | `dep`, `cmd/pb` |
+| verbs | dep-verbs.md, check-rules.md §Verbs, export.md, build.md, format.md §The verb | `dep`, `cmd/pb` |
 
 The rows are the order, top to bottom. Source, proto and plugin stand
 level: none imports another, in either direction. The plugin
@@ -30,5 +31,7 @@ policy spell its schemes and tiers; user configuration sits just
 above plugin because the runner is its one reader. A package name is
 under `internal/` unless it names a command. The check domain sits
 between plugin and the driver: it judges the compiled build and
-reaches nothing below it in the table. Test support lives under
+reaches nothing below it in the table. The format domain reads the
+source alone, through protocompile's parser, and nothing of pb's:
+the verbs are its one importer. Test support lives under
 `testing/` (its own README) and is imported from test files only.

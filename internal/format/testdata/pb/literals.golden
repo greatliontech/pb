@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+import "custom.proto";
+
+message Literals {
+  optional float f = 1 [
+    default = inf,
+    (custom.f) = -inf
+  ];
+  optional double d = 2 [default = nan];
+  optional int32 h = 3 [default = 0x1F];
+  optional int32 o = 4 [default = 017];
+  optional double e = 5 [default = 1.5e-3];
+  optional int64 n = 6 [default = -42];
+  optional bytes b = 7 [default = '\x00\001'];
+  optional string s = 8 [default = "tab\there"];
+}
+
+message Any {
+  option (custom.any) = {
+    [type.googleapis.com/custom.Inner]: {
+      x: 1
+      y: 2
+    }
+  };
+  option (custom.sep) = {
+    a: 1
+    b: 2
+    c: 3
+  };
+  option (custom.nested) = {
+    inner: {x: 1}
+  };
+}

@@ -7,12 +7,14 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
+	"github.com/go-git/go-billy/v6/osfs"
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module/lockfile"
@@ -2190,5 +2192,97 @@ func TestSavePins(t *testing.T) {
 	err = savePins(s, errors.New("step failed"))
 	if err == nil || !strings.HasPrefix(err.Error(), "step failed (and the lockfile could not be saved: ") {
 		t.Fatalf("both: %v", err)
+	}
+}
+
+// pb format lists, diffs or rewrites the workspace's own files whose
+// bytes are not their canonical form, in path order, fails under
+// --exit-code where any was not, and refuses a file that does not
+// parse before writing anything (format.md REQ-format-verb).
+func TestFormat(t *testing.T) {
+	canonical := "syntax = \"proto3\";\n\npackage b;\n\nmessage Tidy {\n  string name = 1;\n}\n"
+	messy := "syntax = \"proto3\";\npackage a;\nmessage   Loose {\n      string name=1;  }\n"
+	// Neither the workspace's order (z, b, a) nor the module paths'
+	// (example.com/aa at z, example.com/zz at b) is the directories'
+	// order; the files are listed by their paths from the root, a
+	// workspace copy of a well-known file among them.
+	files := func() map[string]string {
+		return map[string]string{
+			"pb.work":                       "use:\n  - z\n  - b\n  - a\n",
+			"a/pb.yaml":                     ws("example.com/a", ""),
+			"a/loose.proto":                 messy,
+			"a/sub/also.proto":              "syntax = \"proto3\";\npackage a.sub;\n\n\n\nmessage Also {}\n",
+			"a/google/protobuf/empty.proto": "syntax = \"proto3\";\npackage google.protobuf;\nmessage Empty {\n}\n",
+			"b/pb.yaml":                     ws("example.com/zz", ""),
+			"b/tidy.proto":                  canonical,
+			"b/messy.proto":                 "syntax  =  \"proto3\";\n",
+			"z/pb.yaml":                     ws("example.com/aa", ""),
+			"z/last.proto":                  "syntax  =  \"proto3\";\n",
+		}
+	}
+	// A real filesystem: the mode a rewrite keeps is one the in-memory
+	// filesystem does not record.
+	dir := t.TempDir()
+	fx := newDepOn(t, osfs.New(dir), files())
+	if err := os.Chmod(filepath.Join(dir, "a", "loose.proto"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	var out strings.Builder
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{}, &out); err != nil || out.String() != "a/google/protobuf/empty.proto\na/loose.proto\na/sub/also.proto\nb/messy.proto\nz/last.proto\n" {
+		t.Fatalf("list: %v %q", err, out.String())
+	}
+	if fx.read(t, "a/loose.proto") != messy {
+		t.Fatal("listing wrote")
+	}
+	out.Reset()
+	err := Format(ctx, fx.session(t, "."), FormatOptions{Diff: true, ExitCode: true}, &out)
+	wantDiff := "--- a/google/protobuf/empty.proto\n+++ a/google/protobuf/empty.proto\n@@ -1,4 +1,4 @@\n syntax = \"proto3\";\n package google.protobuf;\n-message Empty {\n-}\n+\n+message Empty {}\n--- a/loose.proto\n+++ a/loose.proto\n@@ -1,4 +1,6 @@\n syntax = \"proto3\";\n package a;\n-message   Loose {\n-      string name=1;  }\n+\n+message Loose {\n+  string name = 1;\n+}\n--- a/sub/also.proto\n+++ a/sub/also.proto\n@@ -1,6 +1,4 @@\n syntax = \"proto3\";\n package a.sub;\n \n-\n-\n message Also {}\n--- b/messy.proto\n+++ b/messy.proto\n@@ -1 +1 @@\n-syntax  =  \"proto3\";\n+syntax = \"proto3\";\n--- z/last.proto\n+++ z/last.proto\n@@ -1 +1 @@\n-syntax  =  \"proto3\";\n+syntax = \"proto3\";\n"
+	if !errors.Is(err, ErrUnformatted) || out.String() != wantDiff {
+		t.Fatalf("diff: %v\n%s", err, out.String())
+	}
+	out.Reset()
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{Write: true, ExitCode: true}, &out); !errors.Is(err, ErrUnformatted) || out.String() != "a/google/protobuf/empty.proto\na/loose.proto\na/sub/also.proto\nb/messy.proto\nz/last.proto\n" {
+		t.Fatalf("write: %v %q", err, out.String())
+	}
+	if got := fx.read(t, "a/loose.proto"); got != "syntax = \"proto3\";\npackage a;\n\nmessage Loose {\n  string name = 1;\n}\n" {
+		t.Fatalf("written: %q", got)
+	}
+	if info, err := fx.ws.Stat("a/loose.proto"); err != nil || info.Mode().Perm() != 0o640 {
+		t.Fatalf("the mode kept: %v %v", info.Mode(), err)
+	}
+	if fx.read(t, "b/tidy.proto") != canonical {
+		t.Fatal("a formatted file rewritten")
+	}
+	out.Reset()
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{ExitCode: true}, &out); err != nil || out.String() != "" {
+		t.Fatalf("after the write: %v %q", err, out.String())
+	}
+	// A file that does not parse fails the run naming it, nothing
+	// written.
+	fx = newDep(t, files())
+	fx.write(t, "b/broken.proto", "syntax = \"proto3\";\nmessage {\n")
+	out.Reset()
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{Write: true}, &out); err == nil || !strings.Contains(err.Error(), "b/broken.proto") || !strings.Contains(err.Error(), "does not parse") || out.String() != "" {
+		t.Fatalf("a file that does not parse: %v %q", err, out.String())
+	}
+	if fx.read(t, "a/loose.proto") != messy {
+		t.Fatal("written despite the failure")
+	}
+	// A symbolic link among the files to rewrite fails the run before
+	// anything is written.
+	fx = newDep(t, files())
+	if err := fx.ws.Symlink("loose.proto", "a/link.proto"); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{Write: true}, &out); err == nil || !strings.Contains(err.Error(), "a/link.proto is a symbolic link") || out.String() != "" {
+		t.Fatalf("a symbolic link: %v %q", err, out.String())
+	}
+	if fx.read(t, "a/loose.proto") != messy {
+		t.Fatal("written despite the link")
+	}
+	out.Reset()
+	if err := Format(ctx, fx.session(t, "."), FormatOptions{}, &out); err != nil || !strings.Contains(out.String(), "a/link.proto\n") {
+		t.Fatalf("a link listed: %v %q", err, out.String())
 	}
 }

@@ -1,0 +1,2 @@
+proto3/all/v1/all.proto: the golden drops `// oneof-inline-comment`, the trailing comment of a bare `;` after the oneof, which buf loses; pb/all.proto is the pair over this input
+proto2/option/v1/option_message_field.proto: the golden drops `/* Leading comment on ',' */`, the leading comment of a dropped separator, which buf loses; pb/option_message_field.proto is the pair over this input

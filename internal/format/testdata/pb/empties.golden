@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message A {}
+message B {
+  int32 a = 1; // x */ y
+  // lead
+}
+
+message C {}
+
+enum E {}
+
+service S {
+  rpc X(A) returns (B) {}
+}
+// after the last

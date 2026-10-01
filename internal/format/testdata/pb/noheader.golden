@@ -1,0 +1,7 @@
+message Bare {
+  int32 x = 1;
+}
+
+enum E {
+  E_ZERO = 0;
+}

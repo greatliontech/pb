@@ -1,0 +1,20 @@
+edition = "2023";
+
+package editions.v1;
+
+message Reserved {
+  reserved foo, bar;
+  reserved 1 to 5, 10;
+  int32 x = 6 [features.field_presence = IMPLICIT];
+}
+
+service S {
+  rpc Up(stream Req) returns (Resp);
+  rpc Down(Req) returns (stream Resp) {
+    option deprecated = true;
+  }
+  rpc Both(stream Req) returns (stream Resp) {}
+}
+
+message Req {}
+message Resp {}
