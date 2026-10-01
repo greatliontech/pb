@@ -1,6 +1,6 @@
 # The mutation record's ledger names packages that no longer exist
 
-Lands: the feature-full plan's chunk 13, the campaign close-outs,
+Lands: the feature-full plan's chunk 18, the campaign close-outs,
 closing it: gomutant's retarget rewrites identity alone by design
 (its store's Revise, the measured facts staying as measured), so the
 relation is recovered by the re-measurement under the new names

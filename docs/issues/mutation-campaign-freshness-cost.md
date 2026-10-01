@@ -1,6 +1,6 @@
 # Delta mutation campaigns stall in gomutant's freshness proofs
 
-Lands: the feature-full plan's chunk 13, the campaign close-outs
+Lands: the feature-full plan's chunk 18, the campaign close-outs
 (gomutant's freshness-proofs-stall-on-large-record-sets resolved: the
 campaigns reach measurement, preparation paying the document's first
 quarter hour)

@@ -1,6 +1,6 @@
 # The check subsystem's mutation evidence stays machine-local
 
-Lands: the feature-full plan's chunk 13, the campaign close-outs: the
+Lands: the feature-full plan's chunk 18, the campaign close-outs: the
 campaign over the check subsystem and the repository search
 (`gitdir`, hoisted out of it) banks repo-committable records on the
 tree whose oracles read nothing outside it

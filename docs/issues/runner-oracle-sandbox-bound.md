@@ -1,6 +1,6 @@
 # Runner mutation evidence is machine-local
 
-Lands: the feature-full plan's chunk 18: the runner's kernel surfaces
+Lands: the feature-full plan's chunk 23: the runner's kernel surfaces
 declared to gomutant's observation bracket, a SandboxRunner.Run
 mutant classified other than unstable-oracle, the residue the bracket
 cannot name filed against gomutant

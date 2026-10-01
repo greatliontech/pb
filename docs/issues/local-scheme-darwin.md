@@ -1,7 +1,7 @@
 # The local scheme runs nowhere without a native runner
 
-Lands: the feature-full plan's chunk 23 (docs/plans/feature-full.md),
-after its chunk 20 delivers the sandbox's darwin row
+Lands: the feature-full plan's chunk 17 (docs/plans/feature-full.md),
+after its chunk 14 delivers the sandbox's darwin row
 
 A `local` plugin runs on the native runner — a host binary runs on
 the host, under the resource bounds every scheme carries
