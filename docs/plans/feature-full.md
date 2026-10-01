@@ -145,10 +145,34 @@ formatter and the language server
       Docker Desktop daemon can witness (the docker runner's live
       cases on darwin and windows) tracked to a machine reporting
       back
-- [ ] 21. The plugin catalog's growth: recipes for
-      protocolbuffers/python, grpc/python, protocolbuffers/java,
-      grpc/java and community/planetscale-vtprotobuf in pb-plugins,
-      each of its kind (a protoc generator or grpc plugin built from
-      C++ per platform, an upstream release's executables, a Go
-      package cross-compiled); pb's catalog copy grows by the five,
-      the plugin-catalog-growth issue closes
+- [ ] 21. The plugin catalog's first cut: every plugin of buf's registry
+      under protocolbuffers, grpc, connectrpc, bufbuild,
+      grpc-ecosystem and pluginrpc, and community/planetscale-vtprotobuf
+      with the other go and node community generators, that the four
+      kinds build — protoc's own generators (cpp, java, kotlin, objc,
+      php, pyi, python, ruby) and grpc's C++ plugins (cpp, node, objc,
+      php, python, ruby) and bufbuild/validate-cpp by bazel as csharp
+      is, the Go and npm ones cross-compiled, protocolbuffers/js from
+      its release; pb's catalog copy grows with it; the
+      plugin-catalog-growth issue closes but for grpc/java
+- [ ] 22. The release kind reads Maven Central beside GitHub releases:
+      grpc/java from its per-platform executables; community/scalapb-scala
+      and community/scalapb-zio-grpc from the native executables
+      upstream ships; the plugin-catalog-growth issue closes
+- [ ] 23. The rust kind: a cargo package cross-compiled per platform;
+      connectrpc/rust
+- [ ] 24. The swift kind: `swift build` on a runner of the platform,
+      the platforms served those the toolchain builds; grpc/swift,
+      grpc/swift-protobuf, connectrpc/swift, connectrpc/swift-mocks,
+      bufbuild/connect-swift, bufbuild/connect-swift-mocks, apple/swift
+- [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
+      protocolbuffers/dart, connectrpc/dart
+- [ ] 26. The jvm kind: a jlink'd runtime bundled in the image behind a
+      native launcher as the entrypoint, plugin-execution.md read first
+      for an entrypoint executing a sibling of the image's tree under
+      every sandbox row, amended where a row forbids it; grpc/kotlin,
+      connectrpc/kotlin, bufbuild/connect-kotlin, bufbuild/validate-java
+- [ ] 27. The python kind, the jvm kind's shape over a standalone
+      interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,
+      connectrpc/python; the catalog then holds buf's tiers one and
+      two whole
