@@ -89,7 +89,7 @@ formatter and the language server
 - [x] 9. The formatter: a canonical protobuf format — buf's fixed
       style, no options — its own spec, `pb format` with `--diff`,
       `--exit-code` and `--write`, over the workspace's own files
-- [ ] 10. `breaking.base.file: <path>`, a fourth form beside `ref`,
+- [x] 10. `breaking.base.file: <path>`, a fourth form beside `ref`,
       `version` and `pinned`: the base read as the descriptor set
       `pb build` writes, bytes trusted by being named, never verified
       through the trust policy (the pinned form's role, stated in the
