@@ -411,8 +411,11 @@ becoming a `ref` entry at the reference given for that name and
 version — the replacement's as given; the catalog's repository for
 the name, `ghcr.io/greatliontech/pb-plugins/<owner>/<plugin>` for
 `buf.build/<owner>/<plugin>`, tagged with the version exactly as buf
-spells it, the catalog publishing buf's versions under buf's tags (a
-version the catalog has not published surfaces at the first
+spells it, the catalog publishing upstream's releases under buf's
+spelling of them, each plugin from the version it entered at, its
+later ones as upstream releases them and an older one by the
+catalog's hand alone, so a version buf served before that entry, or
+one the catalog has not yet published, surfaces at the first
 generate, the tag absent, never at the migration, which carries no
 versions; a version no tag can spell — buf admits a build suffix's
 `+`, which a tag cannot carry — an unmapped fact naming the flag's
@@ -550,15 +553,51 @@ carries, a copy of the names the catalog repository
 (greatliontech/pb-plugins, its `catalog.yaml`) publishes under
 `ghcr.io/greatliontech/pb-plugins`:
 
+- `buf.build/bufbuild/connect-es`
+- `buf.build/bufbuild/connect-go`
+- `buf.build/bufbuild/connect-query`
+- `buf.build/bufbuild/connect-web`
 - `buf.build/bufbuild/es`
+- `buf.build/bufbuild/protoschema-bigquery`
+- `buf.build/bufbuild/protoschema-jsonschema`
+- `buf.build/bufbuild/protoschema-pubsub`
+- `buf.build/bufbuild/validate-cpp`
+- `buf.build/bufbuild/validate-go`
+- `buf.build/community/google-gnostic-openapi`
+- `buf.build/community/mercari-grpc-federation`
+- `buf.build/community/mfridman-go-json`
+- `buf.build/community/mitchellh-go-json`
+- `buf.build/community/planetscale-vtprotobuf`
+- `buf.build/community/pseudomuto-doc`
+- `buf.build/community/sudorandom-connect-openapi`
+- `buf.build/community/timostamm-protobuf-ts`
 - `buf.build/connectrpc/es`
 - `buf.build/connectrpc/go`
+- `buf.build/connectrpc/gosimple`
+- `buf.build/connectrpc/query-es`
+- `buf.build/grpc-ecosystem/gateway`
+- `buf.build/grpc-ecosystem/openapiv2`
+- `buf.build/grpc-ecosystem/openapiv3`
+- `buf.build/grpc/cpp`
 - `buf.build/grpc/csharp`
 - `buf.build/grpc/go`
+- `buf.build/grpc/objc`
+- `buf.build/grpc/php`
+- `buf.build/grpc/python`
+- `buf.build/grpc/ruby`
 - `buf.build/grpc/web`
+- `buf.build/pluginrpc/go`
+- `buf.build/protocolbuffers/cpp`
 - `buf.build/protocolbuffers/csharp`
 - `buf.build/protocolbuffers/go`
+- `buf.build/protocolbuffers/java`
 - `buf.build/protocolbuffers/js`
+- `buf.build/protocolbuffers/kotlin`
+- `buf.build/protocolbuffers/objc`
+- `buf.build/protocolbuffers/php`
+- `buf.build/protocolbuffers/pyi`
+- `buf.build/protocolbuffers/python`
+- `buf.build/protocolbuffers/ruby`
 
 The copy is held to the repository's catalog and the registry by the
 migrate package's live test (TestPluginCatalog), run at each entry's

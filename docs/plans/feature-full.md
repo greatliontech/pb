@@ -103,9 +103,10 @@ formatter and the language server
       under protocolbuffers, grpc, connectrpc, bufbuild,
       grpc-ecosystem and pluginrpc, and community/planetscale-vtprotobuf
       with the other go and node community generators, that the four
-      kinds build — protoc's own generators (cpp, java, kotlin, objc,
-      php, pyi, python, ruby) and grpc's C++ plugins (cpp, node, objc,
-      php, python, ruby) and bufbuild/validate-cpp by bazel as csharp
+      kinds build, each at upstream's latest release under buf's
+      spelling — protoc's own generators
+      (cpp, java, kotlin, objc, php, pyi, python, ruby) and grpc's
+      C++ plugins (cpp, objc, php, python, ruby) by bazel as csharp
       is, the Go and npm ones cross-compiled, protocolbuffers/js from
       its release; pb's catalog copy grows with it; the
       plugin-catalog-growth issue closes but for grpc/java
@@ -151,10 +152,15 @@ formatter and the language server
       mutation-record-ledger-names-old-packages closes with them, the
       re-measurement under the new names the relation it missed,
       gomutant's retarget rewriting identity alone by design
-- [ ] 19. The release kind reads Maven Central beside GitHub releases:
-      grpc/java from its per-platform executables; community/scalapb-scala
-      and community/scalapb-zio-grpc from the native executables
-      upstream ships; the plugin-catalog-growth issue closes
+- [ ] 19. The release kind reads beyond GitHub releases: Maven Central
+      for grpc/java's per-platform executables, grpc's binary host for
+      grpc/node (grpc-tools' executable, numbered by grpc-tools, not
+      by grpc); community/scalapb-scala and community/scalapb-zio-grpc
+      from the native executables upstream ships; the go kind building
+      from a repository tag the module proxy lacks
+      (community/chrusty-jsonschema's unprefixed tags,
+      community/roadrunner-server-php-grpc's nested module); the
+      plugin-catalog-growth issue closes
 - [ ] 20. The rust kind: a cargo package cross-compiled per platform;
       connectrpc/rust
 - [ ] 21. The language server: its own spec (the capabilities served,
@@ -187,7 +193,10 @@ formatter and the language server
       native launcher as the entrypoint, plugin-execution.md's rows
       read first for an entrypoint executing a sibling of the image's
       tree, the linux row amended where it forbids it; grpc/kotlin,
-      connectrpc/kotlin, bufbuild/connect-kotlin, bufbuild/validate-java
+      connectrpc/kotlin, bufbuild/connect-kotlin, bufbuild/validate-java;
+      the node kind's runtime-bundled variant in the same shape, for a
+      package needing its files on disk or a native addon
+      (bufbuild/knit-ts, community/stephenh-ts-proto)
 - [ ] 27. The python kind, the jvm kind's shape over a standalone
       interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,
       connectrpc/python; the catalog then holds buf's tiers one and
