@@ -9,6 +9,7 @@ import (
 	"os"
 	pathpkg "path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -220,6 +221,14 @@ func TestGenSchemeGate(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and none is wired here") {
 		t.Fatalf("err = %v", err)
 	}
+	// The native runner's own refusal, where it gave one, is the
+	// reason carried: a platform reaching no row is named.
+	_, s2 := genFixture(t, "plugins:\n  - local: protoc-gen-x\n    out: gen\n")
+	s2.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{"oci", "local"}}}
+	err = Gen(ctx, s2, GenDeps{NoLocal: errors.New("the native runner reaches no sandbox row on plan9/mips")}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and the native runner reaches no sandbox row on plan9/mips") {
+		t.Fatalf("the refusal's reason: %v", err)
+	}
 }
 
 // The policy's limits reach the runner; a plugin's declared error and
@@ -364,6 +373,9 @@ func TestGenFailurePaths(t *testing.T) {
 			"pb.gen.yaml":       genEntry,
 		})
 		s := fx.session(t, ".")
+		if runtime.GOOS == "windows" {
+			t.Skip("a directory cannot be made unreadable by its mode on windows")
+		}
 		if err := os.Chmod(filepath.Join(dir, "a/blocked"), 0o000); err != nil {
 			t.Fatal(err)
 		}

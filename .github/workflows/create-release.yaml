@@ -1,0 +1,97 @@
+# A release when the commits since the last one warrant it (semrel
+# over conventional commits, the tag spelled v<version>), after CI
+# passed on main: the binaries for every platform pb builds for,
+# cross-compiled with no C toolchain (platforms.md REQ-plat-scope),
+# attached to the release. A release whose assets a failed run left
+# off gets them on the next run: the assets are the step's own
+# question, not the version's.
+name: Create Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # A push to main whose CI passed, never a pull request's run under
+    # a branch of that name.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+      # semrel tags the branch's tip: the commit that passed must be
+      # it, else a later push rides a release its own CI never ran.
+      - name: The commit that passed is main's tip
+        run: |
+          tip=$(git rev-parse origin/main)
+          if [ "$tip" != "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "main moved to $tip since ${{ github.event.workflow_run.head_sha }} passed; that push's own run releases"
+            exit 0
+          fi
+          echo "at-tip=true" >> "$GITHUB_OUTPUT"
+        id: tip
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: greatliontech/semrel@main
+        if: steps.tip.outputs.at-tip == 'true'
+        id: semrel
+      # The tag names the commit that passed and is built below, not
+      # the branch's tip at the API call.
+      - name: Release
+        if: steps.tip.outputs.at-tip == 'true' && steps.semrel.outputs.next-version != steps.semrel.outputs.current-version
+        run: semrel release
+        env:
+          SEMREL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEMREL_PROJECT: ${{ github.repository }}
+          SEMREL_BRANCH: ${{ github.event.workflow_run.head_sha }}
+      - name: The release's tag
+        if: steps.tip.outputs.at-tip == 'true'
+        id: tag
+        run: |
+          if [ "${{ steps.semrel.outputs.next-version }}" != "${{ steps.semrel.outputs.current-version }}" ]; then
+            echo "tag=${{ steps.semrel.outputs.next-version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ steps.semrel.outputs.current-version }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Does the release hold its assets
+        if: steps.tip.outputs.at-tip == 'true'
+        id: assets
+        run: |
+          n=$(gh release view "${{ steps.tag.outputs.tag }}" --json assets --jq '.assets | length' 2>/dev/null || echo 0)
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build every platform's binary
+        if: steps.tip.outputs.at-tip == 'true' && steps.assets.outputs.count == '0'
+        run: |
+          mkdir -p dist
+          for platform in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            os=${platform%/*}; arch=${platform#*/}
+            out=dist/pb-$os-$arch
+            [ "$os" = windows ] && out=$out.exe
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "$out" ./cmd/pb
+          done
+          (cd dist && sha256sum * > checksums.txt)
+          ls -l dist
+      - name: Attach the binaries
+        if: steps.tip.outputs.at-tip == 'true' && steps.assets.outputs.count == '0'
+        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

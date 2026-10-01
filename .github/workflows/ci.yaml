@@ -21,10 +21,6 @@ jobs:
       # No toolchain is fetched: the one installed below is the one
       # every step runs with.
       GOTOOLCHAIN: local
-      # Two of the organization's modules are private: the module
-      # proxy cannot serve them, and the job's own token reads this
-      # repository alone.
-      GOPRIVATE: github.com/greatliontech/sandbox,github.com/greatliontech/gitprov
     steps:
       - uses: actions/checkout@v4
       # The current release, tracking patches: it satisfies go.mod's
@@ -33,16 +29,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      # The organization's app, whose token reads the sibling
-      # modules; go fetches them through git with it.
-      - uses: actions/create-github-app-token@v2
-        id: app-token
-        with:
-          app-id: ${{ vars.GLT_RELEASER_APP_ID }}
-          private-key: ${{ secrets.GLT_RELEASER_APP_KEY }}
-          owner: greatliontech
-      - name: Read the organization's modules with the app's token
-        run: git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
       # The native runner's Strong row needs unprivileged user
       # namespaces; Ubuntu 24.04 restricts them through AppArmor for
       # unconfined programs. A host without the knob has no such
@@ -62,6 +48,14 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: GOOS=darwin go vet ./...
+      - run: GOOS=windows go vet ./...
+      # Every platform's command links with no C toolchain
+      # (platforms.md REQ-plat-scope), before anything merges.
+      - name: Cross-build every platform
+        run: |
+          for platform in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            CGO_ENABLED=0 GOOS=${platform%/*} GOARCH=${platform#*/} go build -o /dev/null ./cmd/pb
+          done
       # The runner suite runs once, below, with its live arms demanded;
       # running it here too would only double its exposure to the
       # daemon's own losses. The two unit legs share the one list.
@@ -107,3 +101,32 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=1
       - name: The OS row's arm under a delegated scope
         run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_OS_ROW=1 go test ./internal/plugin/runner/ -run '^TestRunOnOSRow$' -count=1 -timeout=10m
+
+  # The portable half of the suite on the other operating systems
+  # (platforms.md REQ-plat-scope): what a contract states for darwin or
+  # windows is witnessed there. The runner suite's live arms, the race
+  # leg and the spec verification are Linux's.
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "$unformatted"; exit 1; fi
+        shell: bash
+      - run: go build ./...
+      - run: go vet ./...
+      - name: The suite but the runner's
+        run: go test $(go list ./... | grep -v /internal/plugin/runner) -count=1 -timeout=30m
+        shell: bash

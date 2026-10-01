@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/greatliontech/pb/internal/dep"
@@ -107,7 +106,7 @@ func (u *lazyUpdater) Close() error {
 // REQ-plugin-core-verifies, provenance.md
 // REQ-prov-plugin-evidence-store).
 func pluginStoreDirs() (workDir, evidenceDir string, err error) {
-	base, err := os.UserCacheDir()
+	base, err := userconfig.UserCacheDir()
 	if err != nil {
 		return "", "", fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
 	}

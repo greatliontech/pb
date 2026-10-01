@@ -73,24 +73,102 @@ func Path() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("userconfig: resolving the user configuration directory: %w", err)
 	}
+	// A stated location the platform cannot use: Go checks the
+	// variable's path on some platforms alone, the file's location
+	// is absolute on every one.
+	if !filepath.IsAbs(dir) {
+		return "", fmt.Errorf("userconfig: resolving the user configuration directory: %w", &RelativeLocationError{Var: ConfigLocation().stated()})
+	}
 	return filepath.Join(dir, "pb", FileName), nil
 }
 
-// LocationVar is the environment variable that states the user
-// configuration directory's location on this platform — XDG_CONFIG_HOME
-// where the platform reads it — and empty where the platform derives
-// the directory from the home alone.
-func LocationVar() string { return locationVar(runtime.GOOS) }
-
-// locationVar is os.UserConfigDir's own platform table: the home
-// alone on darwin, ios, windows and plan9, XDG_CONFIG_HOME everywhere
-// else.
-func locationVar(goos string) string {
-	switch goos {
-	case "darwin", "ios", "windows", "plan9":
-		return ""
+// UserCacheDir is the platform's user cache directory, absolute, or
+// the error of a host that has none or states one the platform
+// cannot use (a relative path), as Path has it for the configuration.
+func UserCacheDir() (string, error) {
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
 	}
-	return "XDG_CONFIG_HOME"
+	if !filepath.IsAbs(dir) {
+		return "", &RelativeLocationError{Var: CacheLocation().stated()}
+	}
+	return dir, nil
+}
+
+// RelativeLocationError is a user directory stated relative, naming
+// the variable the platform read it from.
+type RelativeLocationError struct{ Var string }
+
+func (e *RelativeLocationError) Error() string { return "path in $" + e.Var + " is relative" }
+
+// stated is the variable the platform read the directory from: the
+// location's own where set, else the home it derives the directory
+// from (HOME on unix, which Go takes unchecked where the XDG
+// variable is unset; windows reads AppData alone).
+func (l Location) stated() string {
+	if os.Getenv(l.Var) != "" || l.Var == "AppData" || l.Var == "LocalAppData" {
+		return l.Var
+	}
+	if l.Var == "home" {
+		return "home"
+	}
+	return "HOME"
+}
+
+// Location is where a platform keeps a user directory: the
+// environment variable that relocates it and the path under that
+// variable's directory the platform appends (platforms.md
+// REQ-plat-user-dirs) — os.UserConfigDir's and os.UserCacheDir's own
+// tables, so the directory moves exactly as Go reads it.
+type Location struct {
+	Var string
+	Sub string
+}
+
+// Dir is the user directory under base, the variable's value.
+func (l Location) Dir(base string) string { return filepath.Join(base, filepath.FromSlash(l.Sub)) }
+
+// ConfigLocation is the user configuration directory's location on
+// this platform.
+func ConfigLocation() Location { return configLocation(runtime.GOOS) }
+
+// CacheLocation is the user cache directory's location on this
+// platform.
+func CacheLocation() Location { return cacheLocation(runtime.GOOS) }
+
+// LocationVar is the environment variable that states the user
+// configuration directory's location on this platform.
+func LocationVar() string { return ConfigLocation().Var }
+
+// configLocation is os.UserConfigDir's platform table: AppData on
+// windows, the home's Library/Application Support on darwin and ios,
+// the home's lib on plan9, XDG_CONFIG_HOME everywhere else.
+func configLocation(goos string) Location {
+	switch goos {
+	case "windows":
+		return Location{Var: "AppData"}
+	case "darwin", "ios":
+		return Location{Var: "HOME", Sub: "Library/Application Support"}
+	case "plan9":
+		return Location{Var: "home", Sub: "lib"}
+	}
+	return Location{Var: "XDG_CONFIG_HOME"}
+}
+
+// cacheLocation is os.UserCacheDir's platform table: LocalAppData on
+// windows, the home's Library/Caches on darwin and ios, the home's
+// lib/cache on plan9, XDG_CACHE_HOME everywhere else.
+func cacheLocation(goos string) Location {
+	switch goos {
+	case "windows":
+		return Location{Var: "LocalAppData"}
+	case "darwin", "ios":
+		return Location{Var: "HOME", Sub: "Library/Caches"}
+	case "plan9":
+		return Location{Var: "home", Sub: "lib/cache"}
+	}
+	return Location{Var: "XDG_CACHE_HOME"}
 }
 
 // Settings are the file's values, by key, and the environment they
@@ -111,7 +189,8 @@ type Settings struct {
 func Load() (*Settings, error) {
 	p, err := Path()
 	if err != nil {
-		if v := LocationVar(); v != "" && os.Getenv(v) != "" {
+		var relative *RelativeLocationError
+		if errors.As(err, &relative) || os.Getenv(LocationVar()) != "" {
 			return nil, err
 		}
 		return &Settings{values: map[Key]string{}, getenv: os.Getenv}, nil

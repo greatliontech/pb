@@ -76,15 +76,20 @@ func assembleTree(settings *userconfig.Settings) (billy.Filesystem, string, *fet
 
 // rootOSPath is the resolution root's path on the host: the session's
 // root is a path within the working tree, which workingTree roots at
-// the host's filesystem root.
+// the host's filesystem root — the volume's on windows, read back
+// from the tree.
 func rootOSPath(s *dep.Session) string {
-	return filepath.Join(string(filepath.Separator), filepath.FromSlash(s.Root.Dir))
+	root := string(filepath.Separator)
+	if rooted, ok := s.WS.(interface{ Root() string }); ok {
+		root = rooted.Root()
+	}
+	return filepath.Join(root, filepath.FromSlash(s.Root.Dir))
 }
 
-// workingTree roots the writable working tree at the filesystem root so
-// the workspace walk can find roots above the working directory.
-// Unix-shaped deliberately: a Windows port needs a drive-aware root and
-// is not attempted here.
+// workingTree roots the writable working tree at the filesystem root
+// so the workspace walk can find roots above the working directory:
+// `/` on unix, the working directory's volume on windows (`C:\`), the
+// directory then spelled relative to that root with forward slashes.
 func workingTree() (billy.Filesystem, string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -96,7 +101,8 @@ func workingTree() (billy.Filesystem, string, error) {
 	if cwd, err = filepath.EvalSymlinks(cwd); err != nil {
 		return nil, "", err
 	}
-	return osfs.New("/"), strings.TrimPrefix(filepath.ToSlash(cwd), "/"), nil
+	root := filepath.VolumeName(cwd) + string(filepath.Separator)
+	return osfs.New(root), strings.TrimPrefix(filepath.ToSlash(cwd), filepath.ToSlash(root)), nil
 }
 
 // assembleClient wires the fetch-verify pipeline from the settings —
@@ -180,7 +186,7 @@ func moduleCacheDir(settings *userconfig.Settings) (userconfig.Value, error) {
 	if cache.Stated() {
 		return cache, nil
 	}
-	base, err := os.UserCacheDir()
+	base, err := userconfig.UserCacheDir()
 	if err != nil {
 		return userconfig.Value{}, fmt.Errorf("resolving the user cache directory (set the cache setting to override): %w", err)
 	}

@@ -15,12 +15,10 @@ import (
 // directory and returns the file's path.
 func plant(t *testing.T, content string) string {
 	t.Helper()
-	if userconfig.LocationVar() == "" {
-		t.Skip("the user configuration directory is not relocatable by environment on this platform")
-	}
-	dir := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", dir)
-	p := filepath.Join(dir, "pb", userconfig.FileName)
+	base := t.TempDir()
+	loc := userconfig.ConfigLocation()
+	t.Setenv(loc.Var, base)
+	p := filepath.Join(loc.Dir(base), "pb", userconfig.FileName)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
 	}

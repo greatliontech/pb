@@ -12,6 +12,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,27 +34,53 @@ type Acquirer struct {
 	// platform keys the pin; the zero value means the running host's.
 	platform plugin.Platform
 	// lookPath finds a bare name on PATH; nil means exec.LookPath.
+	// On windows the lookup is the acquirer's own (lookExact) and
+	// reads PATH through env; nil means os.Getenv.
 	lookPath func(string) (string, error)
+	env      func(string) string
 }
 
 // Resolve finds the binary a local value names
 // (REQ-plugin-local-resolution): a value with no path separator is
-// looked up on PATH exactly as written; one with a separator is a
+// looked up on PATH exactly as written — on windows as the name with
+// `.exe` appended unless it already ends in `.exe`, found by that
+// spelling alone in a PATH directory, never by the platform's other
+// suffixes, a dropped trailing dot or the working directory
+// (platforms.md REQ-plat-local-runner); one with a separator is a
 // path relative to the resolution root, absolute allowed, written
-// with forward slashes. A failure names the search; nothing else is
-// tried.
+// with forward slashes, a backslash being neither. A failure names
+// the search; nothing else is tried.
 func (a *Acquirer) Resolve(value string) (string, error) {
 	if !filepath.IsAbs(a.Root) {
 		return "", fmt.Errorf("local: the resolution root %q is not an absolute host path", a.Root)
 	}
+	if strings.Contains(value, `\`) {
+		return "", fmt.Errorf("local: %q holds a backslash: a path is spelled with forward slashes, a name holds none", value)
+	}
 	if !strings.Contains(value, "/") {
+		if a.hostPlatform().OS == "windows" {
+			// A name ending in a dot is refused rather than resolved to
+			// the name the platform would drop it to.
+			if strings.HasSuffix(value, ".") {
+				return "", fmt.Errorf("local: %q ends in a dot, which names no file", value)
+			}
+			name := value
+			if !strings.EqualFold(filepath.Ext(value), ".exe") {
+				name += ".exe"
+			}
+			p, err := lookExact(name, a.getenv()("PATH"))
+			if err != nil {
+				return "", fmt.Errorf("local: %q not found on PATH (looked up exactly as %q): %v", value, name, err)
+			}
+			return p, nil
+		}
 		look := a.lookPath
 		if look == nil {
 			look = exec.LookPath
 		}
 		p, err := look(value)
 		if err != nil {
-			return "", fmt.Errorf("local: %q not found on PATH (looked up exactly as written): %v", value, err)
+			return "", fmt.Errorf("local: %q not found on PATH (looked up exactly as %q): %v", value, value, err)
 		}
 		return p, nil
 	}
@@ -68,10 +95,49 @@ func (a *Acquirer) Resolve(value string) (string, error) {
 	if !fi.Mode().IsRegular() {
 		return "", fmt.Errorf("local: %q resolved to %s, which is not a regular file", value, p)
 	}
-	if fi.Mode().Perm()&0o111 == 0 {
+	// windows has no executable bit: the platform decides at exec.
+	if a.hostPlatform().OS != "windows" && fi.Mode().Perm()&0o111 == 0 {
 		return "", fmt.Errorf("local: %q resolved to %s, which is not executable", value, p)
 	}
 	return p, nil
+}
+
+// hostPlatform is the platform the acquirer resolves and pins for:
+// the one set, else the running host's.
+func (a *Acquirer) hostPlatform() plugin.Platform {
+	if a.platform != (plugin.Platform{}) {
+		return a.platform
+	}
+	return plugin.HostPlatform()
+}
+
+// getenv reads the environment the lookup runs under: the one set,
+// else the process's.
+func (a *Acquirer) getenv() func(string) string {
+	if a.env != nil {
+		return a.env
+	}
+	return os.Getenv
+}
+
+// lookExact finds name in the directories of pathList, the platform's
+// list separator between them, as a regular file spelled exactly so:
+// no suffix appended, no spelling the platform would also accept
+// (case being the filesystem's), no directory but the list's
+// absolute ones — an empty or relative entry names the working
+// directory, which the pinned hash and the run would read
+// differently, and is passed over.
+func lookExact(name, pathList string) (string, error) {
+	for _, dir := range filepath.SplitList(pathList) {
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		p := filepath.Join(dir, name)
+		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() {
+			return p, nil
+		}
+	}
+	return "", errors.New("no PATH directory holds it")
 }
 
 // Acquire resolves the command and pins it (REQ-plugin-local-pin):
@@ -95,10 +161,7 @@ func (a *Acquirer) Acquire(ctx context.Context, value string, args []string) (*p
 	if a.Policy != nil && !a.Policy.Execution.LocalPinEnabled() {
 		return acq, nil
 	}
-	platform := a.platform
-	if platform == (plugin.Platform{}) {
-		platform = plugin.HostPlatform()
-	}
+	platform := a.hostPlatform()
 	_, ok := a.Lock.Plugin(value, lockfile.SchemeLocal)
 	switch {
 	case !ok:

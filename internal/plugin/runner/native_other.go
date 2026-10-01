@@ -3,12 +3,15 @@
 package runner
 
 import (
-	"errors"
+	"fmt"
+	"runtime"
 )
 
-// NativeRunner is unavailable off Linux: the docker runner covers
-// darwin (plugin-execution.md, REQ-plugin-runner-selection), and no run ever
-// falls back silently.
+// NativeRunner is unavailable off Linux: no sandbox row is reached on
+// this platform yet, the refusal names it and no run ever falls back
+// to a bare exec (platforms.md REQ-plat-local-runner); the docker
+// runner covers what a daemon can run (plugin-execution.md,
+// REQ-plugin-runner-selection).
 func NativeRunner() (Runner, error) {
-	return nil, errors.New("the native runner is Linux-only")
+	return nil, fmt.Errorf("the native runner reaches no sandbox row on %s/%s", runtime.GOOS, runtime.GOARCH)
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -2247,7 +2248,8 @@ func TestFormat(t *testing.T) {
 	if got := fx.read(t, "a/loose.proto"); got != "syntax = \"proto3\";\npackage a;\n\nmessage Loose {\n  string name = 1;\n}\n" {
 		t.Fatalf("written: %q", got)
 	}
-	if info, err := fx.ws.Stat("a/loose.proto"); err != nil || info.Mode().Perm() != 0o640 {
+	// windows has no mode to keep.
+	if info, err := fx.ws.Stat("a/loose.proto"); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o640) {
 		t.Fatalf("the mode kept: %v %v", info.Mode(), err)
 	}
 	if fx.read(t, "b/tidy.proto") != canonical {

@@ -74,6 +74,8 @@ func generateCmd() *cobra.Command {
 					Acquirer: &local.Acquirer{Root: rootOSPath(s), Lock: s.Lock, Policy: s.Client.Policy},
 					Runner:   native,
 				}
+			} else {
+				deps.NoLocal = err
 			}
 			return dep.Gen(c.Context(), s, deps, os.Stdout)
 		},

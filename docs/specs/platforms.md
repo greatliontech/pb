@@ -26,7 +26,7 @@ after it (`plugin-execution.md` REQ-plugin-reported-tier).
 
 ## Scope
 
-**REQ-plat-scope** (structural): pb MUST build for every platform the
+**REQ-plat-scope** (behavior): pb MUST build for every platform the
 term names with no C toolchain — every mechanism a platform's
 backend uses is reached through system calls or by executing a
 platform binary, never through cgo — with its suite running on each
@@ -79,11 +79,19 @@ AppContainer is, `Minimal` where a platform's security boundary is
 absent and only bounds apply; a platform matching no row refuses the
 run naming the platform, never a bare exec. The `docker` runner
 never runs a `local` plugin, on any platform. On `windows` a `local`
-command with no path separator and no extension resolves to the name
-with `.exe` appended and to nothing else — the platform's executable
-suffix, never `PATHEXT`'s scripts, which the sandbox would not run
-as one process — the one extension REQ-plugin-local-resolution's
-no-expansion rule admits; the content pin is keyed by host platform
+command with no path separator resolves to the name with `.exe`
+appended, unless it already ends in `.exe` in any case, and to
+nothing else — the platform's executable suffix, never `PATHEXT`'s
+scripts, which the sandbox would not run as one process, and never
+a file found by any other spelling (a trailing dot the platform
+drops, a search of the working directory or of a relative `PATH`
+entry, which the pinned hash and the run would read differently)
+— case being the filesystem's, a case-insensitive one answering for
+a case variant with its one file as it does for every open — the one
+extension REQ-plugin-local-resolution's no-expansion rule admits; a
+value holding a backslash is neither a name nor a path on any
+platform and is refused naming it, paths being spelled with forward
+slashes; the content pin is keyed by host platform
 as REQ-plugin-local-pin has it, so one lockfile pins a plugin's
 binary per platform.
 
@@ -109,9 +117,10 @@ case-insensitivity rule (`dep-verbs.md` REQ-dep-cache-layout). A
 file replaced whole by rename (an atomic write, a lockfile
 rewritten, an export moved into place) is replaced atomically on
 every platform; on `windows` a target another process holds open
-cannot be replaced, and the write fails loudly naming the file — a
-rerun by the user succeeding once it is released — never a partial
-file, since the rename is the only step that touches the target. A
+without delete sharing cannot be replaced, and the write fails
+loudly naming the file — a rerun by the user succeeding once it is
+released — never a partial file, since the rename is the only step
+that touches the target. A
 lock file the vcs store leaves in place (REQ-dep-clean) is left on
 every platform, `windows` being unable to unlink an open one.
 
@@ -123,5 +132,10 @@ platform's own user directories as Go's `os.UserConfigDir` and
 `~/Library/Caches` on `darwin`, `%AppData%` and `%LocalAppData%` on
 `windows` — under the same `pb` subdirectory and file names on each
 (`user-config.md`), the environment and the file's own settings
-overriding exactly as there; pb consults no platform registry or
+overriding exactly as there; a stated location the platform cannot
+use — a relative path in the variable, which Go checks on some
+platforms alone — is refused naming the variable on every platform;
+a path setting is absolute as the platform spells one (a volume on
+`windows`), any other spelling relative to the file's directory as
+`user-config.md` has it; pb consults no platform registry or
 preference store.

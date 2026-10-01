@@ -65,6 +65,10 @@ type GenDeps struct {
 	Acquirer ImageAcquirer
 	Runner   runner.Runner
 	Local    *LocalDeps
+	// NoLocal says why Local is nil where it is: the native runner's
+	// refusal, naming the platform, which a local entry's refusal
+	// then carries (platforms.md REQ-plat-local-runner).
+	NoLocal error
 	// Overrides are the invocation's plugin overrides, declared oci
 	// reference to source (REQ-plugin-override): a path to an OCI
 	// layout or archive, or "docker://IMAGE" for a daemon-local image.
@@ -97,7 +101,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			return fmt.Errorf("generate: the trust policy does not permit %s-scheme plugins (plugin %s)", p.Scheme, p.Command())
 		}
 		if p.Scheme == plugin.SchemeLocal && deps.Local == nil {
-			return fmt.Errorf("generate: local plugins run on the native runner, and none is wired here (pb has one on Linux only) (plugin %s)", p.Command())
+			reason := "none is wired here"
+			if deps.NoLocal != nil {
+				reason = deps.NoLocal.Error()
+			}
+			return fmt.Errorf("generate: local plugins run on the native runner, and %s (plugin %s)", reason, p.Command())
 		}
 	}
 	_, daemonRunner := deps.Runner.(runner.DaemonImages)

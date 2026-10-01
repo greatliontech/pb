@@ -239,7 +239,15 @@ func startAgent(t *testing.T, key ed25519.PrivateKey, sock string) *testAgent {
 		t.Fatal(err)
 	}
 	if sock == "" {
-		sock = filepath.Join(t.TempDir(), "agent.sock")
+		// A short path: a unix socket's name is bounded (104 bytes on
+		// darwin), and a test's temporary directory spells the test's
+		// name.
+		dir, err := os.MkdirTemp("", "a")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { os.RemoveAll(dir) })
+		sock = filepath.Join(dir, "agent.sock")
 	}
 	os.Remove(sock)
 	ln, err := net.Listen("unix", sock)

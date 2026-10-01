@@ -1,0 +1,6 @@
+# A checkout keeps LF on every system: gofmt and the goldens read
+# the files as the repository holds them.
+* text=auto eol=lf
+# Fixtures that are CRLF on purpose.
+internal/format/testdata/pb/crlf.proto -text
+internal/provenance/image/discover/testdata/cosign/referrers.headers -text

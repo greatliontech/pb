@@ -197,7 +197,7 @@ func (s *Session) exportTarget(dir string) (string, error) {
 			return "", err
 		default:
 			for i, md := range modules {
-				if mfi, err := s.WS.Stat(md); err == nil && sameDirectory(fi, mfi) {
+				if same, err := sameDirectory(s.WS, p, md, fi); err == nil && same {
 					return "", fmt.Errorf("%s lies inside the workspace module %s at %s (%s is that directory): its files would be the module's on the next load", dir, s.Root.Modules[i].File.Module, md, p)
 				}
 			}

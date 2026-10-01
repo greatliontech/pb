@@ -136,7 +136,7 @@ func TestGetPrecedence(t *testing.T) {
 // the file's directory; the environment's is taken as given, and
 // absolute paths are taken as given from either (REQ-uc-paths).
 func TestGetPaths(t *testing.T) {
-	p := write(t, "cache: mod\ntrustedroot: /etc/pb/root.json\nproxy: relative/is/not/a/path\n")
+	p := write(t, "cache: mod\ntrustedroot: "+abs(t, "/etc/pb/root.json")+"\nproxy: relative/is/not/a/path\n")
 	s, err := LoadFile(p, env(map[string]string{"PBTRUSTEDROOT": "root.json"}))
 	if err != nil {
 		t.Fatal(err)
@@ -154,49 +154,52 @@ func TestGetPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v := s.Get(KeyTrustedRoot); v.Value != "/etc/pb/root.json" {
+	if v := s.Get(KeyTrustedRoot); v.Value != abs(t, "/etc/pb/root.json") {
 		t.Fatalf("absolute trusted root = %+v", v)
 	}
 }
 
-// The platform table behind LocationVar is Go's own for
-// os.UserConfigDir: XDG_CONFIG_HOME everywhere but darwin, ios,
-// windows and plan9, this host included — pinned here because the
-// tests that exercise the location rule skip on its word.
-func TestLocationVar(t *testing.T) {
-	for goos, want := range map[string]string{
-		"darwin": "", "ios": "", "windows": "", "plan9": "",
-		"linux": "XDG_CONFIG_HOME", "freebsd": "XDG_CONFIG_HOME", "openbsd": "XDG_CONFIG_HOME",
-		"android": "XDG_CONFIG_HOME", "solaris": "XDG_CONFIG_HOME", "wasip1": "XDG_CONFIG_HOME",
+// The platform tables behind the locations are Go's own for
+// os.UserConfigDir and os.UserCacheDir, this host included: the
+// variable named is the one Go reads, so relocating it moves the
+// directory, under the platform's own subpath.
+func TestLocations(t *testing.T) {
+	for goos, want := range map[string][2]Location{
+		"linux":   {{Var: "XDG_CONFIG_HOME"}, {Var: "XDG_CACHE_HOME"}},
+		"freebsd": {{Var: "XDG_CONFIG_HOME"}, {Var: "XDG_CACHE_HOME"}},
+		"darwin":  {{Var: "HOME", Sub: "Library/Application Support"}, {Var: "HOME", Sub: "Library/Caches"}},
+		"windows": {{Var: "AppData"}, {Var: "LocalAppData"}},
+		"plan9":   {{Var: "home", Sub: "lib"}, {Var: "home", Sub: "lib/cache"}},
 	} {
-		if got := locationVar(goos); got != want {
-			t.Errorf("locationVar(%s) = %q, want %q", goos, got, want)
+		if got := configLocation(goos); got != want[0] {
+			t.Errorf("configLocation(%s) = %+v, want %+v", goos, got, want[0])
+		}
+		if got := cacheLocation(goos); got != want[1] {
+			t.Errorf("cacheLocation(%s) = %+v, want %+v", goos, got, want[1])
 		}
 	}
-	if got := LocationVar(); got != locationVar(runtime.GOOS) {
-		t.Fatalf("LocationVar on %s = %q", runtime.GOOS, got)
+	if ConfigLocation() != configLocation(runtime.GOOS) || CacheLocation() != cacheLocation(runtime.GOOS) || LocationVar() != ConfigLocation().Var {
+		t.Fatal("the host's locations are not its table's")
 	}
-	// The variable named is the one Go reads: relocating it moves
-	// the directory.
-	if v := LocationVar(); v != "" {
-		dir := t.TempDir()
-		t.Setenv(v, dir)
-		if p, err := Path(); err != nil || !strings.HasPrefix(p, dir) {
-			t.Fatalf("Path = %q, %v under %s=%s", p, err, v, dir)
-		}
+	dir := t.TempDir()
+	t.Setenv(ConfigLocation().Var, dir)
+	if p, err := Path(); err != nil || p != filepath.Join(ConfigLocation().Dir(dir), "pb", FileName) {
+		t.Fatalf("Path = %q, %v under %s=%s", p, err, ConfigLocation().Var, dir)
+	}
+	t.Setenv(CacheLocation().Var, dir)
+	if got, err := os.UserCacheDir(); err != nil || got != CacheLocation().Dir(dir) {
+		t.Fatalf("the cache directory = %q, %v under %s=%s", got, err, CacheLocation().Var, dir)
 	}
 }
 
 // The file lives under pb in the user configuration directory, which
-// XDG_CONFIG_HOME relocates on Unix; a host with no home has no file,
+// the platform's variable relocates; a host with no home has no file,
 // and the environment still resolves; a stated location the platform
 // cannot use is a failure, never a silently ignored file.
 func TestPath(t *testing.T) {
-	if LocationVar() == "" {
-		t.Skip("the user configuration directory is not relocatable by environment on this platform")
-	}
-	dir := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", dir)
+	base := t.TempDir()
+	t.Setenv(ConfigLocation().Var, base)
+	dir := ConfigLocation().Dir(base)
 	p, err := Path()
 	if err != nil {
 		t.Fatal(err)
@@ -207,7 +210,7 @@ func TestPath(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(p, []byte("cache: /tmp/pbcache\n"), 0o644); err != nil {
+	if err := os.WriteFile(p, []byte("cache: "+abs(t, "/tmp/pbcache")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PBCACHE", "")
@@ -215,12 +218,15 @@ func TestPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v := s.Get(KeyCache); v.Value != "/tmp/pbcache" {
+	if v := s.Get(KeyCache); v.Value != abs(t, "/tmp/pbcache") {
 		t.Fatalf("cache = %+v", v)
 	}
-	t.Setenv("XDG_CONFIG_HOME", "")
+	// No user directory at all: the platform's variable and the home
+	// both unset (windows reads AppData alone; the others derive the
+	// directory from the home where the variable is unset).
+	t.Setenv(ConfigLocation().Var, "")
 	t.Setenv("HOME", "")
-	t.Setenv("PBCACHE", "/tmp/fromenv")
+	t.Setenv("PBCACHE", abs(t, "/tmp/fromenv"))
 	if _, err := Path(); err == nil {
 		t.Fatal("a host with no HOME located the file")
 	}
@@ -228,11 +234,38 @@ func TestPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no configuration directory: %v", err)
 	}
-	if v := s.Get(KeyCache); v != (Value{"/tmp/fromenv", "the PBCACHE environment variable"}) {
+	if v := s.Get(KeyCache); v != (Value{abs(t, "/tmp/fromenv"), "the PBCACHE environment variable"}) {
 		t.Fatalf("cache = %+v", v)
 	}
-	t.Setenv("XDG_CONFIG_HOME", "rel/ative")
-	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "$XDG_CONFIG_HOME") {
+	// A relative location is refused on every platform, Go's own
+	// check or ours.
+	t.Setenv(ConfigLocation().Var, "rel/ative")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "$"+ConfigLocation().Var) {
 		t.Fatalf("a stated location the platform cannot use was ignored: %v", err)
 	}
+	t.Setenv(CacheLocation().Var, "rel/ative")
+	if _, err := UserCacheDir(); err == nil || !strings.Contains(err.Error(), "$"+CacheLocation().Var) {
+		t.Fatalf("a relative cache location was taken: %v", err)
+	}
+	// A relative home with the platform's own variable unset, where
+	// the platform derives the directory from the home: refused
+	// naming the home, the file's layer never silently empty.
+	if runtime.GOOS != "windows" {
+		t.Setenv(ConfigLocation().Var, "")
+		t.Setenv(CacheLocation().Var, "")
+		t.Setenv("HOME", "rel/home")
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), "$HOME is relative") {
+			t.Fatalf("a relative home was taken: %v", err)
+		}
+		if _, err := UserCacheDir(); err == nil || !strings.Contains(err.Error(), "$HOME is relative") {
+			t.Fatalf("a relative home for the cache was taken: %v", err)
+		}
+	}
+}
+
+// abs spells a Unix-style absolute path as the host spells one: with
+// the test directory's volume on windows.
+func abs(t *testing.T, p string) string {
+	t.Helper()
+	return filepath.Join(filepath.VolumeName(t.TempDir())+string(filepath.Separator), filepath.FromSlash(p))
 }

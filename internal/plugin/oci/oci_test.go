@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -1004,6 +1005,9 @@ func TestAcquireExportFailureFailsClosed(t *testing.T) {
 	exports := filepath.Join(work, "exports")
 	if err := os.MkdirAll(exports, 0o755); err != nil {
 		t.Fatal(err)
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("a directory cannot be made unwritable by its mode on windows")
 	}
 	if err := os.Chmod(exports, 0o500); err != nil {
 		t.Fatal(err)
