@@ -2,6 +2,8 @@ package genfile
 
 import (
 	"errors"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -24,8 +26,13 @@ plugins:
   - ref: ghcr.io/org/protoc-gen-go:v1.34.2
     out: gen/all
     include_imports: false
+    include_wkt: false
+    clean: false
   - local: protoc-gen-lint
     out: .
+    include_imports: true
+    include_wkt: true
+    clean: true
   - local: ./tools/bin/protoc-gen-x
     out: gen/x
     opt: 1
@@ -67,7 +74,7 @@ overrides:
 	want := []Plugin{
 		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/go", Opt: "paths=source_relative", Files: []string{"acme/v1/*.proto", "**/x.proto"}, IncludeImports: true},
 		{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/org/protoc-gen-go:v1.34.2", Out: "gen/all"},
-		{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-lint", Out: "."},
+		{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-lint", Out: ".", IncludeImports: true, IncludeWKT: true, Clean: true},
 		{Scheme: plugin.SchemeLocal, Ref: "./tools/bin/protoc-gen-x", Out: "gen/x", Opt: "1"},
 		{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc"}, Out: "gen/grpc"},
 		{Scheme: plugin.SchemeLocal, Ref: "bun", Args: []string{"web/node_modules/.bin/protoc-gen-es", "--flag with space", ""}, Out: "gen/es"},
@@ -96,6 +103,37 @@ overrides:
 	for i := range wantO {
 		if f.Overrides[i] != wantO[i] {
 			t.Errorf("overrides[%d] = %+v, want %+v", i, f.Overrides[i], wantO[i])
+		}
+	}
+}
+
+// Equal tells two entries apart by every field — each one the type
+// has, walked by reflection, so a field added without it is caught —
+// as a rendering that dropped any would otherwise pass Encode's
+// reading check.
+func TestPluginEqual(t *testing.T) {
+	base := Plugin{Scheme: plugin.SchemeLocal, Ref: "gen", Args: []string{"a"}, Out: "gen", Opt: "o", Files: []string{"**"}, IncludeImports: true, IncludeWKT: true, Clean: true}
+	if !base.Equal(base) {
+		t.Fatal("an entry differs from itself")
+	}
+	rv := reflect.ValueOf(base)
+	for i := 0; i < rv.NumField(); i++ {
+		changed := reflect.New(rv.Type()).Elem()
+		changed.Set(rv)
+		f := changed.Field(i)
+		switch f.Kind() {
+		case reflect.String:
+			f.SetString("other")
+		case reflect.Bool:
+			f.SetBool(false)
+		case reflect.Slice:
+			f.Set(reflect.Zero(f.Type()))
+		default:
+			t.Fatalf("field %s of a kind this test does not vary", rv.Type().Field(i).Name)
+		}
+		p := changed.Interface().(Plugin)
+		if base.Equal(p) || p.Equal(base) {
+			t.Errorf("%s: entries differing in it are equal", rv.Type().Field(i).Name)
 		}
 	}
 }
@@ -150,6 +188,10 @@ func TestParseRejections(t *testing.T) {
 		{"files bad glob", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/[x\"]\n", "files[0]:"},
 		{"include_imports word", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: yes\n", "include_imports must be true or false"},
 		{"include_imports list", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: [true]\n", "include_imports must be true or false"},
+		{"include_wkt word", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: true\n    include_wkt: yes\n", "include_wkt must be true or false"},
+		{"include_wkt alone", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_wkt: true\n", "include_wkt without include_imports"},
+		{"include_wkt beside false", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: false\n    include_wkt: true\n", "include_wkt without include_imports"},
+		{"entry clean word", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    clean: True\n", "plugins[0].clean must be true or false"},
 		{"clean number", "clean: 1\n" + ok, "clean must be true or false"},
 		{"clean capital", "clean: True\n" + ok, "clean must be true or false"},
 		{"out not scalar", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: {a: b}\n", "out must be one line of text"},
@@ -303,6 +345,8 @@ func FuzzParse(f *testing.F) {
 	f.Add([]byte("plugins:\n  - local: [go, tool, protoc-gen-x, \"\", \"a b\"]\n    out: gen\n"))
 	f.Add([]byte("plugins:\n  - local:\n      - ./tools/gen\n      - --flag\n    out: gen\n  - local: [p]\n    out: .\n"))
 	f.Add([]byte("clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/**\", \"*.proto\"]\n    include_imports: true\n"))
+	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: true\n    include_wkt: true\n    clean: true\n"))
+	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_wkt: true\n"))
 	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: '**'\n    option: go_package\n    prefix: example.com/x\n  - files: '**'\n    option: java_package\n    suffix: pb\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		parsed, err := Parse(data)
@@ -312,12 +356,25 @@ func FuzzParse(f *testing.F) {
 		if len(parsed.Plugins) == 0 {
 			t.Fatal("accepted a file with no plugins")
 		}
+		// What is accepted is rendered, and read back as itself
+		// (REQ-gen-emission).
+		out, err := Encode(parsed)
+		if err != nil {
+			t.Fatalf("accepted a file Encode refuses: %v", err)
+		}
+		again, err := Parse(out)
+		if err != nil || !slices.EqualFunc(parsed.Plugins, again.Plugins, Plugin.Equal) || !slices.Equal(parsed.Overrides, again.Overrides) || parsed.Clean != again.Clean {
+			t.Fatalf("the rendering reads as a different file: %v\n%s", err, out)
+		}
 		for _, p := range parsed.Plugins {
 			if !plugin.ValidScheme(p.Scheme) || p.Ref == "" || p.Out == "" {
 				t.Fatalf("accepted malformed plugin %+v", p)
 			}
 			if p.Scheme == plugin.SchemeOCI && p.Args != nil {
 				t.Fatalf("an oci entry with arguments %+v", p)
+			}
+			if p.IncludeWKT && !p.IncludeImports {
+				t.Fatalf("accepted include_wkt without include_imports %+v", p)
 			}
 			for _, a := range p.Args {
 				if strings.ContainsAny(a, "\n\r") {
@@ -356,8 +413,8 @@ func TestEncode(t *testing.T) {
 	f := &File{
 		Clean: true,
 		Plugins: []Plugin{
-			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x", Files: []string{"acme/v1/*.proto", "**"}, IncludeImports: true},
-			{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-connect-go", Out: "gen/connect"},
+			{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/acme/protoc-gen-go:v1.36.0", Out: "gen/go", Opt: "paths=source_relative,module=example.com/x", Files: []string{"acme/v1/*.proto", "**"}, IncludeImports: true, IncludeWKT: true, Clean: true},
+			{Scheme: plugin.SchemeLocal, Ref: "protoc-gen-connect-go", Out: "gen/connect", Clean: true},
 			{Scheme: plugin.SchemeLocal, Ref: "tools/gen", Out: "gen/x", Opt: "a=1\nb=2\n"},
 			{Scheme: plugin.SchemeLocal, Ref: "go", Args: []string{"tool", "protoc-gen-go-grpc", "--x=1 2", "true", ""}, Out: "gen/grpc"},
 		},
@@ -382,8 +439,11 @@ plugins:
       - acme/v1/*.proto
       - "**"
     include_imports: true
+    include_wkt: true
+    clean: true
   - local: protoc-gen-connect-go
     out: gen/connect
+    clean: true
   - local: tools/gen
     out: gen/x
     opt: "a=1\nb=2\n"
@@ -443,6 +503,7 @@ overrides:
 		"escaping out":   {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "../gen"}}},
 		"bad option":     {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Option: "not an option", Value: "v"}}},
 		"unknown scheme": {Plugins: []Plugin{{Scheme: "remote", Ref: "x", Out: "gen"}}},
+		"wkt alone":      {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen", IncludeWKT: true}}},
 	} {
 		if _, err := Encode(f); err == nil {
 			t.Errorf("%s: encoded", name)

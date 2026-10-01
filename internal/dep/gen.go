@@ -200,10 +200,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
 	}
-	if gf.Clean {
-		if err := s.cleanOutputs(gf, mods); err != nil {
-			return err
-		}
+	if err := s.cleanOutputs(gf, mods); err != nil {
+		return err
 	}
 	limits := exec.EffectiveLimits()
 	minTier := exec.EffectiveMinTier()
@@ -252,19 +250,42 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	return nil
 }
 
-// cleanOutputs empties every output directory the entries name
-// (REQ-gen-clean), in entry order, every entry under it removed and
+// cleanOutputs empties every output directory the entries clean
+// names (REQ-gen-clean), in entry order, every entry under it removed and
 // the directory kept — a directory named twice is emptied twice,
 // which nothing observes, no plugin having run; refused before
 // anything is removed, naming the entry, where a directory is the
 // resolution root, is or holds the directory of a module read from
 // the working tree, holds any of its files, holds a module file at
-// any depth, the build's or not, is reached through a symlink, or is
-// no directory — what generation never wrote is not its to remove.
+// any depth, the build's or not, is reached through a symlink, is
+// no directory, or is or holds the output directory of an entry
+// clean does not name — what generation never wrote is not its to
+// remove, and a directory asked to be emptied and kept at once is a
+// contradiction; one holding a cleaned directory is kept itself,
+// the cleaned directory emptied under it.
 func (s *Session) cleanOutputs(gf *genfile.File, mods []modfiles.Module) error {
+	// The entries clean names: every one under the file's clean, else
+	// those with their own (REQ-gen-clean).
+	var cleaning []genfile.Plugin
 	for _, entry := range gf.Plugins {
+		if gf.Clean || entry.Clean {
+			cleaning = append(cleaning, entry)
+		}
+	}
+	for _, entry := range cleaning {
 		if entry.Out == "." {
 			return fmt.Errorf("generate: plugin %s: clean refuses to empty the resolution root (out %q)", entry.Command(), entry.Out)
+		}
+		for _, kept := range gf.Plugins {
+			if gf.Clean || kept.Clean {
+				continue
+			}
+			switch {
+			case kept.Out == entry.Out:
+				return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which is the output directory of the plugin %s, which clean does not name", entry.Command(), entry.Out, kept.Command())
+			case rootpath.Contains(entry.Out, kept.Out):
+				return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which holds the output directory %s of the plugin %s, which clean does not name", entry.Command(), entry.Out, kept.Out, kept.Command())
+			}
 		}
 		for _, m := range mods {
 			if m.Dir == "" {
@@ -300,7 +321,7 @@ func (s *Session) cleanOutputs(gf *genfile.File, mods []modfiles.Module) error {
 			return fmt.Errorf("generate: plugin %s: clean refuses to empty %s, which holds the module file %s", entry.Command(), entry.Out, found)
 		}
 	}
-	for _, entry := range gf.Plugins {
+	for _, entry := range cleaning {
 		dir := path.Join(s.Root.Dir, entry.Out)
 		entries, err := s.WS.ReadDir(dir)
 		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, os.ErrNotExist) {

@@ -65,6 +65,32 @@ func TestTargets(t *testing.T) {
 	if got := all(genfile.Plugin{IncludeImports: true}); !slices.Equal(got, []string{"a/a.proto", "a/b.proto", "m1/m1.proto"}) {
 		t.Errorf("imports of all, each once: %v", got)
 	}
+	// Including the well-known imports, those reached are targets
+	// too, in proto_file's order; one reached by no selected file is
+	// not.
+	if got := all(genfile.Plugin{IncludeImports: true, IncludeWKT: true}); !slices.Equal(got, []string{"a/a.proto", "a/b.proto", "google/protobuf/descriptor.proto", "m1/m1.proto", "google/protobuf/empty.proto"}) {
+		t.Errorf("well-known imports included: %v", got)
+	}
+	if got := all(genfile.Plugin{Files: []string{"a/b.proto"}, IncludeImports: true, IncludeWKT: true}); !slices.Equal(got, []string{"a/b.proto", "google/protobuf/descriptor.proto", "m1/m1.proto"}) {
+		t.Errorf("well-known imports reached alone: %v", got)
+	}
+	if got := all(genfile.Plugin{Files: []string{"a/b.proto"}, IncludeWKT: true}); !slices.Equal(got, []string{"a/b.proto"}) {
+		t.Errorf("include_wkt reaches nothing without include_imports: %v", got)
+	}
+	// A well-known import reached through another well-known import
+	// alone is reached transitively: api.proto imports source_context
+	// and type, type imports any and source_context.
+	viaWKT := compileMods(t, []modfiles.Module{
+		mod("example.com/w", "", true, map[string]string{
+			"w/w.proto": "syntax = \"proto3\";\npackage w;\nimport \"google/protobuf/api.proto\";\nmessage W { google.protobuf.Api api = 1; }\n",
+		}),
+	})
+	if got, err := Targets(viaWKT.Topological(), viaWKT.Files, genfile.Plugin{IncludeImports: true, IncludeWKT: true}, modfiles.WellKnown); err != nil || !slices.Equal(got, []string{"w/w.proto", "google/protobuf/source_context.proto", "google/protobuf/any.proto", "google/protobuf/type.proto", "google/protobuf/api.proto"}) {
+		t.Errorf("well-known imports reached through one: %v %v", got, err)
+	}
+	if got, err := Targets(viaWKT.Topological(), viaWKT.Files, genfile.Plugin{IncludeImports: true}, modfiles.WellKnown); err != nil || !slices.Equal(got, []string{"w/w.proto"}) {
+		t.Errorf("well-known imports without include_wkt: %v %v", got, err)
+	}
 	// A workspace file reached through another's import is a target
 	// once, among the selected where selected, else after them.
 	res2 := compileMods(t, []modfiles.Module{

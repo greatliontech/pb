@@ -47,6 +47,12 @@ type Plugin struct {
 	Files []string
 	// IncludeImports adds the files the targets reach through imports.
 	IncludeImports bool
+	// IncludeWKT adds the well-known imports among those, admitted
+	// beside IncludeImports alone (REQ-gen-schema).
+	IncludeWKT bool
+	// Clean empties the entry's output directory before any plugin
+	// runs (REQ-gen-clean).
+	Clean bool
 }
 
 // Command is the entry's plugin as the entry spells it: the reference,
@@ -63,7 +69,7 @@ func (p Plugin) Command() string {
 // argument.
 func (p Plugin) Equal(q Plugin) bool {
 	return p.Scheme == q.Scheme && p.Ref == q.Ref && p.Out == q.Out && p.Opt == q.Opt && slices.Equal(p.Args, q.Args) &&
-		slices.Equal(p.Files, q.Files) && p.IncludeImports == q.IncludeImports
+		slices.Equal(p.Files, q.Files) && p.IncludeImports == q.IncludeImports && p.IncludeWKT == q.IncludeWKT && p.Clean == q.Clean
 }
 
 // Override is one declared file-option assignment: a value, or a
@@ -225,7 +231,7 @@ type File struct {
 	Plugins   []Plugin
 	Overrides []Override
 	// Clean empties every entry's output directory before any
-	// plugin runs (REQ-gen-clean).
+	// plugin runs, as an entry's own Clean empties its (REQ-gen-clean).
 	Clean bool
 }
 
@@ -241,11 +247,7 @@ func Parse(data []byte) (*File, error) {
 	}
 	f := &File{}
 	err = contractfile.Mapping(mapping, "", ErrInvalid,
-		contractfile.Field{Name: "clean", Read: func(n ast.Node) error {
-			v, err := flag(n, "clean")
-			f.Clean = v
-			return err
-		}},
+		boolField("", "clean", &f.Clean),
 		contractfile.Field{Name: "plugins", Required: true, Read: func(n ast.Node) error {
 			plugins, err := parsePlugins(n)
 			f.Plugins = plugins
@@ -266,8 +268,9 @@ func Parse(data []byte) (*File, error) {
 // Encode renders the file canonically (REQ-gen-emission): clean where
 // true, plugins, then overrides where any, entries in the order given,
 // an entry's keys in the order ref or local, out, opt — absent where
-// empty — files (absent where every file is a target) and
-// include_imports (absent where false), and an override's files,
+// empty — files (absent where every file is a target),
+// include_imports, include_wkt and clean (each absent where false),
+// and an override's files,
 // option, value, each scalar spelled as contractfile.Spell has it; a
 // local with arguments is a block sequence, the command first, one
 // without the scalar. The rendering is held to its reading —
@@ -300,6 +303,12 @@ func Encode(f *File) ([]byte, error) {
 			}
 			if p.IncludeImports {
 				w.Literal("include_imports", "true")
+			}
+			if p.IncludeWKT {
+				w.Literal("include_wkt", "true")
+			}
+			if p.Clean {
+				w.Literal("clean", "true")
 			}
 		})
 		if len(f.Overrides) > 0 {
@@ -414,14 +423,16 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 				}
 				return nil
 			}},
-			contractfile.Field{Name: "include_imports", Read: func(n ast.Node) error {
-				v, err := flag(n, where+".include_imports")
-				p.IncludeImports = v
-				return err
-			}},
+			boolField(where, "include_imports", &p.IncludeImports),
+			boolField(where, "include_wkt", &p.IncludeWKT),
+			boolField(where, "clean", &p.Clean),
 		)
 		if err != nil {
 			return err
+		}
+		// A well-known import is reached through imports or not at all.
+		if p.IncludeWKT && !p.IncludeImports {
+			return fmt.Errorf("%w: %s.include_wkt without include_imports: a well-known import is reached through imports alone", ErrInvalid, where)
 		}
 		if schemes != 1 {
 			return fmt.Errorf("%w: %s must carry exactly one of ref or local, found %d", ErrInvalid, where, schemes)
@@ -445,6 +456,19 @@ func parsePlugins(n ast.Node) ([]Plugin, error) {
 		return nil, fmt.Errorf("%w: plugins must not be empty", ErrInvalid)
 	}
 	return plugins, nil
+}
+
+// boolField is a key under where read by flag into dst.
+func boolField(where, name string, dst *bool) contractfile.Field {
+	key := name
+	if where != "" {
+		key = where + "." + name
+	}
+	return contractfile.Field{Name: name, Read: func(n ast.Node) error {
+		v, err := flag(n, key)
+		*dst = v
+		return err
+	}}
 }
 
 // flag reads a key spelled `true` or `false`, and nothing else

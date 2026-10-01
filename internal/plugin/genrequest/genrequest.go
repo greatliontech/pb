@@ -29,7 +29,8 @@ import (
 // workspace files (REQ-gen-request): file_to_generate the entry's
 // targets — the workspace files its patterns select in compile order,
 // then, where it includes imports, what those reach that is no
-// well-known import (wellKnown judges) in the order given — proto_file
+// well-known import unless the entry includes those (wellKnown
+// judges) in the order given — proto_file
 // in the order given — the compile's topological order over files,
 // dependencies before importers, imports visited in declaration order
 // — source_file_descriptors the targets' descriptors, and the entry's
@@ -75,8 +76,8 @@ func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []
 // no pattern, in files' order — a pattern matching nothing fails
 // naming it, whatever the others match — then, where
 // the entry includes imports, every file the selected reach through
-// imports that is no well-known import and not selected, in order's
-// order.
+// imports that is not selected and, the entry including the
+// well-known imports aside, no well-known import, in order's order.
 func Targets(order []protoreflect.FileDescriptor, files linker.Files, entry genfile.Plugin, wellKnown func(path string) bool) ([]string, error) {
 	patterns := make([]*glob.Pattern, 0, len(entry.Files))
 	for _, f := range entry.Files {
@@ -138,7 +139,7 @@ func Targets(order []protoreflect.FileDescriptor, files linker.Files, entry genf
 		}
 	}
 	for _, fd := range order {
-		if reached[fd.Path()] && !selected[fd.Path()] && !wellKnown(fd.Path()) {
+		if reached[fd.Path()] && !selected[fd.Path()] && (entry.IncludeWKT || !wellKnown(fd.Path())) {
 			targets = append(targets, fd.Path())
 		}
 	}

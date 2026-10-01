@@ -694,7 +694,7 @@ func TestGenTargets(t *testing.T) {
 		"a/pb.yaml":    ws("example.com/a", ""),
 		"a/x.proto":    "syntax = \"proto3\";\npackage a;\nmessage X {}\n",
 		"a/v1/y.proto": "syntax = \"proto3\";\npackage a.v1;\nimport \"x.proto\";\nimport \"google/protobuf/empty.proto\";\nmessage Y { a.X x = 1; google.protobuf.Empty e = 2; }\n",
-		"pb.gen.yaml":  "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/one\n    files: [\"v1/*.proto\"]\n  - ref: ghcr.io/o/p:v1\n    out: gen/two\n    files: [\"v1/**\"]\n    include_imports: true\n  - ref: ghcr.io/o/p:v1\n    out: gen/three\n",
+		"pb.gen.yaml":  "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/one\n    files: [\"v1/*.proto\"]\n  - ref: ghcr.io/o/p:v1\n    out: gen/two\n    files: [\"v1/**\"]\n    include_imports: true\n  - ref: ghcr.io/o/p:v1\n    out: gen/three\n  - ref: ghcr.io/o/p:v1\n    out: gen/four\n    files: [\"v1/**\"]\n    include_imports: true\n    include_wkt: true\n",
 	})
 	s := fx.session(t, ".")
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
@@ -704,9 +704,9 @@ func TestGenTargets(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Paths are module-relative: the module's directory is the include
-	// root.
-	want := [][]string{{"v1/y.proto"}, {"v1/y.proto", "x.proto"}, {"v1/y.proto", "x.proto"}}
-	if len(requests) != 3 {
+	// root; the well-known import is a target by include_wkt alone.
+	want := [][]string{{"v1/y.proto"}, {"v1/y.proto", "x.proto"}, {"v1/y.proto", "x.proto"}, {"v1/y.proto", "x.proto", "google/protobuf/empty.proto"}}
+	if len(requests) != 4 {
 		t.Fatalf("requests %v", requests)
 	}
 	for i := range want {
@@ -785,6 +785,94 @@ func TestGenClean(t *testing.T) {
 	}
 	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/go/fresh.go") {
 		t.Error("without clean, the stale file was removed or the fresh one not written")
+	}
+
+	// An entry's own clean empties its directory alone; another
+	// entry's directory, cleaned by no entry, keeps what it holds,
+	// and a directory two cleaning entries share is emptied once
+	// before either runs.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/p:v1\n    out: gen/ts\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if fx.exists(t, "gen/go/stale.go") || fx.exists(t, "gen/go/deep/old.go") || !fx.exists(t, "gen/go/fresh.go") {
+		t.Error("an entry's own clean did not empty its directory")
+	}
+	if !fx.exists(t, "gen/ts/stale.ts") || !fx.exists(t, "gen/ts/fresh.go") {
+		t.Error("an entry cleaning nothing had its directory emptied")
+	}
+	// An entry cleaning nothing is not judged: its directory may be
+	// the root or a module's, as any output directory may.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/p:v1\n    out: a\n  - ref: ghcr.io/o/p:v1\n    out: .\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatalf("an entry cleaning nothing judged: %v", err)
+	}
+	if fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "a/fresh.go") || !fx.exists(t, "fresh.go") || !fx.exists(t, "a/x.proto") {
+		t.Error("an entry cleaning nothing: the cleaning entry's directory kept, or the others' touched")
+	}
+	// A directory asked to be emptied and kept at once — an entry
+	// cleaning nothing writing where, or under where, another cleans
+	// — is refused naming both, before anything is removed.
+	for kept, msg := range map[string]string{
+		"gen/go":      "which is the output directory of the plugin ghcr.io/o/q:v1, which clean does not name",
+		"gen/go/deep": "which holds the output directory gen/go/deep of the plugin ghcr.io/o/q:v1, which clean does not name",
+	} {
+		for _, order := range []string{"kept first", "kept last"} {
+			fx = newDep(t, files)
+			keptEntry, cleaning := "  - ref: ghcr.io/o/q:v1\n    out: "+kept+"\n", "  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n"
+			if order == "kept first" {
+				fx.write(t, "pb.gen.yaml", "plugins:\n"+keptEntry+cleaning)
+			} else {
+				fx.write(t, "pb.gen.yaml", "plugins:\n"+cleaning+keptEntry)
+			}
+			s = fx.session(t, ".")
+			err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+			if err == nil || !strings.Contains(err.Error(), "plugin ghcr.io/o/p:v1: clean refuses to empty gen/go, "+msg) {
+				t.Fatalf("kept %s under a cleaned directory, %s: %v", kept, order, err)
+			}
+			if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/go/deep/old.go") {
+				t.Errorf("kept %s: the refusal removed files", kept)
+			}
+		}
+	}
+	// A directory clean does not name holding one it does is kept
+	// itself: the cleaned directory under it is emptied, the rest of
+	// it untouched.
+	fx = newDep(t, files)
+	fx.write(t, "gen/other.txt", "kept")
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/q:v1\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatalf("a cleaned directory under a kept one: %v", err)
+	}
+	if fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/other.txt") || !fx.exists(t, "gen/ts/stale.ts") || !fx.exists(t, "gen/fresh.go") || !fx.exists(t, "gen/go/fresh.go") {
+		t.Error("a cleaned directory under a kept one: the kept one touched, or the cleaned one not emptied")
+	}
+	// An entry's clean judges its directory as the file's does: the
+	// refusal names the entry, and nothing is removed.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/q:v1\n    out: a\n    clean: true\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "plugin ghcr.io/o/q:v1: clean refuses to empty a, which holds the module example.com/a at a") {
+		t.Fatalf("an entry's clean over a module: %v", err)
+	}
+	if !fx.exists(t, "gen/go/stale.go") {
+		t.Error("an entry's refusal removed another entry's files")
+	}
+	// An entry cleaning nothing under a file cleaning everything is
+	// still cleaned: the file's clean is every entry's.
+	fx = newDep(t, files)
+	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: false\n")
+	s = fx.session(t, ".")
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if fx.exists(t, "gen/go/stale.go") {
+		t.Error("the file's clean did not reach an entry spelling its own false")
 	}
 
 	// The root, a directory holding a module, a directory holding a
