@@ -21,5 +21,5 @@ catalog's names (`migrate.Catalog`, held to the repository by
 `TestPluginCatalog`) then grows by those five, and the three
 configurations migrate with no replacement.
 
-Lands: the feature-full plan, chunk 22 (grpc/java, the last of the
-five; the other four at chunk 21)
+Lands: the feature-full plan, chunk 14 (grpc/java, the last of the
+five; the other four at chunk 12)

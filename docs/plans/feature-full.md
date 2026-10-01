@@ -99,53 +99,7 @@ formatter and the language server
       reports the same, recorded per repository by name in the
       commit message; a shape the local run finds missing enters the
       corpus first
-- [ ] 12. The language server: its own spec (the capabilities served,
-      how a file outside the workspace is treated, how findings map
-      to diagnostics), `pb lsp` over the compile and the lint engine
-      — diagnostics, definition, hover, references over the build's
-      descriptors — and document formatting through the formatter
-- [ ] 13. The runner suite's kernel surfaces declared to gomutant's
-      observation bracket where paths name them; what the bracket
-      cannot name filed against gomutant with the measured residue
-      (pulled forward when gomutant's campaign-cost issue resolves)
-- [ ] 14. The docker runner runs each plugin container under a per-run
-      cgroup parent and attributes a memory kill from the parent's
-      `memory.events` delta, the kernel's hierarchical count outliving
-      the container's release; the daemon's event the fallback where
-      the host's cgroup tree is not pb's to read (a remote daemon, a
-      daemon in a VM), the record stating which source spoke; the
-      mechanism the user's fork between a per-user slice pool and an
-      in-container static shim (docs/issues/docker-oom-event-lost.md
-      holds the spike)
-- [ ] 15. The runner suite's live memory case records its kill in every
-      loaded run and no longer retries a lost event
-- [ ] 16. Platforms, the portable half: the suite on macOS and Windows
-      runners in continuous integration and cross-compiled release
-      binaries with no C toolchain; the file rules witnessed there
-      (case folding, the rename of an open file on windows, the user
-      directories); ocifs's store and export on both in its own
-      matrix; the local scheme's `.exe` resolution on windows
-- [ ] 17. The sandbox's darwin row: the Seatbelt backend
-      (sandbox-exec profile, rlimits, a process group), its probe
-      reporting `OS` or `Minimal`, its `Reach`, on the macOS runners
-- [ ] 18. The sandbox's windows row: the AppContainer and Job Object
-      backend, its probe, its `Reach`, on the windows runners
-- [ ] 19. Runner selection per entry: the default choosing `native`
-      where the image serves the host and the row meets the floor,
-      `docker` for the rest where a daemon is reachable, a layer's
-      runner binding every entry, the report naming each entry's
-      runner (witnessed on Linux with an image serving another
-      platform alone)
-- [ ] 20. The native runner on darwin and windows over the sandbox's
-      row: `local` plugins under no floor, `oci` plugins from the
-      image's entry for the host under the policy's lowering to `OS`,
-      the row's world the export and the platform's system
-      libraries, runner selection per platforms.md; the
-      local-scheme-darwin issue closes; what only hardware or a
-      Docker Desktop daemon can witness (the docker runner's live
-      cases on darwin and windows) tracked to a machine reporting
-      back
-- [ ] 21. The plugin catalog's first cut: every plugin of buf's registry
+- [ ] 12. The plugin catalog's first cut: every plugin of buf's registry
       under protocolbuffers, grpc, connectrpc, bufbuild,
       grpc-ecosystem and pluginrpc, and community/planetscale-vtprotobuf
       with the other go and node community generators, that the four
@@ -155,12 +109,71 @@ formatter and the language server
       is, the Go and npm ones cross-compiled, protocolbuffers/js from
       its release; pb's catalog copy grows with it; the
       plugin-catalog-growth issue closes but for grpc/java
-- [ ] 22. The release kind reads Maven Central beside GitHub releases:
+- [ ] 13. Campaign close-outs: the delta campaigns outstanding since
+      the generation work — chunks 5 to 11 — and the campaign over
+      the check subsystem with `gitdir`, each run on a clean tree as
+      an hours-class background run and its records banked and
+      promoted, every open mutant dispositioned; the
+      mutation-campaign-freshness-cost and
+      check-campaign-evidence-machine-local issues close, and
+      mutation-record-ledger-names-old-packages closes with them, the
+      re-measurement under the new names the relation it missed,
+      gomutant's retarget rewriting identity alone by design
+- [ ] 14. The release kind reads Maven Central beside GitHub releases:
       grpc/java from its per-platform executables; community/scalapb-scala
       and community/scalapb-zio-grpc from the native executables
       upstream ships; the plugin-catalog-growth issue closes
-- [ ] 23. The rust kind: a cargo package cross-compiled per platform;
+- [ ] 15. The rust kind: a cargo package cross-compiled per platform;
       connectrpc/rust
+- [ ] 16. The language server: its own spec (the capabilities served,
+      how a file outside the workspace is treated, how findings map
+      to diagnostics), `pb lsp` over the compile and the lint engine
+      — diagnostics, definition, hover, references over the build's
+      descriptors — and document formatting through the formatter
+- [ ] 17. The docker runner runs each plugin container under a per-run
+      cgroup parent and attributes a memory kill from the parent's
+      `memory.events` delta, the kernel's hierarchical count outliving
+      the container's release; the daemon's event the fallback where
+      the host's cgroup tree is not pb's to read (a remote daemon, a
+      daemon in a VM), the record stating which source spoke; the
+      mechanism the user's fork between a per-user slice pool and an
+      in-container static shim (docs/issues/docker-oom-event-lost.md
+      holds the spike); the runner suite's live memory case records
+      its kill in every loaded run and no longer retries a lost event
+- [ ] 18. The runner suite's kernel surfaces declared to gomutant's
+      observation bracket where paths name them, a SandboxRunner.Run
+      mutant then classified by its oracle; what the bracket cannot
+      name filed against gomutant with the residue chunk 13 measured;
+      the runner-oracle-sandbox-bound issue closes
+- [ ] 19. Platforms, the portable half: the suite on macOS and Windows
+      runners in continuous integration and cross-compiled release
+      binaries with no C toolchain; the file rules witnessed there
+      (case folding, the rename of an open file on windows, the user
+      directories); ocifs's store and export on both in its own
+      matrix; the local scheme's `.exe` resolution on windows
+- [ ] 20. The sandbox's darwin row: the Seatbelt backend
+      (sandbox-exec profile, rlimits, a process group), its probe
+      reporting `OS` or `Minimal`, its `Reach`, on the macOS runners;
+      the row admitting an entrypoint that executes a sibling of the
+      image's tree, as a bundled runtime's launcher does
+- [ ] 21. The sandbox's windows row: the AppContainer and Job Object
+      backend, its probe, its `Reach`, on the windows runners; the
+      row admitting a sibling's execution as the darwin row does
+- [ ] 22. Runner selection per entry: the default choosing `native`
+      where the image serves the host and the row meets the floor,
+      `docker` for the rest where a daemon is reachable, a layer's
+      runner binding every entry, the report naming each entry's
+      runner (witnessed on Linux with an image serving another
+      platform alone)
+- [ ] 23. The native runner on darwin and windows over the sandbox's
+      row: `local` plugins under no floor, `oci` plugins from the
+      image's entry for the host under the policy's lowering to `OS`,
+      the row's world the export and the platform's system
+      libraries, runner selection per platforms.md; the
+      local-scheme-darwin issue closes; what only hardware or a
+      Docker Desktop daemon can witness (the docker runner's live
+      cases on darwin and windows) tracked to a machine reporting
+      back
 - [ ] 24. The swift kind: `swift build` on a runner of the platform,
       the platforms served those the toolchain builds; grpc/swift,
       grpc/swift-protobuf, connectrpc/swift, connectrpc/swift-mocks,
@@ -168,9 +181,9 @@ formatter and the language server
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
 - [ ] 26. The jvm kind: a jlink'd runtime bundled in the image behind a
-      native launcher as the entrypoint, plugin-execution.md read first
-      for an entrypoint executing a sibling of the image's tree under
-      every sandbox row, amended where a row forbids it; grpc/kotlin,
+      native launcher as the entrypoint, plugin-execution.md's rows
+      read first for an entrypoint executing a sibling of the image's
+      tree, the linux row amended where it forbids it; grpc/kotlin,
       connectrpc/kotlin, bufbuild/connect-kotlin, bufbuild/validate-java
 - [ ] 27. The python kind, the jvm kind's shape over a standalone
       interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,

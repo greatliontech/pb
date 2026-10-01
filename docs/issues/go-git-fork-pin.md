@@ -1,7 +1,10 @@
 # The go-git pin points at a fork carrying the bounded pack parser
 
-Lands: when an upstream go-git release carries the bounded pack
-parser — the replace directive dropped, the pin on that release
+Lands: when git-go (greatliontech/git-go, the git library being
+designed to serve pb's fetch) carries the fetch under
+module-proxy.md REQ-proxy-direct-fetch — the go-git dependency and
+its replace dropped together; the parser change is never proposed
+upstream, the fork pinned until then
 
 go.mod replaces github.com/go-git/go-git/v6 with the fork's main on
 github.com/thegrumpylion/go-git, a tracking fork: upstream main plus

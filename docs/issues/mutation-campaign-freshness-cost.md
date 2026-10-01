@@ -1,8 +1,9 @@
 # Delta mutation campaigns stall in gomutant's freshness proofs
 
-Lands: gomutant's freshness-proofs-stall-on-large-record-sets
-resolved (its diagnosis is scheduled after the pb plans, gomutant
-being this work's own)
+Lands: the feature-full plan's chunk 13, the campaign close-outs
+(gomutant's freshness-proofs-stall-on-large-record-sets resolved: the
+campaigns reach measurement, preparation paying the document's first
+quarter hour)
 
 Four attempts at the generation work's delta campaign — the staged
 tree over nine packages, then the clean tree over three — never

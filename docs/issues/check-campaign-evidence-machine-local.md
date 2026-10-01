@@ -1,8 +1,9 @@
 # The check subsystem's mutation evidence stays machine-local
 
-Lands: the campaign over the check subsystem and the repository
-search (`gitdir`, hoisted out of it) banks repo-committable records
-on the tree whose oracles read nothing outside it
+Lands: the feature-full plan's chunk 13, the campaign close-outs: the
+campaign over the check subsystem and the repository search
+(`gitdir`, hoisted out of it) banks repo-committable records on the
+tree whose oracles read nothing outside it
 
 The delta campaign over the check subsystem's eight chunks measured
 on a clean tree: 87 of 102 targets banked in eighty-eight minutes

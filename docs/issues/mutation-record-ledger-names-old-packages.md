@@ -1,8 +1,9 @@
 # The mutation record's ledger names packages that no longer exist
 
-Lands: gomutant's retarget-drops-a-record-then-refuses-the-rerun
-resolved with its ledger arm (the compartment ledger's declaration
-and file records following a package rename)
+Lands: the feature-full plan's chunk 13, the campaign close-outs,
+closing it: gomutant's retarget rewrites identity alone by design
+(its store's Revise, the measured facts staying as measured), so the
+relation is recovered by the re-measurement under the new names
 
 The package moves of the structure plan carried every record's
 symbol identity to its new package, by gomutant's retarget or by the

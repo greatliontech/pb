@@ -1,7 +1,9 @@
 # Runner mutation evidence is machine-local
 
-Lands: gomutant's observation bracket admits a runner's kernel inputs:
-a SandboxRunner.Run mutant classified other than unstable-oracle
+Lands: the feature-full plan's chunk 18: the runner's kernel surfaces
+declared to gomutant's observation bracket, a SandboxRunner.Run
+mutant classified other than unstable-oracle, the residue the bracket
+cannot name filed against gomutant
 
 the runner suite (internal/plugin/runner) executes a real sandbox per
 test — fresh namespaces, a pivoted read-only root, cgroup or rlimit
