@@ -11,8 +11,9 @@ root, declaring generation configuration.
 **option override** (term): A declared assignment of a protobuf file
 option (such as `go_package`) applied to matching files' descriptors
 before plugins run: a value written out, or a derivation — a prefix
-or suffix declared, the value spelled from it and the file's own
-facts by a rule this document states, never inferred.
+or suffix declared, or neither where the rule needs none, the value
+spelled from them and the file's own facts by a rule this document
+states, never inferred.
 
 **generation target** (term): A file an entry's plugin generates for
 — named in the request's `file_to_generate`: the workspace files the
@@ -41,16 +42,23 @@ directory emptied (REQ-gen-clean); optionally `clean` at the top,
 `true` or `false` spelled so, `false` where absent, every entry's
 (REQ-gen-clean); and
 optionally `overrides`, a list of entries `{files, option, value}`
-or `{files, option, prefix, suffix}` where `files` is one such glob
-pattern over module-relative proto file paths within the workspace
-and its dependencies, `option` a protobuf option name in its
+or `{files, option, prefix, suffix}`, each optionally scoped by
+`module`, a module path, or `except`, a non-empty list of module
+paths none twice, never both, where `files` is one such glob pattern over
+module-relative proto file paths within the workspace and its
+dependencies, `module` narrows the entry to that module's files — a
+workspace module's by its declared path, a dependency's by its path
+in the build list — and `except` leaves the named modules' files
+out, a module path naming no module of the build failing generation
+naming it, a stale scope being a mistake the run must not pass
+over, `option` a protobuf option name in its
 navigable forms — a built-in option's dotted field name, or a
 parenthesized fully-qualified extension name with at most one field
 selector (`(pkg.ext)`, `(pkg.ext).field`) — and `value` the option
 value's spelling, or, for a derived override
 (REQ-gen-overrides-derived), `prefix` and `suffix` as the option
-admits them, each written non-empty, at least one written, and no
-`value` key. No other top-level keys and no other entry
+admits them, each written non-empty, none written only where the
+option's rule admits the file alone, and no `value` key. No other top-level keys and no other entry
 keys exist: there is no bare plugin-name key, and an entry with zero
 or several scheme keys is a schema violation — which scheme an entry
 lives in is always written, never inferred. A `ref` value is
@@ -78,8 +86,10 @@ indentation, `clean` (absent where false) then `plugins` then
 order given, a `plugins` entry's keys in the order `ref` or `local`,
 `out`, `opt` (absent where empty), `files` (absent where every file
 is a target, as a block sequence of the patterns), `include_imports`,
-`include_wkt` and `clean` (each absent where false) and an `overrides` entry's in the order `files`, `option`, `value` — or
-`prefix` then `suffix`, each absent where empty — each
+`include_wkt` and `clean` (each absent where false) and an
+`overrides` entry's in the order `files`, `module` or `except`
+(absent where none, `except` as a block sequence), `option`, `value`
+— or `prefix` then `suffix`, each absent where empty — each
 scalar spelled as `check-rules.md`
 REQ-lint-emission spells a scalar — a `local` with arguments a block
 sequence of them under the key, one without the scalar form, as its
@@ -107,7 +117,8 @@ filesystem iteration.
 applied exactly as declared to the descriptors of matching files —
 workspace and dependency files alike, never a well-known import (the
 toolchain's, its options its own), matched by include-root-relative
-path — before plugin invocation: entries apply in declaration order,
+path and, where the entry names a module or excepts some, by the
+module providing the file — before plugin invocation: entries apply in declaration order,
 later entries winning on overlap; a built-in option resolves by field
 name on the file options, a custom option through the compiled set's
 extension declarations; scalar-kind values parse by the field's kind
@@ -118,12 +129,13 @@ from a heuristic.
 
 **REQ-gen-overrides-derived** (behavior): A derived override MUST
 assign each matching file the value its rule spells from the
-declared prefix or suffix and the file's own facts — its
-module-relative path and the package it declares — and assign a
-file declaring no package nothing, where the rule reads the
+declared prefix or suffix, where one is declared, and the file's own
+facts — its module-relative path and the package it declares — and
+assign a file declaring no package nothing, where the rule reads the
 package; the options and their rules are exactly these, an option
-outside them, or a prefix or suffix its rule does not read, being a
-schema violation: `go_package` from a prefix, the prefix and the
+outside them, a prefix or suffix its rule does not read, or neither
+where its rule reads one, being a schema violation: `go_package`
+from a prefix, the prefix and the
 file's directory joined as path components and cleaned (the prefix
 alone, cleaned, for a file at the module root), followed by `;` and
 the package name where the package's last component is a version
@@ -133,9 +145,10 @@ then nothing, `test` and any text, or an optional `p` and a number
 followed by `alpha` or `beta` and an optional number, a number being
 decimal digits worth at least one and at most 2147483647; `java_package` from a prefix
 and/or a suffix, the package with the prefix before it and the
-suffix after, `.`-joined; `csharp_namespace` from a prefix, the
-prefix, `.`, and the package's components in PascalCase, `.`-joined;
-`php_metadata_namespace` from a suffix, the package's components in
+suffix after, `.`-joined; `csharp_namespace` from a prefix or from
+the file alone, the package's components in PascalCase, `.`-joined,
+the prefix and `.` before them where one is declared;
+`php_namespace` from the file alone, the package's components in
 PascalCase, one that lower-cased is a PHP reserved word or predefined
 class name (abstract, and, arithmeticerror, array, as, assertionerror,
 bool, break, callable, case, catch, class, clone, closure, const,
@@ -148,11 +161,21 @@ instanceof, insteadof, int, interface, isset, iterable, list, match,
 namespace, new, null, or, parseerror, print, private, protected,
 public, require, require_once, return, static, string, switch, throw,
 throwable, trait, true, try, typeerror, unset, use, var, void, while,
-xor, yield) getting `_` appended, `\`-joined, then `\` and the
-suffix; `ruby_package` from a suffix, the components in PascalCase,
-`::`-joined, then `::` and the suffix — a component's PascalCase
-dropping its underscores and upper-casing its first letter and each
-letter that followed an underscore, the rest as written.
+xor, yield) getting `_` appended, `\`-joined;
+`php_metadata_namespace` from a suffix, the `php_namespace` rule's
+value, then `\` and the suffix; `ruby_package` from a suffix or from
+the file alone, the components in PascalCase, `::`-joined, then `::`
+and the suffix where one is declared; `java_outer_classname` from
+the file alone, the file's base name — its last path component, the
+extension included — in PascalCase, split at `.`, `-`, `_` and the
+space;
+`objc_class_prefix` from the file alone, the first letter of each
+package component but a trailing version component (the form above),
+upper-cased, `X` appended until three letters, `GPX` where the three
+spell `GPB` — a component's PascalCase dropping its separators and
+upper-casing its first character and each that followed a
+separator, the rest as written, a package component's separator
+being `_` and a file name's `.`, `-`, `_` and the space.
 
 **REQ-gen-request** (wire): The `CodeGeneratorRequest` delivered to a
 plugin MUST carry: `file_to_generate` — the entry's generation

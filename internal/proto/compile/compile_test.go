@@ -88,6 +88,36 @@ func TestCompileAmbiguousProvider(t *testing.T) {
 	}
 }
 
+// Membership names each file's module by its path — a workspace
+// module's or a dependency's — "" for a well-known import and for a
+// path no module provides, holds every module of the build whether
+// or not a file reaches it, and refuses an ambiguous build as
+// Providers does (generation.md REQ-gen-overrides-declarative).
+func TestMembership(t *testing.T) {
+	mods := []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{"a/a.proto": "syntax = \"proto3\";\nimport \"m1/m.proto\";\n", "google/protobuf/empty.proto": "syntax = \"proto3\";\n"}),
+		mod("example.com/m1", "v1.0.0", false, map[string]string{"m1/m.proto": "syntax = \"proto3\";\n"}),
+		mod("example.com/unused", "v2.0.0", false, map[string]string{"u/u.proto": "syntax = \"proto3\";\n"}),
+	}
+	of, paths, err := Membership(mods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for p, want := range map[string]string{"a/a.proto": "example.com/a", "m1/m.proto": "example.com/m1", "u/u.proto": "example.com/unused", "google/protobuf/empty.proto": "", "nowhere.proto": ""} {
+		if got := of(p); got != want {
+			t.Errorf("of(%s) = %q, want %q", p, got, want)
+		}
+	}
+	if !maps.Equal(paths, map[string]bool{"example.com/a": true, "example.com/m1": true, "example.com/unused": true}) {
+		t.Errorf("paths = %v", paths)
+	}
+	ambiguous := append(mods, mod("example.com/m2", "v1.0.0", false, map[string]string{"m1/m.proto": "syntax = \"proto3\";\n"}))
+	var amb *AmbiguousError
+	if _, _, err := Membership(ambiguous); !errors.As(err, &amb) {
+		t.Fatalf("ambiguous: %v", err)
+	}
+}
+
 // Two ambiguous paths across exactly two providers: the report is
 // path-sorted and "; "-joined, and a two-provider duplicate is already
 // an error.

@@ -25,6 +25,7 @@ func compileMods(t testing.TB, mods []modfiles.Module) *compile.Result {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fixtureMods[res] = mods
 	return res
 }
 
@@ -124,7 +125,7 @@ func TestTargets(t *testing.T) {
 		t.Errorf("no workspace file: %v %v", got, err)
 	}
 	// The request carries the targets and their descriptors.
-	req, err := Build(res.Topological(), res.Files, nil, genfile.Plugin{Files: []string{"a/b.proto"}, IncludeImports: true, Opt: "x"}, modfiles.WellKnown)
+	req, err := Build(res.Topological(), res.Files, nil, genfile.Plugin{Files: []string{"a/b.proto"}, IncludeImports: true, Opt: "x"}, modfiles.WellKnown, fixtureModules(res))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,10 +135,29 @@ func TestTargets(t *testing.T) {
 }
 
 // build is Build over a compiled result's own order, for an entry
-// selecting every workspace file.
+// selecting every workspace file, the module membership the verb's
+// own (compile.Membership over the fixture's modules).
 func build(res *compile.Result, overrides []genfile.Override, opt string) (*pluginpb.CodeGeneratorRequest, error) {
-	return Build(res.Topological(), res.Files, overrides, genfile.Plugin{Opt: opt}, modfiles.WellKnown)
+	return Build(res.Topological(), res.Files, overrides, genfile.Plugin{Opt: opt}, modfiles.WellKnown, fixtureModules(res))
 }
+
+// fixtureModules is the module membership of a compiled fixture, as
+// the verb builds it: compile.Membership over the modules the
+// fixture was compiled from, kept by compileMods.
+func fixtureModules(res *compile.Result) Modules {
+	mods, ok := fixtureMods[res]
+	if !ok {
+		panic("a result compileMods did not compile: its membership is unknown")
+	}
+	of, paths, err := compile.Membership(mods)
+	if err != nil {
+		panic(err)
+	}
+	return Modules{Of: of, Paths: paths}
+}
+
+// fixtureMods remembers each compiled result's modules.
+var fixtureMods = map[*compile.Result][]modfiles.Module{}
 
 func mod(path, ver string, local bool, files map[string]string) modfiles.Module {
 	m := modfiles.Module{Path: path, Version: ver, Local: local, Files: map[string][]byte{}}
@@ -357,6 +377,66 @@ func TestDerive(t *testing.T) {
 	}
 }
 
+// An override scoped by module covers that module's files alone, one
+// excepting modules every file but theirs, the glob still read; a
+// scope naming a module the build does not hold fails before anything
+// is applied; a derivation from the file alone spells each option's
+// rule through the request (REQ-gen-overrides-declarative,
+// REQ-gen-overrides-derived, REQ-gen-schema).
+func TestOverrideModuleScope(t *testing.T) {
+	files := fixture(t)
+	req, err := build(files, []genfile.Override{
+		{Files: "**", Option: "go_package", Prefix: "example.com/gen", Except: []string{"example.com/m1"}},
+		{Files: "**", Module: "example.com/m1", Option: "java_package", Value: "com.m1"},
+		{Files: "a/a.proto", Module: "example.com/m1", Option: "java_package", Value: "never"},
+		{Files: "**", Option: "csharp_namespace", Bare: true},
+		{Files: "**", Option: "ruby_package", Bare: true},
+		{Files: "**", Option: "php_namespace", Bare: true},
+		{Files: "**", Option: "java_outer_classname", Bare: true},
+		{Files: "**", Option: "objc_class_prefix", Bare: true},
+	}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fileOpts(t, req, "a/a.proto").GetGoPackage(); got != "example.com/gen/a" {
+		t.Errorf("a/a.proto go_package = %q, the except leaving it covered", got)
+	}
+	if o := fileOpts(t, req, "m1/m1.proto"); o.GoPackage != nil {
+		t.Errorf("m1/m1.proto go_package = %q, excepted", o.GetGoPackage())
+	}
+	if got := fileOpts(t, req, "m1/m1.proto").GetJavaPackage(); got != "com.m1" {
+		t.Errorf("m1/m1.proto java_package = %q, the module scope", got)
+	}
+	if o := fileOpts(t, req, "a/a.proto"); o.JavaPackage != nil {
+		t.Errorf("a/a.proto java_package = %q, outside the module scope though the glob names it", o.GetJavaPackage())
+	}
+	a := fileOpts(t, req, "a/a.proto")
+	if a.GetCsharpNamespace() != "A" || a.GetRubyPackage() != "A" || a.GetPhpNamespace() != "A" || a.GetJavaOuterClassname() != "AProto" || a.GetObjcClassPrefix() != "AXX" {
+		t.Errorf("a/a.proto bare derivations: csharp %q ruby %q php %q outer %q objc %q", a.GetCsharpNamespace(), a.GetRubyPackage(), a.GetPhpNamespace(), a.GetJavaOuterClassname(), a.GetObjcClassPrefix())
+	}
+	if e := fileOpts(t, req, "google/protobuf/empty.proto"); e.GetJavaOuterClassname() != "EmptyProto" || e.GetObjcClassPrefix() != "GPB" {
+		t.Errorf("a well-known file's options touched: %q %q", e.GetJavaOuterClassname(), e.GetObjcClassPrefix())
+	}
+	for verb, o := range map[string]genfile.Override{
+		"names":   {Files: "**", Module: "example.com/nowhere", Option: "java_package", Value: "x"},
+		"excepts": {Files: "**", Except: []string{"example.com/a", "example.com/nowhere"}, Option: "java_package", Value: "x"},
+	} {
+		err := fixtureModules(files).Check([]genfile.Override{{Files: "**", Option: "java_package", Value: "first"}, o})
+		if err == nil || err.Error() != "overrides[1] "+verb+" the module example.com/nowhere, which the build does not hold" {
+			t.Errorf("a scope that %s no module of the build: %v", verb, err)
+		}
+	}
+	// A module of the build providing no reachable file is a module
+	// still: a scope naming it passes the check.
+	empty := compileMods(t, []modfiles.Module{
+		mod("example.com/a", "", true, map[string]string{"a/a.proto": "syntax = \"proto3\";\npackage a;\nmessage A {}\n"}),
+		mod("example.com/unused", "v1.0.0", false, map[string]string{"u/u.proto": "syntax = \"proto3\";\npackage u;\nmessage U {}\n"}),
+	})
+	if err := fixtureModules(empty).Check([]genfile.Override{{Files: "**", Module: "example.com/unused", Option: "java_package", Value: "x"}, {Files: "**", Except: []string{"example.com/unused"}, Option: "java_package", Value: "y"}}); err != nil {
+		t.Errorf("a module reached by no file: %v", err)
+	}
+}
+
 // One entry's overrides never leak into another's request: each Build
 // converts fresh descriptors (REQ-gen-request-determinism).
 func TestBuildIsolation(t *testing.T) {
@@ -401,7 +481,7 @@ func TestRequestCarriesTheDescriptorSet(t *testing.T) {
 			t.Fatalf("%s carries no source information", f.GetName())
 		}
 	}
-	if _, err := Build(res.Topological()[:1], res.Files, nil, genfile.Plugin{}, modfiles.WellKnown); err == nil || !strings.Contains(err.Error(), "not in the compiled order") {
+	if _, err := Build(res.Topological()[:1], res.Files, nil, genfile.Plugin{}, modfiles.WellKnown, fixtureModules(res)); err == nil || !strings.Contains(err.Error(), "not in the compiled order") {
 		t.Fatalf("a file outside the order: %v", err)
 	}
 }
@@ -428,7 +508,7 @@ func TestBuildDeterminism(t *testing.T) {
 		// require the same proto_file order modulo the generated files'
 		// positions.
 		perm := linker.Files(rapid.Permutation(slices.Clone([]linker.File(files.Files))).Draw(rt, "perm"))
-		req, err := Build(compile.Topological(perm), perm, nil, genfile.Plugin{}, modfiles.WellKnown)
+		req, err := Build(compile.Topological(perm), perm, nil, genfile.Plugin{}, modfiles.WellKnown, fixtureModules(files))
 		if err != nil {
 			rt.Fatal(err)
 		}

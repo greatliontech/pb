@@ -132,6 +132,17 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	// The build's module membership, for an override's module scope,
+	// and every scope judged against it before any plugin is
+	// acquired: a stale scope is the file's mistake, not an entry's.
+	of, paths, err := compile.Membership(mods)
+	if err != nil {
+		return err
+	}
+	modules := genrequest.Modules{Of: of, Paths: paths}
+	if err := modules.Check(gf.Overrides); err != nil {
+		return fmt.Errorf("generate: %w", err)
+	}
 
 	// Every plugin is acquired — verified and pinned — before any
 	// runs, and the pins persist whatever follows: a first-use
@@ -191,7 +202,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	// output directories still hold what they held (REQ-gen-clean).
 	requests := make([][]byte, len(gf.Plugins))
 	for i, entry := range gf.Plugins {
-		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry, modfiles.WellKnown)
+		req, err := genrequest.Build(compiled.Topological(), compiled.Files, gf.Overrides, entry, modfiles.WellKnown, modules)
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}

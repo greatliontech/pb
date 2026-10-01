@@ -155,6 +155,29 @@ func Providers(mods []modfiles.Module) (map[string]int, error) {
 	return index, nil
 }
 
+// Membership is the build's module membership over Providers
+// (generation.md REQ-gen-overrides-declarative's module scope): Of
+// names the path of the module providing a file by the file's
+// include-root-relative path, "" for a path no module provides — a
+// well-known import — and Paths holds every module path of the build,
+// a module providing no file included.
+func Membership(mods []modfiles.Module) (of func(path string) string, paths map[string]bool, err error) {
+	providers, err := Providers(mods)
+	if err != nil {
+		return nil, nil, err
+	}
+	paths = map[string]bool{}
+	for _, m := range mods {
+		paths[m.Path] = true
+	}
+	return func(p string) string {
+		if i, ok := providers[p]; ok {
+			return mods[i].Path
+		}
+		return ""
+	}, paths, nil
+}
+
 // providerIndex maps every import path to its one provider's bytes,
 // over Providers.
 func providerIndex(mods []modfiles.Module) (map[string][]byte, error) {

@@ -15,10 +15,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/contractfile"
+	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/rootpath"
 )
@@ -73,26 +76,52 @@ func (p Plugin) Equal(q Plugin) bool {
 }
 
 // Override is one declared file-option assignment: a value, or a
-// derivation from a prefix and/or suffix (REQ-gen-overrides-derived).
+// derivation from a prefix and/or suffix, or from the file alone
+// (REQ-gen-overrides-derived), over the files its glob matches,
+// narrowed to one module's or leaving some modules' out
+// (REQ-gen-schema).
 type Override struct {
-	Files  string // glob over module-relative proto file paths
-	Option string // dotted protobuf identifier
-	Value  string // the value's written spelling; "" for a derived override
-	Prefix string // a derived override's prefix
-	Suffix string // a derived override's suffix
+	Files  string   // glob over module-relative proto file paths
+	Module string   // the one module whose files the entry covers; "" for every module
+	Except []string // the modules whose files the entry leaves out; none with Module
+	Option string   // dotted protobuf identifier
+	Value  string   // the value's written spelling; "" for a derived override
+	Prefix string   // a derived override's prefix
+	Suffix string   // a derived override's suffix
+	// Bare marks a derivation from the file alone: no prefix, no
+	// suffix, the rule spelling the value from the file's facts.
+	Bare bool
 }
 
 // Derived reports whether the override derives its value.
-func (o Override) Derived() bool { return o.Prefix != "" || o.Suffix != "" }
+func (o Override) Derived() bool { return o.Prefix != "" || o.Suffix != "" || o.Bare }
+
+// Equal reports whether two overrides are the same override, module
+// for module.
+func (o Override) Equal(q Override) bool {
+	return o.Files == q.Files && o.Module == q.Module && slices.Equal(o.Except, q.Except) && o.Option == q.Option &&
+		o.Value == q.Value && o.Prefix == q.Prefix && o.Suffix == q.Suffix && o.Bare == q.Bare
+}
+
+// Scoped reports whether the override covers a file the module at
+// path provides: every module's where it names none, the one named,
+// or any but those excepted.
+func (o Override) Scoped(modulePath string) bool {
+	if o.Module != "" {
+		return modulePath == o.Module
+	}
+	return !slices.Contains(o.Except, modulePath)
+}
 
 // derivable is the derivation rule of each option a derived override
 // may name (REQ-gen-overrides-derived): which of prefix and suffix
-// it reads, and the value it spells for one file from its
-// module-relative path and its package, false where the file
-// declares no package and the rule reads it.
+// it reads, whether it stands with neither (bare), and the value it
+// spells for one file from its module-relative path and its
+// package, false where the file declares no package and the rule
+// reads it.
 var derivable = map[string]struct {
-	prefix, suffix bool
-	rule           func(o Override, filePath, pkg string) (string, bool)
+	prefix, suffix, bare bool
+	rule                 func(o Override, filePath, pkg string) (string, bool)
 }{
 	"go_package": {prefix: true, rule: func(o Override, filePath, pkg string) (string, bool) {
 		v := path.Join(o.Prefix, path.Dir(filePath))
@@ -115,28 +144,64 @@ var derivable = map[string]struct {
 		}
 		return v, true
 	}},
-	"csharp_namespace": {prefix: true, rule: func(o Override, _, pkg string) (string, bool) {
+	"csharp_namespace": {prefix: true, bare: true, rule: func(o Override, _, pkg string) (string, bool) {
 		if pkg == "" {
 			return "", false
 		}
-		return o.Prefix + "." + strings.Join(pascal(pkg, false), "."), true
+		v := strings.Join(pascal(pkg, false), ".")
+		if o.Prefix != "" {
+			v = o.Prefix + "." + v
+		}
+		return v, true
+	}},
+	"php_namespace": {bare: true, rule: func(_ Override, _, pkg string) (string, bool) {
+		return phpNamespace(pkg)
 	}},
 	"php_metadata_namespace": {suffix: true, rule: func(o Override, _, pkg string) (string, bool) {
-		if pkg == "" {
+		ns, ok := phpNamespace(pkg)
+		if !ok {
 			return "", false
 		}
-		return strings.Join(pascal(pkg, true), `\`) + `\` + o.Suffix, true
+		return ns + `\` + o.Suffix, true
 	}},
-	"ruby_package": {suffix: true, rule: func(o Override, _, pkg string) (string, bool) {
+	"ruby_package": {suffix: true, bare: true, rule: func(o Override, _, pkg string) (string, bool) {
 		if pkg == "" {
 			return "", false
 		}
-		return strings.Join(pascal(pkg, false), "::") + "::" + o.Suffix, true
+		v := strings.Join(pascal(pkg, false), "::")
+		if o.Suffix != "" {
+			v += "::" + o.Suffix
+		}
+		return v, true
+	}},
+	"java_outer_classname": {bare: true, rule: func(_ Override, filePath, _ string) (string, bool) {
+		return pascalWords(path.Base(filePath), ".-_ "), true
+	}},
+	"objc_class_prefix": {bare: true, rule: func(_ Override, _, pkg string) (string, bool) {
+		if pkg == "" {
+			return "", false
+		}
+		parts := strings.Split(pkg, ".")
+		if n := len(parts); n >= 2 && isPackageVersion(parts[n-1]) {
+			parts = parts[:n-1]
+		}
+		var letters []rune
+		for _, part := range parts {
+			letters = append(letters, unicode.ToUpper([]rune(part)[0]))
+		}
+		for len(letters) < 3 {
+			letters = append(letters, 'X')
+		}
+		if string(letters) == "GPB" {
+			return "GPX", true
+		}
+		return string(letters), true
 	}},
 }
 
 // CheckDerivation refuses a derived override naming an option no rule
-// derives, or a prefix or suffix its rule does not read.
+// derives, a prefix or suffix its rule does not read, or neither
+// where its rule reads one.
 func CheckDerivation(o Override) error {
 	d, ok := derivable[o.Option]
 	if !ok {
@@ -148,16 +213,27 @@ func CheckDerivation(o Override) error {
 	if o.Suffix != "" && !d.suffix {
 		return fmt.Errorf("option %s derives from no suffix", o.Option)
 	}
+	if o.Prefix == "" && o.Suffix == "" && !d.bare {
+		axes := "a prefix"
+		switch {
+		case d.prefix && d.suffix:
+			axes = "a prefix or a suffix"
+		case d.suffix:
+			axes = "a suffix"
+		}
+		return fmt.Errorf("option %s derives from %s, and none is written", o.Option, axes)
+	}
 	return nil
 }
 
 // Derive spells a derived override's value for one file from its
 // module-relative path and its package (REQ-gen-overrides-derived);
 // false where the rule reads the package and the file declares none,
-// or the override derives nothing.
+// or the override derives nothing, or is no derivation its option's
+// rule admits (CheckDerivation).
 func (o Override) Derive(filePath, pkg string) (string, bool) {
 	d, ok := derivable[o.Option]
-	if !ok || !o.Derived() {
+	if !ok || !o.Derived() || CheckDerivation(o) != nil {
 		return "", false
 	}
 	return d.rule(o, filePath, pkg)
@@ -194,19 +270,35 @@ func isPackageVersion(component string) bool {
 func pascal(pkg string, php bool) []string {
 	parts := strings.Split(pkg, ".")
 	for i, part := range parts {
-		var b strings.Builder
-		for _, word := range strings.Split(part, "_") {
-			if word == "" {
-				continue
-			}
-			b.WriteString(strings.ToUpper(word[:1]) + word[1:])
-		}
-		parts[i] = b.String()
+		parts[i] = pascalWords(part, "_")
 		if php && phpReserved[strings.ToLower(part)] {
 			parts[i] += "_"
 		}
 	}
 	return parts
+}
+
+// pascalWords is text in PascalCase: split at any of the separators,
+// each piece's first character upper-cased, the rest as written, the
+// separators dropped.
+func pascalWords(text, separators string) string {
+	var b strings.Builder
+	for _, word := range strings.FieldsFunc(text, func(r rune) bool { return strings.ContainsRune(separators, r) }) {
+		first, size := utf8.DecodeRuneInString(word)
+		b.WriteRune(unicode.ToUpper(first))
+		b.WriteString(word[size:])
+	}
+	return b.String()
+}
+
+// phpNamespace is the php_namespace rule's value for a package
+// (REQ-gen-overrides-derived): its components in PascalCase, a
+// reserved word's `_` appended, `\`-joined; false for no package.
+func phpNamespace(pkg string) (string, bool) {
+	if pkg == "" {
+		return "", false
+	}
+	return strings.Join(pascal(pkg, true), `\`), true
 }
 
 // phpReserved is PHP's reserved words and predefined class names,
@@ -315,6 +407,12 @@ func Encode(f *File) ([]byte, error) {
 			w.Sequence("overrides", len(f.Overrides), func(i int) {
 				o := f.Overrides[i]
 				w.Scalar("files", o.Files)
+				if o.Module != "" {
+					w.Scalar("module", o.Module)
+				}
+				if len(o.Except) > 0 {
+					w.List("except", o.Except)
+				}
 				w.Scalar("option", o.Option)
 				if o.Derived() {
 					if o.Prefix != "" {
@@ -329,7 +427,7 @@ func Encode(f *File) ([]byte, error) {
 			})
 		}
 	}, Parse, f, func(a, b *File) bool {
-		return a.Clean == b.Clean && slices.EqualFunc(a.Plugins, b.Plugins, Plugin.Equal) && slices.Equal(a.Overrides, b.Overrides)
+		return a.Clean == b.Clean && slices.EqualFunc(a.Plugins, b.Plugins, Plugin.Equal) && slices.EqualFunc(a.Overrides, b.Overrides, Override.Equal)
 	}, ErrInvalid)
 }
 
@@ -706,9 +804,12 @@ func CheckOut(s string) error {
 	return rootpath.Check(s, "the resolution root")
 }
 
-// parseOverrides reads the overrides list: each entry files, option
-// and value, all required — a glob and an option name one line of
-// text, the value text as written.
+// parseOverrides reads the overrides list: each entry files and
+// option, required, a value or a derivation — a prefix, a suffix,
+// or neither where the option's rule stands alone — and at most one
+// of module and except, a module path and a non-empty list of them
+// — a glob, an option name and a module path one line of text, the
+// value text as written.
 func parseOverrides(n ast.Node) ([]Override, error) {
 	overrides := []Override{}
 	err := contractfile.Sequence(n, "overrides", ErrInvalid, func(i int, en ast.Node) error {
@@ -741,8 +842,50 @@ func parseOverrides(n ast.Node) ([]Override, error) {
 			}
 			return f
 		}
+		modulePath := func(text, key string) error {
+			if err := module.ValidatePath(text); err != nil {
+				return fmt.Errorf("%w: %s: %v", ErrInvalid, key, err)
+			}
+			return nil
+		}
+		moduleField := line("module", &o.Module)
+		moduleField.Required = false
+		readModule := moduleField.Read
+		moduleField.Read = func(n ast.Node) error {
+			if err := readModule(n); err != nil {
+				return err
+			}
+			return modulePath(o.Module, where+".module")
+		}
 		err := contractfile.Mapping(en, where, ErrInvalid,
 			line("files", &o.Files),
+			moduleField,
+			contractfile.Field{Name: "except", Read: func(n ast.Node) error {
+				if _, isList := n.(*ast.SequenceNode); !isList {
+					return fmt.Errorf("%w: %s.except must be a list of module paths", ErrInvalid, where)
+				}
+				err := contractfile.Sequence(n, where+".except", ErrInvalid, func(i int, item ast.Node) error {
+					text, ok := contractfile.Line(item)
+					if !ok {
+						return fmt.Errorf("%w: %s.except[%d] must be one line of text", ErrInvalid, where, i)
+					}
+					if err := modulePath(text, fmt.Sprintf("%s.except[%d]", where, i)); err != nil {
+						return err
+					}
+					if slices.Contains(o.Except, text) {
+						return fmt.Errorf("%w: %s.except[%d] names %s twice", ErrInvalid, where, i, text)
+					}
+					o.Except = append(o.Except, text)
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+				if len(o.Except) == 0 {
+					return fmt.Errorf("%w: %s.except names no module", ErrInvalid, where)
+				}
+				return nil
+			}},
 			line("option", &o.Option),
 			contractfile.Field{Name: "value", Read: func(n ast.Node) error {
 				text, ok := contractfile.Scalar(n)
@@ -762,7 +905,12 @@ func parseOverrides(n ast.Node) ([]Override, error) {
 		case hasValue && hasDerivation:
 			return fmt.Errorf("%w: %s carries a value and a derivation; one or the other", ErrInvalid, where)
 		case !hasValue && !hasDerivation:
-			return fmt.Errorf("%w: %s: missing value, or a prefix or suffix to derive it", ErrInvalid, where)
+			// Neither: a derivation from the file alone, where the
+			// option's rule stands without an axis (CheckDerivation).
+			o.Bare = true
+		}
+		if o.Module != "" && len(o.Except) > 0 {
+			return fmt.Errorf("%w: %s names a module and excepts some; one or the other", ErrInvalid, where)
 		}
 		if _, err := glob.Compile(o.Files); err != nil {
 			return fmt.Errorf("%w: %s.files: %v", ErrInvalid, where, err)

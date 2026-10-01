@@ -281,9 +281,9 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 			base, _ := managedOverrides(first.name, first.gen.Managed)
 			facts = append(facts, fs...)
 			switch {
-			case slices.Equal(ov, base) && fl.gen.Managed != nil:
+			case slices.EqualFunc(ov, base, genfile.Override.Equal) && fl.gen.Managed != nil:
 				report(mapped(fl.name+" managed", "the overrides "+first.name+"'s managed mode gives"))
-			case slices.Equal(ov, base):
+			case slices.EqualFunc(ov, base, genfile.Override.Equal):
 			case fl.gen.Managed == nil:
 				report(unmapped(fl.name+" managed", "none, while "+first.name+"'s gives overrides: pb's overrides are one set over every entry"))
 			default:

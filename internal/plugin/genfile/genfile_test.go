@@ -63,6 +63,14 @@ overrides:
   - files: "**"
     option: ruby_package
     suffix: Proto
+  - files: "**"
+    module: example.com/acme/core
+    option: csharp_namespace
+  - files: "**"
+    except:
+      - github.com/googleapis/googleapis
+      - example.com/other
+    option: java_outer_classname
 `
 	f, err := Parse([]byte(in))
 	if err != nil {
@@ -96,12 +104,14 @@ overrides:
 		Override{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
 		Override{Files: "**", Option: "java_package", Prefix: "com.acme", Suffix: "proto"},
 		Override{Files: "**", Option: "ruby_package", Suffix: "Proto"},
+		Override{Files: "**", Module: "example.com/acme/core", Option: "csharp_namespace", Bare: true},
+		Override{Files: "**", Except: []string{"github.com/googleapis/googleapis", "example.com/other"}, Option: "java_outer_classname", Bare: true},
 	)
 	if len(f.Overrides) != len(wantO) {
 		t.Fatalf("overrides = %+v", f.Overrides)
 	}
 	for i := range wantO {
-		if f.Overrides[i] != wantO[i] {
+		if !f.Overrides[i].Equal(wantO[i]) {
 			t.Errorf("overrides[%d] = %+v, want %+v", i, f.Overrides[i], wantO[i])
 		}
 	}
@@ -134,6 +144,35 @@ func TestPluginEqual(t *testing.T) {
 		p := changed.Interface().(Plugin)
 		if base.Equal(p) || p.Equal(base) {
 			t.Errorf("%s: entries differing in it are equal", rv.Type().Field(i).Name)
+		}
+	}
+}
+
+// Override.Equal tells two overrides apart by every field the type
+// has, walked by reflection as Plugin.Equal is.
+func TestOverrideEqual(t *testing.T) {
+	base := Override{Files: "**", Module: "example.com/a", Except: []string{"example.com/b"}, Option: "o", Value: "v", Prefix: "p", Suffix: "s", Bare: true}
+	if !base.Equal(base) {
+		t.Fatal("an override differs from itself")
+	}
+	rv := reflect.ValueOf(base)
+	for i := 0; i < rv.NumField(); i++ {
+		changed := reflect.New(rv.Type()).Elem()
+		changed.Set(rv)
+		f := changed.Field(i)
+		switch f.Kind() {
+		case reflect.String:
+			f.SetString("other")
+		case reflect.Bool:
+			f.SetBool(false)
+		case reflect.Slice:
+			f.Set(reflect.Zero(f.Type()))
+		default:
+			t.Fatalf("field %s of a kind this test does not vary", rv.Type().Field(i).Name)
+		}
+		o := changed.Interface().(Override)
+		if base.Equal(o) || o.Equal(base) {
+			t.Errorf("%s: overrides differing in it are equal", rv.Type().Field(i).Name)
 		}
 	}
 }
@@ -224,6 +263,20 @@ func TestParseRejections(t *testing.T) {
 		{"ref ipv6 host", "plugins:\n  - ref: \"[::1]:5000/p:v1\"\n    out: gen\n", "label"},
 		{"local dot", "plugins:\n  - local: .\n    out: gen\n", "names no program"},
 		{"local dotdot", "plugins:\n  - local: ..\n    out: gen\n", "names no program"},
+		{"override module and except", ok + "overrides:\n  - files: a\n    module: example.com/a\n    except: [example.com/b]\n    option: go_package\n    value: v\n", "names a module and excepts some"},
+		{"override module bad path", ok + "overrides:\n  - files: a\n    module: Example.com/a\n    option: go_package\n    value: v\n", "overrides[0].module:"},
+		{"override module block", ok + "overrides:\n  - files: a\n    module: |\n      example.com/a\n    option: go_package\n    value: v\n", "module must be one line of text"},
+		{"override except scalar", ok + "overrides:\n  - files: a\n    except: example.com/b\n    option: go_package\n    value: v\n", "except must be a list of module paths"},
+		{"override except empty", ok + "overrides:\n  - files: a\n    except: []\n    option: go_package\n    value: v\n", "except names no module"},
+		{"override except bad path", ok + "overrides:\n  - files: a\n    except: [example.com/b, ../x]\n    option: go_package\n    value: v\n", "overrides[0].except[1]:"},
+		{"override except twice", ok + "overrides:\n  - files: a\n    except: [example.com/b, example.com/c, example.com/b]\n    option: go_package\n    value: v\n", "except[2] names example.com/b twice"},
+		{"override except block element", ok + "overrides:\n  - files: a\n    except:\n      - |\n        example.com/b\n    option: go_package\n    value: v\n", "except[0] must be one line of text"},
+		{"override bare needing a prefix", ok + "overrides:\n  - files: a\n    option: go_package\n", "option go_package derives from a prefix, and none is written"},
+		{"override bare needing an axis", ok + "overrides:\n  - files: a\n    option: java_package\n", "option java_package derives from a prefix or a suffix, and none is written"},
+		{"override bare needing a suffix", ok + "overrides:\n  - files: a\n    option: php_metadata_namespace\n", "option php_metadata_namespace derives from a suffix, and none is written"},
+		{"override bare of a value option", ok + "overrides:\n  - files: a\n    option: optimize_for\n", "option optimize_for has no derivation rule; write its value"},
+		{"override prefix on a bare-only option", ok + "overrides:\n  - files: a\n    option: php_namespace\n    prefix: x\n", "option php_namespace derives from no prefix"},
+		{"override suffix on csharp", ok + "overrides:\n  - files: a\n    option: csharp_namespace\n    suffix: x\n", "option csharp_namespace derives from no suffix"},
 		{"override unclosed extension", ok + "overrides:\n  - files: a\n    option: (a.b\n    value: v\n", "unclosed extension"},
 		{"override bad extension", ok + "overrides:\n  - files: a\n    option: (a..b).c\n    value: v\n", "invalid extension"},
 		{"override trailing dot", ok + "overrides:\n  - files: a\n    option: a.\n    value: v\n", "not a protobuf option name"},
@@ -241,7 +294,7 @@ func TestParseRejections(t *testing.T) {
 		{"overrides not list", ok + "overrides: {}\n", "overrides must be a list"},
 		{"override not mapping", ok + "overrides:\n  - x\n", "must be a mapping"},
 		{"override unknown key", ok + "overrides:\n  - files: a\n    option: o\n    value: v\n    extra: 1\n", `unknown key "extra"`},
-		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "missing value, or a prefix or suffix"},
+		{"override missing value", ok + "overrides:\n  - files: a\n    option: o\n", "option o has no derivation rule; write its value"},
 		{"override value and prefix", ok + "overrides:\n  - files: a\n    option: go_package\n    value: v\n    prefix: p\n", "carries a value and a derivation"},
 		{"override value and empty suffix", ok + "overrides:\n  - files: a\n    option: java_package\n    value: v\n    suffix: \"\"\n", "suffix is empty"},
 		{"override empty prefix", ok + "overrides:\n  - files: a\n    option: go_package\n    prefix: \"\"\n", "prefix is empty"},
@@ -347,6 +400,7 @@ func FuzzParse(f *testing.F) {
 	f.Add([]byte("clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"a/**\", \"*.proto\"]\n    include_imports: true\n"))
 	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: true\n    include_wkt: true\n    clean: true\n"))
 	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_wkt: true\n"))
+	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: '**'\n    module: example.com/a\n    option: csharp_namespace\n  - files: '**'\n    except: [example.com/b, example.com/c]\n    option: java_outer_classname\n  - files: '**'\n    option: go_package\n"))
 	f.Add([]byte("plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: '**'\n    option: go_package\n    prefix: example.com/x\n  - files: '**'\n    option: java_package\n    suffix: pb\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		parsed, err := Parse(data)
@@ -356,6 +410,20 @@ func FuzzParse(f *testing.F) {
 		if len(parsed.Plugins) == 0 {
 			t.Fatal("accepted a file with no plugins")
 		}
+		for _, o := range parsed.Overrides {
+			if o.Module != "" && len(o.Except) > 0 {
+				t.Fatalf("accepted a module and an except %+v", o)
+			}
+			if seen := map[string]bool{}; slices.ContainsFunc(o.Except, func(e string) bool { dup := seen[e]; seen[e] = true; return dup }) {
+				t.Fatalf("accepted a module excepted twice %+v", o)
+			}
+			if o.Bare && (o.Value != "" || o.Prefix != "" || o.Suffix != "") {
+				t.Fatalf("accepted a bare derivation with a value or an axis %+v", o)
+			}
+			if o.Derived() && CheckDerivation(o) != nil {
+				t.Fatalf("accepted a derivation its option refuses %+v", o)
+			}
+		}
 		// What is accepted is rendered, and read back as itself
 		// (REQ-gen-emission).
 		out, err := Encode(parsed)
@@ -363,7 +431,7 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("accepted a file Encode refuses: %v", err)
 		}
 		again, err := Parse(out)
-		if err != nil || !slices.EqualFunc(parsed.Plugins, again.Plugins, Plugin.Equal) || !slices.Equal(parsed.Overrides, again.Overrides) || parsed.Clean != again.Clean {
+		if err != nil || !slices.EqualFunc(parsed.Plugins, again.Plugins, Plugin.Equal) || !slices.EqualFunc(parsed.Overrides, again.Overrides, Override.Equal) || parsed.Clean != again.Clean {
 			t.Fatalf("the rendering reads as a different file: %v\n%s", err, out)
 		}
 		for _, p := range parsed.Plugins {
@@ -424,6 +492,9 @@ func TestEncode(t *testing.T) {
 			{Files: "**", Option: "go_package", Prefix: "example.com/gen"},
 			{Files: "**", Option: "java_package", Prefix: "com.acme", Suffix: "proto"},
 			{Files: "**", Option: "php_metadata_namespace", Suffix: "PB\\Meta"},
+			{Files: "**", Module: "example.com/acme/core", Option: "objc_class_prefix", Bare: true},
+			{Files: "**", Except: []string{"github.com/googleapis/googleapis", "example.com/o"}, Option: "csharp_namespace", Prefix: "Acme"},
+			{Files: "**", Option: "value_empty", Value: ""},
 		},
 	}
 	out, err := Encode(f)
@@ -472,6 +543,18 @@ overrides:
   - files: "**"
     option: php_metadata_namespace
     suffix: PB\Meta
+  - files: "**"
+    module: example.com/acme/core
+    option: objc_class_prefix
+  - files: "**"
+    except:
+      - github.com/googleapis/googleapis
+      - example.com/o
+    option: csharp_namespace
+    prefix: Acme
+  - files: "**"
+    option: value_empty
+    value: ""
 `
 	if string(out) != want {
 		t.Fatalf("Encode:\n%s", out)
@@ -496,14 +579,17 @@ overrides:
 		t.Fatalf("the order given: %q %v", out, err)
 	}
 	for name, f := range map[string]*File{
-		"nil":            nil,
-		"no plugins":     {},
-		"no out":         {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1"}}},
-		"no tag":         {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b", Out: "gen"}}},
-		"escaping out":   {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "../gen"}}},
-		"bad option":     {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Option: "not an option", Value: "v"}}},
-		"unknown scheme": {Plugins: []Plugin{{Scheme: "remote", Ref: "x", Out: "gen"}}},
-		"wkt alone":      {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen", IncludeWKT: true}}},
+		"nil":                  nil,
+		"no plugins":           {},
+		"no out":               {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1"}}},
+		"no tag":               {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b", Out: "gen"}}},
+		"escaping out":         {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "../gen"}}},
+		"bad option":           {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Option: "not an option", Value: "v"}}},
+		"unknown scheme":       {Plugins: []Plugin{{Scheme: "remote", Ref: "x", Out: "gen"}}},
+		"wkt alone":            {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen", IncludeWKT: true}}},
+		"module and except":    {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Module: "example.com/a", Except: []string{"example.com/b"}, Option: "go_package", Value: "v"}}},
+		"bare needing an axis": {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Option: "go_package", Bare: true}}},
+		"bad module path":      {Plugins: []Plugin{{Scheme: plugin.SchemeOCI, Ref: "ghcr.io/a/b:v1", Out: "gen"}}, Overrides: []Override{{Files: "**", Module: "nope", Option: "go_package", Value: "v"}}},
 	} {
 		if _, err := Encode(f); err == nil {
 			t.Errorf("%s: encoded", name)
@@ -561,7 +647,33 @@ func TestDerive(t *testing.T) {
 		{Override{Option: "php_metadata_namespace", Suffix: "Meta"}, "x.proto", "acme.foo.v1", `Acme\Foo\V1\Meta`, true},
 		{Override{Option: "ruby_package", Suffix: "Proto"}, "x.proto", "acme.foo.v1", "Acme::Foo::V1::Proto", true},
 		{Override{Option: "ruby_package", Suffix: "Proto"}, "x.proto", "", "", false},
+		{Override{Option: "php_metadata_namespace", Suffix: "Meta"}, "x.proto", "", "", false},
 		{Override{Option: "optimize_for", Prefix: "x"}, "x.proto", "a", "", false},
+		{Override{Option: "csharp_namespace", Bare: true}, "x.proto", "acme.foo_bar.v1", "Acme.FooBar.V1", true},
+		{Override{Option: "csharp_namespace", Bare: true}, "x.proto", "", "", false},
+		{Override{Option: "ruby_package", Bare: true}, "x.proto", "acme.foo_bar.v1", "Acme::FooBar::V1", true},
+		{Override{Option: "php_namespace", Bare: true}, "x.proto", "acme.list.v1", `Acme\List_\V1`, true},
+		{Override{Option: "php_namespace", Bare: true}, "x.proto", "", "", false},
+		{Override{Option: "java_outer_classname", Bare: true}, "acme/v1/foo_bar.proto", "acme.v1", "FooBarProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "acme/v1/foo-bar.baz.proto", "", "FooBarBazProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "fooBAR.proto", "", "FooBARProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "acme/élan.proto", "", "ÉlanProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "foo bar.proto", "", "FooBarProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "foo_2bar.proto", "", "Foo2barProto", true},
+		{Override{Option: "java_outer_classname", Bare: true}, "x__y.proto", "", "XYProto", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "acme.weather.v1", "AW" + "X", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "acme.weather.data.v1", "AWD", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "acme.weather.data.sources.v1", "AWDS", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "v1", "VXX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "google.protobuf", "GPX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "google.protobuf.v1", "GPX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "google.protobuf.buffers", "GPX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "google.protobuf.buffers.v1", "GPX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "google.protobuf.other", "GPO", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "élan.b", "ÉBX", true},
+		{Override{Option: "objc_class_prefix", Bare: true}, "x.proto", "", "", false},
+		{Override{Option: "java_package", Bare: true}, "x.proto", "acme", "", false},
+		{Override{Option: "go_package", Bare: true}, "x.proto", "acme", "", false},
 	}
 	for _, c := range cases {
 		got, ok := c.o.Derive(c.path, c.pkg)

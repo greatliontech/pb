@@ -37,7 +37,7 @@ import (
 // opt as the parameter verbatim. Each descriptor is converted fresh
 // from the linked file, so this entry's overrides touch this request
 // alone.
-func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []genfile.Override, entry genfile.Plugin, wellKnown func(path string) bool) (*pluginpb.CodeGeneratorRequest, error) {
+func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []genfile.Override, entry genfile.Plugin, wellKnown func(path string) bool, modules Modules) (*pluginpb.CodeGeneratorRequest, error) {
 	protos := make(map[string]*descriptorpb.FileDescriptorProto, len(order))
 	for _, fd := range order {
 		protos[fd.Path()] = protodesc.ToFileDescriptorProto(fd)
@@ -54,7 +54,7 @@ func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []
 	if err != nil {
 		return nil, err
 	}
-	if err := applyOverrides(order, protos, overrides, extensionResolver(order), wellKnown); err != nil {
+	if err := applyOverrides(order, protos, overrides, extensionResolver(order), wellKnown, modules); err != nil {
 		return nil, err
 	}
 	req := &pluginpb.CodeGeneratorRequest{FileToGenerate: targets}
@@ -68,6 +68,34 @@ func Build(order []protoreflect.FileDescriptor, files linker.Files, overrides []
 		req.SourceFileDescriptors = append(req.SourceFileDescriptors, protos[t])
 	}
 	return req, nil
+}
+
+// Modules is the build's module membership, by which an override's
+// module scope is read (REQ-gen-overrides-declarative): Of names the
+// path of the module providing a file, by the file's include-root-
+// relative path, "" for a well-known import; Paths holds every module
+// path of the build, a scope naming another being a mistake.
+type Modules struct {
+	Of    func(filePath string) string
+	Paths map[string]bool
+}
+
+// Check refuses an override naming or excepting a module the build
+// does not hold, naming the override and the module
+// (REQ-gen-schema): a stale scope is a mistake, judged once over the
+// file before any plugin is acquired.
+func (m Modules) Check(overrides []genfile.Override) error {
+	for i, o := range overrides {
+		if o.Module != "" && !m.Paths[o.Module] {
+			return fmt.Errorf("overrides[%d] names the module %s, which the build does not hold", i, o.Module)
+		}
+		for _, e := range o.Except {
+			if !m.Paths[e] {
+				return fmt.Errorf("overrides[%d] excepts the module %s, which the build does not hold", i, e)
+			}
+		}
+	}
+	return nil
 }
 
 // Targets names the entry's generation targets (REQ-gen-request, the
@@ -179,8 +207,10 @@ func extensionResolver(order []protoreflect.FileDescriptor) func(protoreflect.Fu
 // protos (REQ-gen-overrides-declarative): entries in declaration
 // order, later entries winning; matching is over include-root-relative
 // paths — the names proto_file carries — workspace and dependency
-// files alike.
-func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*descriptorpb.FileDescriptorProto, overrides []genfile.Override, ext func(protoreflect.FullName) (protoreflect.ExtensionDescriptor, bool), wellKnown func(string) bool) error {
+// files alike, and over the module providing the file where the
+// entry names one or excepts some (Modules.Check having judged the
+// scopes).
+func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*descriptorpb.FileDescriptorProto, overrides []genfile.Override, ext func(protoreflect.FullName) (protoreflect.ExtensionDescriptor, bool), wellKnown func(string) bool, modules Modules) error {
 	for _, o := range overrides {
 		p, err := glob.Compile(o.Files)
 		if err != nil {
@@ -191,7 +221,7 @@ func applyOverrides(order []protoreflect.FileDescriptor, protos map[string]*desc
 		for _, fd := range order {
 			// A well-known import is the toolchain's, its options its
 			// own: never overridden (REQ-gen-overrides-declarative).
-			if wellKnown(fd.Path()) || !p.Match(fd.Path()) {
+			if wellKnown(fd.Path()) || !p.Match(fd.Path()) || !o.Scoped(modules.Of(fd.Path())) {
 				continue
 			}
 			value := o.Value

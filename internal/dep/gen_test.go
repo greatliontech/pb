@@ -24,6 +24,7 @@ import (
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 	"pgregory.net/rapid"
 )
@@ -722,10 +723,12 @@ func TestGenTargets(t *testing.T) {
 	}
 }
 
-// recordingRunner records each run's file_to_generate.
+// recordingRunner records each run's file_to_generate, and the whole
+// request where asked.
 type recordingRunner struct {
 	res      *runner.Result
 	requests *[][]string
+	whole    []*pluginpb.CodeGeneratorRequest
 }
 
 func (r *recordingRunner) Platform() plugin.Platform { return plugin.HostPlatform() }
@@ -735,8 +738,56 @@ func (r *recordingRunner) Run(_ context.Context, spec runner.Spec) (*runner.Resu
 	if err := proto.Unmarshal(spec.Stdin, &req); err != nil {
 		return nil, err
 	}
-	*r.requests = append(*r.requests, req.GetFileToGenerate())
+	if r.requests != nil {
+		*r.requests = append(*r.requests, req.GetFileToGenerate())
+	}
+	r.whole = append(r.whole, &req)
 	return r.res, nil
+}
+
+// An override's module scope is read against the build's modules —
+// a workspace module by its declared path, a dependency by its path
+// in the build list — and one naming no module of the build fails
+// the entry (REQ-gen-overrides-declarative, REQ-gen-schema).
+func TestGenOverrideModuleScope(t *testing.T) {
+	files := map[string]string{
+		"pb.work":     "use:\n  - a\n",
+		"a/pb.yaml":   ws("example.com/a", "  example.com/d: v1.0.0\n"),
+		"a/x.proto":   "syntax = \"proto3\";\npackage a;\nimport \"d/d.proto\";\nmessage X { d.D d = 1; }\n",
+		"pb.gen.yaml": "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    include_imports: true\noverrides:\n  - files: \"**\"\n    option: go_package\n    prefix: example.com/gen\n    except:\n      - example.com/d\n  - files: \"**\"\n    module: example.com/d\n    option: java_package\n    value: com.d\n",
+	}
+	fx := newDep(t, files)
+	fx.serve(t, "example.com/d", "v1.0.0", map[string]string{
+		"pb.yaml":   ws("example.com/d", ""),
+		"d/d.proto": "syntax = \"proto3\";\npackage d;\nmessage D {}\n",
+	})
+	s := fx.session(t, ".")
+	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
+	run := &recordingRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(run.whole) != 1 {
+		t.Fatalf("requests %d", len(run.whole))
+	}
+	opts := map[string]*descriptorpb.FileOptions{}
+	for _, fd := range run.whole[0].GetProtoFile() {
+		opts[fd.GetName()] = fd.GetOptions()
+	}
+	if opts["x.proto"].GetGoPackage() != "example.com/gen" || opts["x.proto"].JavaPackage != nil {
+		t.Errorf("the workspace file's options: %+v", opts["x.proto"])
+	}
+	if opts["d/d.proto"].GoPackage != nil || opts["d/d.proto"].GetJavaPackage() != "com.d" {
+		t.Errorf("the dependency's options: %+v", opts["d/d.proto"])
+	}
+	// A scope naming no module of the build fails before any plugin
+	// is acquired: the failing acquirer is never reached.
+	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: \"**\"\n    module: example.com/gone\n    option: java_package\n    value: x\n")
+	s = fx.session(t, ".")
+	failing := &stubAcquirer{err: errors.New("registry down")}
+	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: run}, &strings.Builder{}); err == nil || err.Error() != "generate: overrides[0] names the module example.com/gone, which the build does not hold" {
+		t.Fatalf("a scope naming no module: %v", err)
+	}
 }
 
 // With clean, every output directory is emptied once before any
