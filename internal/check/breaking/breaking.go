@@ -1,12 +1,14 @@
 // Package breaking materializes the comparison base of a module under
 // check (check-rules.md §Breaking-change alignment): the lint file's
-// one base form — a git reference, a tagged version, or the version
-// the lockfile pins — yields the base module's files, which the
-// verb compiles in place of the module under check's and pairs with
-// the checked schema. A reference is read from the repository the
-// workspace root lies in, at the module's directory as it lies now;
-// a version is acquired through the same client as any dependency,
-// so it is verified and pinned on the way.
+// one base form — a git reference, a tagged version, the version the
+// lockfile pins, or a descriptor set file — yields the base module's
+// files, which the verb compiles in place of the module under check's
+// and pairs with the checked schema, or, for a descriptor set, the
+// compiled files themselves. A reference is read from the repository
+// the workspace root lies in, at the module's directory as it lies
+// now; a version is acquired through the same client as any
+// dependency, so it is verified and pinned on the way; a descriptor
+// set is read from the workspace as it is, trusted by being named.
 package breaking
 
 import (
@@ -20,6 +22,8 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
@@ -36,11 +40,13 @@ var ErrBase = errors.New("breaking base")
 // Sources is what materializing draws on: the repository the
 // workspace root lies in, opened on demand with the root's directory
 // within it (an error where the root lies in none); the client's
-// verified archive of a module at a version; the pin store.
+// verified archive of a module at a version; the pin store; a file
+// of the workspace by its path from the root.
 type Sources struct {
 	Repo func() (*git.Repository, string, error)
 	Zip  func(ctx context.Context, modPath string, v version.Version) ([]byte, error)
 	Lock *lockfile.File
+	Read func(path string) ([]byte, error)
 }
 
 // Module is the module under check as the base is drawn for it: its
@@ -51,9 +57,11 @@ type Module struct {
 }
 
 // Base is a materialized base: the module's protobuf files by
-// module-relative path, and the label a finding names it by.
+// module-relative path — or, from a descriptor set file, the set,
+// compiled already — and the label a finding names it by.
 type Base struct {
 	Files map[string][]byte
+	Set   *descriptorpb.FileDescriptorSet
 	Label string
 }
 
@@ -75,6 +83,8 @@ func Materialize(ctx context.Context, form lintfile.Base, m Module, src Sources)
 			return nil, fmt.Errorf("%w pinned: %v", ErrBase, err)
 		}
 		return fromVersion(ctx, lintfile.Base{Form: lintfile.BasePinned, Value: v.String()}, m, v, src)
+	case lintfile.BaseFile:
+		return fromFile(form, src)
 	}
 	return nil, fmt.Errorf("%w: %q is no form", ErrBase, form.Form)
 }
@@ -103,6 +113,24 @@ func pinned(lock *lockfile.File, modPath string) (version.Version, error) {
 		return best, fmt.Errorf("the lockfile pins no version of %s", modPath)
 	}
 	return best, nil
+}
+
+// fromFile reads the descriptor set file as it is: the bytes trusted
+// by being named, a file that cannot be read or does not parse as a
+// descriptor set failing naming it (REQ-break-base-materialized).
+func fromFile(form lintfile.Base, src Sources) (*Base, error) {
+	if src.Read == nil {
+		return nil, fmt.Errorf("%w %s: no workspace source is wired", ErrBase, form)
+	}
+	b, err := src.Read(form.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%w %s: %v", ErrBase, form, err)
+	}
+	set := &descriptorpb.FileDescriptorSet{}
+	if err := proto.Unmarshal(b, set); err != nil {
+		return nil, fmt.Errorf("%w %s: not a descriptor set: %v", ErrBase, form, err)
+	}
+	return &Base{Set: set, Label: form.String()}, nil
 }
 
 // fromVersion acquires the module at the version through the client,

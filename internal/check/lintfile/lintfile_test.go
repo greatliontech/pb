@@ -84,8 +84,9 @@ func TestParse(t *testing.T) {
 		t.Fatalf("empty: %+v %v", empty, err)
 	}
 	for in, want := range map[string]Base{
-		"breaking:\n  base:\n    version: v1.2.0\n": {Form: BaseVersion, Value: "v1.2.0"},
-		"breaking:\n  base:\n    pinned: true\n":    {Form: BasePinned},
+		"breaking:\n  base:\n    version: v1.2.0\n":        {Form: BaseVersion, Value: "v1.2.0"},
+		"breaking:\n  base:\n    pinned: true\n":           {Form: BasePinned},
+		"breaking:\n  base:\n    file: build/base.binpb\n": {Form: BaseFile, Value: "build/base.binpb"},
 	} {
 		f, err := Parse([]byte(in))
 		if err != nil || f.Breaking.Base != want || f.Breaking.Base.String() != strings.TrimSpace(string(want.Form)+" "+want.Value) {
@@ -126,8 +127,12 @@ func TestParse(t *testing.T) {
 		"breaking not map":   {"breaking: main\n", "breaking must be a mapping"},
 		"breaking no base":   {"breaking: {}\n", "breaking: missing base"},
 		"breaking unknown":   {"breaking:\n  base: {ref: main}\n  other: 1\n", `breaking: unknown key "other"`},
-		"base two forms":     {"breaking:\n  base:\n    ref: main\n    version: v1.0.0\n", "exactly one of ref, version, pinned"},
-		"base none":          {"breaking:\n  base: {}\n", "exactly one of ref, version, pinned"},
+		"base two forms":     {"breaking:\n  base:\n    ref: main\n    version: v1.0.0\n", "exactly one of ref, version, pinned, file"},
+		"base none":          {"breaking:\n  base: {}\n", "exactly one of ref, version, pinned, file"},
+		"base file escapes":  {"breaking:\n  base:\n    file: ../base.binpb\n", "breaking.base.file:"},
+		"base file absolute": {"breaking:\n  base:\n    file: /tmp/base.binpb\n", "breaking.base.file:"},
+		"base file unclean":  {"breaking:\n  base:\n    file: ./base.binpb\n", "breaking.base.file:"},
+		"base file empty":    {"breaking:\n  base:\n    file: \"\"\n", "breaking.base.file must be a non-empty string"},
 		"base unknown":       {"breaking:\n  base:\n    tag: v1\n", `breaking.base: unknown key "tag"`},
 		"base pinned false":  {"breaking:\n  base:\n    pinned: false\n", "breaking.base.pinned must be true"},
 		"base pinned quoted": {"breaking:\n  base:\n    pinned: \"true\"\n", "breaking.base.pinned must be true"},
@@ -280,6 +285,9 @@ modules:
 		t.Fatalf("empty: %q %v", out, err)
 	}
 	f = &File{Enable: []string{}, Exclude: []string{}, Breaking: &Breaking{Base: Base{Form: BasePinned}}, Modules: map[string]ModuleSelection{"a": {Enable: []string{}}}}
+	if out, err := Encode(&File{Enable: []string{}, Breaking: &Breaking{Base: Base{Form: BaseFile, Value: "build/base.binpb"}}}); err != nil || string(out) != "enable: []\nbreaking:\n  base:\n    file: build/base.binpb\n" {
+		t.Fatalf("a file base: %v %q", err, out)
+	}
 	if out, err := Encode(f); err != nil || string(out) != "enable: []\nbreaking:\n  base:\n    pinned: true\nmodules:\n  a:\n    enable: []\n" {
 		t.Fatalf("empty enable, pinned: %q %v", out, err)
 	}

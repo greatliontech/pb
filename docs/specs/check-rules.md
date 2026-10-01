@@ -386,58 +386,88 @@ made from the one `breaking.base` form; a workspace module holding no
 protobuf files has nothing to pair and needs no base.
 
 **REQ-break-base** (behavior): The comparison base MUST come from the
-lint file's `breaking.base`, one form of the three: a git reference,
-a tagged version, or the version the lockfile pins for the module
+lint file's `breaking.base`, one form of the four: a git reference,
+a tagged version, the version the lockfile pins for the module
 under check — the highest, where the pin store holds the module at
-more than one.
+more than one — or a descriptor set file.
 
 **REQ-break-base-materialized** (behavior): The base MUST be
 materialized as a module and compiled by the same compiler as the
-checked schema before pairing — its files in place of the module
-under check's, the build's other modules resolving its imports: a
-git reference from the git repository the workspace root lies in —
-the root or its nearest ancestor holding a `.git` entry, the
-filesystem's root searched last, the search never entering a
-directory `GIT_CEILING_DIRECTORIES` names, the variable read as git
-reads it: absolute entries alone, the filesystem's root among the
-dropped, each naming the directory it resolves to until an empty
-entry, after which an entry names its spelling alone — at that
-reference, at the module's directory relative to
-that repository's root as it lies now, a nested module's directory — one
-holding a module file at that reference — excluded as the working
-tree's walk excludes one; a tagged version and the pinned
-version as the module's own path at that version, acquired, verified
-and pinned as any dependency (`module-resolution.md`,
-`module-lockfile.md`). A base that cannot be
-materialized — a workspace root in no git repository, a reference or
-directory the repository lacks, a version the module's origin does not
-serve, a module the lockfile does not pin — fails `pb breaking` naming
-the form and the cause; nothing degrades to an empty base.
+checked schema before pairing — its files in place of the module under
+check's, the build's other modules resolving its imports: a git
+reference from the git repository the workspace root lies in — the root
+or its nearest ancestor holding a `.git` entry, the filesystem's root
+searched last, the search never entering a directory
+`GIT_CEILING_DIRECTORIES` names, the variable read as git reads it:
+absolute entries alone, the filesystem's root among the dropped, each
+naming the directory it resolves to until an empty entry, after which an
+entry names its spelling alone — at that reference, at the module's
+directory relative to that repository's root as it lies now, a nested
+module's directory — one holding a module file at that reference —
+excluded as the working tree's walk excludes one; a tagged version and
+the pinned version as the module's own path at that version, acquired,
+verified and pinned as any dependency (`module-resolution.md`,
+`module-lockfile.md`); a descriptor set file — `file`, a path from the
+workspace root, within it as every root-relative path field is (the
+root-contained path rule) — read as the descriptor set `pb build` writes
+(`build.md`, the descriptor set term), an empty file the empty set, its
+files standing as compiled with no compiler run over them and its own
+files resolving their imports, the module under check's base being the
+set's files the module provides now, each by its name, and those no
+module provides whose package the module alone declares now — a file
+deleted from the module since the set was built, held as the version
+form holds it; the set's other files — those no module provides and no
+well-known import is, whose package no local module declares now or
+several do, or which declare none: a package deleted whole, or a
+dependency the build no longer holds, which the set does not tell apart
+(a dropped dependency's file whose package one local module declares
+reading as that module's deletion) — stand once more as a base of their
+own, their declarations paired by name with everything the build holds
+now (REQ-break-pairing) — a declaration moved to another file pairing as
+it would within a module — additions left aside, no `set` rule
+evaluated, a set being a module's and these files no module's, and a
+`package` rule evaluated only over a package the build no longer
+declares, one it still declares being a module's to judge over its own
+files — and judged under the root's selection, the selection a module
+without an entry has, whatever entry the module they came from declares,
+which the set does not tell, and even where every module's own entry
+enables no rule, so a deletion is reported once and a dropped dependency
+reads as one, an ignore over its paths silencing it; the bytes trusted
+by being named, never acquired, verified through the trust policy or
+pinned, which is the version and pinned forms' role; and a finding
+located in such a base carrying the column the set records, a tab
+advancing it to the next multiple of eight, counted from one. A base
+that cannot be materialized — a workspace root in no git repository, a
+reference or directory the repository lacks, a version the module's
+origin does not serve, a module the lockfile does not pin, a file that
+cannot be read or does not parse as a descriptor set — fails `pb
+breaking` naming the form and the cause; nothing degrades to an empty
+base.
 
 ## Configuration and suppression
 
 **REQ-lint-config-schema** (wire): The lint file MUST contain, each
 optional: `rulesets`, a list of ruleset imports whose rules the check
 run enables, each `{path, version, alias}` with `version` absent for a
-workspace module (REQ-lint-rulesets-imported), no alias repeated and
-no path repeated at one version;
-`enable` and `exclude`, lists of rule names, ids or tags; `severity`,
-a map from rule name or id to override; `ignore`, a list of `{paths,
-rules, kind}` entries excluding rules under path globs — `paths` one
-or more globs over module-relative proto paths (the component
-semantics `provenance.md` REQ-prov-trust-schema defines), `rules`
-optional and non-empty when present, absent meaning every rule, `kind`
-optional, `lint` or `breaking`, the entry excluding findings of that
-kind alone and of either kind where absent, a finding without a path
-never ignored and one located at a module's directory matched by a
+workspace module (REQ-lint-rulesets-imported), no alias repeated and no
+path repeated at one version; `enable` and `exclude`, lists of rule
+names, ids or tags; `severity`, a map from rule name or id to override;
+`ignore`, a list of `{paths, rules, kind}` entries excluding rules under
+path globs — `paths` one or more globs over module-relative proto paths
+(the component semantics `provenance.md` REQ-prov-trust-schema defines),
+`rules` optional and non-empty when present, absent meaning every rule,
+`kind` optional, `lint` or `breaking`, the entry excluding findings of
+that kind alone and of either kind where absent, a finding without a
+path never ignored and one located at a module's directory matched by a
 glob matching the directory itself; and `breaking`, a mapping whose
 `base` is a mapping with exactly one of `ref` (a git reference),
-`version` (a tagged version) and `pinned` (`true`; any other value is
-a schema violation); and `modules`, a map from a workspace module's
+`version` (a tagged version), `pinned` (`true`; any other value is a
+schema violation) and `file` (a root-relative path, clean as written,
+never escaping the root); and `modules`, a map from a workspace module's
 directory — the cleaned relative directory the workspace file's `use`
-entry names, `.` the root itself — to a mapping of `enable`,
-`exclude`, `severity` and `ignore` in the forms above, each optional.
-No other keys exist at any level.
+entry names, `.` the root itself — to a mapping of `enable`, `exclude`,
+`severity` and `ignore` in the forms above, each optional. No other keys
+exist at any level.
 
 **REQ-lint-selection** (behavior): The enabled rules MUST be every
 rule of every imported ruleset when `enable` is absent, or the rules

@@ -1,9 +1,10 @@
 // Package rootpath is the one home of the root-contained path rule
 // every root-relative path field shares: a forward-slash path that is
 // relative, never escapes its root through "..", and — for fields
-// whose written spelling is contract — is already clean. Three fields
+// whose written spelling is contract — is already clean. Four fields
 // carry the rule (a workspace's use entries, a generation entry's out
-// directory, and a plugin response's file names); one validator keeps
+// directory, a plugin response's file names, and the lint file's
+// descriptor-set base path); one validator keeps
 // their containment judgments identical, so a spelling one site
 // accepts can never escape at another.
 //

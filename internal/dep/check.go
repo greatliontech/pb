@@ -9,8 +9,13 @@ import (
 	"path"
 	"sort"
 
+	"github.com/bufbuild/protocompile/linker"
 	"github.com/go-git/go-billy/v6/helper/iofs"
+	"github.com/go-git/go-billy/v6/util"
 	"github.com/go-git/go-git/v6"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/breaking"
@@ -60,6 +65,7 @@ type checkRun struct {
 	group  map[string]*checkGroup // by module directory
 	rules  int                    // enabled rules of the kind, every evaluating group's
 	set    *env1.Set
+	files  linker.Files // the checked schema as compiled, the set's files
 }
 
 // prepare assembles a check run of one kind (REQ-check-lint-verb,
@@ -107,7 +113,7 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 	if err != nil {
 		return nil, err
 	}
-	run := &checkRun{kind: kind, lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), group: map[string]*checkGroup{}}
+	run := &checkRun{kind: kind, lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), files: result.Files, group: map[string]*checkGroup{}}
 	// The root's selection governs every module without an entry,
 	// as one group; a module with an entry is a group of its own,
 	// located at its directory.
@@ -243,6 +249,118 @@ func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 	return run.report(findings, out)
 }
 
+// setBase is a descriptor set standing as a base: its files linked
+// once, read per module under check as the files the module provides
+// now, and once more as the files no module of the build provides —
+// a deletion or a dropped dependency, judged under the root's
+// selection (REQ-break-base-materialized).
+type setBase struct {
+	set      *descriptorpb.FileDescriptorSet
+	registry *protoregistry.Files
+	label    string
+}
+
+func newSetBase(set *descriptorpb.FileDescriptorSet, label string) (*setBase, error) {
+	registry, err := protodesc.NewFiles(set)
+	if err != nil {
+		return nil, fmt.Errorf("the base %s: %w", label, err)
+	}
+	return &setBase{set: set, registry: registry, label: label}, nil
+}
+
+// attribute tells, for every file of the set, the module of the build
+// it is a base file of, or none: the module providing it now, by
+// name, else the one local module declaring its package now — a
+// file deleted from that module, as the version form would hold it
+// — and none where no module provides it and no local module, or
+// several, declare its package: a dropped dependency, or a package
+// deleted whole, told apart by nothing in the set. A well-known
+// import is no module's, a copy of one no file of the build.
+func (b *setBase) attribute(mods []modfiles.Module, files linker.Files) map[string]int {
+	// The packages the local modules declare now, by the modules
+	// declaring them.
+	moduleOf := map[string]int{}
+	for j, m := range mods {
+		if !m.Local {
+			continue
+		}
+		for _, p := range m.Protos() {
+			moduleOf[p] = j
+		}
+	}
+	declares := map[string]map[int]bool{}
+	for _, f := range files {
+		if j, local := moduleOf[f.Path()]; local && f.Package() != "" {
+			pkg := string(f.Package())
+			if declares[pkg] == nil {
+				declares[pkg] = map[int]bool{}
+			}
+			declares[pkg][j] = true
+		}
+	}
+	out := map[string]int{}
+	for _, fd := range b.set.File {
+		p := fd.GetName()
+		out[p] = -1
+		if modfiles.WellKnown(p) {
+			continue
+		}
+		// One module at most provides a path: two would have failed
+		// the build before this.
+		for j, m := range mods {
+			if _, own := m.Files[p]; own {
+				out[p] = j
+			}
+		}
+		// A file declaring no package is of no module.
+		if out[p] == -1 && fd.GetPackage() != "" && len(declares[fd.GetPackage()]) == 1 {
+			for j := range declares[fd.GetPackage()] {
+				out[p] = j
+			}
+		}
+	}
+	return out
+}
+
+// files is the set's files named, linked, in the set's order, as a
+// base's old side.
+func (b *setBase) files(keep func(name string) bool) (linker.Files, []string, error) {
+	var checked []string
+	var files linker.Files
+	for _, fd := range b.set.File {
+		p := fd.GetName()
+		if !keep(p) {
+			continue
+		}
+		fd, err := b.registry.FindFileByPath(p)
+		if err != nil {
+			return nil, nil, fmt.Errorf("the base %s: %w", b.label, err)
+		}
+		f, err := linker.NewFileRecursive(fd)
+		if err != nil {
+			return nil, nil, fmt.Errorf("the base %s: %w", b.label, err)
+		}
+		files = append(files, f)
+		checked = append(checked, p)
+	}
+	return files, checked, nil
+}
+
+// ofModule is the set's files attributed to the module at i.
+func (b *setBase) ofModule(attributed map[string]int, i int) (linker.Files, []string, error) {
+	return b.files(func(p string) bool { return attributed[p] == i })
+}
+
+// unattributed is the set's files attributed to no module and no
+// well-known import.
+func (b *setBase) unattributed(attributed map[string]int) (linker.Files, []string, error) {
+	return b.files(func(p string) bool { return attributed[p] == -1 && !modfiles.WellKnown(p) })
+}
+
+// noText is a base with no source at hand: a finding there carries
+// the recorded column.
+func noText(string) ([]byte, error) { return nil, nil }
+
 // BreakingDeps is what the breaking verb draws on beside the session:
 // the repository the workspace root lies in, opened on demand for a
 // reference base.
@@ -261,14 +379,34 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 	if err != nil {
 		return fmt.Errorf("breaking: %w", err)
 	}
-	if run.rules == 0 {
+	if run.lint.Breaking == nil {
+		return fmt.Errorf("breaking: %s names no breaking base (breaking.base: one of ref, version, pinned, file)", lintfile.FileName)
+	}
+	// Zero rules enabled: under a descriptor set the root's rules
+	// count too, the set's files no module provides being judged
+	// under them whatever the modules' own entries enable.
+	fromSet := run.lint.Breaking.Base.Form == lintfile.BaseFile
+	if run.rules == 0 && !(fromSet && len(run.groups[0].rules) != 0) {
 		fmt.Fprintln(diag, "pb breaking: zero breaking rules enabled")
 		return nil
 	}
-	if run.lint.Breaking == nil {
-		return fmt.Errorf("breaking: %s names no breaking base (breaking.base: one of ref, version, pinned)", lintfile.FileName)
+	sources := breaking.Sources{Repo: deps.Repo, Zip: s.Client.Zip, Lock: s.Lock, Read: func(p string) ([]byte, error) {
+		return util.ReadFile(s.WS, path.Join(s.Root.Dir, p))
+	}}
+	// A descriptor set is one base for the whole build, read once and
+	// its files attributed once.
+	var set *setBase
+	var attributed map[string]int
+	if fromSet {
+		base, err := breaking.Materialize(ctx, run.lint.Breaking.Base, breaking.Module{}, sources)
+		if err != nil {
+			return fmt.Errorf("breaking: %w", err)
+		}
+		if set, err = newSetBase(base.Set, base.Label); err != nil {
+			return fmt.Errorf("breaking: %w", err)
+		}
+		attributed = set.attribute(run.mods, run.files)
 	}
-	sources := breaking.Sources{Repo: deps.Repo, Zip: s.Client.Zip, Lock: s.Lock}
 	var findings []check.Finding
 	for i, m := range run.mods {
 		// A module under check with no protobuf files has nothing to
@@ -277,39 +415,88 @@ func Breaking(ctx context.Context, s *Session, deps BreakingDeps, out, diag io.W
 		if !m.Local || len(m.Protos()) == 0 || len(run.rulesOf(m.Dir)) == 0 {
 			continue
 		}
-		base, err := breaking.Materialize(ctx, run.lint.Breaking.Base, breaking.Module{Path: m.Path, Dir: m.Dir}, sources)
-		// A version base was pinned on the way; the pin is the record
-		// whatever follows.
-		if err := savePins(s, err); err != nil {
+		var oldFiles linker.Files
+		var oldChecked []string
+		var baseSource eval.Source
+		if set != nil {
+			// The set's files the module provides now, as compiled
+			// (REQ-break-base-materialized).
+			oldFiles, oldChecked, err = set.ofModule(attributed, i)
+			if err != nil {
+				return fmt.Errorf("breaking: %s: %w", m.Path, err)
+			}
+			baseSource = noText
+		} else {
+			base, err := breaking.Materialize(ctx, run.lint.Breaking.Base, breaking.Module{Path: m.Path, Dir: m.Dir}, sources)
+			// A version base was pinned on the way; the pin is the record
+			// whatever follows.
+			if err := savePins(s, err); err != nil {
+				return fmt.Errorf("breaking: %s: %w", m.Path, err)
+			}
+			// The base's files in place of the module under check's, the
+			// build's other modules resolving its imports and none other a
+			// target (REQ-break-base-materialized).
+			baseMods := append([]modfiles.Module(nil), run.mods...)
+			baseMods[i] = modfiles.Module{Path: m.Path, Local: true, Dir: m.Dir, Files: base.Files}
+			compiled, err := compile.CompileFiles(ctx, baseMods, i, baseMods[i].Protos())
+			if err != nil {
+				return fmt.Errorf("breaking: %s: the base %s: %w", m.Path, base.Label, err)
+			}
+			// The base's files of the build, as the module under check's:
+			// the one enumeration, a copy of a well-known path in neither.
+			oldFiles, oldChecked = compiled.Files, baseMods[i].Protos()
+			baseSource = func(p string) ([]byte, error) {
+				if b, ok := base.Files[p]; ok {
+					return b, nil
+				}
+				return nil, fmt.Errorf("%s is no file of the base %s", p, base.Label)
+			}
+		}
+		judged, err := run.judge(oldFiles, oldChecked, m.Protos(), baseSource, run.group[m.Dir], eval.Breaking)
+		if err != nil {
 			return fmt.Errorf("breaking: %s: %w", m.Path, err)
 		}
-		// The base's files in place of the module under check's, the
-		// build's other modules resolving its imports and none other a
-		// target (REQ-break-base-materialized).
-		baseMods := append([]modfiles.Module(nil), run.mods...)
-		baseMods[i] = modfiles.Module{Path: m.Path, Local: true, Dir: m.Dir, Files: base.Files}
-		compiled, err := compile.CompileFiles(ctx, baseMods, i, baseMods[i].Protos())
-		if err != nil {
-			return fmt.Errorf("breaking: %s: the base %s: %w", m.Path, base.Label, err)
-		}
-		oldSet := env1.NewSet(compiled.Files)
-		env, err := env1.New(run.set, oldSet)
+		findings = append(findings, judged...)
+	}
+	// The set's files of no module — a package deleted whole, or
+	// dependencies the build no longer holds, told apart by nothing
+	// in the set — once more as a base of their own, their
+	// declarations paired by name with everything the build holds
+	// now, additions left aside, judged under the root's selection
+	// (REQ-break-base-materialized).
+	if root := run.groups[0]; set != nil && len(root.rules) != 0 {
+		oldFiles, oldChecked, err := set.unattributed(attributed)
 		if err != nil {
 			return fmt.Errorf("breaking: %w", err)
 		}
-		baseSource := func(p string) ([]byte, error) {
-			if b, ok := base.Files[p]; ok {
-				return b, nil
+		if len(oldChecked) != 0 {
+			var newChecked []string
+			for _, m := range run.mods {
+				if m.Local {
+					newChecked = append(newChecked, m.Protos()...)
+				}
 			}
-			return nil, fmt.Errorf("%s is no file of the base %s", p, base.Label)
+			judged, err := run.judge(oldFiles, oldChecked, newChecked, noText, root, eval.BreakingOldSide)
+			if err != nil {
+				return fmt.Errorf("breaking: %s: %w", set.label, err)
+			}
+			findings = append(findings, judged...)
 		}
-		// The base's files of the build, as the module under check's:
-		// the one enumeration, a copy of a well-known path in neither.
-		report, err := eval.Breaking(env, baseMods[i].Protos(), m.Protos(), run.source, baseSource, run.rulesOf(m.Dir))
-		if err != nil {
-			return fmt.Errorf("breaking: %s: %w", m.Path, err)
-		}
-		findings = append(findings, run.group[m.Dir].admit(run.sel, run.kind, report.Findings)...)
 	}
 	return run.report(findings, out)
+}
+
+// judge pairs an old side with the checked new files and evaluates
+// the group's rules over the pairs, the findings admitted as the
+// group's selection has them.
+func (r *checkRun) judge(oldFiles linker.Files, oldChecked, newChecked []string, baseSource eval.Source, g *checkGroup, evaluate func(*env1.Env, []string, []string, eval.Source, eval.Source, []rules.Rule) (*check.Report, error)) ([]check.Finding, error) {
+	env, err := env1.New(r.set, env1.NewSet(oldFiles))
+	if err != nil {
+		return nil, err
+	}
+	report, err := evaluate(env, oldChecked, newChecked, r.source, baseSource, g.rules)
+	if err != nil {
+		return nil, err
+	}
+	return g.admit(r.sel, r.kind, report.Findings), nil
 }

@@ -2286,3 +2286,112 @@ func TestFormat(t *testing.T) {
 		t.Fatalf("a link listed: %v %q", err, out.String())
 	}
 }
+
+// A descriptor set file as the base: the set pb build wrote at the
+// old state stands as compiled, each module under check's base the
+// set's files it provides now and those of its own package it no
+// longer provides, the findings those a version base gives; the
+// set's files of a package no module declares now — a package
+// deleted whole, which a dropped dependency would look like — judged
+// once under the root's selection, whatever the modules' own entries
+// say; a base-located finding at the recorded column, a tab
+// advancing it to eight; the well-known file the set carries no file
+// of any base; nothing is fetched or pinned; a file that is no
+// descriptor set fails naming the form (REQ-break-base,
+// REQ-break-base-materialized).
+func TestBreakingFromFile(t *testing.T) {
+	old := map[string]string{
+		"pb.work":      "use:\n  - a\n  - b\n  - house\n",
+		"pb.lint.yaml": "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    file: build/base.binpb\nmodules:\n  a:\n    ignore:\n      - paths: [old.proto, shared_old.proto, nopkg.proto]\n",
+		"a/pb.yaml":    ws("example.com/a", ""),
+		// a imports a well-known file, which the set carries and which
+		// is no file of a's base; a's own copy of it is no file of the
+		// build.
+		"a/a.proto": "syntax = \"proto3\";\npackage a;\n\nimport \"google/protobuf/empty.proto\";\n\nmessage Thing {\n  string BadName = 1;\n  string Other = 2;\n  int32 ok = 3;\n  string gone = 4;\n  google.protobuf.Empty e = 5;\n}\n",
+		// old.proto is deleted in the new state; its field is indented
+		// with a tab.
+		"a/old.proto": "syntax = \"proto3\";\npackage a;\nmessage Old {\n\tstring y = 1;\n}\nmessage Moved {\n  string z = 1;\n}\n",
+		// legacy.proto, the whole of package legacy, is deleted in the
+		// new state.
+		"a/legacy.proto": "syntax = \"proto3\";\npackage legacy;\nmessage Legacy {\n  string q = 1;\n}\n",
+		// Package shared spans a and b; shared_old.proto is deleted in the
+		// new state, its module unknowable.
+		"a/shared_a.proto":   "syntax = \"proto3\";\npackage shared;\nmessage SharedA {\n  string s = 1;\n}\n",
+		"a/shared_old.proto": "syntax = \"proto3\";\npackage shared;\nmessage SharedOld {\n  string t = 1;\n}\n",
+		"b/shared_b.proto":   "syntax = \"proto3\";\npackage shared;\nmessage SharedB {\n  string u = 1;\n}\n",
+		// Files declaring no package: a keeps one, b's is deleted in the
+		// new state and is of no module.
+		"a/nopkg_a.proto":        "syntax = \"proto3\";\nmessage NA {\n  string w = 1;\n}\n",
+		"b/nopkg.proto":          "syntax = \"proto3\";\nmessage N {\n  string v = 1;\n}\n",
+		"b/pb.yaml":              ws("example.com/b", "  example.com/a: v0.0.1\n"),
+		"b/b.proto":              "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"google/protobuf/timestamp.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n  string dropped = 3;\n  google.protobuf.Timestamp t = 4;\n}\n",
+		"house/pb.yaml":          ws("example.com/house", ""),
+		"house/house.rules.yaml": "celEnv: 1\nrules:\n  - id: FIELD_GONE\n    kind: breaking\n    target: field\n    severity: error\n    cel: new != null\n    message: field removed\n  - id: FIELD_TYPE\n    kind: breaking\n    target: field\n    severity: warning\n    cel: old == null || new == null || old.type == new.type\n    message: type changed\n  - id: FILE_GONE\n    kind: breaking\n    target: file\n    severity: error\n    cel: new != null\n    message: file removed\n  - id: MSG_GONE\n    kind: breaking\n    target: message\n    severity: error\n    cel: new != null\n    message: message removed\n  - id: PKG_GONE\n    kind: breaking\n    target: package\n    severity: error\n    cel: newPackage != null\n    message: package removed\n  - id: SET_PKGS\n    kind: breaking\n    target: set\n    severity: error\n    cel: oldFiles.all(f, newFiles.exists(g, g.package == f.package))\n    message: a package vanished\n  - id: NEW_MSG\n    kind: breaking\n    target: message\n    severity: warning\n    cel: old != null\n    message: message added\n  - id: SET_NOADD\n    kind: breaking\n    target: set\n    severity: error\n    cel: newFiles.all(g, oldFiles.exists(f, f.package == g.package))\n    message: a package was added\n  - id: PKG_NOADD\n    kind: breaking\n    target: package\n    severity: error\n    cel: newFiles == null || oldFiles == null || newFiles.all(g, g.message_type.all(n, oldFiles.exists(f, f.message_type.exists(m, m.name == n.name))))\n    message: a message was added to the package\n",
+	}
+	fx := newDep(t, old)
+	if err := fx.ws.MkdirAll("build", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var out, diag strings.Builder
+	if err := Build(ctx, fx.session(t, "."), "build/base.binpb", "build/base.binpb", &out); err != nil {
+		t.Fatal(err)
+	}
+	set := fx.read(t, "build/base.binpb")
+	// The new state: a's gone field removed and ok's type changed, b's
+	// dropped field removed, a's old.proto gone; Moved is an addition
+	// to a's own base and a pair in the root's.
+	for _, p := range []string{"a/old.proto", "a/legacy.proto", "a/shared_old.proto", "b/nopkg.proto"} {
+		if err := fx.ws.Remove(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Moved lands in a.proto, its field's type changed on the way:
+	// old.proto, of a's own package, is a's base file, so the move
+	// pairs within a and no set or package rule sees an addition;
+	// a's own ignore of old.proto reaches its deletion findings.
+	fx.write(t, "a/a.proto", "syntax = \"proto3\";\npackage a;\n\nimport \"google/protobuf/empty.proto\";\n\nmessage Thing {\n  string BadName = 1;\n  string Other = 2;\n  string ok = 3;\n  google.protobuf.Empty e = 5;\n}\n\nmessage Moved {\n  int32 z = 1;\n}\n")
+	fx.write(t, "b/b.proto", "syntax = \"proto3\";\npackage b;\nimport \"a.proto\";\nimport \"google/protobuf/timestamp.proto\";\nmessage Use {\n  a.Thing thing = 1;\n  string Loud = 2;\n  google.protobuf.Timestamp t = 4;\n}\n")
+	out.Reset()
+	err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag)
+	if !errors.Is(err, ErrFindings) {
+		t.Fatalf("Breaking: %v", err)
+	}
+	want := "a.proto:9:3: warning house:FIELD_TYPE: type changed\na.proto:10:3: error house:FIELD_GONE: field removed [base]\na.proto:14:3: warning house:FIELD_TYPE: type changed\nb.proto:8:3: error house:FIELD_GONE: field removed [base]\nlegacy.proto: error house:PKG_GONE: package removed [base]\nlegacy.proto:1:1: error house:FILE_GONE: file removed [base]\nlegacy.proto:3:1: error house:MSG_GONE: message removed [base]\nlegacy.proto:4:3: error house:FIELD_GONE: field removed [base]\nnopkg.proto:1:1: error house:FILE_GONE: file removed [base]\nnopkg.proto:2:1: error house:MSG_GONE: message removed [base]\nnopkg.proto:3:3: error house:FIELD_GONE: field removed [base]\nshared_old.proto:1:1: error house:FILE_GONE: file removed [base]\nshared_old.proto:3:1: error house:MSG_GONE: message removed [base]\nshared_old.proto:4:3: error house:FIELD_GONE: field removed [base]\n"
+	if out.String() != want || diag.String() != "" {
+		t.Fatalf("out = %q diag = %q", out.String(), diag.String())
+	}
+	if fx.exists(t, "pb.lock") {
+		t.Fatal("a file base pinned something")
+	}
+	if fx.read(t, "build/base.binpb") != set {
+		t.Fatal("the set was rewritten")
+	}
+	// Every module's own entry enabling nothing, the root's rules
+	// still judge the set's files of no module.
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    file: build/base.binpb\nmodules:\n  a:\n    enable: []\n  b:\n    enable: []\n")
+	out.Reset()
+	diag.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "legacy.proto: error house:PKG_GONE: package removed [base]\nlegacy.proto:1:1: error house:FILE_GONE: file removed [base]\nlegacy.proto:3:1: error house:MSG_GONE: message removed [base]\nlegacy.proto:4:3: error house:FIELD_GONE: field removed [base]\nnopkg.proto:1:1: error house:FILE_GONE: file removed [base]\nnopkg.proto:2:1: error house:MSG_GONE: message removed [base]\nnopkg.proto:3:3: error house:FIELD_GONE: field removed [base]\nshared_old.proto:1:1: error house:FILE_GONE: file removed [base]\nshared_old.proto:3:1: error house:MSG_GONE: message removed [base]\nshared_old.proto:4:3: error house:FIELD_GONE: field removed [base]\n" || diag.String() != "" {
+		t.Fatalf("modules opted out: %v %q %q", err, out.String(), diag.String())
+	}
+	// An empty file is the empty set: every file new, every message
+	// an addition, every package added to each module's set, and
+	// nothing a deletion.
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    file: build/base.binpb\n")
+	fx.write(t, "build/base.binpb", "")
+	out.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); !errors.Is(err, ErrFindings) || out.String() != "a.proto:6:1: warning house:NEW_MSG: message added\na.proto:13:1: warning house:NEW_MSG: message added\nb.proto:5:1: warning house:NEW_MSG: message added\nnopkg_a.proto:2:1: warning house:NEW_MSG: message added\nshared_a.proto:3:1: warning house:NEW_MSG: message added\nshared_b.proto:3:1: warning house:NEW_MSG: message added\nerror house:SET_NOADD: a package was added\nerror house:SET_NOADD: a package was added\n" {
+		t.Fatalf("the empty set: %v %q", err, out.String())
+	}
+	// A file that is no descriptor set, and one that is absent, fail
+	// naming the form.
+	fx.write(t, "build/base.binpb", "not a set")
+	out.Reset()
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "file build/base.binpb: not a descriptor set") {
+		t.Fatalf("not a set: %v", err)
+	}
+	fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/house\n    alias: house\nbreaking:\n  base:\n    file: build/none.binpb\n")
+	if err := Breaking(ctx, fx.session(t, "."), BreakingDeps{}, &out, &diag); err == nil || !strings.Contains(err.Error(), "file build/none.binpb") {
+		t.Fatalf("absent: %v", err)
+	}
+}

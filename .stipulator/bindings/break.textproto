@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base"
-  content_hash: "cbabfca183f7b7a773d97e89ad3bc622ef4ac075abe93d38dd56dcf3f49762a3"
-  source_hash: "4601fd1d526e49a559e1cfa9b0d93b62507ee624426f3d1583fb17a0ff293cf8"
+  content_hash: "9fa28ba2b0155769eda41af1d1da8473ab9f3a6156174a7dbd831727bb8df8cf"
+  source_hash: "cce825ef5e317c53d1b0ce81fe67632988ee06c0828916eeb203c41447f4a3d7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.Materialize"
   role: BINDING_ROLE_IMPLEMENTS
@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base"
-  content_hash: "cbabfca183f7b7a773d97e89ad3bc622ef4ac075abe93d38dd56dcf3f49762a3"
-  source_hash: "4601fd1d526e49a559e1cfa9b0d93b62507ee624426f3d1583fb17a0ff293cf8"
+  content_hash: "9fa28ba2b0155769eda41af1d1da8473ab9f3a6156174a7dbd831727bb8df8cf"
+  source_hash: "cce825ef5e317c53d1b0ce81fe67632988ee06c0828916eeb203c41447f4a3d7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.pinned"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base"
-  content_hash: "cbabfca183f7b7a773d97e89ad3bc622ef4ac075abe93d38dd56dcf3f49762a3"
-  source_hash: "4601fd1d526e49a559e1cfa9b0d93b62507ee624426f3d1583fb17a0ff293cf8"
+  content_hash: "9fa28ba2b0155769eda41af1d1da8473ab9f3a6156174a7dbd831727bb8df8cf"
+  source_hash: "cce825ef5e317c53d1b0ce81fe67632988ee06c0828916eeb203c41447f4a3d7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.TestFromVersion"
   role: BINDING_ROLE_TESTS
@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.fromRef"
   role: BINDING_ROLE_IMPLEMENTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.fromVersion"
   role: BINDING_ROLE_IMPLEMENTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/gitdir.RepoOf"
   role: BINDING_ROLE_IMPLEMENTS
@@ -103,8 +103,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.TestFromRef"
   role: BINDING_ROLE_TESTS
@@ -113,8 +113,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/breaking.TestFromVersion"
   role: BINDING_ROLE_TESTS
@@ -123,8 +123,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Breaking"
   role: BINDING_ROLE_IMPLEMENTS
@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestBreaking"
   role: BINDING_ROLE_TESTS
@@ -143,8 +143,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proto/importcheck.CheckRequirers"
   role: BINDING_ROLE_IMPLEMENTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/gitdir.TestRepositorySearch"
   role: BINDING_ROLE_TESTS
@@ -163,8 +163,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/gitdir.repositoryRoot"
   role: BINDING_ROLE_IMPLEMENTS
@@ -173,8 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/gitdir.ceilings"
   role: BINDING_ROLE_IMPLEMENTS
@@ -183,8 +183,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proto/compile.TestCompileFiles"
   role: BINDING_ROLE_TESTS
@@ -193,8 +193,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/proto/compile.CompileFiles"
   role: BINDING_ROLE_IMPLEMENTS
@@ -203,10 +203,60 @@ bindings {
 
 bindings {
   requirement_id: "REQ-break-base-materialized"
-  content_hash: "3f139ce8ce041e6117c7d745411fd4a83ca1f9b28918c524998bfd3bcdb1c8c8"
-  source_hash: "dd44646dee48ed39817d7659991bffdd70ef09ccfdf3f6db12bf2d722439712f"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestBreakingSkipsModuleWithoutFilesOfTheBuild"
   role: BINDING_ROLE_TESTS
   shape_hash: "67a4f41dbc4dad0afb3af4abd4b4a5aec70ac1c8db772976e7a7b517866ab493"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/breaking.TestFromFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b5e0fda0da55861b60986bc3f835710db6e1be072ba77f8f9ba970859df9f892"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBreakingFromFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "34b2cd68672b0e5a9fbcad0e09083821ef5fdf70a9250f757b328045ecabad4d"
+}
+
+bindings {
+  requirement_id: "REQ-break-base"
+  content_hash: "9fa28ba2b0155769eda41af1d1da8473ab9f3a6156174a7dbd831727bb8df8cf"
+  source_hash: "cce825ef5e317c53d1b0ce81fe67632988ee06c0828916eeb203c41447f4a3d7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestBreakingFromFile"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "34b2cd68672b0e5a9fbcad0e09083821ef5fdf70a9250f757b328045ecabad4d"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.setBase"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "1a5ef4d9a48df865444b60015e01bae0de6bcbbb2b0f44d278225a62c9c36863"
+}
+
+bindings {
+  requirement_id: "REQ-break-base-materialized"
+  content_hash: "ff2c08c69597949328ec87d2d2fe59382a8a24a24b364873a0b40af03c372f99"
+  source_hash: "193422dea53fd1a660499f0c68324b7199bcbce7d2bb654e0806329b9609d3a4"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/eval.BreakingOldSide"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "db5fabde8316ba5519764fd5bdce13eb0ec0d9da936ce76e2f4a8111b231d587"
 }

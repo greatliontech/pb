@@ -15,6 +15,8 @@ import (
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/gitdir"
@@ -212,5 +214,40 @@ func TestFromVersion(t *testing.T) {
 	}
 	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BasePinned}, m, Sources{Zip: src.Zip}); err == nil || !strings.Contains(err.Error(), "pins no version") {
 		t.Fatalf("no lockfile: %v", err)
+	}
+}
+
+// A descriptor set file is read as it is, trusted by being named: the
+// set returned with the form as the label; a file that cannot be read
+// or does not parse as a descriptor set fails naming the form and the
+// cause (REQ-break-base-materialized).
+func TestFromFile(t *testing.T) {
+	set := &descriptorpb.FileDescriptorSet{File: []*descriptorpb.FileDescriptorProto{{Name: proto.String("a.proto"), Package: proto.String("a")}}}
+	data, err := proto.Marshal(set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := Sources{Read: func(p string) ([]byte, error) {
+		switch p {
+		case "build/base.binpb":
+			return data, nil
+		case "build/text.binpb":
+			return []byte("syntax = \"proto3\";"), nil
+		}
+		return nil, errors.New("no such file")
+	}}
+	form := lintfile.Base{Form: lintfile.BaseFile, Value: "build/base.binpb"}
+	b, err := Materialize(context.Background(), form, Module{Path: "example.com/a"}, src)
+	if err != nil || b.Files != nil || b.Label != "file build/base.binpb" || len(b.Set.GetFile()) != 1 || b.Set.File[0].GetName() != "a.proto" {
+		t.Fatalf("file: %v %+v", err, b)
+	}
+	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseFile, Value: "build/none.binpb"}, Module{}, src); err == nil || !errors.Is(err, ErrBase) || !strings.Contains(err.Error(), "file build/none.binpb: no such file") {
+		t.Fatalf("unreadable: %v", err)
+	}
+	if _, err := Materialize(context.Background(), lintfile.Base{Form: lintfile.BaseFile, Value: "build/text.binpb"}, Module{}, src); err == nil || !errors.Is(err, ErrBase) || !strings.Contains(err.Error(), "file build/text.binpb: not a descriptor set") {
+		t.Fatalf("not a set: %v", err)
+	}
+	if _, err := Materialize(context.Background(), form, Module{}, Sources{}); err == nil || !strings.Contains(err.Error(), "no workspace source is wired") {
+		t.Fatalf("no source: %v", err)
 	}
 }

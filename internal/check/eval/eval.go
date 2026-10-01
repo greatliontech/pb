@@ -53,6 +53,42 @@ func Breaking(env *env1.Env, oldChecked, newChecked []string, source, baseSource
 	return run(env, source, baseSource, rs, func(t check.Target) ([]env1.Binding, error) { return env1.Pairs(t, old, new, oldChecked, newChecked) })
 }
 
+// BreakingOldSide evaluates breaking rules over the old side's
+// declarations alone: the pairs the two sides' checked files align
+// less those with no old side — an addition, judged elsewhere — so a
+// base whose files no module provides is judged once against
+// everything the build holds now, a declaration that moved to another
+// file pairing by its name; a set rule, judging a module's two sets,
+// sees no pair here, the old side being no module's set, and a
+// package rule only a package the build no longer declares, one it
+// still declares being a module's to judge over its own files
+// (REQ-break-base-materialized).
+func BreakingOldSide(env *env1.Env, oldChecked, newChecked []string, source, baseSource Source, rs []rules.Rule) (*check.Report, error) {
+	new, old := env.Sides()
+	if old == nil {
+		return nil, errors.New("breaking evaluation needs an environment over two sides")
+	}
+	return run(env, source, baseSource, rs, func(t check.Target) ([]env1.Binding, error) {
+		pairs, err := env1.Pairs(t, old, new, oldChecked, newChecked)
+		if err != nil {
+			return nil, err
+		}
+		kept := pairs[:0:0]
+		if t == check.TargetSet {
+			return kept, nil
+		}
+		// A pair with an old declaration, or one whose new side is
+		// absent: a package pair binds no declaration, so only a
+		// vanished package stays.
+		for _, b := range pairs {
+			if b.Old != nil || b.Base {
+				kept = append(kept, b)
+			}
+		}
+		return kept, nil
+	})
+}
+
 // textKey names a source: its path on one side.
 type textKey struct {
 	base bool

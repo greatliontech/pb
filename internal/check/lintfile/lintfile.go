@@ -88,14 +88,14 @@ type Breaking struct {
 	Base Base
 }
 
-// Base is the comparison base: its one form and, for a reference or a
-// version, the value (REQ-break-base).
+// Base is the comparison base: its one form and, for a reference, a
+// version or a file, the value (REQ-break-base).
 type Base struct {
 	Form  BaseForm
 	Value string
 }
 
-// BaseForm is one of the base's three forms.
+// BaseForm is one of the base's four forms.
 type BaseForm string
 
 // The forms, as the lint file spells them.
@@ -103,6 +103,7 @@ const (
 	BaseRef     BaseForm = "ref"
 	BaseVersion BaseForm = "version"
 	BasePinned  BaseForm = "pinned"
+	BaseFile    BaseForm = "file"
 )
 
 // Parse decodes and validates a lint file (REQ-lint-config-schema).
@@ -269,6 +270,11 @@ func parseBreaking(n ast.Node) (*Breaking, error) {
 							return fmt.Errorf("%w: breaking.base.version: %v", ErrInvalid, err)
 						}
 					}
+					if form == BaseFile {
+						if err := rootpath.Check(text, "the workspace root"); err != nil {
+							return fmt.Errorf("%w: breaking.base.file: %v", ErrInvalid, err)
+						}
+					}
 					b.Base = Base{Form: form, Value: text}
 					return nil
 				}}
@@ -276,6 +282,7 @@ func parseBreaking(n ast.Node) (*Breaking, error) {
 			err := contractfile.Mapping(n, "breaking.base", ErrInvalid,
 				value(BaseRef),
 				value(BaseVersion),
+				value(BaseFile),
 				contractfile.Field{Name: string(BasePinned), Read: func(n ast.Node) error {
 					forms++
 					// The one spelling: the unquoted word true.
@@ -291,7 +298,7 @@ func parseBreaking(n ast.Node) (*Breaking, error) {
 				return err
 			}
 			if forms != 1 {
-				return fmt.Errorf("%w: breaking.base must hold exactly one of ref, version, pinned", ErrInvalid)
+				return fmt.Errorf("%w: breaking.base must hold exactly one of ref, version, pinned, file", ErrInvalid)
 			}
 			return nil
 		}},
