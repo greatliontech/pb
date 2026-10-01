@@ -99,7 +99,7 @@ formatter and the language server
       reports the same, recorded per repository by name in the
       commit message; a shape the local run finds missing enters the
       corpus first
-- [ ] 12. The plugin catalog's first cut: every plugin of buf's registry
+- [x] 12. The plugin catalog's first cut: every plugin of buf's registry
       under protocolbuffers, grpc, connectrpc, bufbuild,
       grpc-ecosystem and pluginrpc, and community/planetscale-vtprotobuf
       with the other go and node community generators, that the four
