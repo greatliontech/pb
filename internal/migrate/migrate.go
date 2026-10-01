@@ -137,7 +137,24 @@ type Source struct {
 	// MemberLocks holds a v1 workspace member's own buf.lock by the
 	// member's directory, where one lies beside its buf.yaml.
 	MemberLocks map[string]*bufconfig.Lock
+	// Rel is the configuration's directory relative to the resolution
+	// root, "." for the root itself (REQ-migrate-verb), set by
+	// ReadSource: a module's directory, a path in a section, an
+	// input's path or an output directory, each spelled relative to
+	// the configuration, is read relative to the root through it.
+	Rel string
 }
+
+// Rooted is a path spelled relative to the configuration's directory
+// read relative to the root: the directory joined before it, cleaned.
+func (s *Source) Rooted(p string) string {
+	return path.Join(s.Rel, p)
+}
+
+// decls is the modules the configuration declares, read afresh by
+// each step: declarations is pure and cheap, and a Source a test
+// builds by hand may change between steps.
+func (s *Source) decls() ([]declared, error) { return declarations(s) }
 
 // Layout is the modules step's result (REQ-migrate-modules): the module
 // file for each module, keyed by the module's directory relative to
@@ -146,6 +163,10 @@ type Source struct {
 // modules or one below the directory, nil for one at the directory
 // itself; and the facts.
 type Layout struct {
+	// Rel is the configuration's directory relative to the resolution
+	// root, "." or "" for the root itself: every path buf's files
+	// spell is read relative to the root through it (REQ-migrate-verb).
+	Rel       string
 	Modules   map[string]*modfile.File
 	Workspace *workspace.File
 	Lint      *lintfile.File // set by Rules
@@ -154,6 +175,16 @@ type Layout struct {
 	// was found, the import then written without one.
 	RulesetVersion string
 	Gen            *genfile.File // set by Gen; nil where no plugin mapped
+	// Names maps each workspace module's BSR name, where buf's file
+	// gives one, to its pb path, set by Modules; DepPaths maps each
+	// dependency's BSR name to the module path declared for it, set
+	// by Deps: the two by which a managed-mode rule naming a module
+	// finds the module (REQ-migrate-gen). Versions is the version
+	// each module path is declared at, by Deps and Imports alike: a
+	// path is declared at one version (REQ-migrate-deps).
+	Names    map[string]string
+	DepPaths map[string]string
+	Versions map[string]string
 	// CommentIgnores, set by Rules, says per module directory whether
 	// buf honored its suppression comments, which the verb rewrites
 	// where it did (REQ-migrate-comments).
@@ -260,7 +291,10 @@ func declarations(src *Source) ([]declared, error) {
 // configuration's, one containing another's, a workspace member
 // whose buf.yaml is not v1, or a path no module may bear fails.
 func Modules(src *Source, modulePath string) (*Layout, error) {
-	decls, err := declarations(src)
+	if src == nil {
+		return nil, fmt.Errorf("no buf configuration read")
+	}
+	decls, err := src.decls()
 	if err != nil {
 		return nil, err
 	}
@@ -270,20 +304,21 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 	if err := module.ValidatePath(modulePath); err != nil {
 		return nil, err
 	}
-	l := &Layout{Modules: map[string]*modfile.File{}}
+	l := &Layout{Rel: src.Rel, Modules: map[string]*modfile.File{}, Names: map[string]string{}}
 	// A workspace file where the configuration names several modules,
-	// or one below the directory: the directory stays the resolution
-	// root the lint and generation files and the output directories
+	// or one below the root — the configuration's directory itself
+	// below it, or a module below the configuration: the root stays
+	// what the lint and generation files and the output directories
 	// are relative to.
-	workspaced := len(decls) > 1 || decls[0].dir != "."
+	workspaced := len(decls) > 1 || src.Rooted(decls[0].dir) != "."
 	if workspaced {
 		l.Workspace = &workspace.File{}
 	}
 	for _, d := range decls {
-		dir := d.dir
+		dir := src.Rooted(d.dir)
 		mp := modulePath
-		if dir != "." {
-			mp = modulePath + "/" + dir
+		if d.dir != "." {
+			mp = modulePath + "/" + d.dir
 			if err := module.ValidatePath(mp); err != nil {
 				return nil, fmt.Errorf("%s: %w", d.from, err)
 			}
@@ -294,6 +329,7 @@ func Modules(src *Source, modulePath string) (*Layout, error) {
 		}
 		l.Facts = append(l.Facts, mapped(d.from+" "+d.spelled, path.Join(dir, module.ModuleFileName)+" module: "+mp))
 		if d.mod.Name != "" {
+			l.Names[d.mod.Name] = mp
 			l.Facts = append(l.Facts, mapped(d.in+".name "+d.mod.Name, "module: "+mp+" (a BSR name is no place pb fetches from)"))
 		}
 		excludes := "excludes"

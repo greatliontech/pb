@@ -54,26 +54,32 @@ replacement lives in the invocation alone — nothing of it is written,
 since a migration runs once — and one naming what the configuration
 never declares fails the verb naming it.
 
-**REQ-migrate-verb** (behavior): `pb migrate` MUST run at a directory
-holding a buf configuration — a `buf.yaml`, or a `buf.work.yaml`
-naming directories — taking `--module <path>`, the pb path of the
-directory the configuration lies at (REQ-migrate-modules), and any
-replacements, and write pb's files beside it: the workspace file where
-the configuration names several modules, a module file at each
-module's root, the lint file always — buf checks every module under a
-selection, explicit or its default, and the file spells the one buf
-applied (REQ-migrate-rules) — the generation file where a
-`buf.gen.yaml` lies at the directory; then run `pb dep tidy` over the result, so the written
-workspace is tidy and its lockfile pinned, the configuration's
-directory the resolution root. It fails, writing nothing,
-where any pb file it would write already exists — the lockfile the
-tidy writes at the configuration's directory among them, and one in
-a module's directory below, which no workspace admits — where the directory
-holds no buf configuration, or where a buf file does not parse under
-its own version — a key the verb does not model is no parse failure
-but an unmapped fact naming it; and it fails after writing, the files
-kept and the report printed, where the comments' rewriting or the
-tidy fails, naming the cause. It deletes no buf file: the buf
+**REQ-migrate-verb** (behavior): `pb migrate` MUST run at the
+resolution root, the working directory, taking `--config <dir>`, the
+directory holding the buf configuration relative to it — the root
+itself where absent, one below it otherwise, never one outside —
+the configuration being a `buf.yaml`, or a `buf.work.yaml` naming
+directories, and `--module <path>`, the pb path of the
+configuration's directory (REQ-migrate-modules), and any
+replacements, and write pb's files at the root: the workspace file
+where the configuration names several modules or lies below the
+root, a module file at each module's root, the lint file always —
+buf checks every module under a selection, explicit or its default,
+and the file spells the one buf applied (REQ-migrate-rules) — the
+generation file where a `buf.gen.yaml` lies at the configuration's
+directory; then run `pb dep tidy` over the result, so the written
+workspace is tidy and its lockfile pinned. Every path buf's files
+spell relative to the configuration's directory — a module's, a
+section's, an input's, an output directory's — is read relative to
+the root through it. It fails, writing nothing, where any pb file it
+would write already exists — the lockfile the tidy writes at the
+root among them, and one in a module's directory below, which no
+workspace admits — where the configuration's directory holds no buf
+configuration, or where a buf file does not parse under its own
+version — a key the verb does not model is no parse failure but an
+unmapped fact naming it; and it fails after writing, the files kept
+and the report printed, where the comments' rewriting or the tidy
+fails, naming the cause. It deletes no buf file: the buf
 configuration stays as it was, the user's to remove.
 
 **REQ-migrate-report** (behavior): The verb MUST print the migration
@@ -91,10 +97,12 @@ second run with replacements can finish it.
 ## Modules and the workspace
 
 **REQ-migrate-modules** (behavior): Each module buf's configuration
-declares MUST become a module file at that module's root declaring the
-module's pb path: the pb path of the configuration's directory joined
-with the module's directory relative to it, cleaned, the directory
-itself joining nothing. The configuration's path is what `--module`
+declares MUST become a module file at that module's root — its
+directory relative to the configuration's, read relative to the
+resolution root (REQ-migrate-verb) — declaring the module's pb path:
+the pb path of the configuration's directory joined with the
+module's directory relative to it, cleaned, the directory itself
+joining nothing. The configuration's path is what `--module`
 gives or, absent the flag, the git origin of the repository the
 directory lies in — found as `check-rules.md`
 REQ-break-base-materialized finds it — spelled as a module path
@@ -110,12 +118,13 @@ a URL spelling none, each with no path given, fails naming the flag.
 buf's `name` for the module (a BSR name) is reported, never used as
 the path: a BSR name is no place pb fetches from. A `v2`
 configuration's `modules` and a `v1` workspace's `directories` become
-the workspace file's `use` entries, each module's directory cleaned as
-`workspace.md` REQ-work-emission has it; a lone module at the
-directory itself writes no workspace file, and one below it a
-workspace of one, the configuration's directory staying the
-resolution root the lint and generation files and the output
-directories are relative to, as they are to buf's. A module whose directory contains another's fails the
+the workspace file's `use` entries, each module's directory relative
+to the root, cleaned as `workspace.md` REQ-work-emission has it; a
+lone module at the root itself writes no workspace file, and one
+below it — the configuration's directory below the root, or the
+module below the configuration's — a workspace of one, the root
+staying what the lint and generation files and the output
+directories are relative to. A module whose directory contains another's fails the
 verb naming both: the verb authors no module file the archive refuses,
 and a module file beneath a module's root makes that module
 unpublishable (`module-archive.md` REQ-archive-nested-module),
@@ -139,7 +148,10 @@ fails naming both files.
 
 **REQ-migrate-deps** (behavior): Each entry of buf's `deps` MUST be
 looked up among the replacements and then in the dependency table by
-its BSR name, the `:ref` suffix aside: a name either holds becomes a
+its BSR name, the `:ref` suffix aside — a name a workspace module
+bears (REQ-migrate-modules) first, the sibling declared in every
+module but itself at the version REQ-migrate-imports declares it at
+— a name either holds becomes a
 declared dependency of every module the configuration declares, at the
 replacement's version where it gives one, else at the version
 discovery names for the path — through a proxy its `@latest`
@@ -155,12 +167,21 @@ migration's declaration is what carries its needs, as the tidy then
 keeps them (`dep-verbs.md` REQ-dep-tidy); a name neither holds, or
 one whose discovery fails, is an unmapped fact naming the BSR module
 and the flag's form that supplies what is missing, a failure's reason
-on the fact's one line. A module path is declared at one version: a
+on the fact's one line; a name the table maps to nothing — the
+well-known types, the toolchain's own (`generation.md`
+REQ-gen-compile) — is a mapped fact declaring nothing. A module path is declared at one version: a
 replacement's version applies to every name reaching its path, and two
 replacements reaching one path at different versions fail the verb
-naming both. The `buf.lock` entry for a dependency, its BSR commit and
-digest, is reported as unmapped: a BSR commit names no git commit, and
-pb's pin is the lockfile's own, made by the tidy. The dependency table
+naming both. Each `buf.lock` entry — a `v1` workspace member's beside
+its own `buf.yaml` — is read as a declaration too, its name looked up
+as a `deps` entry is: one the configuration declares already is a
+mapped fact naming the path declared and that pb's pin, the
+lockfile's own, is the tidy's over it, a BSR commit naming no git
+commit; one it does not — a dependency buf resolved for it — is
+declared the same way, a mapped fact, so a replacement may name it;
+a name neither table nor replacement holds is an unmapped fact
+naming the flag's form; its digest is read for nothing. The
+dependency table
 names, for each entry, the module path, whose resolution splits the
 repository from the subtree that is the BSR module's root, and the
 BSR modules the entry's files import, and holds:
@@ -178,6 +199,40 @@ BSR modules the entry's files import, and holds:
 | `buf.build/opencensus/opencensus` | `github.com/census-instrumentation/opencensus-proto/src` | |
 | `buf.build/opentelemetry/opentelemetry` | `github.com/open-telemetry/opentelemetry-proto` | |
 | `buf.build/prometheus/client-model` | `github.com/prometheus/client_model` | |
+| `buf.build/protocolbuffers/wellknowntypes` | none: the toolchain's well-known imports | |
+
+## Imports
+
+**REQ-migrate-imports** (behavior): What a module's own files — the
+files buf's reading of the module holds, its `excludes` and
+`includes` honored, each spelled relative to the file declaring
+them, a `v2` configuration's `buf.yaml` at the configuration's
+directory, a `v1` module's own `buf.yaml` at its directory — import
+that buf satisfied with no declaration
+MUST be declared: a sibling workspace module's file — buf's modules
+import one another freely, while pb's tidy keeps the version a
+module declares for a sibling, the one consumers require
+(`dep-verbs.md` REQ-dep-tidy) — has the importing module declare the
+sibling at the version a replacement keyed by the path gives — such a
+replacement naming the path itself and a version, refused otherwise,
+and refused where no file imports what the path provides — else the
+version the path is declared at already, else the version discovery
+names for the path (REQ-migrate-deps); an import of the bundled
+imports table — a path buf's
+toolchain satisfies beyond the well-known imports, which pb's
+toolchain does not ship (`module-resolution.md`, the well-known
+imports term) — has the module declare the table's provider, the
+file's origin, the same way. One mapped fact per module and provider
+names the first file importing it; a provider whose version is not
+discovered, a file whose imports cannot be read, or an import two
+siblings provide — pb never picks a provider (`generation.md`
+REQ-gen-compile) — is an unmapped fact naming it. Every other import — a well-known one, the module's
+own, a declared dependency's, or one no module provides, which the
+tidy reports — is read for nothing. The bundled imports table:
+
+| import | module path |
+|---|---|
+| `google/protobuf/go_features.proto` | `github.com/protocolbuffers/protobuf-go/src` |
 
 An entry enters the table with its layout verified: every file of
 the module resolves its imports from the named root — within the
@@ -356,13 +411,16 @@ where not, as buf takes any text — a `v1` entry's `path` its
 command, and its bare `plugin` or `name` the executable
 `protoc-gen-<name>`, as buf ran them; a `protoc_builtin` entry — in
 `v1`, a name among protoc's builtins or any entry with `protoc_path` —
-an unmapped fact, pb running no protoc; `out` as written where it is
-a clean relative path within the resolution root (`generation.md`
-REQ-gen-schema), the entry an unmapped fact naming it where not, as
-buf accepts what pb writes nowhere; `opt`, a string or a list, joined
-with commas as buf hands it to the plugin; `include_imports` as
-itself (`generation.md` REQ-gen-schema); `clean` as itself, one for
-the generation file. `v2`'s `inputs` become the file's entries'
+an unmapped fact, pb running no protoc; `out` cleaned as buf cleans
+a path and read relative to the root through the configuration's
+directory, where it is then a relative path within the resolution
+root (`generation.md` REQ-gen-schema), the entry an unmapped fact
+naming it where it escapes the root, as buf writes where pb writes
+nowhere; `opt`, a string or a list, joined with commas as buf hands
+it to the plugin; `include_imports` and `include_wkt` as themselves
+(`generation.md` REQ-gen-schema); `clean` as itself: the file's,
+every generation file read with entries agreeing, each cleaning
+file's entries' own where they differ. `v2`'s `inputs` become the file's entries'
 `files` patterns: each `directory` input's `paths`, root-relative
 and within the input's directory as buf requires, a path under one
 workspace module becoming that module-relative path's pattern — the
@@ -375,10 +433,9 @@ module too, is an unmapped fact naming it; a directory input naming
 no paths is read as a path naming its directory, the root leaving
 every workspace file a target; an `exclude_paths` entry, an input of
 any other kind, and a directory outside the root, an unmapped fact.
-`strategy`, `revision`, `protoc_path`, `include_wkt` — pb generates
-for no well-known file — and `types` and `exclude_types`, an input's
-or `v1`'s, are unmapped facts naming the key: pb generates over the
-workspace's own files under one strategy. A generation template
+`strategy`, `revision`, `protoc_path`, and `types` and
+`exclude_types`, an input's or `v1`'s, are unmapped facts naming the
+key: pb generates over the workspace's own files under one strategy. A generation template
 beside the configuration is read as the generation file is, whether
 or not a `buf.gen.yaml` lies there — one that does not parse fails
 the verb naming it — its entries following the file's in the
@@ -389,14 +446,14 @@ the file's is, its entries the template's own facts, and is a
 mapped fact where it gives the overrides the first file's gives —
 none where the first gives none, its entries then running under the
 first file's — and an unmapped fact where not, a template without
-one among them where the first file's gives any; its `clean` is an
-unmapped fact where it differs from the first file's, the first
-file being `buf.gen.yaml` where present. An entry buf itself refuses does
+one among them where the first file's gives any, the first file
+being `buf.gen.yaml` where present. An entry buf itself refuses does
 not parse under its version: no naming form, two, or an empty one; no
-`out`; a `v1` `name` spelled as a reference; a key its form takes no
-meaning from — `strategy` or `protoc_path` beside a remote plugin and,
-in `v1`, `path` there; in `v2`, `revision` or `protoc_path` beside a
-local plugin and `revision` beside a builtin. buf's `managed` mode
+`out`; a `v1` `name` spelled as a reference; `include_wkt` without
+`include_imports`; a key its form takes no meaning from — `strategy`
+or `protoc_path` beside a remote plugin and, in `v1`, `path` there;
+in `v2`, `revision` or `protoc_path` beside a local plugin and
+`revision` beside a builtin. buf's `managed` mode
 becomes `overrides` where an entry is declarative — a `file_option`
 with a `value` over every file or, in `v2`, over the files a `path`
 scope names: buf matches the path against a file's path relative to
@@ -405,15 +462,37 @@ the path and everything under it, over module-relative paths as
 pb's globs are (`generation.md` REQ-gen-schema); in `v1`, a boolean
 option, the `override` map of option to file to value, the file's
 path read the same way, and the `default` of `optimize_for`,
-`objc_class_prefix` and `swift_prefix` for every file — and an unmapped
-fact where it is
-buf's own heuristic or names a module, which a module-relative glob
-cannot: `enabled`, for buf's defaults (the values it computes per
-file for every option no rule of the file names), a `field_option`, a
-`disable` entry, a `module` scope, a form's `except` and its
-override per module, or a form pb would have to compute a value from
-per package with no declared rule (`v1`'s `csharp_namespace` and
-`ruby_package`). A prefix or suffix option — `v2`'s
+`objc_class_prefix` and `swift_prefix` for every file; `enabled` being
+buf's defaults, the value it computes per file for every option no
+rule of the file names, spelled as overrides over every file before
+every rule, in buf's order — `cc_enable_arenas` true,
+`csharp_namespace` from the file alone, `java_multiple_files` true,
+`java_outer_classname` from the file alone, `java_package` from the
+prefix `com`, `objc_class_prefix`, `php_metadata_namespace`,
+`php_namespace` and `ruby_package` from the file alone
+(`generation.md` REQ-gen-overrides-derived), the rules after them
+winning where they overlap, as buf's do (`v1`'s `csharp_namespace`
+and `ruby_package` forms, which declare no default, being those
+defaults with their modules excepted and overridden); a rule naming
+a module — a `module` scope, a form's `except` and its override per
+module, a `disable` entry naming one — reading the module's path, a
+workspace module's by its `name`, a dependency's by the replacement
+or the table (REQ-migrate-deps), a name no module bears an unmapped
+fact: a scope or an override per module the override's `module`
+(`generation.md` REQ-gen-schema); an `except` or a `disable` naming
+a module the module's path in `except` on every override of the
+option disabled, or of every option, one scoped to that module
+dropped, one the module is out of already untouched — a form's
+`except` disabling the form's option whole, as buf reads it — and,
+for a disable naming a prefix or suffix, on the overrides carrying
+that axis, a module-scoped copy keeping the rest; a `disable`
+naming an option alone dropping the option's overrides, a prefix or
+suffix alone stripping the axis from the overrides carrying it — one
+left with neither axis becoming the option's derivation from the
+file alone where buf computes such a default, dropped otherwise,
+one not carrying the axis untouched — mapped facts saying so; and an
+unmapped fact where a rule is a `field_option` or a `disable` names
+a path, which pb's overrides exclude not. A prefix or suffix option — `v2`'s
 `go_package_prefix`, `java_package_prefix`, `java_package_suffix`,
 `csharp_namespace_prefix`, `php_metadata_namespace_suffix` and
 `ruby_package_suffix`, and `v1`'s `go_package_prefix` and
@@ -423,12 +502,14 @@ it prefixes or suffixes reproducing buf's reading, which keeps per
 file and option the prefix and the suffix the rules matching the
 file set in order, a prefix rule keeping the suffix and a suffix
 rule the prefix, a value rule clearing both, and `java_package`
-starting from the prefix `com`: the rule's overrides carry its
+starting from the prefix `com` (buf's default, an override already): the rule's overrides carry its
 prefix or suffix and the other axis of the state the files had — one
-over the rule's scope from buf's starting state, where no earlier
-override of the option covers the scope whole, then one over the
+over the rule's scope with the axis alone, where no earlier override
+of the option covers the scope whole, then one over the
 intersection with each earlier override of the option, in their
-order, carrying that override's other axis — and an override a later
+order, carrying that override's other axis, a scope being a module
+or every module and a path within it, two scopes meeting under the
+module either names at the narrower path — and an override a later
 one of the option covers whole is dropped; a rule with an empty value,
 clearing what earlier rules set, is unmapped. In `v1` the rules hold buf's order, whatever the
 document's: the booleans, then the forms, then the per-file
@@ -484,8 +565,9 @@ own, a BSR is never consulted, and no buf file is fetched.
 value it was not given: a module path, a version, an option value or
 a plugin reference comes from the command line, the buf file, the
 repository's `origin` remote, the tables, the registry's tag listing,
-the ruleset or resolution, never from a guess — buf's defaults and pb's own file schemas being
-this document's constants, given by it; where none supplies it, the
-fact is unmapped. The tables and the replacements are the whole of
-the verb's knowledge of buf's names: pb reads no buf file after the
+the ruleset or resolution, never from a guess — buf's defaults, the imports its toolchain
+bundles and pb's own file schemas being this document's constants,
+given by it; where none supplies it, the fact is unmapped. The
+tables and the replacements are the whole of the verb's knowledge of
+buf's names: pb reads no buf file after the
 verb ends and keeps no record of the migration but the report.

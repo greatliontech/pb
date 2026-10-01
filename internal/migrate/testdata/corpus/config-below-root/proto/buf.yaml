@@ -1,0 +1,11 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  ignore:
+    - acme/vault/v1/legacy.proto
+breaking:
+  use:
+    - FILE

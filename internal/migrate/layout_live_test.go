@@ -81,7 +81,49 @@ func TestDependencyLayouts(t *testing.T) {
 		names = append(names, n)
 	}
 	sort.Strings(names)
+	// The bundled imports' providers are verified the same way, the
+	// import path the anchor (REQ-migrate-imports).
+	for imp, provider := range BundledImports {
+		t.Run(imp, func(t *testing.T) {
+			ws := scratchtest.Dir(t)
+			v, err := client.Latest(ctx, provider)
+			if err != nil {
+				t.Fatalf("latest of %s: %v", provider, err)
+			}
+			b, err := modfile.Encode(&modfile.File{Module: "example.com/probe", Deps: map[string]string{provider: v.String()}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ws, "pb.yaml"), b, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			s, err := dep.Load(dep.Config{WS: osfs.New(ws), Dir: ".", Client: client})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, mods, err := s.Modules(ctx)
+			if err != nil {
+				t.Fatalf("build: %v", err)
+			}
+			for i, m := range mods {
+				if m.Path != provider {
+					continue
+				}
+				if !slices.Contains(m.Protos(), imp) {
+					t.Fatalf("%s is not among the files at %s", imp, provider)
+				}
+				if _, err := compile.CompileFiles(ctx, mods, i, []string{imp}); err != nil {
+					t.Fatalf("%s at %s@%s: %v", imp, provider, v, err)
+				}
+				return
+			}
+			t.Fatalf("%s is not in the build", provider)
+		})
+	}
 	for _, name := range names {
+		if Dependencies[name].Path == "" {
+			continue // maps to nothing: no origin to verify
+		}
 		t.Run(name, func(t *testing.T) {
 			// A probe workspace declaring the entry and its BSR
 			// dependencies, each at the latest version discovered.

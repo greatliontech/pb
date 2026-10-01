@@ -40,11 +40,15 @@ func corpusTags(context.Context, string) ([]string, error) {
 // The migration corpus (REQ-migrate-verb, REQ-migrate-report): each
 // entry under testdata/corpus is one shape a buf configuration takes,
 // written under example names, and its golden is the verb's whole
-// report over it with the run's status last. A golden whose status is
-// unmapped records the shape's gap by the exact fact; the corpus is
-// closed when every status reads mapped. A refusal is never a status
-// a golden may record: every entry is a configuration buf accepts,
-// so the verb refusing one is its defect, and the test fails on it.
+// report over it with the run's status last, the verb invoked with
+// the flags the entry's migrate.flags lists, one per line, where it
+// has one — the replacements a private name needs, the
+// configuration's directory below the root. A golden whose status
+// is unmapped records the shape's gap by the exact fact; the corpus
+// is closed when every status reads mapped. A refusal is never a
+// status a golden may record: every entry is a configuration buf
+// accepts, so the verb refusing one is its defect, and the test
+// fails on it.
 func TestCorpus(t *testing.T) {
 	entries, err := os.ReadDir(filepath.Join("testdata", "corpus"))
 	if err != nil {
@@ -61,7 +65,7 @@ func TestCorpus(t *testing.T) {
 			dir := filepath.Join("testdata", "corpus", e.Name())
 			ws := memfs.New()
 			if err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
-				if err != nil || d.IsDir() || d.Name() == "report.golden" {
+				if err != nil || d.IsDir() || d.Name() == "report.golden" || d.Name() == "migrate.flags" {
 					return err
 				}
 				rel, err := filepath.Rel(dir, p)
@@ -76,13 +80,31 @@ func TestCorpus(t *testing.T) {
 			}); err != nil {
 				t.Fatal(err)
 			}
-			var out strings.Builder
-			err := Run(context.Background(), Invocation{
+			inv := Invocation{
 				WS: ws, Dir: "repo", ModulePath: "example.com/acme/" + e.Name(),
 				Discovery: corpusDiscovery{}, PluginTags: corpusTags,
 				Tidy: func(context.Context) error { return nil },
-				Out:  &out,
-			})
+			}
+			if flags, err := os.ReadFile(filepath.Join(dir, "migrate.flags")); err == nil {
+				for _, line := range strings.Split(strings.TrimSpace(string(flags)), "\n") {
+					flag, value, _ := strings.Cut(strings.TrimPrefix(line, "--"), " ")
+					switch flag {
+					case "dep", "plugin":
+						if err := inv.Replacements.Replace(flag, value); err != nil {
+							t.Fatal(err)
+						}
+					case "config":
+						inv.Config = value
+					default:
+						t.Fatalf("migrate.flags: no flag --%s", flag)
+					}
+				}
+			} else if !errors.Is(err, os.ErrNotExist) {
+				t.Fatal(err)
+			}
+			var out strings.Builder
+			inv.Out = &out
+			err := Run(context.Background(), inv)
 			// Every entry is a configuration buf accepts, so a refusal is
 			// the verb's defect, never a gap a golden may record.
 			status := "mapped"

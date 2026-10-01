@@ -1,0 +1,28 @@
+buf.yaml . -> pb.yaml module: example.com/acme/managed-defaults
+buf.yaml.name buf.build/acme/ledger -> module: example.com/acme/managed-defaults (a BSR name is no place pb fetches from)
+buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 -> pinned by the tidy in pb.lock over github.com/googleapis/googleapis (a BSR commit names no git commit; pb's pin is the lockfile's own)
+buf.yaml.lint.use DEFAULT -> enable: buf:STANDARD (buf's DEFAULT is STANDARD)
+buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
+buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.34.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.34.2 (the catalog)
+buf.gen.yaml plugins[0].out gen/go -> out: gen/go
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/csharp:v27.0 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/csharp:v27.0 (the catalog)
+buf.gen.yaml plugins[1].out gen/csharp -> out: gen/csharp
+buf.gen.yaml managed.go_package_prefix.except buf.build/googleapis/googleapis -> the module github.com/googleapis/googleapis sees go_package without buf.gen.yaml managed.go_package_prefix.default example.com/acme/ledger/gen/go for go_package: its overrides of the option recomputed, every module's excepting it
+buf.gen.yaml managed.enabled true -> overrides: files ** option cc_enable_arenas value true (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option csharp_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_multiple_files value true (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_outer_classname (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_package prefix com (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option objc_class_prefix (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option php_metadata_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option php_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option ruby_package (buf's default)
+buf.gen.yaml managed.go_package_prefix.default example.com/acme/ledger/gen/go -> overrides: files ** option go_package prefix example.com/acme/ledger/gen/go
+pb.yaml -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: mapped

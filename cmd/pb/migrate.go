@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -13,18 +14,19 @@ import (
 )
 
 // migrateCmd is the migrate verb (migrate.md REQ-migrate-verb): buf's
-// configuration at the working directory becomes pb's files beside
-// it, the report printed, the tidy ending it; the status is 1 where
-// any fact went unmapped (REQ-migrate-report), the report speaking
-// for it. The tidy loads the resolution root the migration wrote at
-// the working directory as every dep verb loads one (workspace.md);
-// a workspace above the directory governs instead, its membership
-// then deciding.
+// configuration at the working directory — or below it, at --config
+// — becomes pb's files at the working directory, the resolution
+// root, the report printed, the tidy ending it; the status is 1
+// where any fact went unmapped (REQ-migrate-report), the report
+// speaking for it. The tidy loads the resolution root the migration
+// wrote at the working directory as every dep verb loads one
+// (workspace.md); a workspace above the directory governs instead,
+// its membership then deciding.
 func migrateCmd() *cobra.Command {
-	var modulePath string
+	var modulePath, config string
 	var deps, plugins []string
 	cmd := &cobra.Command{
-		Use: "migrate", Short: "write pb's files from the buf configuration at the working directory", Args: cobra.NoArgs,
+		Use: "migrate", Short: "write pb's files at the working directory from the buf configuration there, or below it at --config", Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
 			var repl migrate.Replacements
 			for _, v := range deps {
@@ -46,7 +48,7 @@ func migrateCmd() *cobra.Command {
 				return err
 			}
 			return migrate.Run(c.Context(), migrate.Invocation{
-				WS: ws, Dir: dir, HostDir: cwd, ModulePath: modulePath, Replacements: repl, Discovery: client,
+				WS: ws, Dir: dir, Config: config, HostDir: filepath.Join(cwd, filepath.FromSlash(config)), ModulePath: modulePath, Replacements: repl, Discovery: client,
 				PluginTags: pluginTags,
 				Tidy: func(ctx context.Context) error {
 					session, err := dep.Load(dep.Config{WS: ws, Dir: dir, Client: client})
@@ -60,6 +62,7 @@ func migrateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&modulePath, "module", "", "the pb module path of the configuration's directory; the repository's origin where absent")
+	cmd.Flags().StringVar(&config, "config", "", "the directory holding the buf configuration, relative to the working directory, which is the resolution root; the working directory itself where absent")
 	cmd.Flags().StringArrayVar(&deps, "dep", nil, "NAME=PATH[@VERSION]: a BSR module name's module path, and the version to declare; repeatable")
 	cmd.Flags().StringArrayVar(&plugins, "plugin", nil, "NAME=REFERENCE: a BSR plugin name's plugin reference; repeatable")
 	return cmd

@@ -151,7 +151,14 @@ func TestNoHeuristicProperty(t *testing.T) {
 		if rapid.Bool().Draw(rt, "unmodeled") {
 			fmt.Fprintf(&b, "%s: %s\n", g.draw(rt, "ky"), g.draw(rt, "uv"))
 		}
-		files := map[string]string{"repo/buf.yaml": b.String()}
+		// The configuration at the root, or below it under --config:
+		// every buf file and proto lies under it, pb's files at the
+		// root (REQ-migrate-verb).
+		if rapid.Bool().Draw(rt, "config below root") {
+			g.config = "cfg" + g.draw(rt, "cf")
+		}
+		cfg := path.Join("repo", g.config)
+		files := map[string]string{path.Join(cfg, "buf.yaml"): b.String()}
 		if len(deps) > 0 && rapid.Bool().Draw(rt, "lock") {
 			var lb strings.Builder
 			lb.WriteString("version: v2\ndeps:\n")
@@ -159,24 +166,55 @@ func TestNoHeuristicProperty(t *testing.T) {
 				fmt.Fprintf(&lb, "  - name: %s\n    commit: %s\n    digest: b5:%s\n", d, g.draw(rt, "c"), g.draw(rt, "dg"))
 			}
 			g.used["b5"] = true
-			files["repo/buf.lock"] = lb.String()
+			files[path.Join(cfg, "buf.lock")] = lb.String()
 		}
 		hasGen := rapid.Bool().Draw(rt, "gen")
 		if hasGen {
-			files["repo/buf.gen.yaml"] = g.gen(rt, &repl, true, false)
+			files[path.Join(cfg, "buf.gen.yaml")] = g.gen(rt, &repl, true, false)
 		}
 		// A template beside the file, or alone: its entries follow
 		// the file's, its inputs its own; its managed mode and clean
 		// are held to the first file's — itself, where no
 		// buf.gen.yaml lies there.
 		if rapid.IntRange(0, 2).Draw(rt, "template") == 0 {
-			files["repo/buf.gen."+g.draw(rt, "tp")+".yaml"] = g.gen(rt, &repl, !hasGen, true)
+			files[path.Join(cfg, "buf.gen."+g.draw(rt, "tp")+".yaml")] = g.gen(rt, &repl, !hasGen, true)
 		}
 		for p, text := range g.extra {
 			files[p] = text
 		}
-		for _, d := range g.dirs {
-			files[path.Join("repo", d, g.draw(rt, "pr")+".proto")] = "syntax = \"proto3\";\n// buf:lint:ignore " + g.draw(rt, "id") + "\nmessage " + g.draw(rt, "ms") + " {}\n"
+		for i, d := range g.dirs {
+			name := g.draw(rt, "pr") + ".proto"
+			body := "syntax = \"proto3\";\n// buf:lint:ignore " + g.draw(rt, "id") + "\nmessage " + g.draw(rt, "ms") + " {}\n"
+			// A sibling's file imported, sometimes: the sibling declared
+			// at the version discovery names for its path; a bundled
+			// import, sometimes: its provider declared the same way
+			// (REQ-migrate-imports).
+			if i > 0 && rapid.Bool().Draw(rt, "sibling import") {
+				// The file named for its sibling, so no two siblings
+				// provide one path, which pb never picks between.
+				sibling := g.dirs[i-1]
+				shared := "shared_" + strings.ReplaceAll(sibling, "/", "_") + ".proto"
+				files[path.Join(cfg, sibling, shared)] = "syntax = \"proto3\";\n"
+				body = "syntax = \"proto3\";\nimport \"" + shared + "\";\n" + body[len("syntax = \"proto3\";\n"):]
+				sp := g.modulePath
+				if sibling != "." {
+					sp += "/" + sibling
+				}
+				latest[sp] = g.version(rt)
+				g.depPaths[sp], g.versions[sp] = true, latest[sp]
+				g.requires[d] = append(g.requires[d], sp)
+			}
+			if rapid.Bool().Draw(rt, "bundled import") {
+				body = "syntax = \"proto3\";\nimport \"google/protobuf/go_features.proto\";\n" + body[len("syntax = \"proto3\";\n"):]
+				for _, p := range BundledImports {
+					if _, done := latest[p]; !done {
+						latest[p] = g.version(rt)
+					}
+					g.depPaths[p], g.versions[p] = true, latest[p]
+					g.requires[d] = append(g.requires[d], p)
+				}
+			}
+			files[path.Join(cfg, d, name)] = body
 		}
 
 		ws := memfs.New()
@@ -187,13 +225,13 @@ func TestNoHeuristicProperty(t *testing.T) {
 		}
 		var out strings.Builder
 		err := Run(context.Background(), Invocation{
-			WS: ws, Dir: "repo", ModulePath: g.modulePath, Replacements: repl,
+			WS: ws, Dir: "repo", Config: g.config, ModulePath: g.modulePath, Replacements: repl,
 			Discovery: &anyDiscovery{latest: latest}, PluginTags: anyTags,
 			Tidy: func(context.Context) error { return nil },
 			Out:  &out,
 		})
 		if err != nil && !errors.Is(err, ErrUnmapped) {
-			rt.Fatalf("Run over\n%s\n%v", files["repo/buf.yaml"], err)
+			rt.Fatalf("Run over\n%s\n%v", files[path.Join(cfg, "buf.yaml")], err)
 		}
 
 		read := func(name string) (map[string]any, []byte, bool) {
@@ -209,11 +247,11 @@ func TestNoHeuristicProperty(t *testing.T) {
 			return doc, data, true
 		}
 		fail := func(name string, data []byte, format string, args ...any) {
-			rt.Fatalf("%s: %s\n%s\nfrom\n%s", name, fmt.Sprintf(format, args...), data, files["repo/buf.yaml"])
+			rt.Fatalf("%s: %s\n%s\nfrom\n%s", name, fmt.Sprintf(format, args...), data, files[path.Join(cfg, "buf.yaml")])
 		}
 		checked := 0
 		for _, d := range g.dirs {
-			name := path.Join(d, module.ModuleFileName)
+			name := path.Join(g.rooted(d), module.ModuleFileName)
 			doc, data, ok := read(name)
 			if !ok {
 				continue
@@ -234,10 +272,17 @@ func TestNoHeuristicProperty(t *testing.T) {
 					fail(name, data, "dependency %s at %v, given %s", p, v, g.versions[p])
 				}
 			}
+			// What the module's file imports of a sibling or a bundled
+			// import is declared (REQ-migrate-imports).
+			for _, p := range g.requires[d] {
+				if _, declared := mapping(doc["deps"])[p]; !declared {
+					fail(name, data, "the file imports %s's file, undeclared", p)
+				}
+			}
 		}
 		if doc, data, ok := read(workspace.FileName); ok {
 			for _, u := range list(doc["use"]) {
-				if !contains(g.dirs, u) {
+				if !contains(g.rootedDirs(), u) {
 					fail(workspace.FileName, data, "use %s given nowhere", u)
 				}
 			}
@@ -255,10 +300,11 @@ func TestNoHeuristicProperty(t *testing.T) {
 			}
 			g.selection(rt, lintfile.FileName, data, doc, "")
 			for dir, sel := range mapping(doc["modules"]) {
-				if !contains(g.dirs, dir) {
+				at := indexOf(g.rootedDirs(), dir)
+				if at < 0 {
 					fail(lintfile.FileName, data, "module %s given nowhere", dir)
 				}
-				g.selection(rt, lintfile.FileName, data, mapping(sel), dir)
+				g.selection(rt, lintfile.FileName, data, mapping(sel), g.dirs[at])
 			}
 		}
 		if doc, data, ok := read(genfile.FileName); ok {
@@ -323,7 +369,20 @@ func TestNoHeuristicProperty(t *testing.T) {
 						fail(genfile.FileName, data, "override go_package %v: a prefix given nowhere, or a value", ov)
 					}
 				default:
-					fail(genfile.FileName, data, "override option %v given nowhere", ov["option"])
+					// buf's defaults under managed mode are the spec's
+					// constants (REQ-migrate-no-heuristic): each an
+					// override over every file, as the spec spells it,
+					// and nothing else.
+					isDefault := false
+					for _, d := range managedDefaults {
+						want := defaultOverride(d)
+						if want.Option == ov["option"] && text(ov["files"]) == "**" && text(ov["value"]) == want.Value && text(ov["prefix"]) == want.Prefix && text(ov["suffix"]) == want.Suffix {
+							isDefault = true
+						}
+					}
+					if !g.managed || !isDefault {
+						fail(genfile.FileName, data, "override option %v given nowhere", ov["option"])
+					}
 				}
 				if f := fmt.Sprint(ov["files"]); f != "**" && !g.overridePaths[strings.TrimSuffix(f, "/**")] {
 					fail(genfile.FileName, data, "override files %v given nowhere", f)
@@ -332,9 +391,11 @@ func TestNoHeuristicProperty(t *testing.T) {
 			// Differential: buf reads each file's option from the rules
 			// matching it in order — a prefix rule keeping the suffix, a
 			// suffix rule the prefix, a value clearing both, java_package
-			// starting from the prefix com — and the written file's last
-			// matching override must say the same, none where no rule
-			// matched (the default is buf's own, unmapped).
+			// starting from the prefix com, buf's default, which under
+			// managed mode reaches every file as an override of the
+			// spec's — and the written file's last matching override
+			// must say the same, none where no rule matched and no
+			// default stands.
 			var samples []string
 			for sc := range g.overridePaths {
 				samples = append(samples, sc+"/x.proto", sc+"way/x.proto", sc+"/deep/x.proto")
@@ -342,10 +403,11 @@ func TestNoHeuristicProperty(t *testing.T) {
 			for _, file := range append(samples, "x.proto") {
 				for _, option := range []string{"java_package", "go_package"} {
 					var buf optionState
+					matched := false
 					if option == "java_package" {
 						buf.prefix = "com"
+						matched = g.managed
 					}
-					matched := false
 					for _, r := range g.rules {
 						if r.option != option || !(r.scope == "" || file == r.scope || strings.HasPrefix(file, r.scope+"/")) {
 							continue
@@ -415,9 +477,9 @@ func anyTags(context.Context, string) ([]string, error) {
 }
 
 // given is what the input gave, by role.
-// managedRule is one managed-mode rule the input gave: an option's
+// givenRule is one managed-mode rule the input gave: an option's
 // value, prefix or suffix over every file or a path.
-type managedRule struct {
+type givenRule struct {
 	option, axis, value, scope string
 }
 
@@ -428,7 +490,7 @@ type optionState struct {
 }
 
 type given struct {
-	rules          []managedRule // buf.gen.yaml's managed rules in order
+	rules          []givenRule // buf.gen.yaml's managed rules in order
 	modulePath     string
 	dirs           []string
 	depPaths       map[string]bool   // a table's, a closure's, a replacement's, the ruleset's
@@ -443,9 +505,12 @@ type given struct {
 	locals         map[string]bool
 	outs, opts     map[string]bool
 	overrideValues map[string]bool
-	prefixes       map[string]bool // go_package prefixes the managed mode gave
-	suffixes       map[string]bool // java_package suffixes the managed mode gave
-	javaPrefixes   map[string]bool // java_package prefixes the managed mode gave
+	managed        bool                // buf.gen.yaml's managed mode enabled, its defaults then the spec's constants
+	config         string              // the configuration's directory below the root, "" for the root
+	requires       map[string][]string // per module directory, the providers its file imports
+	prefixes       map[string]bool     // go_package prefixes the managed mode gave
+	suffixes       map[string]bool     // java_package suffixes the managed mode gave
+	javaPrefixes   map[string]bool     // java_package prefixes the managed mode gave
 	overridePaths  map[string]bool
 	clean          bool            // the first file's clean
 	replaced       map[string]bool // catalog plugins a --plugin replacement names
@@ -455,6 +520,7 @@ type given struct {
 
 func newGiven() *given {
 	return &given{
+		requires: map[string][]string{},
 		depPaths: map[string]bool{}, versions: map[string]string{}, entries: map[string]bool{"STANDARD": true, "FILE": true},
 		ignores: map[string]bool{}, refs: map[string]bool{}, patterns: map[string]bool{}, extra: map[string]string{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
 		overrideValues: map[string]bool{}, prefixes: map[string]bool{}, suffixes: map[string]bool{}, javaPrefixes: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
@@ -710,11 +776,12 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 // no buf.gen.yaml lies there:
 // plugins from the catalog at a version or none, a local one, a
 // protoc builtin, each with an out and perhaps an opt, sometimes
-// include_imports (mapped) or include_wkt (unmapped); a --plugin
+// include_imports and include_wkt; a --plugin
 // replacement for a catalog plugin sometimes; inputs naming a
 // directory under a module, created in the tree, each a files
-// pattern; clean; managed mode with a declarative override, a
-// computed option buf's own heuristic would fill, and a disable — on
+// pattern; clean; managed mode with a declarative override, buf's
+// defaults then the spec's constants, and a disable naming a module
+// the configuration declares nowhere — on
 // a template beside a buf.gen.yaml, an override of its own or none,
 // neither written: the first file's overrides are every entry's.
 func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) string {
@@ -756,16 +823,16 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 					// unmapped, no pattern; alone, a pattern.
 					if len(g.dirs) > 1 {
 						other := g.dirs[(indexOf(g.dirs, dir)+1)%len(g.dirs)]
-						g.extra[path.Join("repo", other, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+						g.extra[path.Join("repo", g.config, other, sub, sub+".proto")] = "syntax = \"proto3\";\n"
 					} else {
 						g.patterns[sub+"/**"] = true
 					}
-					g.extra[path.Join("repo", dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+					g.extra[path.Join("repo", g.config, dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
 					fmt.Fprintf(&b, "      - %s\n", path.Join(dir, sub))
 				default:
 					// The path exists in the tree, a directory holding
 					// a file, and in no other module: a pattern.
-					g.extra[path.Join("repo", dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
+					g.extra[path.Join("repo", g.config, dir, sub, sub+".proto")] = "syntax = \"proto3\";\n"
 					g.patterns[sub+"/**"] = true
 					fmt.Fprintf(&b, "      - %s\n", path.Join(dir, sub))
 				}
@@ -841,7 +908,7 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 			fmt.Fprintf(&b, "  - protoc_builtin: %s\n", g.draw(rt, "bi"))
 		}
 		out := g.draw(rt, "o") + "/" + g.draw(rt, "o")
-		g.outs[out] = true
+		g.outs[path.Join(g.config, out)] = true // read relative to the root through the configuration's directory
 		fmt.Fprintf(&b, "    out: %s\n", out)
 		if rapid.Bool().Draw(rt, "opt") {
 			opt := g.draw(rt, "k") + "=" + g.draw(rt, "v")
@@ -850,9 +917,10 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 		}
 		if rapid.Bool().Draw(rt, "include_imports") {
 			b.WriteString("    include_imports: true\n")
-		}
-		if rapid.Bool().Draw(rt, "include_wkt") {
-			b.WriteString("    include_wkt: true\n")
+			// Beside include_imports alone, as buf admits it.
+			if rapid.Bool().Draw(rt, "include_wkt") {
+				b.WriteString("    include_wkt: true\n")
+			}
 		}
 	}
 	if !first {
@@ -871,6 +939,7 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 	}
 	if rapid.Bool().Draw(rt, "managed") {
 		b.WriteString("managed:\n  enabled: true\n")
+		g.managed = true
 		if rapid.Bool().Draw(rt, "override") {
 			// Rules in order: values, prefixes and suffixes of
 			// java_package and go_package's prefix, each over every
@@ -878,19 +947,19 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 			// reading has state to carry across scopes.
 			b.WriteString("  override:\n")
 			for n := rapid.IntRange(1, 4).Draw(rt, "rules"); n > 0; n-- {
-				var r managedRule
+				var r givenRule
 				switch rapid.IntRange(0, 3).Draw(rt, "rule kind") {
 				case 0:
-					r = managedRule{option: "java_package", axis: "value", value: g.draw(rt, "jv")}
+					r = givenRule{option: "java_package", axis: "value", value: g.draw(rt, "jv")}
 					g.overrideValues[r.value] = true
 				case 1:
-					r = managedRule{option: "java_package", axis: "prefix", value: g.draw(rt, "jp")}
+					r = givenRule{option: "java_package", axis: "prefix", value: g.draw(rt, "jp")}
 					g.javaPrefixes[r.value] = true
 				case 2:
-					r = managedRule{option: "java_package", axis: "suffix", value: g.draw(rt, "js")}
+					r = givenRule{option: "java_package", axis: "suffix", value: g.draw(rt, "js")}
 					g.suffixes[r.value] = true
 				case 3:
-					r = managedRule{option: "go_package", axis: "prefix", value: g.draw(rt, "gp")}
+					r = givenRule{option: "go_package", axis: "prefix", value: g.draw(rt, "gp")}
 					g.prefixes[r.value] = true
 				}
 				name := r.option
@@ -921,6 +990,21 @@ func (g *given) gen(rt *rapid.T, repl *Replacements, first, template bool) strin
 		}
 	}
 	return b.String()
+}
+
+// rooted is a module directory read relative to the root through
+// the configuration's (REQ-migrate-verb).
+func (g *given) rooted(d string) string {
+	return path.Join(g.config, d)
+}
+
+// rootedDirs is every module directory rooted.
+func (g *given) rootedDirs() []string {
+	var out []string
+	for _, d := range g.dirs {
+		out = append(out, g.rooted(d))
+	}
+	return out
 }
 
 // text is a document scalar's text, "" where absent.

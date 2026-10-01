@@ -1,0 +1,13 @@
+buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/go-features/proto
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+proto/acme/flags/v1/flags.proto import google/protobuf/go_features.proto -> deps: github.com/protocolbuffers/protobuf-go/src@v1.0.0 (buf bundles the import, pb's toolchain ships it not, discovered)
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.36.11 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.36.11 (the catalog)
+buf.gen.yaml plugins[0].out gen/go -> out: gen/go
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: mapped

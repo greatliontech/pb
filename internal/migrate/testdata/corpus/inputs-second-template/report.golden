@@ -6,19 +6,19 @@ buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr
 buf.gen.yaml plugins[0].out gen -> out: gen
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
 buf.gen.yaml inputs[0].paths[0] proto/acme/api -> files: acme/api/**
-buf.gen.yaml clean true -> clean: true
+buf.gen.yaml clean true -> clean: true on each of its entries: the files differ
 buf.gen.es.yaml plugins[0].remote buf.build/bufbuild/es -> ref: ghcr.io/greatliontech/pb-plugins/bufbuild/es:v1.2.0 (the catalog; no version named, the highest tag published)
 buf.gen.es.yaml plugins[0].out web/src/gen -> out: web/src/gen
 buf.gen.es.yaml plugins[0].opt target=ts -> opt: target=ts
 buf.gen.es.yaml inputs[0].paths[0] proto/acme/api -> files: acme/api/**
-buf.gen.es.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none
+buf.gen.es.yaml clean false -> the file's entries clean nothing: the files differ
 buf.gen.web.yaml plugins[0].remote buf.build/bufbuild/es -> ref: ghcr.io/greatliontech/pb-plugins/bufbuild/es:v1.2.0 (the catalog; no version named, the highest tag published)
 buf.gen.web.yaml plugins[0].out web/src/gen -> out: web/src/gen
 buf.gen.web.yaml plugins[0].opt target=ts -> opt: target=ts
 buf.gen.web.yaml inputs[0].paths[0] proto/acme/api -> files: acme/api/**
-buf.gen.web.yaml clean !! differs from buf.gen.yaml's: pb empties every entry's output directory or none
+buf.gen.web.yaml clean false -> the file's entries clean nothing: the files differ
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

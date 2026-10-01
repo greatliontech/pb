@@ -35,6 +35,75 @@ func readTree(t *testing.T, ws billy.Filesystem, p string) string {
 	return string(b)
 }
 
+// A configuration below the root (--config): pb's files land at the
+// root, the module file at the module's rooted directory, the lint
+// file keyed by it, a lone module below the root a workspace of one,
+// an output directory above the configuration read relative to the
+// root, the comments rewritten under the configuration
+// (REQ-migrate-verb, REQ-migrate-modules, REQ-migrate-gen).
+func TestRunConfigBelowRoot(t *testing.T) {
+	ws := tree(t, map[string]string{
+		"repo/proto/buf.yaml":     "version: v2\nmodules:\n  - path: .\nlint:\n  use: [STANDARD]\n  ignore: [acme/legacy.proto]\n",
+		"repo/proto/buf.gen.yaml": "version: v2\ninputs:\n  - directory: .\n    paths: [acme]\nplugins:\n  - remote: buf.build/protocolbuffers/go:v1.35.2\n    out: ../gen/go\n",
+		"repo/proto/acme/a.proto": "syntax = \"proto3\";\npackage acme;\n// buf:lint:ignore MESSAGE_PASCAL_CASE\nmessage m {}\n",
+		"repo/README.md":          "kept",
+	})
+	var out strings.Builder
+	inv := Invocation{
+		WS: ws, Dir: "repo", Config: "proto", ModulePath: "github.com/acme/repo/proto",
+		Discovery: &fakeDiscovery{latest: map[string]string{Ruleset: "v0.1.0"}},
+		Tidy:      func(context.Context) error { return nil },
+		Out:       &out,
+	}
+	if err := Run(context.Background(), inv); err != nil {
+		t.Fatalf("Run: %v\n%s", err, out.String())
+	}
+	for _, line := range []string{
+		"buf.yaml modules[0] . -> proto/pb.yaml module: github.com/acme/repo/proto\n",
+		"buf.yaml.lint.ignore acme/legacy.proto -> ignore paths [acme/legacy.proto/**] kind lint\n",
+		"buf.gen.yaml plugins[0].out ../gen/go -> out: gen/go\n",
+		"buf.gen.yaml inputs[0].paths[0] acme -> files: acme/**\n",
+		"proto/pb.yaml -> written\npb.work -> written\npb.lint.yaml -> written\npb.gen.yaml -> written\n",
+		"proto/acme/a.proto -> 1 suppression comments rewritten to pb:ignore\n",
+	} {
+		if !strings.Contains(out.String(), line) {
+			t.Errorf("the report lacks %q:\n%s", line, out.String())
+		}
+	}
+	if got := readTree(t, ws, "repo/pb.work"); got != "use:\n  - proto\n" {
+		t.Errorf("the workspace file: %q", got)
+	}
+	if got := readTree(t, ws, "repo/proto/pb.yaml"); !strings.HasPrefix(got, "module: github.com/acme/repo/proto\n") {
+		t.Errorf("the module file: %q", got)
+	}
+	// A lone module's selection is the root's, its ignore paths
+	// module-relative there, as for a lone module at the root.
+	if got := readTree(t, ws, "repo/pb.lint.yaml"); strings.Contains(got, "modules:") || !strings.Contains(got, "ignore:\n  - paths:\n      - acme/legacy.proto/**\n    kind: lint\n") {
+		t.Errorf("the lint file:\n%s", got)
+	}
+	if got := readTree(t, ws, "repo/pb.gen.yaml"); !strings.Contains(got, "    out: gen/go\n") || !strings.Contains(got, "      - acme/**\n") {
+		t.Errorf("the generation file:\n%s", got)
+	}
+	if got := readTree(t, ws, "repo/proto/acme/a.proto"); !strings.Contains(got, "// pb:ignore MESSAGE_PASCAL_CASE\n") {
+		t.Errorf("the comment: %q", got)
+	}
+	for _, p := range []string{"repo/proto/pb.work", "repo/proto/pb.lint.yaml", "repo/proto/pb.gen.yaml"} {
+		if _, err := ws.Stat(p); err == nil {
+			t.Errorf("%s written under the configuration", p)
+		}
+	}
+	// A configuration directory escaping the root — holding a
+	// configuration there or not — or one holding none, fails naming
+	// the flag or the directory.
+	for c, msg := range map[string]string{"../elsewhere": "--config", "/elsewhere": "--config", "nowhere": "no buf configuration at repo/nowhere"} {
+		inv.Config = c
+		inv.WS = tree(t, map[string]string{"repo/README.md": "", "elsewhere/buf.yaml": "version: v2\n"})
+		if err := Run(context.Background(), inv); err == nil || !strings.Contains(err.Error(), msg) {
+			t.Errorf("--config %s: %v", c, err)
+		}
+	}
+}
+
 // The verb over a v2 configuration (REQ-migrate-verb,
 // REQ-migrate-report): the files written beside it, the report one
 // line per fact in the steps' order, the comments rewritten where buf
@@ -66,7 +135,7 @@ func TestRun(t *testing.T) {
 		"buf.yaml modules[0] proto/a -> proto/a/pb.yaml module: github.com/acme/repo/proto/a\n",
 		"buf.yaml deps[0] buf.build/prometheus/client-model -> github.com/prometheus/client_model@v0.6.1 (the dependency table)\n",
 		"the lint file's rulesets " + Ruleset + " -> rulesets: path " + Ruleset + " version v0.1.0 alias " + RulesetAlias + " (discovered)\n",
-		"buf.lock deps[0] buf.build/prometheus/client-model abc !! a BSR commit names no git commit",
+		"buf.lock deps[0] buf.build/prometheus/client-model abc -> pinned by the tidy in pb.lock over github.com/prometheus/client_model (a BSR commit names no git commit; pb's pin is the lockfile's own)\n",
 		"buf.yaml.lint.use STANDARD -> enable: " + RulesetAlias + ":STANDARD\n",
 		"buf.yaml.lint.disallow_comment_ignores true -> the module's suppression comments are left as they are: buf honored none\n",
 		"buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)\n",

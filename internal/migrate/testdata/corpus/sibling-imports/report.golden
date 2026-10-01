@@ -1,0 +1,11 @@
+buf.yaml modules[0] catalog -> catalog/pb.yaml module: example.com/acme/sibling-imports/catalog
+buf.yaml modules[1] orders -> orders/pb.yaml module: example.com/acme/sibling-imports/orders
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+orders/acme/orders/v1/order.proto import acme/catalog/v1/item.proto -> deps: example.com/acme/sibling-imports/catalog@v1.0.0 (a workspace module: buf's modules import one another freely, pb declares the version consumers require, discovered)
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
+catalog/pb.yaml -> written
+orders/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+-- status: mapped

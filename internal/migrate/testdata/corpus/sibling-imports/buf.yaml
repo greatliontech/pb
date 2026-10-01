@@ -1,0 +1,7 @@
+version: v2
+modules:
+  - path: catalog
+  - path: orders
+lint:
+  use:
+    - STANDARD

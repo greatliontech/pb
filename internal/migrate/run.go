@@ -34,8 +34,13 @@ var ErrUnmapped = errors.New("some facts went unmapped: see the report")
 // is given, the replacements, the discovery of versions, the tidy
 // that ends the verb, and the report's writer.
 type Invocation struct {
-	WS           billy.Filesystem
+	WS billy.Filesystem
+	// Dir is the resolution root, where pb's files are written; Config
+	// the configuration's directory relative to it, "" or "." for the
+	// root itself (REQ-migrate-verb); HostDir the configuration
+	// directory's path on the host, for the origin.
 	Dir          string
+	Config       string
 	HostDir      string
 	ModulePath   string
 	Replacements Replacements
@@ -118,6 +123,7 @@ func ReadSource(ws billy.Filesystem, dir string) (*Source, *bufconfig.Gen, *bufc
 	if src.File == nil && src.Work == nil {
 		return nil, nil, nil, fmt.Errorf("no buf configuration at %s: neither %s nor %s", path.Clean(dir), bufconfig.FileName, bufconfig.WorkFileName)
 	}
+	src.Rel = "." // the root itself, until Run says where the configuration lies
 	entries, err := ws.ReadDir(dir)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("reading %s: %w", path.Clean(dir), err)
@@ -147,21 +153,30 @@ func ReadSource(ws billy.Filesystem, dir string) (*Source, *bufconfig.Gen, *bufc
 	return src, gen, lock, nil
 }
 
-// Run is the verb (REQ-migrate-verb): the configuration read, the
-// module path taken from the flag or the origin, the steps run —
-// modules, dependencies, rules, generation — every key no step
-// models an unmapped fact naming it, pb's files written beside the
-// configuration where none exists already, the suppression comments
+// Run is the verb (REQ-migrate-verb): the configuration read at the
+// root or below it, the module path taken from the flag or the
+// origin, the steps run — modules, dependencies, the files' imports,
+// rules, generation — every key no step models an unmapped fact
+// naming it, pb's files written at the root where none exists
+// already, the suppression comments
 // rewritten over the proto files of each module buf honored them in,
 // the tidy run over the result, the report printed — from the first
 // write on, whatever fails, the files kept and the cause named. The
 // status is nil where every fact mapped, ErrUnmapped where any did
 // not (REQ-migrate-report).
-func Run(ctx context.Context, d Invocation) error {
-	src, gen, lock, err := ReadSource(d.WS, d.Dir)
+func Run(ctx context.Context, d Invocation) (err error) {
+	rel := "."
+	if d.Config != "" {
+		if rel, err = rootpath.Clean(d.Config, "the resolution root"); err != nil {
+			return fmt.Errorf("--config: %w", err)
+		}
+	}
+	cfgDir := path.Join(d.Dir, rel)
+	src, gen, lock, err := ReadSource(d.WS, cfgDir)
 	if err != nil {
 		return err
 	}
+	src.Rel = rel
 	modulePath := d.ModulePath
 	if modulePath == "" {
 		if modulePath, err = OriginPath(d.HostDir); err != nil {
@@ -178,6 +193,10 @@ func Run(ctx context.Context, d Invocation) error {
 		return err
 	}
 	facts = append(facts, more...)
+	if more, err = Imports(ctx, d.WS, cfgDir, src, d.Discovery, d.Replacements, l); err != nil {
+		return err
+	}
+	facts = append(facts, more...)
 	if more, err = Rules(src, l); err != nil {
 		return err
 	}
@@ -186,7 +205,7 @@ func Run(ctx context.Context, d Invocation) error {
 	// following its own (REQ-migrate-gen).
 	var templates []Template
 	for _, name := range src.Templates {
-		b, err := util.ReadFile(d.WS, path.Join(d.Dir, name))
+		b, err := util.ReadFile(d.WS, path.Join(cfgDir, name))
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", name, err)
 		}
@@ -248,9 +267,9 @@ func Run(ctx context.Context, d Invocation) error {
 		}
 	}
 	// The refusal set: every file to be written, and the lockfile the
-	// tidy writes at the configuration's directory, the resolution
-	// root — one in a module's directory below refused the same, no
-	// workspace admitting it — checked before the first write.
+	// tidy writes at the resolution root — one in a module's directory
+	// below refused the same, no workspace admitting it — checked
+	// before the first write.
 	refused := make([]string, 0, len(files)+len(l.Modules)+1)
 	for _, f := range files {
 		refused = append(refused, f.name)
@@ -295,7 +314,7 @@ func Run(ctx context.Context, d Invocation) error {
 		}
 		facts = append(facts, mapped(f.name, "written"))
 	}
-	more, err = rewriteComments(d.WS, d.Dir, l)
+	more, err = rewriteComments(d.WS, d.Dir, cfgDir, src, l)
 	facts = append(facts, more...)
 	if err != nil {
 		return report(fmt.Errorf("the comments' rewriting failed: %w", err))
@@ -344,41 +363,32 @@ func unmodeledFacts(src *Source, gen *bufconfig.Gen, templates []Template, lock 
 	return facts
 }
 
-// rewriteComments rewrites the suppression comments of every regular
-// proto file under each module buf honored them in
-// (REQ-migrate-comments): a file with any rewritten is written back
-// and reported with its count; a rewritten directive pb does not
-// read where it stands, one naming a rule whose finding carries no
-// position, and one in a block comment are each an unmapped fact
-// naming the file and line. The facts made before a failure are
-// returned with it, the report owing them.
-func rewriteComments(ws billy.Filesystem, dir string, l *Layout) ([]Fact, error) {
+// rewriteComments rewrites the suppression comments of every proto
+// file of each module buf honored them in (REQ-migrate-comments) —
+// the module's own files, as buf read them (moduleFiles): a file with
+// any rewritten is written back and reported with its count; a
+// rewritten directive pb does not read where it stands, one naming a
+// rule whose finding carries no position, and one in a block comment
+// are each an unmapped fact naming the file and line. The facts made
+// before a failure are returned with it, the report owing them.
+func rewriteComments(ws billy.Filesystem, root, cfgDir string, src *Source, l *Layout) ([]Fact, error) {
 	var facts []Fact
-	for _, mod := range sortedKeys(l.CommentIgnores) {
-		if !l.CommentIgnores[mod] {
+	decls, err := src.decls()
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range decls {
+		if !l.CommentIgnores[src.Rooted(d.dir)] {
 			continue
 		}
-		root := path.Join(dir, mod)
-		var protos []string
-		err := util.Walk(ws, root, func(p string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			// A regular file alone: a symbolic link is carried as a link
-			// by a module's file set, never followed, and stays one.
-			if info.Mode().IsRegular() && strings.HasSuffix(p, ".proto") {
-				protos = append(protos, p)
-			}
-			return nil
-		})
+		protos, err := moduleFiles(ws, cfgDir, d)
 		if err != nil {
-			return facts, fmt.Errorf("walking %s: %w", root, err)
+			return facts, err
 		}
-		sort.Strings(protos)
-		for _, p := range protos {
-			name := p
-			if dir != "." {
-				name = strings.TrimPrefix(p, dir+"/")
+		for _, f := range protos {
+			p, name := f.path, f.path
+			if root != "." {
+				name = strings.TrimPrefix(p, root+"/")
 			}
 			b, err := util.ReadFile(ws, p)
 			if err != nil {

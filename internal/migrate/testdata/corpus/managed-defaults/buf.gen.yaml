@@ -1,0 +1,13 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: example.com/acme/ledger/gen/go
+    except:
+      - buf.build/googleapis/googleapis
+plugins:
+  - plugin: buf.build/protocolbuffers/go:v1.34.2
+    out: gen/go
+    opt: paths=source_relative
+  - plugin: buf.build/protocolbuffers/csharp:v27.0
+    out: gen/csharp

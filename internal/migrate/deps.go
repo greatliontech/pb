@@ -10,16 +10,23 @@ import (
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/version"
+	"github.com/greatliontech/pb/internal/module/workspace"
 )
 
 // Entry is a dependency table entry: the module path that is a BSR
 // module's origin, and the BSR modules its files import — declared
 // with it, since its origin is a synthesized module declaring nothing
-// of its own.
+// of its own. An entry with no path maps its name to nothing: the
+// well-known types, the toolchain's own (generation.md
+// REQ-gen-compile).
 type Entry struct {
 	Path string
 	Deps []string
 }
+
+// WellKnownTypes is the BSR module of the well-known types, whose
+// entry maps to nothing.
+const WellKnownTypes = "buf.build/protocolbuffers/wellknowntypes"
 
 // Dependencies is the dependency table (REQ-migrate-deps): a BSR module
 // name to its entry, each entry's layout verified at entry by
@@ -36,6 +43,7 @@ var Dependencies = map[string]Entry{
 	"buf.build/opencensus/opencensus":          {Path: "github.com/census-instrumentation/opencensus-proto/src"},
 	"buf.build/opentelemetry/opentelemetry":    {Path: "github.com/open-telemetry/opentelemetry-proto"},
 	"buf.build/prometheus/client-model":        {Path: "github.com/prometheus/client_model"},
+	WellKnownTypes:                             {},
 }
 
 // Dep is a dependency replacement's target: the module path and, where
@@ -110,18 +118,27 @@ type Discovery interface {
 // then in the table; a mapped path declared at the replacement's
 // version or, discovered once per path, the latest version discovery
 // names; a name neither holds, or one whose discovery fails, an
-// unmapped fact naming the flag's form. A replacement naming what the
-// configuration never declares fails. The lockfile's entries are
-// unmapped facts: pb's pin is the tidy's.
+// unmapped fact naming the flag's form; a name the table maps to
+// nothing — the well-known types — a mapped fact declaring nothing.
+// A replacement naming what the configuration never declares fails.
+// The lockfile's entries are read as declarations too: one the
+// configuration declares already is a mapped fact naming the path it
+// declared and that pb's pin is the tidy's, a BSR commit naming no
+// git commit; one it does not — a dependency buf resolved for it —
+// is declared the same way; its digest is read for nothing. The
+// paths declared are recorded on the layout by BSR name (DepPaths).
 func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, repl Replacements, l *Layout) ([]Fact, error) {
 	if src == nil || l == nil {
 		return nil, fmt.Errorf("no buf configuration read")
 	}
-	type entry struct{ name, from string }
+	// An entry's source is its fact's: the configuration key and the
+	// name as spelled, or a lock entry's key, which carries the name.
+	type entry struct{ name, source string }
 	var entries []entry
+	configured := func(dep, key string) entry { return entry{dep, key + " " + dep} }
 	if src.Work == nil && src.File != nil {
 		for i, dep := range src.File.Deps {
-			entries = append(entries, entry{dep, fmt.Sprintf("%s deps[%d]", bufconfig.FileName, i)})
+			entries = append(entries, configured(dep, fmt.Sprintf("%s deps[%d]", bufconfig.FileName, i)))
 		}
 	}
 	members := make([]string, 0, len(src.Members))
@@ -131,7 +148,35 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	sort.Strings(members)
 	for _, dir := range members {
 		for i, dep := range src.Members[dir].Deps {
-			entries = append(entries, entry{dep, fmt.Sprintf("%s/%s deps[%d]", dir, bufconfig.FileName, i)})
+			entries = append(entries, configured(dep, fmt.Sprintf("%s/%s deps[%d]", dir, bufconfig.FileName, i)))
+		}
+	}
+	// The lock's entries, each a declaration where the configuration
+	// has none for the name, after the configuration's own.
+	type lockEntry struct {
+		from string
+		dep  bufconfig.Dep
+	}
+	var locked []lockEntry
+	if lock != nil {
+		for i, dep := range lock.Deps {
+			locked = append(locked, lockEntry{fmt.Sprintf("%s deps[%d] %s %s", bufconfig.LockFileName, i, dep.Name, dep.Commit), dep})
+		}
+	}
+	for _, dir := range sortedKeys(src.MemberLocks) {
+		for i, dep := range src.MemberLocks[dir].Deps {
+			locked = append(locked, lockEntry{fmt.Sprintf("%s deps[%d] %s %s", path.Join(dir, bufconfig.LockFileName), i, dep.Name, dep.Commit), dep})
+		}
+	}
+	declares := map[string]bool{} // BSR name -> declared by the configuration or an earlier lock entry
+	for _, e := range entries {
+		name, _ := bsrSplit(e.name)
+		declares[name] = true
+	}
+	for _, le := range locked {
+		if !declares[le.dep.Name] {
+			declares[le.dep.Name] = true
+			entries = append(entries, entry{le.dep.Name, le.from})
 		}
 	}
 	// A name the table holds brings the BSR modules its files import,
@@ -152,7 +197,7 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 				continue
 			}
 			named[dep] = true
-			entries = append(entries, entry{dep, name + "'s dependency"})
+			entries = append(entries, configured(dep, name+"'s dependency"))
 		}
 	}
 	// A replacement the configuration never names is refused first: a
@@ -161,6 +206,14 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	declared := map[string]bool{Ruleset: true} // the ruleset's version may be pinned by its own path
 	for name := range named {
 		declared[name] = true
+	}
+	// A bundled import's provider, and a workspace module, may be
+	// pinned by their own paths too, a version alone (Imports).
+	for p := range pathKeyed(l) {
+		declared[p] = true
+		if r, ok := repl.Deps[p]; ok && (r.Path != p || r.Version == "") {
+			return nil, fmt.Errorf("--dep %s=%s: a replacement keyed by a module path names a version alone, %s@<version>", p, r.Path+map[bool]string{true: "@" + r.Version, false: ""}[r.Version != ""], p)
+		}
 	}
 	if r, ok := repl.Deps[Ruleset]; ok && r.Path != Ruleset {
 		return nil, fmt.Errorf("--dep %s=%s: the lint file imports the ruleset %s; a replacement keyed by it names a version alone", Ruleset, r.Path, Ruleset)
@@ -187,17 +240,39 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		versions[r.Path], pinned[r.Path] = r.Version, name
 	}
 	var facts []Fact
+	l.DepPaths = map[string]string{}
+	l.Versions = versions
+	declaredAt := map[string]Fact{} // BSR name -> the fact its declaration made
 	for _, e := range entries {
 		name, _ := bsrSplit(e.name)
 		path, from := "", "the dependency table"
+		sibling := ""
 		if r, ok := repl.Deps[name]; ok {
 			path, from = r.Path, "--dep"
+		} else if sp, ok := l.Names[name]; ok {
+			// A BSR name a workspace module bears: the sibling
+			// (REQ-migrate-imports).
+			path, from = sp, "a workspace module, by its name"
+		} else if te, ok := Dependencies[name]; ok && te.Path == "" {
+			f := mapped(e.source, "nothing: the well-known types are the toolchain's own, never a dependency")
+			facts = append(facts, f)
+			declaredAt[name] = f
+			continue
 		} else {
-			path = Dependencies[name].Path
+			path = te.Path
 		}
 		if path == "" {
-			facts = append(facts, unmapped(e.from+" "+e.name, "no entry in the dependency table: pass --dep "+name+"=<module path>"))
+			f := unmapped(e.source, "no entry in the dependency table: pass --dep "+name+"=<module path>")
+			facts = append(facts, f)
+			declaredAt[name] = f
 			continue
+		}
+		// A path a workspace module bears, however resolved, is the
+		// sibling's: declared in every module but itself.
+		for _, f := range l.Modules {
+			if f.Module == path {
+				sibling = path
+			}
 		}
 		if by := pinned[path]; by != "" && by != name {
 			from += ", at --dep " + by + "'s version"
@@ -206,19 +281,44 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		if !ok {
 			latest, err := d.Latest(ctx, path)
 			if err != nil {
-				facts = append(facts, unmapped(e.from+" "+e.name, "no version discovered for "+path+" ("+oneLine(err.Error())+"): pass --dep "+name+"="+path+"@<version>"))
+				f := unmapped(e.source, "no version discovered for "+path+" ("+oneLine(err.Error())+"): pass --dep "+name+"="+path+"@<version>")
+				facts = append(facts, f)
+				declaredAt[name] = f
 				continue
 			}
 			v = latest.String()
 			versions[path] = v
 		}
 		for _, f := range l.Modules {
+			if f.Module == sibling {
+				continue
+			}
 			if f.Deps == nil {
 				f.Deps = map[string]string{}
 			}
 			f.Deps[path] = v
 		}
-		facts = append(facts, mapped(e.from+" "+e.name, path+"@"+v+" ("+from+")"))
+		l.DepPaths[name] = path
+		f := mapped(e.source, path+"@"+v+" ("+from+")")
+		facts = append(facts, f)
+		declaredAt[name] = f
+	}
+	// A lock entry the configuration declared already: the pin that
+	// replaces buf's, the tidy's over the path declared.
+	var lockFacts []Fact
+	for _, le := range locked {
+		at := declaredAt[le.dep.Name]
+		if at.Source == le.from {
+			continue // declared by this very entry, reported above
+		}
+		switch {
+		case !at.Mapped:
+			lockFacts = append(lockFacts, unmapped(le.from, "pinned nowhere: "+at.Text))
+		case l.DepPaths[le.dep.Name] == "":
+			lockFacts = append(lockFacts, mapped(le.from, at.Text))
+		default:
+			lockFacts = append(lockFacts, mapped(le.from, "pinned by the tidy in "+workspace.LockFileName+" over "+l.DepPaths[le.dep.Name]+" (a BSR commit names no git commit; pb's pin is the lockfile's own)"))
+		}
 	}
 	// The ruleset the lint file imports (REQ-migrate-rules), at the
 	// version a replacement pins or the highest discovered, declared
@@ -241,16 +341,5 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		}
 		facts = append(facts, mapped(rulesetSource, "rulesets: path "+Ruleset+" version "+v+" alias "+RulesetAlias+" ("+from+")"))
 	}
-	lockFacts := func(name string, lock *bufconfig.Lock) {
-		for i, dep := range lock.Deps {
-			facts = append(facts, unmapped(fmt.Sprintf("%s deps[%d] %s %s", name, i, dep.Name, dep.Commit), "a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"))
-		}
-	}
-	if lock != nil {
-		lockFacts(bufconfig.LockFileName, lock)
-	}
-	for _, dir := range sortedKeys(src.MemberLocks) {
-		lockFacts(path.Join(dir, bufconfig.LockFileName), src.MemberLocks[dir])
-	}
-	return facts, nil
+	return append(facts, lockFacts...), nil
 }

@@ -7,10 +7,10 @@ buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
 buf.gen.yaml plugins[0].include_imports true -> include_imports: true
-buf.gen.yaml plugins[0].include_wkt !! pb generates for no well-known file: the toolchain's copy is never a target
+buf.gen.yaml plugins[0].include_wkt true -> include_wkt: true
 buf.gen.yaml clean true -> clean: true
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

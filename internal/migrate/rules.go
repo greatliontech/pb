@@ -174,7 +174,7 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 	if src == nil || l == nil {
 		return nil, fmt.Errorf("no buf configuration read")
 	}
-	decls, err := declarations(src)
+	decls, err := src.decls()
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 			}
 			own = append(own, fs...)
 			if kind == check.KindLint {
-				l.CommentIgnores[d.dir] = honorsComments(cfg.version, cfg.sec)
+				l.CommentIgnores[src.Rooted(d.dir)] = honorsComments(cfg.version, cfg.sec)
 				if cfg.own {
 					own = append(own, commentFacts(cfg)...)
 				}
@@ -271,7 +271,7 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 			break
 		}
 		if !sel.same(root) {
-			f.Modules[d.dir] = lintfile.ModuleSelection{Enable: sel.enable, Exclude: sel.exclude, Ignore: sel.ignores}
+			f.Modules[src.Rooted(d.dir)] = lintfile.ModuleSelection{Enable: sel.enable, Exclude: sel.exclude, Ignore: sel.ignores}
 		}
 	}
 	f.Enable, f.Exclude, f.Ignore = root.enable, root.exclude, root.ignores

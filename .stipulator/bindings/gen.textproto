@@ -523,8 +523,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-overrides-derived"
-  content_hash: "61684a65500b97eba710599e4e4ab07c72f907bcb0f93d42f57461766ee17589"
-  source_hash: "5349850152cea0765ce9d45f2aeb1bb4f356cec95ffcd018bcadd937df5ba825"
+  content_hash: "78726c8e8c0c78ce248742ec38aaec9e0ecd752ff6ad678bd450eccd94dbed47"
+  source_hash: "89388a38452b69aeb525a6fa3205dd5be3b4abe05fedc21bd836fc02746b8f5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genrequest.TestDerive"
   role: BINDING_ROLE_TESTS
@@ -533,8 +533,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-overrides-derived"
-  content_hash: "61684a65500b97eba710599e4e4ab07c72f907bcb0f93d42f57461766ee17589"
-  source_hash: "5349850152cea0765ce9d45f2aeb1bb4f356cec95ffcd018bcadd937df5ba825"
+  content_hash: "78726c8e8c0c78ce248742ec38aaec9e0ecd752ff6ad678bd450eccd94dbed47"
+  source_hash: "89388a38452b69aeb525a6fa3205dd5be3b4abe05fedc21bd836fc02746b8f5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genfile.TestParse"
   role: BINDING_ROLE_TESTS
@@ -543,8 +543,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-overrides-derived"
-  content_hash: "61684a65500b97eba710599e4e4ab07c72f907bcb0f93d42f57461766ee17589"
-  source_hash: "5349850152cea0765ce9d45f2aeb1bb4f356cec95ffcd018bcadd937df5ba825"
+  content_hash: "78726c8e8c0c78ce248742ec38aaec9e0ecd752ff6ad678bd450eccd94dbed47"
+  source_hash: "89388a38452b69aeb525a6fa3205dd5be3b4abe05fedc21bd836fc02746b8f5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genfile.TestEncode"
   role: BINDING_ROLE_TESTS
@@ -553,8 +553,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-overrides-derived"
-  content_hash: "61684a65500b97eba710599e4e4ab07c72f907bcb0f93d42f57461766ee17589"
-  source_hash: "5349850152cea0765ce9d45f2aeb1bb4f356cec95ffcd018bcadd937df5ba825"
+  content_hash: "78726c8e8c0c78ce248742ec38aaec9e0ecd752ff6ad678bd450eccd94dbed47"
+  source_hash: "89388a38452b69aeb525a6fa3205dd5be3b4abe05fedc21bd836fc02746b8f5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genfile.Override.Derive"
   role: BINDING_ROLE_IMPLEMENTS
@@ -563,8 +563,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-overrides-derived"
-  content_hash: "61684a65500b97eba710599e4e4ab07c72f907bcb0f93d42f57461766ee17589"
-  source_hash: "5349850152cea0765ce9d45f2aeb1bb4f356cec95ffcd018bcadd937df5ba825"
+  content_hash: "78726c8e8c0c78ce248742ec38aaec9e0ecd752ff6ad678bd450eccd94dbed47"
+  source_hash: "89388a38452b69aeb525a6fa3205dd5be3b4abe05fedc21bd836fc02746b8f5c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/genfile.TestDerive"
   role: BINDING_ROLE_TESTS

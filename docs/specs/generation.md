@@ -162,8 +162,9 @@ namespace, new, null, or, parseerror, print, private, protected,
 public, require, require_once, return, static, string, switch, throw,
 throwable, trait, true, try, typeerror, unset, use, var, void, while,
 xor, yield) getting `_` appended, `\`-joined;
-`php_metadata_namespace` from a suffix, the `php_namespace` rule's
-value, then `\` and the suffix; `ruby_package` from a suffix or from
+`php_metadata_namespace` from a suffix or from the file alone, the
+`php_namespace` rule's value, then `\` and the suffix, `GPBMetadata`
+where none is declared; `ruby_package` from a suffix or from
 the file alone, the components in PascalCase, `::`-joined, then `::`
 and the suffix where one is declared; `java_outer_classname` from
 the file alone, the file's base name — its last path component, the

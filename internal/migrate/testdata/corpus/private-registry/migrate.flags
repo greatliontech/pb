@@ -1,0 +1,3 @@
+--dep pbr.example.com/acme/validate=github.com/acme/validate/proto
+--dep pbr.example.com/acme/ledger=github.com/acme/ledger/proto@v0.3.0
+--plugin pbr.example.com/acme/protoc-gen-ledger=ghcr.io/acme/protoc-gen-ledger:v0.3.0

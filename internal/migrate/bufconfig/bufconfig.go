@@ -105,8 +105,11 @@ type Plugin struct {
 	ProtocBuiltin string
 	Out           string
 	Opt           string
-	// IncludeImports is v2's include_imports.
+	// IncludeImports and IncludeWKT are v2's include_imports and
+	// include_wkt, the latter refused without the former as buf
+	// refuses it.
 	IncludeImports bool
+	IncludeWKT     bool
 	Unmodeled      []Unmodeled
 }
 
@@ -144,14 +147,26 @@ type Form struct {
 	Override map[string]string
 }
 
+// Disable is one v2 disable entry: the option it names, file or
+// field, the module, path or field it scopes to, each "" where
+// absent, and the entry spelled for the report.
+type Disable struct {
+	FileOption  string
+	FieldOption string
+	Module      string
+	Path        string
+	Field       string
+	Spelled     string
+}
+
 // Managed is buf.gen.yaml's managed mode: whether enabled, the
 // declarative overrides (v2's, and v1's boolean options and override
-// map), v2's disables spelled for the report, and v1's option forms.
+// map), v2's disables, and v1's option forms.
 type Managed struct {
 	Enabled   bool
 	Overrides []Override
-	Disables  []string // v2 disable entries, spelled as written
-	Forms     []Form   // v1 option forms, in document order
+	Disables  []Disable // v2 disable entries, in document order
+	Forms     []Form    // v1 option forms, in document order
 }
 
 // Gen is a buf.gen.yaml: its version, its plugins, its managed mode
@@ -743,9 +758,9 @@ var takesNo = map[string][]string{
 // remote, `path` makes a local command, `protoc_path` a protoc
 // builtin, a protoc builtin's name a builtin, and any other name the
 // executable protoc-gen-<name>. The options join with commas as buf
-// joins a list; `strategy`, `revision`, `protoc_path` and v2's
-// `include_imports` and `include_wkt` are passed over for the report,
-// their presence read for the refusals alone.
+// joins a list; `strategy`, `revision` and `protoc_path` are passed
+// over for the report, their presence read for the refusals alone;
+// v2's `include_wkt` without `include_imports` is buf's own refusal.
 func (r *reader) plugin(n ast.Node, where string) (Plugin, error) {
 	var p Plugin
 	var opts, path []string
@@ -816,13 +831,16 @@ func (r *reader) plugin(n ast.Node, where string) (Plugin, error) {
 				return command("local", &p.Local).Read(n)
 			}},
 			contractfile.Field{Name: "include_imports", Read: func(n ast.Node) error { return r.flag(n, where+".include_imports", &p.IncludeImports) }},
-			noted("include_wkt"),
+			contractfile.Field{Name: "include_wkt", Read: func(n ast.Node) error { return r.flag(n, where+".include_wkt", &p.IncludeWKT) }},
 		)
 	case "v1":
 		fields = append(fields, naming("plugin", &short), naming("name", &short), command("path", &path))
 	}
 	if err := r.walk(n, where, fields...); err != nil {
 		return p, err
+	}
+	if p.IncludeWKT && !p.IncludeImports {
+		return p, fmt.Errorf("%w: %s: cannot include well-known types without including imports", ErrInvalid, where)
 	}
 	if forms == 0 && r.version == "v1" && slices.Contains(r.unmodeled[before:], Unmodeled(where+".remote")) {
 		// v1's alpha remote plugin, run by the BSR: a form pb does
@@ -940,23 +958,28 @@ func (r *reader) managed(n ast.Node, where string) (*Managed, error) {
 			contractfile.Field{Name: "disable", Read: func(n ast.Node) error {
 				return contractfile.Sequence(n, where+".disable", ErrInvalid, func(i int, item ast.Node) error {
 					w := fmt.Sprintf("%s.disable[%d]", where, i)
+					var d Disable
 					var parts []string
 					has := map[string]bool{}
-					named := func(k string, known map[string]bool) contractfile.Field {
+					named := func(k string, known map[string]bool, into *string) contractfile.Field {
 						return contractfile.Field{Name: k, Read: func(n ast.Node) error {
 							has[k] = true
 							if known != nil {
-								var name string
-								if err := r.option(n, w+"."+k, known, &name); err != nil {
+								if err := r.option(n, w+"."+k, known, into); err != nil {
 									return err
 								}
-								parts = append(parts, k+"="+name)
-								return nil
+							} else {
+								v, ok := contractfile.Scalar(n)
+								if !ok {
+									return fmt.Errorf("%w: %s.%s must be a scalar", ErrInvalid, w, k)
+								}
+								*into = v
 							}
-							return keyed(n, k, &parts)
+							parts = append(parts, k+"="+*into)
+							return nil
 						}}
 					}
-					err := r.walk(item, w, named("file_option", fileOptions), named("field_option", fieldOptions), named("module", nil), named("path", nil), named("field", nil))
+					err := r.walk(item, w, named("file_option", fileOptions, &d.FileOption), named("field_option", fieldOptions, &d.FieldOption), named("module", nil, &d.Module), named("path", nil, &d.Path), named("field", nil, &d.Field))
 					if err != nil {
 						return err
 					}
@@ -969,7 +992,8 @@ func (r *reader) managed(n ast.Node, where string) (*Managed, error) {
 					case has["file_option"] && has["field"]:
 						return fmt.Errorf("%w: %s scopes a file_option to a field", ErrInvalid, w)
 					}
-					mg.Disables = append(mg.Disables, w+" "+strings.Join(parts, " "))
+					d.Spelled = w + " " + strings.Join(parts, " ")
+					mg.Disables = append(mg.Disables, d)
 					return nil
 				})
 			}},
@@ -1098,14 +1122,6 @@ func boolean(n ast.Node, where string) (string, error) {
 }
 
 // keyed records a key's scalar value as "key=value" for the report.
-func keyed(n ast.Node, key string, into *[]string) error {
-	v, ok := contractfile.Scalar(n)
-	if !ok {
-		return fmt.Errorf("%w: %s must be a scalar", ErrInvalid, key)
-	}
-	*into = append(*into, key+"="+v)
-	return nil
-}
 
 // IsGenTemplate reports whether a file name is a generation template
 // beside the configuration: `buf.gen.<name>.yaml` with a non-empty

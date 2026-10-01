@@ -3,7 +3,7 @@ api/buf.yaml.name buf.build/acme/api -> module: example.com/acme/v1-workspace/ap
 buf.work.yaml directories[1] internal/proto -> internal/proto/pb.yaml module: example.com/acme/v1-workspace/internal/proto
 api/buf.yaml deps[0] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
 the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
-api/buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
+api/buf.lock deps[0] buf.build/googleapis/googleapis 00000000000000000000000000000002 -> pinned by the tidy in pb.lock over github.com/googleapis/googleapis (a BSR commit names no git commit; pb's pin is the lockfile's own)
 api/buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores
 api/buf.yaml.lint.use DEFAULT -> enable: buf:STANDARD (buf's DEFAULT is STANDARD)
 api/buf.yaml.lint.except RPC_RESPONSE_STANDARD_NAME -> exclude: buf:RPC_RESPONSE_STANDARD_NAME
@@ -25,4 +25,4 @@ internal/proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

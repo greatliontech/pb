@@ -2,13 +2,13 @@ buf.yaml modules[0] ./proto -> proto/pb.yaml module: example.com/acme/multi-modu
 buf.yaml modules[1] services/catalog/proto -> services/catalog/proto/pb.yaml module: example.com/acme/multi-module-ignores/services/catalog/proto
 buf.yaml modules[2] services/orders/proto -> services/orders/proto/pb.yaml module: example.com/acme/multi-module-ignores/services/orders/proto
 buf.yaml modules[3] services/shipping/proto -> services/shipping/proto/pb.yaml module: example.com/acme/multi-module-ignores/services/shipping/proto
-buf.yaml deps[0] buf.build/protocolbuffers/wellknowntypes !! no entry in the dependency table: pass --dep buf.build/protocolbuffers/wellknowntypes=<module path>
+buf.yaml deps[0] buf.build/protocolbuffers/wellknowntypes -> nothing: the well-known types are the toolchain's own, never a dependency
 buf.yaml deps[1] buf.build/bufbuild/protovalidate -> github.com/bufbuild/protovalidate/proto/protovalidate@v1.0.0 (the dependency table)
 buf.yaml deps[2] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
 the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
-buf.lock deps[0] buf.build/bufbuild/protovalidate 0000000000000000000000000000000000000001 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.lock deps[1] buf.build/googleapis/googleapis 0000000000000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.lock deps[2] buf.build/protocolbuffers/wellknowntypes 0000000000000000000000000000000000000003 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
+buf.lock deps[0] buf.build/bufbuild/protovalidate 0000000000000000000000000000000000000001 -> pinned by the tidy in pb.lock over github.com/bufbuild/protovalidate/proto/protovalidate (a BSR commit names no git commit; pb's pin is the lockfile's own)
+buf.lock deps[1] buf.build/googleapis/googleapis 0000000000000000000000000000000000000002 -> pinned by the tidy in pb.lock over github.com/googleapis/googleapis (a BSR commit names no git commit; pb's pin is the lockfile's own)
+buf.lock deps[2] buf.build/protocolbuffers/wellknowntypes 0000000000000000000000000000000000000003 -> nothing: the well-known types are the toolchain's own, never a dependency
 buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
 buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: buf:PACKAGE_VERSION_SUFFIX
 buf.yaml.lint.rpc_allow_same_request_response true -> exclude: buf:RPC_REQUEST_RESPONSE_UNIQUE, enable: buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME_EMPTY_REQUESTS_RESPONSES
@@ -38,4 +38,4 @@ services/shipping/proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

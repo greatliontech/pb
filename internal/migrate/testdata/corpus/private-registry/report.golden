@@ -1,15 +1,17 @@
 buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/private-registry/proto
-buf.yaml deps[0] pbr.example.com/acme/validate !! no entry in the dependency table: pass --dep pbr.example.com/acme/validate=<module path>
-buf.yaml deps[1] pbr.example.com/acme/ledger !! no entry in the dependency table: pass --dep pbr.example.com/acme/ledger=<module path>
+buf.yaml deps[0] pbr.example.com/acme/validate -> github.com/acme/validate/proto@v1.0.0 (--dep)
+buf.yaml deps[1] pbr.example.com/acme/ledger -> github.com/acme/ledger/proto@v0.3.0 (--dep)
 buf.yaml deps[2] buf.build/googleapis/googleapis -> github.com/googleapis/googleapis@v1.0.0 (the dependency table)
 the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
-buf.lock deps[0] buf.build/googleapis/googleapis 0000000000000000000000000000000000000002 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.lock deps[1] pbr.example.com/acme/ledger 0000000000000000000000000000000000000004 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
-buf.lock deps[2] pbr.example.com/acme/validate 0000000000000000000000000000000000000005 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy
+buf.lock deps[0] buf.build/googleapis/googleapis 0000000000000000000000000000000000000002 -> pinned by the tidy in pb.lock over github.com/googleapis/googleapis (a BSR commit names no git commit; pb's pin is the lockfile's own)
+buf.lock deps[1] pbr.example.com/acme/ledger 0000000000000000000000000000000000000004 -> pinned by the tidy in pb.lock over github.com/acme/ledger/proto (a BSR commit names no git commit; pb's pin is the lockfile's own)
+buf.lock deps[2] pbr.example.com/acme/validate 0000000000000000000000000000000000000005 -> pinned by the tidy in pb.lock over github.com/acme/validate/proto (a BSR commit names no git commit; pb's pin is the lockfile's own)
 buf.yaml.lint -> enable: buf:STANDARD (buf's default, no use)
 buf.yaml.lint.except PACKAGE_VERSION_SUFFIX -> exclude: buf:PACKAGE_VERSION_SUFFIX
 buf.yaml.breaking.use FILE -> enable: buf:FILE
-buf.gen.yaml plugins[0].remote pbr.example.com/acme/protoc-gen-ledger:v0.3.0 !! not in the plugin catalog: pass --plugin pbr.example.com/acme/protoc-gen-ledger=<reference>
+buf.gen.yaml plugins[0].remote pbr.example.com/acme/protoc-gen-ledger:v0.3.0 -> ref: ghcr.io/acme/protoc-gen-ledger:v0.3.0 (--plugin)
+buf.gen.yaml plugins[0].out gen/go -> out: gen/go
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
 buf.gen.yaml plugins[1].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[1].out gen/go -> out: gen/go
 buf.gen.yaml plugins[1].opt paths=source_relative -> opt: paths=source_relative
@@ -17,4 +19,4 @@ proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped

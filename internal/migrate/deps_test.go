@@ -78,6 +78,17 @@ func TestDependencyTableMatchesSpec(t *testing.T) {
 	}
 	for name, cols := range rows {
 		e, ok := Dependencies[name]
+		if ok && e.Path == "" {
+			// An entry mapping to nothing: the spec's row spells no
+			// path, and the layout test has nothing to verify.
+			if len(cols) != 2 || len(cols[0]) != 0 || len(cols[1]) != 0 || len(e.Deps) != 0 {
+				t.Errorf("%s: spec %v, code %+v, want a row mapping to nothing", name, cols, e)
+			}
+			if _, has := anchors[name]; has {
+				t.Errorf("%s: an anchor for an entry mapping to nothing", name)
+			}
+			continue
+		}
 		if !ok || len(cols) != 2 || len(cols[0]) != 1 || e.Path != cols[0][0] {
 			t.Errorf("%s: spec %v, code %+v", name, cols, e)
 			continue
@@ -100,6 +111,23 @@ func TestDependencyTableMatchesSpec(t *testing.T) {
 	for name := range anchors {
 		if _, ok := Dependencies[name]; !ok {
 			t.Errorf("%s: an anchor for no entry", name)
+		}
+	}
+}
+
+// The bundled imports table is the spec's, entry for entry
+// (REQ-migrate-imports).
+func TestBundledImportsMatchSpec(t *testing.T) {
+	rows := specTable(t, "../../docs/specs/migrate.md", "Imports")
+	if len(rows) != len(BundledImports) || len(rows) == 0 {
+		t.Fatalf("the spec's table has %d rows, the code's %d", len(rows), len(BundledImports))
+	}
+	for imp, cols := range rows {
+		if p, ok := BundledImports[imp]; !ok || len(cols) != 1 || len(cols[0]) != 1 || cols[0][0] != p {
+			t.Errorf("%s: spec %v, code %q", imp, cols, p)
+		}
+		if err := module.ValidatePath(BundledImports[imp]); err != nil {
+			t.Errorf("%s: %v", imp, err)
 		}
 	}
 }
@@ -171,7 +199,7 @@ func TestDeps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lock, err := bufconfig.ParseLock([]byte("version: v2\ndeps:\n  - name: " + otel + "\n    commit: abc123\n    digest: b5:deadbeef\n"))
+	lock, err := bufconfig.ParseLock([]byte("version: v2\ndeps:\n  - name: " + otel + "\n    commit: abc123\n    digest: b5:deadbeef\n  - name: buf.build/googleapis/googleapis\n    commit: def456\n    digest: b5:cafe\n  - name: " + WellKnownTypes + "\n    commit: 789\n    digest: b5:feed\n  - name: buf.build/nobody/knows\n    commit: 000\n    digest: b5:0\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,18 +215,20 @@ func TestDeps(t *testing.T) {
 		}
 	}
 	d := &fakeDiscovery{latest: map[string]string{
-		otelPath:                  "v0.0.0-20240102030405-abcdefabcdef",
-		"github.com/acme/private": "v1.4.0",
-		Ruleset:                   "v0.1.0",
+		otelPath:                           "v0.0.0-20240102030405-abcdefabcdef",
+		"github.com/acme/private":          "v1.4.0",
+		"github.com/googleapis/googleapis": "v0.0.0-20240202020202-0123456789ab",
+		Ruleset:                            "v0.1.0",
 	}}
 	facts, err := Deps(context.Background(), d, src, lock, repl, l)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wantDeps := map[string]string{
-		otelPath:                  "v0.0.0-20240102030405-abcdefabcdef",
-		"github.com/acme/private": "v1.4.0",
-		"github.com/acme/pinned":  "v2.1.0",
+		otelPath:                           "v0.0.0-20240102030405-abcdefabcdef",
+		"github.com/acme/private":          "v1.4.0",
+		"github.com/acme/pinned":           "v2.1.0",
+		"github.com/googleapis/googleapis": "v0.0.0-20240202020202-0123456789ab",
 	}
 	for dir, f := range l.Modules {
 		if len(f.Deps) != len(wantDeps) {
@@ -215,7 +245,7 @@ func TestDeps(t *testing.T) {
 	}
 	// Discovered once per path — the alias shares otel's path — and
 	// never for a pinned replacement; the ruleset last.
-	if strings.Join(d.asked, ",") != otelPath+",github.com/acme/private,github.com/acme/unreachable,"+Ruleset {
+	if strings.Join(d.asked, ",") != otelPath+",github.com/acme/private,github.com/acme/unreachable,github.com/googleapis/googleapis,"+Ruleset {
 		t.Fatalf("asked %v", d.asked)
 	}
 	want := "buf.yaml deps[0] " + otel + ":abc123 -> " + otelPath + "@v0.0.0-20240102030405-abcdefabcdef (the dependency table)\n" +
@@ -224,10 +254,21 @@ func TestDeps(t *testing.T) {
 		"buf.yaml deps[3] buf.build/acme/alias -> " + otelPath + "@v0.0.0-20240102030405-abcdefabcdef (--dep)\n" +
 		"buf.yaml deps[4] buf.build/nobody/knows !! no entry in the dependency table: pass --dep buf.build/nobody/knows=<module path>\n" +
 		"buf.yaml deps[5] buf.build/acme/unreachable !! no version discovered for github.com/acme/unreachable (no origin answers for github.com/acme/unreachable): pass --dep buf.build/acme/unreachable=github.com/acme/unreachable@<version>\n" +
+		// The lock's entries the configuration does not declare, each
+		// a declaration: a table name declared, the well-known types
+		// nothing, a name nowhere unmapped.
+		"buf.lock deps[1] buf.build/googleapis/googleapis def456 -> github.com/googleapis/googleapis@v0.0.0-20240202020202-0123456789ab (the dependency table)\n" +
+		"buf.lock deps[2] " + WellKnownTypes + " 789 -> nothing: the well-known types are the toolchain's own, never a dependency\n" +
 		"the lint file's rulesets " + Ruleset + " -> rulesets: path " + Ruleset + " version v0.1.0 alias " + RulesetAlias + " (discovered)\n" +
-		"buf.lock deps[0] " + otel + " abc123 !! a BSR commit names no git commit; pb's pin is the lockfile's own, made by the tidy"
+		// The lock's entries the configuration declared: pinned over
+		// the path declared, or nowhere where the name went unmapped.
+		"buf.lock deps[0] " + otel + " abc123 -> pinned by the tidy in pb.lock over " + otelPath + " (a BSR commit names no git commit; pb's pin is the lockfile's own)\n" +
+		"buf.lock deps[3] buf.build/nobody/knows 000 !! pinned nowhere: no entry in the dependency table: pass --dep buf.build/nobody/knows=<module path>"
 	if got := factsOf(facts); got != want {
 		t.Fatalf("facts:\n%s", got)
+	}
+	if l.DepPaths[otel] != otelPath || l.DepPaths["buf.build/acme/pinned"] != "github.com/acme/pinned" || l.DepPaths["buf.build/nobody/knows"] != "" {
+		t.Fatalf("DepPaths = %v", l.DepPaths)
 	}
 
 	// A pinned replacement's version applies to every name reaching its
@@ -251,6 +292,51 @@ func TestDeps(t *testing.T) {
 	}
 	if got := factsOf(facts2); got != "buf.yaml deps[0] "+otel+" -> "+otelPath+"@v9.0.0 (the dependency table, at --dep buf.build/acme/pin's version)\nbuf.yaml deps[1] buf.build/acme/pin -> "+otelPath+"@v9.0.0 (--dep)\nthe lint file's rulesets "+Ruleset+" -> rulesets: path "+Ruleset+" version v0.2.0 alias "+RulesetAlias+" (--dep)" {
 		t.Fatalf("pinned facts:\n%s", got)
+	}
+	// A replacement keyed by a bundled import's provider, or by a
+	// workspace module's own path, pins a version Imports reads: Deps
+	// admits it as declared.
+	for _, key := range []string{"github.com/protocolbuffers/protobuf-go/src", "github.com/acme/one"} {
+		var byPath Replacements
+		if err := byPath.Replace("dep", key+"="+key+"@v1.2.3"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Deps(context.Background(), d2, src2, nil, byPath, l2); err != nil {
+			t.Fatalf("a replacement keyed by %s: %v", key, err)
+		}
+		// One naming another path, or no version, is refused.
+		for _, target := range []string{"github.com/other@v1.0.0", key} {
+			var bad Replacements
+			if err := bad.Replace("dep", key+"="+target); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := Deps(context.Background(), d2, src2, nil, bad, l2); err == nil || !strings.Contains(err.Error(), "a replacement keyed by a module path names a version alone") {
+				t.Fatalf("--dep %s=%s: %v", key, target, err)
+			}
+		}
+	}
+	// A BSR name a workspace module bears is the sibling, declared in
+	// every module but itself at the version discovered for its path.
+	sib, _ := bufconfig.ParseFile([]byte("version: v2\nmodules:\n  - path: a\n    name: buf.build/acme/a\n  - path: b\ndeps:\n  - buf.build/acme/a\n"))
+	srcSib := &Source{File: sib, Rel: "."}
+	lSib, err := Modules(srcSib, "github.com/acme/mono")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dSib := &fakeDiscovery{latest: map[string]string{"github.com/acme/mono/a": "v0.4.0", Ruleset: "v0.1.0"}}
+	factsSib, err := Deps(context.Background(), dSib, srcSib, nil, Replacements{}, lSib)
+	if err != nil || !strings.Contains(factsOf(factsSib), "buf.yaml deps[0] buf.build/acme/a -> github.com/acme/mono/a@v0.4.0 (a workspace module, by its name)") || lSib.Modules["b"].Deps["github.com/acme/mono/a"] != "v0.4.0" || len(lSib.Modules["a"].Deps) != 0 || lSib.DepPaths["buf.build/acme/a"] != "github.com/acme/mono/a" {
+		t.Fatalf("a sibling by its name: %v\n%s\n%v %v", err, factsOf(factsSib), lSib.Modules["a"].Deps, lSib.Modules["b"].Deps)
+	}
+	// A replacement naming the sibling's path declares it the same
+	// way: in every module but itself.
+	lSib2, _ := Modules(srcSib, "github.com/acme/mono")
+	var sibRepl Replacements
+	if err := sibRepl.Replace("dep", "buf.build/acme/a=github.com/acme/mono/a@v1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Deps(context.Background(), dSib, srcSib, nil, sibRepl, lSib2); err != nil || lSib2.Modules["b"].Deps["github.com/acme/mono/a"] != "v1.0.0" || len(lSib2.Modules["a"].Deps) != 0 {
+		t.Fatalf("a sibling by replacement: %v %v %v", err, lSib2.Modules["a"].Deps, lSib2.Modules["b"].Deps)
 	}
 	pins.Deps[Ruleset] = Dep{Path: "github.com/acme/fork", Version: "v1.0.0"}
 	if _, err := Deps(context.Background(), d2, src2, nil, pins, l2); err == nil || !strings.Contains(err.Error(), "a replacement keyed by it names a version alone") {

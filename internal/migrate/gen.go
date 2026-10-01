@@ -92,7 +92,6 @@ func tagLess(a, b string) bool {
 // nothing (REQ-migrate-gen), by key.
 var keyReasons = map[string]string{
 	"strategy":      "pb generates over the workspace's own files under one strategy",
-	"include_wkt":   "pb generates for no well-known file: the toolchain's copy is never a target",
 	"types":         "pb generates over the workspace's own files under one strategy",
 	"exclude_types": "pb generates over the workspace's own files under one strategy",
 	"revision":      "pb pins a plugin by its image digest, not a build revision",
@@ -199,7 +198,17 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 	f := &genfile.File{}
 	listed := map[string]listing{}
 	first := files[0]
-	for fi, fl := range files {
+	// One clean for every output directory where every file with
+	// entries agrees; where they differ, each cleaning file's entries
+	// carry their own (generation.md REQ-gen-clean).
+	anyClean, allClean := false, true
+	for _, fl := range files {
+		if len(fl.gen.Plugins) > 0 {
+			anyClean, allClean = anyClean || fl.gen.Clean, allClean && fl.gen.Clean
+		}
+	}
+	rel := l.Rel
+	for _, fl := range files {
 		// The inputs' facts follow the file's entries, as buf's keys
 		// are read: the patterns first, their facts held back.
 		var inputFacts []Fact
@@ -239,11 +248,20 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 				kept = false
 			}
 			if kept {
-				if err := genfile.CheckOut(p.Out); err != nil {
+				// The directory cleaned as buf cleans it and read
+				// relative to the root through the configuration's
+				// directory: within the root, pb's; escaping it, nowhere
+				// pb writes.
+				out := path.Join(rel, p.Out)
+				if path.IsAbs(p.Out) || out == ".." || strings.HasPrefix(out, "../") {
+					report(unmapped(key+".out "+p.Out, "pb writes within the resolution root: "+p.Out+" escapes it"))
+					kept = false
+				} else if err := genfile.CheckOut(out); err != nil {
 					report(unmapped(key+".out "+p.Out, "pb writes within the resolution root: "+err.Error()))
 					kept = false
 				} else {
-					report(mapped(key+".out "+p.Out, "out: "+p.Out))
+					entry.Out = out
+					report(mapped(key+".out "+p.Out, "out: "+out))
 				}
 			}
 			if kept && p.Opt != "" {
@@ -252,6 +270,13 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 			if kept && p.IncludeImports {
 				entry.IncludeImports = true
 				report(mapped(key+".include_imports true", "include_imports: true"))
+			}
+			if kept && p.IncludeWKT {
+				entry.IncludeWKT = true
+				report(mapped(key+".include_wkt true", "include_wkt: true"))
+			}
+			if kept && fl.gen.Clean && !allClean {
+				entry.Clean = true
 			}
 			if kept && restricted {
 				entry.Files = append([]string(nil), patterns...)
@@ -262,13 +287,18 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 			reportKeys(report, key, p.Unmodeled)
 		}
 		facts = append(facts, inputFacts...)
-		// One clean for every output directory: the first file's.
 		switch {
-		case fi == 0 && fl.gen.Clean:
+		case fl.gen.Clean && len(fl.gen.Plugins) == 0:
+			report(mapped(fl.name+" clean true", "nothing: the file has no entry to clean for"))
+		case fl.gen.Clean && allClean && fl.name == first.name:
 			f.Clean = true
 			report(mapped(fl.name+" clean true", "clean: true"))
-		case fi > 0 && fl.gen.Clean != first.gen.Clean && len(fl.gen.Plugins) > 0:
-			report(unmapped(fl.name+" clean", "differs from "+first.name+"'s: pb empties every entry's output directory or none"))
+		case fl.gen.Clean && allClean:
+			report(mapped(fl.name+" clean true", "clean: true, "+first.name+"'s, every file agreeing"))
+		case fl.gen.Clean:
+			report(mapped(fl.name+" clean true", "clean: true on each of its entries: the files differ"))
+		case anyClean && len(fl.gen.Plugins) > 0:
+			report(mapped(fl.name+" clean false", "the file's entries clean nothing: the files differ"))
 		}
 		// One set of overrides over every entry: the first file's
 		// managed mode. A template's managed mode is read whole, its
@@ -276,9 +306,9 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 		// same overrides — none where the first gives none; a
 		// template giving other overrides, or none where the first
 		// gives some, is unmapped: its entries run under the first's.
-		if fi > 0 {
-			ov, fs := managedOverrides(fl.name, fl.gen.Managed)
-			base, _ := managedOverrides(first.name, first.gen.Managed)
+		if fl.name != first.name {
+			ov, fs := managedOverrides(fl.name, fl.gen.Managed, l)
+			base, _ := managedOverrides(first.name, first.gen.Managed, l)
 			facts = append(facts, fs...)
 			switch {
 			case slices.EqualFunc(ov, base, genfile.Override.Equal) && fl.gen.Managed != nil:
@@ -297,15 +327,15 @@ func Gen(ctx context.Context, gen *bufconfig.Gen, templates []Template, repl Rep
 		// have been; else read for nothing, with no file to hold it.
 		switch m := first.gen.Managed; {
 		case m == nil:
-		case !m.Enabled || len(m.Overrides) == 0 && len(m.Forms) == 0:
-			_, fs := managedOverrides(first.name, m)
+		case !m.Enabled:
+			_, fs := managedOverrides(first.name, m, l)
 			facts = append(facts, fs...)
 		default:
 			report(unmapped(first.name+" managed", "no generation file is written, no override with it"))
 		}
 		return facts, nil
 	}
-	overrides, fs := managedOverrides(first.name, first.gen.Managed)
+	overrides, fs := managedOverrides(first.name, first.gen.Managed, l)
 	facts = append(facts, fs...)
 	f.Overrides = overrides
 	if _, err := genfile.Encode(f); err != nil {
@@ -350,6 +380,7 @@ func inputPatterns(file string, gen *bufconfig.Gen, l *Layout, stat StatFunc, re
 	seen := map[string]bool{}
 	restricted := gen.Inputs != nil
 	dirs := sortedKeys(l.Modules)
+	rel := l.Rel
 	for i, in := range gen.Inputs {
 		key := fmt.Sprintf("%s inputs[%d]", file, i)
 		if in.Kind != "directory" {
@@ -363,6 +394,7 @@ func inputPatterns(file string, gen *bufconfig.Gen, l *Layout, stat StatFunc, re
 			report(unmapped(key+".directory "+in.Value, "outside the resolution root: pb generates over the workspace's own files"))
 			continue
 		}
+		rooted := func(p string) string { return path.Join(rel, p) }
 		// A directory naming no paths is read as a path of its own:
 		// the root is every workspace file, a module or a directory
 		// within one is what a path naming it is.
@@ -372,7 +404,7 @@ func inputPatterns(file string, gen *bufconfig.Gen, l *Layout, stat StatFunc, re
 			keys[j] = fmt.Sprintf("%s.paths[%d] %s", key, j, p)
 		}
 		if len(paths) == 0 {
-			if base == "." {
+			if rooted(base) == "." {
 				restricted = false
 				report(mapped(key+".directory "+in.Value, "every workspace file: pb generates over the modules' own files"))
 				continue
@@ -388,6 +420,7 @@ func inputPatterns(file string, gen *bufconfig.Gen, l *Layout, stat StatFunc, re
 			if base != "." && rel != base && !rootpath.Contains(base, rel) {
 				return nil, false, fmt.Errorf("%w: %s lies outside the input directory %s", bufconfig.ErrInvalid, pkey, base)
 			}
+			rel = rooted(rel)
 			module := ""
 			for _, d := range dirs {
 				if d == rel || rootpath.Contains(d, rel) {
@@ -539,35 +572,146 @@ func scopePath(spelled string) (string, error) {
 	return rootpath.Clean(spelled, "the module")
 }
 
-// scopeGlob is the generation file's glob over a scope: the path and
+// scopeGlob is the generation file's glob over a path: the path and
 // everything under it, `**` for the root.
-func scopeGlob(scope string) string {
-	if scope == "." {
+func scopeGlob(p string) string {
+	if p == "." {
 		return "**"
 	}
-	return glob.Quote(scope) + "/**"
+	return glob.Quote(p) + "/**"
 }
 
-// scopeContains reports whether scope a holds every file of scope b:
-// managed paths nest or lie apart, so two scopes' intersection is the
-// narrower or nothing.
-func scopeContains(a, b string) bool {
-	return a == b || rootpath.Contains(a, b)
+// scope is where a managed rule applies: the one module it names,
+// "" for every module, and a path within the module, "." for the
+// whole of it (generation.md REQ-gen-schema's module and files).
+type scope struct{ module, path string }
+
+// contains reports whether s holds every file of t: a module holds
+// its own, "" every module; managed paths nest or lie apart.
+func (s scope) contains(t scope) bool {
+	return (s.module == "" || s.module == t.module) && (s.path == t.path || rootpath.Contains(s.path, t.path))
+}
+
+// meet is the files both scopes cover — the narrower path where they
+// nest, under the module either names — and false where they lie
+// apart.
+func (s scope) meet(t scope) (scope, bool) {
+	m := s.module
+	if m == "" {
+		m = t.module
+	} else if t.module != "" && t.module != m {
+		return scope{}, false
+	}
+	switch {
+	case s.path == t.path || rootpath.Contains(s.path, t.path):
+		return scope{m, t.path}, true
+	case rootpath.Contains(t.path, s.path):
+		return scope{m, s.path}, true
+	}
+	return scope{}, false
+}
+
+// override is an override of option over the scope, its value or
+// axes unset.
+func (s scope) override(option string) genfile.Override {
+	return genfile.Override{Files: scopeGlob(s.path), Module: s.module, Option: option}
 }
 
 // managedOverride is one override the managed mode gave, with the
 // scope it covers and the buf key that wrote it.
 type managedOverride struct {
 	o     genfile.Override
-	scope string
+	scope scope
 	key   string
 }
 
+// managedRule is one rule buf's managed mode reads, in buf's order:
+// buf's default for an option, a form's or an override's value, a
+// prefix or suffix rule, or a derivation from the file alone, over a
+// scope, with the buf key that wrote it.
+type managedRule struct {
+	key    string
+	sc     scope
+	option string // the option; for a prefix or suffix rule, the axis name buf spells (`<option>_prefix`)
+	value  string
+	kind   ruleKind
+	note   string // what the fact says beyond the override
+}
+
+type ruleKind int
+
+const (
+	ruleValue  ruleKind = iota // a value for the option
+	ruleDerive                 // a prefix or suffix, option naming the axis
+	ruleBare                   // a derivation from the file alone, buf's computed default
+)
+
+// label names the rule in another fact: its key and the option it
+// sets, a default's key naming nine rules.
+func (r managedRule) label() string { return r.key + " for " + r.baseOption() }
+
+// baseOption is the option a rule sets, an axis name's base.
+func (r managedRule) baseOption() string {
+	if r.kind == ruleDerive {
+		o, _, _ := derivation(r.option)
+		return o
+	}
+	return r.option
+}
+
+// managedDefaults are buf's defaults under managed mode
+// (REQ-migrate-gen): each option's rule, in buf's order, over every
+// file.
+var managedDefaults = []managedRule{
+	{option: "cc_enable_arenas", value: "true", kind: ruleValue},
+	{option: "csharp_namespace", kind: ruleBare},
+	{option: "java_multiple_files", value: "true", kind: ruleValue},
+	{option: "java_outer_classname", kind: ruleBare},
+	{option: "java_package_prefix", value: "com", kind: ruleDerive},
+	{option: "objc_class_prefix", kind: ruleBare},
+	{option: "php_metadata_namespace", kind: ruleBare},
+	{option: "php_namespace", kind: ruleBare},
+	{option: "ruby_package", kind: ruleBare},
+}
+
+// managedDisable is a disable buf judges before any rule
+// (REQ-migrate-gen): the option it names — an option, its prefix or
+// suffix axis, or every option — and the module it scopes to, every
+// module where "".
+type managedDisable struct {
+	key    string
+	option string // "" for every option
+	module string // "" for every module
+}
+
+// drops reports whether the disable removes the rule from what a file
+// of its module sees: every rule, the option's rules whole, or the
+// rules of the one axis.
+func (d managedDisable) drops(r managedRule) bool {
+	switch {
+	case d.option == "":
+		return true
+	case r.kind == ruleDerive && r.option == d.option:
+		return true // the axis named
+	}
+	// An axis name equals no rule's option; an option name drops its
+	// values, derivations and default alike.
+	return r.baseOption() == d.option
+}
+
 // managedOverrides maps buf's managed mode to overrides
-// (REQ-migrate-gen): each declarative entry an override over every
-// file or over the files its path names, buf's own heuristics and
-// what names a module unmapped facts.
-func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []Fact) {
+// (REQ-migrate-gen) exactly as buf reads it per file: the rules —
+// buf's defaults first, then each declarative entry, over every file
+// or the files its path names, scoped to the module a rule names —
+// are run once for every module under the disables naming none, and
+// once more for each module a disable names, under that module's
+// disables too, that module's overrides of the options affected
+// scoped to it and every module's overrides of those options
+// excepting it. A disable naming a path or a field option, and a rule
+// naming a module no path stands for, are unmapped facts. A BSR
+// module name is resolved through the layout's names and dependency
+// paths.
+func managedOverrides(file string, m *bufconfig.Managed, l *Layout) ([]genfile.Override, []Fact) {
 	if m == nil {
 		return nil, nil
 	}
@@ -575,11 +719,239 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 	if !m.Enabled {
 		return nil, []Fact{mapped(where+".enabled false", "nothing: managed mode is disabled, its entries read for nothing")}
 	}
-	var out []managedOverride
 	var facts []Fact
 	report := func(f Fact) { facts = append(facts, f) }
+	modulePath := func(name string) (string, bool) {
+		if p, ok := l.Names[name]; ok {
+			return p, true
+		}
+		p, ok := l.DepPaths[name]
+		return p, ok
+	}
+	// A rule naming a module scopes to the module's path, resolved
+	// through the layout; a name no module bears is unmapped.
+	resolve := func(key, name string) (string, bool) {
+		p, ok := modulePath(name)
+		if !ok {
+			report(unmapped(key, "names the module "+name+", which the configuration declares nowhere: no module path stands for it"))
+		}
+		return p, ok
+	}
+	// The rules, in buf's order: the defaults, then v1's forms (its
+	// defaults; buf reads its booleans, then the forms, then the
+	// per-file map, whatever the document's order — forms and
+	// booleans name no option in common, so the forms go first here
+	// and the overrides, booleans then the map in buf's order, after;
+	// a form's except disables the form's option whole for the module,
+	// as buf reads it, and its override per module is a rule scoped to
+	// the module), then v2's overrides.
+	var rules []managedRule
+	for _, d := range managedDefaults {
+		d.key, d.sc, d.note = where+".enabled true", scope{"", "."}, " (buf's default)"
+		rules = append(rules, d)
+	}
+	var disables []managedDisable
+	for _, form := range m.Forms {
+		key := where + "." + form.Option
+		_, _, derived := derivation(form.Option)
+		kind := ruleValue
+		if derived {
+			kind = ruleDerive
+		}
+		if form.Default != "" {
+			rules = append(rules, managedRule{key: key + ".default " + form.Default, sc: scope{"", "."}, option: form.Option, value: form.Default, kind: kind})
+		}
+		option := form.Option
+		if o, _, isAxis := derivation(form.Option); isAxis {
+			option = o
+		}
+		for _, e := range form.Except {
+			if p, ok := resolve(key+".except "+e, e); ok {
+				disables = append(disables, managedDisable{key + ".except " + e, option, p})
+			}
+		}
+		for _, mod := range sortedKeys(form.Override) {
+			k := key + ".override " + mod + "=" + form.Override[mod]
+			if p, ok := resolve(k, mod); ok {
+				rules = append(rules, managedRule{key: k, sc: scope{p, "."}, option: form.Option, value: form.Override[mod], kind: kind})
+			}
+		}
+	}
+	for i, o := range m.Overrides {
+		key := fmt.Sprintf("%s.override[%d]", where, i)
+		if o.FieldOption != "" {
+			report(unmapped(key+" field_option="+o.FieldOption, "a field option: pb's overrides are file options"))
+			continue
+		}
+		spelled, sc := "", scope{"", "."}
+		if o.Module != "" {
+			spelled = " module=" + o.Module
+			p, ok := resolve(key+" file_option="+o.FileOption+spelled, o.Module)
+			if !ok {
+				continue
+			}
+			sc.module = p
+		}
+		if o.Path != "" {
+			p, err := scopePath(o.Path)
+			if err != nil {
+				report(unmapped(key+" file_option="+o.FileOption+spelled+" path="+o.Path, "no path buf matches: "+err.Error()))
+				continue
+			}
+			sc.path, spelled = p, spelled+" path="+o.Path
+		}
+		if _, _, isDerivation := derivation(o.FileOption); isDerivation {
+			rules = append(rules, managedRule{key: key + " file_option=" + o.FileOption + " value=" + o.Value + spelled, sc: sc, option: o.FileOption, value: o.Value, kind: ruleDerive})
+			continue
+		}
+		rules = append(rules, managedRule{key: key + " file_option=" + o.FileOption + spelled, sc: sc, option: o.FileOption, value: o.Value, kind: ruleValue})
+	}
+	for _, d := range m.Disables {
+		key := file + " " + d.Spelled
+		switch {
+		case d.FieldOption != "" || d.Field != "":
+			report(unmapped(key, "a field option: pb's overrides are file options"))
+			continue
+		case d.Path != "":
+			report(unmapped(key, "disables over a path: pb's overrides name what they set, excluding no path"))
+			continue
+		}
+		md := managedDisable{key: key, option: d.FileOption}
+		if d.Module != "" {
+			p, ok := resolve(key, d.Module)
+			if !ok {
+				continue
+			}
+			md.module = p
+		}
+		disables = append(disables, md)
+	}
+	// The classes: every module under the disables naming none, and
+	// each module a disable names under its own too.
+	var generic []managedDisable
+	byModule := map[string][]managedDisable{}
+	for _, d := range disables {
+		if d.module == "" {
+			generic = append(generic, d)
+		} else {
+			byModule[d.module] = append(byModule[d.module], d)
+		}
+	}
+	admitted := func(r managedRule, ds []managedDisable) bool {
+		for _, d := range ds {
+			if d.drops(r) {
+				return false
+			}
+		}
+		return true
+	}
+	// Each disable's fact names the rules it drops.
+	for _, d := range disables {
+		var dropped []string
+		for _, r := range rules {
+			if d.drops(r) && (d.module == "" || r.sc.module == "" || r.sc.module == d.module) {
+				dropped = append(dropped, r.label())
+			}
+		}
+		what := "every option"
+		if d.option != "" {
+			what = d.option
+		}
+		switch {
+		case len(dropped) == 0:
+			report(mapped(d.key, "nothing: no rule sets "+what+" there"))
+		case d.module == "":
+			report(mapped(d.key, "nothing sets "+what+" beyond the rules left: "+strings.Join(dropped, ", ")+" dropped for every file"))
+		default:
+			report(mapped(d.key, "the module "+d.module+" sees "+what+" without "+strings.Join(dropped, ", ")+": its overrides of the option recomputed, every module's excepting it"))
+		}
+	}
+	var genericRules []managedRule
+	for _, r := range rules {
+		if admitted(r, generic) {
+			genericRules = append(genericRules, r)
+		}
+	}
+	out, fs := runManagedRules(genericRules, "")
+	facts = append(facts, fs...)
+	for _, mod := range sortedKeys(byModule) {
+		ds := byModule[mod]
+		// The options the module's disables touch: every option, or
+		// the base of each named.
+		all := false
+		affected := map[string]bool{}
+		for _, d := range ds {
+			if d.option == "" {
+				all = true
+				continue
+			}
+			o, _, isAxis := derivation(d.option)
+			if !isAxis {
+				o = d.option
+			}
+			affected[o] = true
+		}
+		var own []managedRule
+		for _, r := range genericRules {
+			if !admitted(r, ds) || r.sc.module != "" && r.sc.module != mod || !all && !affected[r.baseOption()] {
+				continue
+			}
+			r.sc.module = mod
+			own = append(own, r)
+		}
+		modOut, fs := runManagedRules(own, mod)
+		facts = append(facts, fs...)
+		// Every module's overrides of the affected options leave the
+		// module out; one scoped to it is the module's own, replaced.
+		var kept []managedOverride
+		for _, o := range out {
+			if !all && !affected[o.o.Option] {
+				kept = append(kept, o)
+				continue
+			}
+			switch {
+			case o.o.Module == mod:
+				continue
+			case o.o.Module == "":
+				o.o.Except = append(append([]string(nil), o.o.Except...), mod)
+			}
+			kept = append(kept, o)
+		}
+		out = append(kept, modOut...)
+	}
+	overrides := make([]genfile.Override, len(out))
+	for i, m := range out {
+		overrides[i] = m.o
+	}
+	return overrides, facts
+}
+
+// runManagedRules emits the overrides a sequence of rules gives, as
+// buf reads the rules per file (REQ-migrate-gen): a value rule an
+// override over its scope; a derivation from the file alone the
+// same; a prefix or suffix rule the state the files had with its
+// axis — one over its scope with the axis alone where no earlier
+// override of the option covers the scope whole, then one over the
+// meet with each earlier override of the option, in their order,
+// carrying that override's other axis — an override a later one of
+// the option covers whole dropped; a rule with an empty value, which
+// clears what earlier rules set, unmapped. For a module's own run,
+// each fact says so.
+func runManagedRules(rules []managedRule, forModule string) ([]managedOverride, []Fact) {
+	var out []managedOverride
+	var facts []Fact
+	report := func(f Fact) {
+		if forModule != "" {
+			f.Text += " (for the module " + forModule + ", under its disables)"
+		}
+		facts = append(facts, f)
+	}
 	spell := func(o genfile.Override) string {
-		t := "overrides: files " + o.Files + " option " + o.Option
+		t := "overrides: files " + o.Files
+		if o.Module != "" {
+			t += " module " + o.Module
+		}
+		t += " option " + o.Option
 		if !o.Derived() {
 			return t + " value " + o.Value
 		}
@@ -591,8 +963,8 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 		}
 		return t
 	}
-	emit := func(key string, o genfile.Override, scope, note string) {
-		out = append(out, managedOverride{o, scope, key})
+	emit := func(key string, o genfile.Override, sc scope, note string) {
+		out = append(out, managedOverride{o, sc, key})
 		report(mapped(key, spell(o)+note))
 	}
 	// settle drops every override of an option a later one covers whole
@@ -604,10 +976,10 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 		for i, m := range out {
 			covered := false
 			for j := i + 1; j < len(out) && !covered; j++ {
-				covered = out[j].o.Option == m.o.Option && scopeContains(out[j].scope, m.scope)
+				covered = out[j].o.Option == m.o.Option && out[j].scope.contains(m.scope)
 			}
 			if covered {
-				replaced = append(replaced, m.key+"'s override for files "+m.o.Files)
+				replaced = append(replaced, m.key+"'s override of "+m.o.Option+" for files "+m.o.Files)
 				continue
 			}
 			kept = append(kept, m)
@@ -617,163 +989,82 @@ func managedOverrides(file string, m *bufconfig.Managed) ([]genfile.Override, []
 			report(mapped(key, "replacing "+strings.Join(replaced, ", ")))
 		}
 	}
-	add := func(key, scope, option, value string) {
-		emit(key, genfile.Override{Files: scopeGlob(scope), Option: option, Value: value}, scope, "")
-		settle(key)
-	}
-	// derive maps a prefix or suffix rule as buf reads it: per file
-	// and option buf keeps the prefix and the suffix the rules
-	// matching the file set in order, a prefix rule keeping the
-	// suffix and a suffix rule the prefix, a value rule clearing both,
-	// java_package starting from the prefix "com". The rule's override
-	// carries its axis and the other axis of the state the files had:
-	// one over its scope from buf's starting state, then one over the
-	// intersection with each earlier override of the option, in their
-	// order, with that override's other axis — the later entry wins
-	// the files it names, as the later rule does in buf.
-	derive := func(key, scope, name, value string) {
-		option, isPrefix, _ := derivation(name)
-		axis := "suffix"
-		if isPrefix {
-			axis = "prefix"
-		}
-		if value == "" {
-			report(unmapped(key, "an empty "+axis+", clearing what buf's earlier rules set for the files: pb clears no override"))
-			return
-		}
-		set := func(o *genfile.Override) {
+	for _, r := range rules {
+		switch r.kind {
+		case ruleValue:
+			o := r.sc.override(r.option)
+			o.Value = r.value
+			emit(r.key, o, r.sc, r.note)
+			settle(r.key)
+		case ruleBare:
+			o := r.sc.override(r.option)
+			o.Bare = true
+			emit(r.key, o, r.sc, r.note)
+			settle(r.key)
+		case ruleDerive:
+			option, isPrefix, _ := derivation(r.option)
+			axis := "suffix"
 			if isPrefix {
-				o.Prefix = value
-			} else {
-				o.Suffix = value
+				axis = "prefix"
 			}
-		}
-		type emission struct {
-			o     genfile.Override
-			scope string
-			note  string
-		}
-		other := map[bool]string{true: "suffix", false: "prefix"}[isPrefix]
-		var adds []emission
-		// From buf's starting state, for the files no earlier override
-		// of the option covers: none where one covers the scope whole.
-		covered := false
-		for _, m := range out {
-			covered = covered || m.o.Option == option && scopeContains(m.scope, scope)
-		}
-		if !covered {
-			start := genfile.Override{Files: scopeGlob(scope), Option: option}
-			note := ""
-			if option == "java_package" && !isPrefix {
-				start.Prefix = "com" // buf's starting java prefix
-				note = " (the prefix com, buf's default)"
-			}
-			set(&start)
-			adds = append(adds, emission{start, scope, note})
-		}
-		for _, m := range out {
-			if m.o.Option != option {
+			if r.value == "" {
+				report(unmapped(r.key, "an empty "+axis+", clearing what buf's earlier rules set for the files: pb clears no override"))
 				continue
 			}
-			var inter string
-			switch {
-			case scopeContains(scope, m.scope):
-				inter = m.scope
-			case scopeContains(m.scope, scope):
-				inter = scope
-			default:
-				continue
-			}
-			o := genfile.Override{Files: scopeGlob(inter), Option: option}
-			note := " (after " + m.key + "'s value, clearing the " + other + ")"
-			if m.o.Derived() {
-				o.Prefix, o.Suffix = m.o.Prefix, m.o.Suffix
-				note = " (after " + m.key + ", which set no " + other + ")"
-				if isPrefix && o.Suffix != "" || !isPrefix && o.Prefix != "" {
-					note = " (with " + m.key + "'s " + other + ")"
+			set := func(o *genfile.Override) {
+				if isPrefix {
+					o.Prefix = r.value
+				} else {
+					o.Suffix = r.value
 				}
 			}
-			set(&o)
-			// The last state over a scope is the files' state: an
-			// earlier emission over the same scope is superseded before
-			// it is written or reported.
-			if n := len(adds); n > 0 && adds[n-1].scope == inter {
-				adds = adds[:n-1]
+			type emission struct {
+				o     genfile.Override
+				scope scope
+				note  string
 			}
-			adds = append(adds, emission{o, inter, note})
-		}
-		for _, e := range adds {
-			emit(key, e.o, e.scope, e.note)
-		}
-		settle(key)
-	}
-	// v1's forms are its defaults; buf reads its booleans, then the
-	// forms, then the per-file map, whatever the document's order —
-	// forms and booleans name no option in common, so the forms go
-	// first here and the overrides (booleans, then the map, in buf's
-	// order) after.
-	for _, form := range m.Forms {
-		key := where + "." + form.Option
-		declared := form.Option == "optimize_for" || form.Option == "objc_class_prefix" || form.Option == "swift_prefix"
-		_, _, derived := derivation(form.Option)
-		switch {
-		case declared && form.Default != "":
-			add(key+".default "+form.Default, ".", form.Option, form.Default)
-		case derived && form.Default != "":
-			derive(key+".default "+form.Default, ".", form.Option, form.Default)
-		case !declared:
-			// A per-package form, or a prefix with no default: buf
-			// computes each file's value from its package; pb
-			// declares values alone.
-			spelled := form.Default
-			if spelled == "" {
-				spelled = "(no default)"
+			other := map[bool]string{true: "suffix", false: "prefix"}[isPrefix]
+			var adds []emission
+			covered := false
+			for _, m := range out {
+				covered = covered || m.o.Option == option && m.scope.contains(r.sc)
 			}
-			report(unmapped(key+" "+spelled, "buf's own heuristic, a value computed per file from its package: pb declares values alone"))
-		}
-		for _, e := range form.Except {
-			report(unmapped(key+".except "+e, "names a module, which a module-relative glob cannot"))
-		}
-		for _, mod := range sortedKeys(form.Override) {
-			report(unmapped(key+".override "+mod+"="+form.Override[mod], "names a module, which a module-relative glob cannot"))
-		}
-	}
-	for i, o := range m.Overrides {
-		key := fmt.Sprintf("%s.override[%d]", where, i)
-		switch {
-		case o.FieldOption != "":
-			report(unmapped(key+" field_option="+o.FieldOption, "a field option: pb's overrides are file options"))
-			continue
-		case o.Module != "":
-			report(unmapped(key+" file_option="+o.FileOption+" module="+o.Module, "pb's override files are module-relative globs, naming no module"))
-			continue
-		}
-		scope, spelled := ".", ""
-		if o.Path != "" {
-			p, err := scopePath(o.Path)
-			if err != nil {
-				report(unmapped(key+" file_option="+o.FileOption+" path="+o.Path, "no path buf matches: "+err.Error()))
-				continue
+			if !covered {
+				start := r.sc.override(option)
+				set(&start)
+				adds = append(adds, emission{start, r.sc, r.note})
 			}
-			scope, spelled = p, " path="+o.Path
+			for _, m := range out {
+				if m.o.Option != option {
+					continue
+				}
+				inter, ok := r.sc.meet(m.scope)
+				if !ok {
+					continue
+				}
+				o := inter.override(option)
+				note := " (after " + m.key + "'s value, clearing the " + other + ")"
+				if m.o.Derived() {
+					o.Prefix, o.Suffix = m.o.Prefix, m.o.Suffix
+					note = " (after " + m.key + ", which set no " + other + ")"
+					if isPrefix && o.Suffix != "" || !isPrefix && o.Prefix != "" {
+						note = " (with " + m.key + "'s " + other + ")"
+					}
+				}
+				set(&o)
+				// The last state over a scope is the files' state: an
+				// earlier emission over the same scope is superseded
+				// before it is written or reported.
+				if n := len(adds); n > 0 && adds[n-1].scope == inter {
+					adds = adds[:n-1]
+				}
+				adds = append(adds, emission{o, inter, note + r.note})
+			}
+			for _, e := range adds {
+				emit(r.key, e.o, e.scope, e.note)
+			}
+			settle(r.key)
 		}
-		if _, _, isDerivation := derivation(o.FileOption); isDerivation {
-			derive(key+" file_option="+o.FileOption+" value="+o.Value+spelled, scope, o.FileOption, o.Value)
-			continue
-		}
-		add(key+" file_option="+o.FileOption+spelled, scope, o.FileOption, o.Value)
 	}
-	for _, d := range m.Disables {
-		report(unmapped(file+" "+d, "buf's own heuristic: pb declares values alone, disabling nothing"))
-	}
-	// Enabled, buf computes a default per file for every option no rule
-	// of the file names — java_package under com, java_outer_classname,
-	// java_multiple_files, csharp_namespace, objc_class_prefix, the php
-	// namespaces, ruby_package and cc_enable_arenas among them.
-	report(unmapped(where+".enabled true", "buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone"))
-	overrides := make([]genfile.Override, len(out))
-	for i, m := range out {
-		overrides[i] = m.o
-	}
-	return overrides, facts
+	return out, facts
 }

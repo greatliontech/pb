@@ -1,0 +1,18 @@
+buf.yaml modules[0] proto -> proto/pb.yaml module: example.com/acme/out-dot-prefix/proto
+the lint file's rulesets github.com/greatliontech/buf-rules -> rulesets: path github.com/greatliontech/buf-rules version v1.0.0 alias buf (discovered)
+buf.yaml.lint.use STANDARD -> enable: buf:STANDARD
+buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
+buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
+buf.gen.yaml plugins[0].out ./gen -> out: gen
+buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[1].remote buf.build/connectrpc/go:v1.18.1 -> ref: ghcr.io/greatliontech/pb-plugins/connectrpc/go:v1.18.1 (the catalog)
+buf.gen.yaml plugins[1].out ./gen/ -> out: gen
+buf.gen.yaml plugins[1].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml plugins[2].remote buf.build/bufbuild/es:v2.2.3 -> ref: ghcr.io/greatliontech/pb-plugins/bufbuild/es:v2.2.3 (the catalog)
+buf.gen.yaml plugins[2].out ./web/src/gen -> out: web/src/gen
+buf.gen.yaml plugins[2].opt target=ts -> opt: target=ts
+proto/pb.yaml -> written
+pb.work -> written
+pb.lint.yaml -> written
+pb.gen.yaml -> written
+-- status: mapped

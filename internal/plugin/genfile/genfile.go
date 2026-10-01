@@ -157,12 +157,16 @@ var derivable = map[string]struct {
 	"php_namespace": {bare: true, rule: func(_ Override, _, pkg string) (string, bool) {
 		return phpNamespace(pkg)
 	}},
-	"php_metadata_namespace": {suffix: true, rule: func(o Override, _, pkg string) (string, bool) {
+	"php_metadata_namespace": {suffix: true, bare: true, rule: func(o Override, _, pkg string) (string, bool) {
 		ns, ok := phpNamespace(pkg)
 		if !ok {
 			return "", false
 		}
-		return ns + `\` + o.Suffix, true
+		suffix := o.Suffix
+		if suffix == "" {
+			suffix = "GPBMetadata"
+		}
+		return ns + `\` + suffix, true
 	}},
 	"ruby_package": {suffix: true, bare: true, rule: func(o Override, _, pkg string) (string, bool) {
 		if pkg == "" {
@@ -215,11 +219,8 @@ func CheckDerivation(o Override) error {
 	}
 	if o.Prefix == "" && o.Suffix == "" && !d.bare {
 		axes := "a prefix"
-		switch {
-		case d.prefix && d.suffix:
+		if d.suffix {
 			axes = "a prefix or a suffix"
-		case d.suffix:
-			axes = "a suffix"
 		}
 		return fmt.Errorf("option %s derives from %s, and none is written", o.Option, axes)
 	}

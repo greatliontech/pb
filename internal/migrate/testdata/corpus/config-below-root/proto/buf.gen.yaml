@@ -1,0 +1,12 @@
+version: v2
+inputs:
+  - directory: .
+    paths:
+      - acme/vault
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.35.2
+    out: ../gen/go
+    opt: paths=source_relative
+  - remote: buf.build/bufbuild/es:v2.2.3
+    out: ../gen/es
+    opt: target=ts

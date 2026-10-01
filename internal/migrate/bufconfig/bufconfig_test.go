@@ -270,7 +270,7 @@ clean: true
 	if m == nil || !m.Enabled || len(m.Overrides) != 5 || m.Overrides[0] != (Override{FileOption: "go_package_prefix", Value: "github.com/acme/gen"}) || m.Overrides[1] != (Override{FileOption: "java_package", Value: "com.acme", Path: "proto/acme"}) || m.Overrides[2] != (Override{FieldOption: "jstype", Value: "JS_STRING", Module: "buf.build/acme/petapis"}) || m.Overrides[3] != (Override{FieldOption: "jstype", Value: "JS_NORMAL", Field: "acme.v1.M.f"}) || m.Overrides[4] != (Override{FileOption: "java_string_check_utf8", Value: "false"}) {
 		t.Fatalf("managed: %+v", m)
 	}
-	if len(m.Disables) != 2 || m.Disables[0] != "managed.disable[0] file_option=go_package module=buf.build/googleapis/googleapis" || m.Disables[1] != "managed.disable[1] field=acme.v1.M.g" || len(g.Inputs) != 1 || g.Inputs[0].Kind != "directory" || g.Inputs[0].Value != "proto" || !g.Clean || len(g.Unmodeled) != 0 {
+	if len(m.Disables) != 2 || m.Disables[0] != (Disable{FileOption: "go_package", Module: "buf.build/googleapis/googleapis", Spelled: "managed.disable[0] file_option=go_package module=buf.build/googleapis/googleapis"}) || m.Disables[1] != (Disable{Field: "acme.v1.M.g", Spelled: "managed.disable[1] field=acme.v1.M.g"}) || len(g.Inputs) != 1 || g.Inputs[0].Kind != "directory" || g.Inputs[0].Value != "proto" || !g.Clean || len(g.Unmodeled) != 0 {
 		t.Fatalf("disables, inputs, unmodeled: %+v %v %v", m.Disables, g.Inputs, g.Unmodeled)
 	}
 	v1 := `version: v1
@@ -510,7 +510,7 @@ inputs:
 plugins:
   - remote: buf.build/acme/p:v1.0.0
     out: gen
-    include_imports: false
+    include_imports: true
     include_wkt: true
 `))
 	if err != nil {
@@ -529,8 +529,12 @@ plugins:
 	if in[2].Kind != "git_repo" || join(in[2].Unmodeled) != "inputs[2].branch" {
 		t.Errorf("inputs[2] = %+v", in[2])
 	}
-	if g.Plugins[0].IncludeImports || join(g.Plugins[0].Unmodeled) != "plugins[0].include_wkt" {
+	if !g.Plugins[0].IncludeImports || !g.Plugins[0].IncludeWKT || len(g.Plugins[0].Unmodeled) != 0 {
 		t.Errorf("plugin = %+v", g.Plugins[0])
+	}
+	// include_wkt without include_imports is buf's own refusal.
+	if _, err := ParseGen([]byte("version: v2\nplugins:\n  - remote: buf.build/acme/p:v1.0.0\n    out: gen\n    include_wkt: true\n")); err == nil || !strings.Contains(err.Error(), "plugins[0]: cannot include well-known types without including imports") {
+		t.Errorf("include_wkt alone: %v", err)
 	}
 	for name, text := range map[string]string{
 		"two kinds":       "version: v2\ninputs:\n  - directory: .\n    module: buf.build/a/b\nplugins:\n  - local: x\n    out: o\n",

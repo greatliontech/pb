@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package acme.orders.v1;
+
+import "acme/catalog/v1/item.proto";
+
+message Order {
+  repeated acme.catalog.v1.Item items = 1;
+}

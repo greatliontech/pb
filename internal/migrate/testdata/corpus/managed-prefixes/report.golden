@@ -6,13 +6,23 @@ buf.yaml.breaking -> enable: buf:FILE (buf's default, no breaking section)
 buf.gen.yaml plugins[0].remote buf.build/protocolbuffers/go:v1.35.2 -> ref: ghcr.io/greatliontech/pb-plugins/protocolbuffers/go:v1.35.2 (the catalog)
 buf.gen.yaml plugins[0].out gen/go -> out: gen/go
 buf.gen.yaml plugins[0].opt paths=source_relative -> opt: paths=source_relative
+buf.gen.yaml managed.disable[0] module=buf.build/googleapis/googleapis -> the module github.com/googleapis/googleapis sees every option without buf.gen.yaml managed.enabled true for cc_enable_arenas, buf.gen.yaml managed.enabled true for csharp_namespace, buf.gen.yaml managed.enabled true for java_multiple_files, buf.gen.yaml managed.enabled true for java_outer_classname, buf.gen.yaml managed.enabled true for java_package, buf.gen.yaml managed.enabled true for objc_class_prefix, buf.gen.yaml managed.enabled true for php_metadata_namespace, buf.gen.yaml managed.enabled true for php_namespace, buf.gen.yaml managed.enabled true for ruby_package, buf.gen.yaml managed.override[0] file_option=go_package_prefix value=example.com/acme/service/gen/go for go_package, buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen for java_package, buf.gen.yaml managed.override[2] file_option=java_multiple_files for java_multiple_files: its overrides of the option recomputed, every module's excepting it
+buf.gen.yaml managed.enabled true -> overrides: files ** option cc_enable_arenas value true (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option csharp_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_multiple_files value true (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_outer_classname (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option java_package prefix com (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option objc_class_prefix (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option php_metadata_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option php_namespace (buf's default)
+buf.gen.yaml managed.enabled true -> overrides: files ** option ruby_package (buf's default)
 buf.gen.yaml managed.override[0] file_option=go_package_prefix value=example.com/acme/service/gen/go -> overrides: files ** option go_package prefix example.com/acme/service/gen/go
-buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen -> overrides: files ** option java_package prefix com.acme.gen
+buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen -> overrides: files ** option java_package prefix com.acme.gen (after buf.gen.yaml managed.enabled true, which set no suffix)
+buf.gen.yaml managed.override[1] file_option=java_package_prefix value=com.acme.gen -> replacing buf.gen.yaml managed.enabled true's override of java_package for files **
 buf.gen.yaml managed.override[2] file_option=java_multiple_files -> overrides: files ** option java_multiple_files value true
-buf.gen.yaml managed.disable[0] module=buf.build/googleapis/googleapis !! buf's own heuristic: pb declares values alone, disabling nothing
-buf.gen.yaml managed.enabled true !! buf's defaults, a value computed per file for every option no rule of the file names: pb declares values alone
+buf.gen.yaml managed.override[2] file_option=java_multiple_files -> replacing buf.gen.yaml managed.enabled true's override of java_multiple_files for files **
 proto/pb.yaml -> written
 pb.work -> written
 pb.lint.yaml -> written
 pb.gen.yaml -> written
--- status: unmapped
+-- status: mapped
