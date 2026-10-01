@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/check/lintfile"
+	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/modfile"
@@ -260,6 +261,12 @@ func Run(ctx context.Context, d Invocation) (err error) {
 	if err := add(lintfile.FileName, b, err); err != nil {
 		return err
 	}
+	if l.RuleFile != nil {
+		b, err := rules.Encode(l.RuleFile)
+		if err := add(path.Join(l.RuleFileDir, RuleFileName), b, err); err != nil {
+			return err
+		}
+	}
 	if l.Gen != nil {
 		b, err := genfile.Encode(l.Gen)
 		if err := add(genfile.FileName, b, err); err != nil {
@@ -378,7 +385,8 @@ func rewriteComments(ws billy.Filesystem, root, cfgDir string, src *Source, l *L
 		return nil, err
 	}
 	for _, d := range decls {
-		if !l.CommentIgnores[src.Rooted(d.dir)] {
+		renames, honored := l.Comments[src.Rooted(d.dir)]
+		if !honored {
 			continue
 		}
 		protos, err := moduleFiles(ws, cfgDir, d)
@@ -394,7 +402,7 @@ func rewriteComments(ws billy.Filesystem, root, cfgDir string, src *Source, l *L
 			if err != nil {
 				return facts, fmt.Errorf("reading %s: %w", name, err)
 			}
-			r := RewriteComments(b)
+			r := RewriteComments(b, renames)
 			if r.Rewritten == 0 && len(r.Block) == 0 {
 				continue
 			}
@@ -402,7 +410,11 @@ func rewriteComments(ws billy.Filesystem, root, cfgDir string, src *Source, l *L
 				if err := atomicfile.Write(ws, p, ".pb-", 0o644, r.Text); err != nil {
 					return facts, fmt.Errorf("writing %s: %w", name, err)
 				}
-				facts = append(facts, mapped(name, fmt.Sprintf("%d suppression comments rewritten to pb:ignore", r.Rewritten)))
+				text := fmt.Sprintf("%d suppression comments rewritten to pb:ignore", r.Rewritten)
+				if r.Renamed > 0 {
+					text += fmt.Sprintf(", %d naming the rule standing in for buf's", r.Renamed)
+				}
+				facts = append(facts, mapped(name, text))
 			}
 			for _, line := range r.Displaced {
 				facts = append(facts, unmapped(fmt.Sprintf("%s:%d", name, line), "a directive pb reads not where it stands: pb reads the comment block leading a finding's line, a declaration's first, a file rule's the block leading the file's first line of code; no finding sits on an option, reserved, extensions, import, package, syntax or edition line, nor on a body's closing brace"))

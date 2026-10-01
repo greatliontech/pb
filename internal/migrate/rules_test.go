@@ -24,11 +24,14 @@ func parseFile(t *testing.T, text string) *bufconfig.File {
 	return f
 }
 
-func rulesOf(t *testing.T, src *Source) (*Layout, string) {
+func rulesOf(t *testing.T, src *Source, rulesetVersion ...string) (*Layout, string) {
 	t.Helper()
 	l, err := Modules(src, "github.com/acme/x")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(rulesetVersion) > 0 {
+		l.RulesetVersion = rulesetVersion[0]
 	}
 	facts, err := Rules(src, l)
 	if err != nil {
@@ -75,33 +78,27 @@ breaking:
 		"buf.yaml.lint.except ENUM_VALUE_PREFIX -> exclude: " + rs + "ENUM_VALUE_PREFIX",
 		"buf.yaml.lint.except PROTOVALIDATE !! no lint rule or category of the ruleset " + Ruleset,
 		"buf.yaml.lint.rpc_allow_same_request_response true -> exclude: " + rs + "RPC_REQUEST_RESPONSE_UNIQUE, enable: " + rs + "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME",
-		"buf.yaml.lint.enum_zero_value_suffix _NONE !! reshapes " + rs + "ENUM_ZERO_VALUE_SUFFIX, which checks _UNSPECIFIED: a pb rule has no parameters — exclude " + rs + "ENUM_ZERO_VALUE_SUFFIX and declare, in a workspace ruleset importing " + Ruleset + " as " + RulesetAlias + ", a rule over enum-value with cel " + RulesetAlias + ".enumZeroValueSuffix(enumValue, '_NONE')",
+		"buf.yaml.lint.enum_zero_value_suffix _NONE -> exclude: " + rs + "ENUM_ZERO_VALUE_SUFFIX, enable: local:ENUM_ZERO_VALUE_SUFFIX__NONE (a rule over enum-value with cel " + RulesetAlias + ".enumZeroValueSuffix(enumValue, '_NONE') in " + RuleFileName + ")",
 		"buf.yaml.lint.allow_comment_ignores true -> the module's suppression comments are rewritten to pb:ignore",
 		"buf.yaml.breaking.use WIRE_JSON -> enable: " + rs + "WIRE_JSON",
 		"buf.yaml.lint.ignore_only.NOPE x !! no lint rule or category of the ruleset " + Ruleset,
 		"buf.yaml.lint.ignore vendor -> ignore paths [vendor/**] kind lint",
 		"buf.yaml.lint.ignore ./gen/x.proto -> ignore paths [gen/x.proto/**] kind lint",
 		"buf.yaml.lint.ignore_only.COMMENTS old -> ignore paths [old/**] rules [" + strings.Join(comments, ", ") + "]",
-		"buf.yaml.lint.ignore_only.ENUM_ZERO_VALUE_SUFFIX legacy -> ignore paths [legacy/**] rules [" + rs + "ENUM_ZERO_VALUE_SUFFIX]",
+		"buf.yaml.lint.ignore_only.ENUM_ZERO_VALUE_SUFFIX legacy -> ignore paths [legacy/**] rules [local:ENUM_ZERO_VALUE_SUFFIX__NONE]",
+		"the lint file's rulesets github.com/acme/x -> rulesets: path github.com/acme/x alias local (the workspace module holding " + RuleFileName + ", the rules the value-bearing options declare)",
 	}, "\n")
 	if got != want {
 		t.Fatalf("lone v1 facts:\n%s", got)
 	}
-	if !l.CommentIgnores["."] {
-		t.Fatal("v1 with allow_comment_ignores true: comments not honored")
+	if c := l.Comments["."]; c == nil || len(c) != 2 || c["ENUM_ZERO_VALUE_SUFFIX"] != "ENUM_ZERO_VALUE_SUFFIX__NONE" || c["RPC_REQUEST_RESPONSE_UNIQUE"] != "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME" {
+		t.Fatalf("v1 with allow_comment_ignores true: comments honored under the stand-ins: %v", c)
 	}
 	out, err := lintfile.Encode(l.Lint)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantFile := "rulesets:\n  - path: " + Ruleset + "\n    alias: " + RulesetAlias + "\nenable:\n  - " + rs + "COMMENTS\n  - " + rs + "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME\n  - " + rs + "STANDARD\n  - " + rs + "WIRE_JSON\nexclude:\n  - " + rs + "ENUM_VALUE_PREFIX\n  - " + rs + "RPC_REQUEST_RESPONSE_UNIQUE\nignore:\n" +
-		"  - paths:\n      - gen/x.proto/**\n    kind: lint\n" +
-		"  - paths:\n      - legacy/**\n    rules:\n      - " + rs + "ENUM_ZERO_VALUE_SUFFIX\n" +
-		"  - paths:\n      - old/**\n    rules:\n"
-	for _, c := range comments {
-		wantFile += "      - " + c + "\n"
-	}
-	wantFile += "  - paths:\n      - vendor/**\n    kind: lint\n"
+	wantFile := "rulesets:\n  - path: github.com/greatliontech/buf-rules\n    alias: buf\n  - path: github.com/acme/x\n    alias: local\nenable:\n  - buf:COMMENTS\n  - buf:RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME\n  - buf:STANDARD\n  - buf:WIRE_JSON\n  - local:ENUM_ZERO_VALUE_SUFFIX__NONE\nexclude:\n  - buf:ENUM_VALUE_PREFIX\n  - buf:ENUM_ZERO_VALUE_SUFFIX\n  - buf:RPC_REQUEST_RESPONSE_UNIQUE\nignore:\n  - paths:\n      - gen/x.proto/**\n    kind: lint\n  - paths:\n      - legacy/**\n    rules:\n      - local:ENUM_ZERO_VALUE_SUFFIX__NONE\n  - paths:\n      - old/**\n    rules:\n      - buf:COMMENT_ENUM\n      - buf:COMMENT_ENUM_VALUE\n      - buf:COMMENT_FIELD\n      - buf:COMMENT_MESSAGE\n      - buf:COMMENT_ONEOF\n      - buf:COMMENT_RPC\n      - buf:COMMENT_SERVICE\n  - paths:\n      - vendor/**\n    kind: lint\n"
 	if string(out) != wantFile {
 		t.Fatalf("lone v1 file:\n%s", out)
 	}
@@ -114,16 +111,16 @@ breaking:
 	// written all the same (REQ-migrate-verb); a v1 module without the
 	// comment switch had no comment honored, a fact all the same.
 	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\n")})
-	if got != "buf.yaml.lint -> enable: "+rs+"STANDARD (buf's default, no lint section)\nbuf.yaml.breaking -> enable: "+rs+"FILE (buf's default, no breaking section)" || strings.Join(l.Lint.Enable, ",") != rs+"FILE,"+rs+"STANDARD" || len(l.Lint.Modules) != 0 || !l.CommentIgnores["."] {
-		t.Fatalf("no sections: %s %+v %v", got, l.Lint, l.CommentIgnores)
+	if got != "buf.yaml.lint -> enable: "+rs+"STANDARD (buf's default, no lint section)\nbuf.yaml.breaking -> enable: "+rs+"FILE (buf's default, no breaking section)" || strings.Join(l.Lint.Enable, ",") != rs+"FILE,"+rs+"STANDARD" || len(l.Lint.Modules) != 0 || l.Comments["."] == nil {
+		t.Fatalf("no sections: %s %+v %v", got, l.Lint, l.Comments)
 	}
 	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v1\n")})
-	if !strings.Contains(got, "buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores") || l.CommentIgnores["."] {
-		t.Fatalf("v1 without the switch: %s %v", got, l.CommentIgnores)
+	if !strings.Contains(got, "buf.yaml.lint -> the module's suppression comments are left as they are: buf honored none without allow_comment_ignores") || l.Comments["."] != nil {
+		t.Fatalf("v1 without the switch: %s %v", got, l.Comments)
 	}
 	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  disallow_comment_ignores: true\n")})
-	if !strings.Contains(got, "buf.yaml.lint.disallow_comment_ignores true -> the module's suppression comments are left as they are: buf honored none") || l.CommentIgnores["."] {
-		t.Fatalf("v2 disallowing: %s %v", got, l.CommentIgnores)
+	if !strings.Contains(got, "buf.yaml.lint.disallow_comment_ignores true -> the module's suppression comments are left as they are: buf honored none") || l.Comments["."] != nil {
+		t.Fatalf("v2 disallowing: %s %v", got, l.Comments)
 	}
 	// except is read where use is absent: buf's default less it.
 	l, got = rulesOf(t, &Source{File: parseFile(t, "version: v1\nlint:\n  except: [ENUM_VALUE_PREFIX]\n")})
@@ -264,8 +261,8 @@ breaking:
 	if got != want {
 		t.Fatalf("v1 workspace facts:\n%s", got)
 	}
-	if len(l.Lint.Modules) != 1 || strings.Join(l.Lint.Modules["a"].Enable, ",") != rs+"FILE,"+rs+"MINIMAL" || len(l.Lint.Modules["a"].Ignore) != 1 || strings.Join(l.Lint.Enable, ",") != rs+"FILE,"+rs+"STANDARD" || !l.CommentIgnores["a"] || l.CommentIgnores["b"] {
-		t.Fatalf("v1 workspace file: %+v %v", l.Lint, l.CommentIgnores)
+	if len(l.Lint.Modules) != 1 || strings.Join(l.Lint.Modules["a"].Enable, ",") != rs+"FILE,"+rs+"MINIMAL" || len(l.Lint.Modules["a"].Ignore) != 1 || strings.Join(l.Lint.Enable, ",") != rs+"FILE,"+rs+"STANDARD" || l.Comments["a"] == nil || l.Comments["b"] != nil {
+		t.Fatalf("v1 workspace file: %+v %v", l.Lint, l.Comments)
 	}
 
 	// What buf refuses: a module's own ignore outside the module, a
@@ -341,11 +338,52 @@ func TestRuleOptionVariants(t *testing.T) {
 			t.Fatalf("the ignore's rules: %v", ig.Rules)
 		}
 	}
-	// A value-bearing option: the recipe where the selection enables
-	// the rule, the value spelled as a CEL string; nothing otherwise.
-	_, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  service_suffix: \"It's\\\\Svc\"\n")})
-	if !strings.Contains(got, `with cel `+RulesetAlias+`.serviceSuffix(service, 'It\'s\\Svc')`) {
+	// A value-bearing option maps where the selection enables the
+	// rule: a lint rule of severity error over the ruleset's target
+	// in the rule file, importing the ruleset at the lint file's
+	// version, its id, expression and message carrying the value,
+	// escaped as a CEL string in the expression; the module's
+	// comments read buf's id as the local rule's.
+	lq, got := rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  service_suffix: \"It's\\\\Svc\"\n")}, "v1.2.3")
+	if !strings.Contains(got, `enable: local:SERVICE_SUFFIX_It's\Svc (a rule over service with cel `+RulesetAlias+`.serviceSuffix(service, 'It\'s\\Svc') in `+RuleFileName+`)`) {
 		t.Fatalf("the value escaped: %s", got)
+	}
+	if lq.RuleFile == nil || lq.RuleFileDir != "." || lq.Comments["."]["SERVICE_SUFFIX"] != `SERVICE_SUFFIX_It's\Svc` {
+		t.Fatalf("the rule file: %+v %v", lq.RuleFile, lq.Comments)
+	}
+	ruleFile, err := rules.Encode(lq.RuleFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRuleFile := "celEnv: 1\nimports:\n  - path: " + Ruleset + "\n    version: v1.2.3\n    alias: " + RulesetAlias + "\nrules:\n  - id: SERVICE_SUFFIX_It's\\Svc\n    kind: lint\n    target: service\n    severity: error\n    cel: " + RulesetAlias + ".serviceSuffix(service, 'It\\'s\\\\Svc')\n    message: service names end in It's\\Svc\n"
+	if string(ruleFile) != wantRuleFile {
+		t.Fatalf("the rule file:\n%s", ruleFile)
+	}
+	// Two sections setting one value share the rule: one id, one rule
+	// in the file, each selection enabling it.
+	l2, got2 := rulesOf(t, &Source{File: parseFile(t, "version: v2\nmodules:\n  - path: a\n    lint:\n      use: [STANDARD]\n      service_suffix: Svc\n  - path: b\n    lint:\n      use: [STANDARD]\n      service_suffix: Svc\n")})
+	if l2.RuleFile == nil || len(l2.RuleFile.Rules) != 1 || l2.RuleFileDir != "a" || strings.Count(got2, "enable: local:SERVICE_SUFFIX_Svc") != 2 || len(l2.Lint.Rulesets) != 2 || l2.Lint.Rulesets[1].Path != "github.com/acme/x/a" || l2.Lint.Rulesets[1].Alias != LocalRulesetAlias {
+		t.Fatalf("one value in two sections: %+v %+v\n%s", l2.RuleFile, l2.Lint.Rulesets, got2)
+	}
+	// A value no id carries — a colon, a space, a line break — is the
+	// recipe, unmapped, no rule file written.
+	for _, v := range []string{"a:b", "a b", "a\\tb", "a\\nb", "a\\u2028b"} {
+		lv, got := rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [STANDARD]\n  service_suffix: \""+v+"\"\n")})
+		if !strings.Contains(got, "!! reshapes "+rs+"SERVICE_SUFFIX with a value no rule id carries, a colon or whitespace: exclude "+rs+"SERVICE_SUFFIX and declare a rule over service with cel ") || lv.RuleFile != nil || len(lv.Lint.Rulesets) != 1 || len(lv.Comments["."]) != 0 {
+			t.Fatalf("a value spelling no id %q: %s\n%+v", v, got, lv)
+		}
+	}
+	// A selection no module is checked under declares no rule: the
+	// root's where every module carries its own, a module's own where
+	// its ignore disables the kind.
+	for _, cfg := range []string{
+		"version: v2\nmodules:\n  - path: a\n    lint:\n      use: [STANDARD]\n  - path: b\n    lint:\n      use: [STANDARD]\nlint:\n  use: [STANDARD]\n  service_suffix: Svc\n",
+		"version: v2\nmodules:\n  - path: a\n    lint:\n      use: [STANDARD]\n      service_suffix: Svc\n      ignore: [a]\n  - path: b\n    lint:\n      use: [STANDARD]\n",
+	} {
+		lu, got := rulesOf(t, &Source{File: parseFile(t, cfg)})
+		if lu.RuleFile != nil || lu.RuleFileDir != "" || len(lu.Lint.Rulesets) != 1 || strings.Contains(got, "local:") || strings.Contains(got, RuleFileName) {
+			t.Fatalf("a selection no module is checked under: %+v %+v\n%s", lu.RuleFile, lu.Lint.Rulesets, got)
+		}
 	}
 	_, got = rulesOf(t, &Source{File: parseFile(t, "version: v2\nlint:\n  use: [COMMENTS]\n  service_suffix: Svc\n")})
 	if !strings.Contains(got, "buf.yaml.lint.service_suffix Svc -> nothing: "+rs+"SERVICE_SUFFIX is not enabled, so the option shapes nothing") || strings.Contains(got, "!!") {

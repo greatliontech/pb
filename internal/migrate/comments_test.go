@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -55,6 +56,9 @@ func TestRewriteComments(t *testing.T) {
 		"optional field":       {"message M {\n  // buf:lint:ignore FIELD_LOWER_SNAKE_CASE\n  optional string BadName = 1;\n}\n", "message M {\n  // pb:ignore FIELD_LOWER_SNAKE_CASE\n  optional string BadName = 1;\n}\n", "1/[]/[]/[]/0"},
 		"two spaces":           {"// buf:lint:ignore  X\nm\n", "// buf:lint:ignore  X\nm\n", "0/[]/[]/[]/1"},
 		"tab before id":        {"// buf:lint:ignore\tX\nm\n", "// buf:lint:ignore\tX\nm\n", "0/[]/[]/[]/1"},
+		"nbsp before id":       {"// buf:lint:ignore \u00a0X\nm\n", "// buf:lint:ignore \u00a0X\nm\n", "0/[]/[]/[]/1"},
+		"nbsp after form":      {"// buf:lint:ignore\u00a0X\nm\n", "// buf:lint:ignore\u00a0X\nm\n", "0/[]/[]/[]/1"},
+		"vtab before id":       {"// buf:lint:ignore \vX trailing\nm\n", "// buf:lint:ignore \vX trailing\nm\n", "0/[]/[]/[]/1"},
 		"package rule":         {"// buf:lint:ignore PACKAGE_SAME_DIRECTORY\npackage a;\n", "// pb:ignore PACKAGE_SAME_DIRECTORY\npackage a;\n", "1/[]/[]/[1]/0"},
 		"set rule stacked":     {"// buf:lint:ignore PACKAGE_NO_IMPORT_CYCLE\n// buf:lint:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "// pb:ignore PACKAGE_NO_IMPORT_CYCLE\n// pb:ignore PACKAGE_LOWER_SNAKE_CASE\npackage A;\n", "2/[]/[]/[1]/0"},
 		"behind a block":       {"/* x */ option a = 1;\n// buf:lint:ignore A\n/* y */ option b = 2;\n", "/* x */ option a = 1;\n// pb:ignore A\n/* y */ option b = 2;\n", "1/[2]/[]/[]/0"},
@@ -65,10 +69,33 @@ func TestRewriteComments(t *testing.T) {
 		"continued":            {"rpc Foo(Req)\n  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME\n  returns (Res);\n", "rpc Foo(Req)\n  // pb:ignore RPC_RESPONSE_STANDARD_NAME\n  returns (Res);\n", "1/[2]/[]/[]/0"},
 		"after a body":         {"message M {\n  // buf:lint:ignore A\n  string f = 1; // note\n  // buf:lint:ignore B\n  string g = 2;\n}\n", "message M {\n  // pb:ignore A\n  string f = 1; // note\n  // pb:ignore B\n  string g = 2;\n}\n", "2/[]/[]/[]/0"},
 	} {
-		r := RewriteComments([]byte(c.in))
+		r := RewriteComments([]byte(c.in), nil)
 		got := fmt.Sprintf("%d/%v/%v/%v/%d", r.Rewritten, r.Displaced, r.Block, r.Unplaced, r.Inert)
 		if string(r.Text) != c.out || got != c.want {
 			t.Errorf("%s: got %q %s, want %q %s", name, r.Text, got, c.out, c.want)
 		}
+	}
+}
+
+// A directive naming a rule the module's selection reads under a
+// stand-in is rewritten to the stand-in's bare id, the trailing text
+// kept; one naming any other rule keeps its id; the renamed are
+// counted among the rewritten (REQ-migrate-comments).
+func TestRewriteCommentsRenames(t *testing.T) {
+	renames := map[string]string{"SERVICE_SUFFIX": "SERVICE_SUFFIX_Svc", "RPC_REQUEST_RESPONSE_UNIQUE": "RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME"}
+	in := "// buf:lint:ignore SERVICE_SUFFIX legacy\nservice Foo {\n  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE\n  rpc Get(Req) returns (Req);\n}\n// buf:lint:ignore SERVICE_SUFFIX_Svc\nservice Bar {}\n// buf:lint:ignore\tSERVICE_SUFFIX\nservice Baz {}\nservice Qux {} // buf:lint:ignore SERVICE_SUFFIX\n"
+	want := "// pb:ignore SERVICE_SUFFIX_Svc legacy\nservice Foo {\n  // pb:ignore RPC_REQUEST_RESPONSE_UNIQUE_ALLOW_SAME\n  rpc Get(Req) returns (Req);\n}\n// pb:ignore SERVICE_SUFFIX_Svc\nservice Bar {}\n// buf:lint:ignore\tSERVICE_SUFFIX\nservice Baz {}\nservice Qux {} // buf:lint:ignore SERVICE_SUFFIX\n"
+	r := RewriteComments([]byte(in), renames)
+	if string(r.Text) != want || r.Rewritten != 3 || r.Renamed != 2 || r.Inert != 2 {
+		t.Fatalf("renamed: %d/%d/%d\n%s", r.Rewritten, r.Renamed, r.Inert, r.Text)
+	}
+	if r := RewriteComments([]byte(in), nil); r.Renamed != 0 || strings.Contains(string(r.Text), "_Svc legacy") {
+		t.Fatalf("no renames: %d\n%s", r.Renamed, r.Text)
+	}
+	// An id parted from the form by the one space and more whitespace
+	// is inert, so the rename touches no byte of it.
+	parted := "// buf:lint:ignore \u00a0SERVICE_SUFFIX\nservice Foo {}\n// buf:lint:ignore \vSERVICE_SUFFIX trailing\nservice Bar {}\n"
+	if r := RewriteComments([]byte(parted), renames); string(r.Text) != parted || r.Rewritten != 0 || r.Renamed != 0 || r.Inert != 2 {
+		t.Fatalf("parted by more than one space: %d/%d/%d\n%s", r.Rewritten, r.Renamed, r.Inert, r.Text)
 	}
 }

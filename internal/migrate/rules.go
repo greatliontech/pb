@@ -2,15 +2,18 @@ package migrate
 
 import (
 	"fmt"
+	"path"
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/greatliontech/glob"
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
+	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/rootpath"
 )
 
@@ -29,21 +32,31 @@ func bufDefaultUse(kind check.Kind, version string) string {
 	return "STANDARD"
 }
 
+// LocalRulesetAlias is the alias the lint file imports the workspace
+// module holding the migration's rule file under, and RuleFileName
+// that file's name within the module (REQ-migrate-rule-options).
+const (
+	LocalRulesetAlias = "local"
+	RuleFileName      = "buf-options" + module.RuleFileSuffix
+)
+
 // ruleOption is one of buf's rule-shaping options: the default the
 // option holds where the file says nothing, the ruleset's rules it
 // reshapes — every breaking rule for ignore_unstable_packages,
 // spelled by none — and, for a value-bearing option, the ruleset's
-// function reading the value, the target a rule over it declares
-// and the binding the rule passes (REQ-migrate-rule-options).
+// function reading the value, the target a rule over it declares,
+// the binding the rule passes and the message the rule carries for a
+// value (REQ-migrate-rule-options).
 type ruleOption struct {
 	def                 string
 	rules               []string
 	fn, target, binding string
+	message             func(value string) string
 }
 
 var ruleOptions = map[string]ruleOption{
-	"enum_zero_value_suffix":                    {def: "_UNSPECIFIED", rules: []string{"ENUM_ZERO_VALUE_SUFFIX"}, fn: "enumZeroValueSuffix", target: "enum-value", binding: "enumValue"},
-	"service_suffix":                            {def: "Service", rules: []string{"SERVICE_SUFFIX"}, fn: "serviceSuffix", target: "service", binding: "service"},
+	"enum_zero_value_suffix":                    {def: "_UNSPECIFIED", rules: []string{"ENUM_ZERO_VALUE_SUFFIX"}, fn: "enumZeroValueSuffix", target: "enum-value", binding: "enumValue", message: func(v string) string { return "the zero value of an enum ends in " + v }},
+	"service_suffix":                            {def: "Service", rules: []string{"SERVICE_SUFFIX"}, fn: "serviceSuffix", target: "service", binding: "service", message: func(v string) string { return "service names end in " + v }},
 	"rpc_allow_same_request_response":           {def: "false", rules: []string{"RPC_REQUEST_RESPONSE_UNIQUE"}},
 	"rpc_allow_google_protobuf_empty_requests":  {def: "false", rules: []string{"RPC_REQUEST_RESPONSE_UNIQUE", "RPC_REQUEST_STANDARD_NAME"}},
 	"rpc_allow_google_protobuf_empty_responses": {def: "false", rules: []string{"RPC_REQUEST_RESPONSE_UNIQUE", "RPC_RESPONSE_STANDARD_NAME"}},
@@ -164,12 +177,13 @@ func empty(s *bufconfig.Section) bool {
 // it, no rule of the kind enabled for it; a top-level ignore in no
 // module is unmapped. The rule-shaping options are mapped over the
 // selection where set to anything but their default, a value-bearing
-// one an unmapped fact, the comment switches mapped facts deciding
-// whether the module's comments are rewritten
-// (REQ-migrate-rule-options, REQ-migrate-comments). The file and the
-// comment switches are set on the layout, the facts returned: the
-// shared sections' first, each reported once and only where a module
-// is under it.
+// one declaring a local rule in the rule file, the comment switches
+// mapped facts deciding whether the module's comments are rewritten
+// (REQ-migrate-rule-options, REQ-migrate-comments). The lint file,
+// the rule file with its directory, and per module honoring comments
+// the ids its selection reads under a stand-in are set on the
+// layout, the facts returned: the shared sections' first, each
+// reported once and only where a module is under it.
 func Rules(src *Source, l *Layout) ([]Fact, error) {
 	if src == nil || l == nil {
 		return nil, fmt.Errorf("no buf configuration read")
@@ -187,15 +201,30 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 	topFacts := map[check.Kind][]Fact{}
 	topUsed := map[check.Kind]bool{}
 	var shared, own []Fact
+	// The local rules the value-bearing options declare, once per id,
+	// in the order first declared by a selection a module is checked
+	// under — the root's where the first module carrying it is
+	// reached, a module's own where it is not disabled
+	// (REQ-migrate-rule-options).
+	var localRules []rules.Rule
+	topRules := map[check.Kind][]rules.Rule{}
+	collect := func(rs []rules.Rule) {
+		for _, r := range rs {
+			if !slices.ContainsFunc(localRules, func(have rules.Rule) bool { return have.ID == r.ID }) {
+				localRules = append(localRules, r)
+			}
+		}
+	}
 	if src.Work == nil {
 		for _, kind := range kinds {
 			c := kindConfig{kind: kind, sec: sectionOf(src.File, kind), from: bufconfig.FileName + "." + string(kind), version: src.File.Version, dir: "."}
 			top[kind] = c
 			names, excluded, fs := useOf(c)
-			names, excluded, _, ofs := optionMapping(c, names, excluded, true)
-			topFacts[kind] = append(fs, ofs...)
-			root.enable = append(root.enable, names...)
-			root.exclude = append(root.exclude, excluded...)
+			sh := optionMapping(c, names, excluded, true)
+			topFacts[kind] = append(fs, sh.facts...)
+			topRules[kind] = sh.rules
+			root.enable = append(root.enable, sh.enable...)
+			root.exclude = append(root.exclude, sh.exclude...)
 		}
 		// The file's shared ignores in no module, which buf skips, and
 		// its ignore_only ids the ruleset lacks: reported once.
@@ -220,7 +249,7 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 	if several {
 		f.Modules = map[string]lintfile.ModuleSelection{}
 	}
-	l.CommentIgnores = map[string]bool{}
+	l.Comments = map[string]map[string]string{}
 	for _, d := range decls {
 		sel := selection{enable: []string{}}
 		for _, kind := range kinds {
@@ -229,27 +258,26 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 			// then the ignores, a path equal to the module's directory
 			// disabling the kind, the section's other keys then saying
 			// nothing for this module, as buf reads it.
-			var names, excluded []string
+			var sh shaped
 			var selected []Fact
-			var readAs func(string) string
 			if cfg.own {
-				var fs, ofs []Fact
-				names, excluded, fs = useOf(cfg)
-				names, excluded, readAs, ofs = optionMapping(cfg, names, excluded, true)
-				selected = append(fs, ofs...)
+				names, excluded, fs := useOf(cfg)
+				sh = optionMapping(cfg, names, excluded, true)
+				selected = append(fs, sh.facts...)
 			} else {
-				names, excluded = ofKind(root.enable, kind), ofKind(root.exclude, kind)
 				// The root's options over this module's own ignores;
 				// its selection carries them already.
-				names, excluded, readAs, _ = optionMapping(cfg, names, excluded, false)
+				sh = optionMapping(cfg, ofKind(root.enable, kind), ofKind(root.exclude, kind), false)
 			}
-			entries, disabled, fs, err := ignoresOf(cfg, d, several, readAs)
+			entries, disabled, fs, err := ignoresOf(cfg, d, several, sh.readAs)
 			if err != nil {
 				return nil, err
 			}
 			own = append(own, fs...)
 			if kind == check.KindLint {
-				l.CommentIgnores[src.Rooted(d.dir)] = honorsComments(cfg.version, cfg.sec)
+				if honorsComments(cfg.version, cfg.sec) {
+					l.Comments[src.Rooted(d.dir)] = sh.bare()
+				}
 				if cfg.own {
 					own = append(own, commentFacts(cfg)...)
 				}
@@ -258,11 +286,16 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 				continue
 			}
 			own = append(own, selected...)
-			if !cfg.own {
+			if cfg.own {
+				collect(sh.rules)
+			} else {
+				if !topUsed[kind] {
+					collect(topRules[kind])
+				}
 				topUsed[kind] = true
 			}
-			sel.enable = append(sel.enable, names...)
-			sel.exclude = append(sel.exclude, excluded...)
+			sel.enable = append(sel.enable, sh.enable...)
+			sel.exclude = append(sel.exclude, sh.exclude...)
 			sel.ignores = append(sel.ignores, entries...)
 		}
 		canon(&sel)
@@ -275,11 +308,25 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 		}
 	}
 	f.Enable, f.Exclude, f.Ignore = root.enable, root.exclude, root.ignores
+	var facts, imported []Fact
+	// The local rules' file in the configuration's first module, the
+	// module imported as a ruleset from the working tree, the lint
+	// file's second import, its fact after the options' that declared
+	// the rules.
+	if len(localRules) > 0 {
+		l.RuleFileDir = src.Rooted(decls[0].dir)
+		l.RuleFile = &rules.File{CELEnv: 1, Imports: []rules.Import{{Path: Ruleset, Version: l.RulesetVersion, Alias: RulesetAlias}}, Rules: localRules}
+		if _, err := rules.Encode(l.RuleFile); err != nil {
+			return nil, fmt.Errorf("the rule file: %w", err)
+		}
+		localPath := l.Modules[l.RuleFileDir].Module
+		f.Rulesets = append(f.Rulesets, rules.Import{Path: localPath, Alias: LocalRulesetAlias})
+		imported = append(imported, mapped("the lint file's rulesets "+localPath, "rulesets: path "+localPath+" alias "+LocalRulesetAlias+" (the workspace module holding "+path.Join(l.RuleFileDir, RuleFileName)+", the rules the value-bearing options declare)"))
+	}
 	if _, err := lintfile.Encode(f); err != nil {
 		return nil, fmt.Errorf("the lint file: %w", err)
 	}
 	l.Lint = f
-	var facts []Fact
 	for _, kind := range kinds {
 		if topUsed[kind] {
 			facts = append(facts, topFacts[kind]...)
@@ -289,7 +336,8 @@ func Rules(src *Source, l *Layout) ([]Fact, error) {
 		}
 	}
 	facts = append(facts, shared...)
-	return append(facts, own...), nil
+	facts = append(facts, own...)
+	return append(facts, imported...), nil
 }
 
 // sectionOf is a file's section of the kind.
@@ -400,6 +448,13 @@ func qualified(s string) string { return RulesetAlias + ":" + s }
 func ofKind(names []string, kind check.Kind) []string {
 	var out []string
 	for _, n := range names {
+		// The migration's own rules are lint rules (REQ-migrate-rule-options).
+		if strings.HasPrefix(n, LocalRulesetAlias+":") {
+			if kind == check.KindLint {
+				out = append(out, n)
+			}
+			continue
+		}
 		s := strings.TrimPrefix(n, RulesetAlias+":")
 		if r, ok := rulesetRules[s]; ok && r.kind == kind || rulesetTags[kind][s] {
 			out = append(out, n)
@@ -661,19 +716,63 @@ func selects(kind check.Kind, enable, exclude []string, id string) bool {
 	return covers(enable) && !covers(exclude)
 }
 
+// shaped is a selection with its section's rule-shaping options
+// mapped over it (optionMapping): the names enabled and excluded;
+// per qualified rule name the variant or local rule standing in for
+// it; whether every breaking name reads as its _STABLE variant; the
+// local rules the value-bearing options declare, for the rule file;
+// and the facts.
+type shaped struct {
+	enable, exclude []string
+	renames         map[string]string
+	unstable        bool
+	rules           []rules.Rule
+	facts           []Fact
+}
+
+// readAs spells a qualified rule name as the mapped selection reads
+// it — the variant or the local rule standing in for it, its _STABLE
+// reading — for the ignores naming it.
+func (s shaped) readAs(name string) string {
+	if v, ok := s.renames[name]; ok {
+		name = v
+	}
+	if s.unstable {
+		name = stable(name)
+	}
+	return name
+}
+
+// bare is the stand-ins by bare id, as a suppression comment names a
+// rule (REQ-migrate-comments): never empty, so a module honoring
+// comments with no stand-in is told from one honoring none.
+func (s shaped) bare() map[string]string {
+	m := map[string]string{}
+	for from, to := range s.renames {
+		m[bareID(from)] = bareID(to)
+	}
+	return m
+}
+
+// bareID is a qualified rule name's id, the alias dropped.
+func bareID(name string) string {
+	_, id, _ := strings.Cut(name, ":")
+	return id
+}
+
 // optionMapping maps the section's rule-shaping options
 // (REQ-migrate-rule-options) over a selection: a boolean option set
 // excludes buf's rule and enables the variant reading the option,
 // where the selection enables the rule; `ignore_unstable_packages`
 // reads every breaking name enabled or excluded as its variant over
-// stable packages; a value-bearing option is an unmapped fact naming
-// the one-line rule a workspace ruleset declares over the ruleset's
-// function. readAs spells a qualified rule name as the mapped
-// selection reads it — the variant standing in for it, its _STABLE
-// reading — for the ignores naming it. Idempotent, so a shared
-// selection mapped once is mapped no further; facts are reported
-// where report says.
-func optionMapping(c kindConfig, enable, exclude []string, report bool) ([]string, []string, func(string) string, []Fact) {
+// stable packages; a value-bearing option excludes buf's rule and
+// enables, under LocalRulesetAlias, the one-line rule the migration
+// declares over the ruleset's function with the value — its id the
+// rule's and the value — an unmapped fact where the value spells no
+// id (a colon or whitespace). Idempotent, so a shared selection
+// mapped once is mapped no further; facts are reported where report
+// says.
+func optionMapping(c kindConfig, enable, exclude []string, report bool) shaped {
 	var facts []Fact
 	note := func(f Fact) {
 		if report {
@@ -682,17 +781,9 @@ func optionMapping(c kindConfig, enable, exclude []string, report bool) ([]strin
 	}
 	renames := map[string]string{}
 	unstable := false
-	readAs := func(name string) string {
-		if v, ok := renames[name]; ok {
-			name = v
-		}
-		if unstable {
-			name = stable(name)
-		}
-		return name
-	}
+	var declared []rules.Rule
 	if c.sec == nil {
-		return enable, exclude, readAs, nil
+		return shaped{enable: enable, exclude: exclude, renames: renames}
 	}
 	key := func(k string) string { return c.from + "." + k + " " + c.sec.Options[k] }
 	for _, k := range sortedKeys(c.sec.Options) {
@@ -754,21 +845,39 @@ func optionMapping(c kindConfig, enable, exclude []string, report bool) ([]strin
 		if resps {
 			stands([]string{"rpc_allow_google_protobuf_empty_responses"}, "RPC_RESPONSE_STANDARD_NAME", "RPC_RESPONSE_STANDARD_NAME_ALLOW_EMPTY")
 		}
-		// A value-bearing option: the recipe standing in for it where
-		// the selection enables the rule, the value spelled as a CEL
-		// string.
+		// A value-bearing option: where the selection enables the rule,
+		// the local rule over the ruleset's function with the value
+		// stands in, the value spelled as a CEL string.
 		for _, option := range sortedKeys(ruleOptions) {
 			o := ruleOptions[option]
 			if o.fn == "" || !c.set(option) {
 				continue
 			}
 			rule := qualified(o.rules[0])
-			if !selects(c.kind, enable, exclude, o.rules[0]) {
+			v := c.sec.Options[option]
+			id := o.rules[0] + "_" + v
+			local := LocalRulesetAlias + ":" + id
+			// In a module carrying a selection the local rule already
+			// stands in; else where the selection enables the rule.
+			already := slices.Contains(enable, local)
+			if !already && !selects(c.kind, enable, exclude, o.rules[0]) {
 				note(nothing(key(option), rule))
 				continue
 			}
-			v := celString.Replace(c.sec.Options[option])
-			note(unmapped(key(option), "reshapes "+rule+", which checks "+o.def+": a pb rule has no parameters — exclude "+rule+" and declare, in a workspace ruleset importing "+Ruleset+" as "+RulesetAlias+", a rule over "+o.target+" with cel "+RulesetAlias+"."+o.fn+"("+o.binding+", '"+v+"')"))
+			cel := RulesetAlias + "." + o.fn + "(" + o.binding + ", '" + celString.Replace(v) + "')"
+			// An id is one word holding no colon (check-rules.md
+			// REQ-rules-file-schema): a value with either spells none.
+			if strings.Contains(v, ":") || strings.ContainsFunc(v, unicode.IsSpace) {
+				note(unmapped(key(option), "reshapes "+rule+" with a value no rule id carries, a colon or whitespace: exclude "+rule+" and declare a rule over "+o.target+" with cel "+cel+" under an id of your own"))
+				continue
+			}
+			if !already {
+				exclude = append(exclude, rule)
+				enable = append(enable, local)
+				declared = append(declared, rules.Rule{ID: id, Kind: check.KindLint, Target: check.Target(o.target), Severity: check.SeverityError, CEL: cel, Message: o.message(v)})
+				note(mapped(key(option), "exclude: "+rule+", enable: "+local+" (a rule over "+o.target+" with cel "+cel+" in "+RuleFileName+")"))
+			}
+			renames[rule] = local
 		}
 	case check.KindBreaking:
 		if c.set("ignore_unstable_packages") {
@@ -782,7 +891,7 @@ func optionMapping(c kindConfig, enable, exclude []string, report bool) ([]strin
 			note(mapped(key("ignore_unstable_packages"), "every breaking name enabled, excluded or ignored read as its _STABLE variant, which skips a package with an unstable version suffix"))
 		}
 	}
-	return enable, exclude, readAs, facts
+	return shaped{enable: enable, exclude: exclude, renames: renames, unstable: unstable, rules: declared, facts: facts}
 }
 
 // commentFacts is the lint section's comment switch as a mapped

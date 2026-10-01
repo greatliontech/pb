@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
+	"github.com/greatliontech/pb/internal/check/rules"
 	"github.com/greatliontech/pb/internal/gitdir"
 	"github.com/greatliontech/pb/internal/migrate/bufconfig"
 	"github.com/greatliontech/pb/internal/module"
@@ -174,7 +175,15 @@ type Layout struct {
 	// at, set by Deps: discovered, or a replacement's; "" where none
 	// was found, the import then written without one.
 	RulesetVersion string
-	Gen            *genfile.File // set by Gen; nil where no plugin mapped
+	// RuleFile is the rule file the value-bearing options declare
+	// their rules in, set by Rules where any is set, nil otherwise,
+	// written at RuleFileDir — the configuration's first module's
+	// directory, relative to the root — under RuleFileName, the
+	// module imported by the lint file under LocalRulesetAlias
+	// (REQ-migrate-rule-options).
+	RuleFile    *rules.File
+	RuleFileDir string
+	Gen         *genfile.File // set by Gen; nil where no plugin mapped
 	// Names maps each workspace module's BSR name, where buf's file
 	// gives one, to its pb path, set by Modules; DepPaths maps each
 	// dependency's BSR name to the module path declared for it, set
@@ -185,11 +194,13 @@ type Layout struct {
 	Names    map[string]string
 	DepPaths map[string]string
 	Versions map[string]string
-	// CommentIgnores, set by Rules, says per module directory whether
-	// buf honored its suppression comments, which the verb rewrites
-	// where it did (REQ-migrate-comments).
-	CommentIgnores map[string]bool
-	Facts          []Fact
+	// Comments, set by Rules, holds per module directory whose
+	// suppression comments buf honored — which the verb rewrites, a
+	// directory absent honoring none — the bare ids its lint
+	// selection reads under a stand-in, each to the stand-in's
+	// (REQ-migrate-comments).
+	Comments map[string]map[string]string
+	Facts    []Fact
 }
 
 // declared is one module a buf configuration declares, as the steps

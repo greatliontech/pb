@@ -304,7 +304,9 @@ var yamlLike = regexp.MustCompile(`(?i)^([-+]?(\.?[0-9]|\.(inf|nan)$)|(y|yes|n|n
 // plain where the reader, asked over the value as a list item, reads
 // the plain spelling back as exactly that string and no YAML schema
 // of any version reads it as anything else (yamlLike), and as a
-// double-quoted YAML scalar otherwise — a control character, a space
+// double-quoted YAML scalar otherwise — a control character, a
+// line separator a YAML 1.1 reader breaks the line at (U+0085,
+// U+2028, U+2029), a space
 // at either end, an alias-like glob opening with an asterisk, a flow
 // indicator, a comment, a mapping. The list-item probe is one
 // position of several a value occupies; an emitter's re-parse of its
@@ -312,7 +314,7 @@ var yamlLike = regexp.MustCompile(`(?i)^([-+]?(\.?[0-9]|\.(inf|nan)$)|(y|yes|n|n
 // characters that need them.
 func Spell(v string) string {
 	for _, r := range v {
-		if r < 0x20 || r == 0x7f {
+		if r < 0x20 || r == 0x7f || r == 0x85 || r == 0x2028 || r == 0x2029 {
 			return strconv.Quote(v)
 		}
 	}

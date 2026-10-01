@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package acme.v1;
+
+enum Kind {
+  // buf:lint:ignore ENUM_VALUE_PREFIX
+  KIND_ZERO = 0;
+}
+
+message Req {}
+message Resp {}
+
+// buf:lint:ignore SERVICE_SUFFIX legacy name
+service Greeter {
+  rpc Get(Req) returns (Resp);
+}

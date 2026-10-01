@@ -96,14 +96,29 @@ each `type` a type name of the environment's vocabulary
 (REQ-env1-types), and `cel` non-empty text, a block scalar included;
 and `rules`, a list — possibly empty — of entries
 `{id, kind, target, severity, tags, cel, message}` where every value
-is read as the text written in any YAML scalar spelling, `id` and
-`message` and each entry of the optional list `tags` are one non-empty
-line of text — a spelling holding a line break refused, since an id is
-written in a suppression comment and a message on a finding line —
+is read as the text written in any YAML scalar spelling, `id` is one
+non-empty word — text holding no whitespace of any kind, a line break
+included, since a suppression comment names the rule as a word
+(REQ-lint-suppression) — `message` and each entry of the optional
+list `tags` are one non-empty line of text — a spelling holding a
+line break refused, since a message is written on a finding line —
 `cel` is non-empty text, a block scalar included, `kind` is `lint` or
 `breaking`, `severity` is `error` or `warning`, `target` is a target,
 ids are unique within the file, and no id or tag holds a colon, the
 rule name's separator. No other keys exist.
+
+**REQ-rules-emission** (behavior): Tooling that writes a rule file
+MUST emit it canonically: UTF-8, LF line endings, two-space
+indentation, the keys in the order `celEnv`, `imports`, `functions`,
+`rules` — `imports` and `functions` absent where they hold nothing,
+`rules` spelled `[]` where it does — entries in the order given, an
+import's keys in the order `path`, `version` (absent for a workspace
+module), `alias`, a function's `name`, `params` (`[]` where none, each
+entry's `name` then `type`), `returns`, `cel`, a rule's `id`, `kind`,
+`target`, `severity`, `tags` (absent where none), `cel`, `message`,
+`celEnv` as unquoted digits and every other scalar spelled as
+REQ-lint-emission spells a scalar, and never a rendering the file's
+reader rejects or reads as a different file.
 
 **REQ-rules-functions** (behavior): A rule file's functions MUST be
 compiled under the file's environment as typed, expression-bodied

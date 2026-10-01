@@ -2,13 +2,16 @@ package migrate
 
 import (
 	"bytes"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/greatliontech/pb/internal/proto/lines"
 )
 
 // Rewrite is a proto file's suppression comments rewritten
 // (REQ-migrate-comments): the text after; the count of directives
-// rewritten to pb's form; the lines (1-based) of rewritten directives
+// rewritten to pb's form, and among them the count renamed to the
+// id of a rule standing in for the one named; the lines (1-based) of rewritten directives
 // pb does not read — a block inside a declaration continued from the
 // line before, leading a statement declaring no entity but the
 // file's or a body's closing brace, or a file rule's anywhere but
@@ -23,6 +26,7 @@ import (
 type Rewrite struct {
 	Text      []byte
 	Rewritten int
+	Renamed   int
 	Displaced []int
 	Block     []int
 	Unplaced  []int
@@ -55,8 +59,11 @@ func blockDirective(src []byte, l lines.Line) bool {
 // any line of the comment block leading an element — the comment-only
 // lines directly above a line of code — so each `//` directive on
 // such a line is rewritten to pb's form, `buf:lint:ignore` becoming
-// `pb:ignore`, the whitespace, id and any trailing text kept and the
-// file otherwise byte-for-byte as it was; a directive in a block
+// `pb:ignore`, the whitespace, id and any trailing text kept — the
+// id replaced by the stand-in's where renames maps it, a bare id to
+// the bare id of the variant or local rule the module's selection
+// reads the rule under — and the file otherwise byte-for-byte as it
+// was; a directive in a block
 // inside a continued declaration, where pb reads the block leading
 // the declaration's first line, is reported displaced, one naming a package
 // or set rule reported unplaced, and one in a block comment reported
@@ -67,7 +74,7 @@ func blockDirective(src []byte, l lines.Line) bool {
 // inside a string literal or a block comment opens no line comment,
 // and what the migration reports as placed is what the checker
 // reads.
-func RewriteComments(src []byte) Rewrite {
+func RewriteComments(src []byte, renames map[string]string) Rewrite {
 	scanned := lines.Scan(src)
 	firstCode := -1
 	for k, l := range scanned {
@@ -154,6 +161,12 @@ func RewriteComments(src []byte) Rewrite {
 			out.Write(src[prev:at])
 			out.WriteString(pbForm)
 			prev = at + len(lintForm)
+			// The id follows the form after its one space.
+			if to, ok := renames[id]; ok {
+				r.Renamed++
+				out.WriteString(" " + to)
+				prev += 1 + len(id)
+			}
 		}
 		i = j
 	}
@@ -167,7 +180,8 @@ func RewriteComments(src []byte) Rewrite {
 // spaces and tabs between the slashes and the form, which buf trims,
 // and the id where the form and the id are parted by exactly one
 // space, as buf reads it — the id empty where the parting is any
-// other whitespace, a directive buf never honored.
+// other whitespace, a second space, a tab or any rune a word breaks
+// at, a directive buf never honored.
 func directive(comment []byte, form string) (lead int, id string, ok bool) {
 	text := comment[2:]
 	for lead < len(text) && (text[lead] == ' ' || text[lead] == '\t') {
@@ -177,14 +191,19 @@ func directive(comment []byte, form string) (lead int, id string, ok bool) {
 	if !bytes.HasPrefix(rest, []byte(form)) || len(rest) == len(form) {
 		return 0, "", false
 	}
-	if c := rest[len(form)]; c != ' ' && c != '\t' {
+	// Whitespace of any kind parts the form from what follows; a
+	// form glued to a word is no directive.
+	if c, _ := utf8.DecodeRune(rest[len(form):]); !unicode.IsSpace(c) {
 		return 0, "", false
 	}
 	fields := bytes.Fields(rest[len(form):])
 	if len(fields) == 0 {
 		return 0, "", false
 	}
-	if rest[len(form)] != ' ' || rest[len(form)+1] == ' ' || rest[len(form)+1] == '\t' {
+	// The id is the word opening right after the one space: parted by
+	// any other whitespace, a space or a tab among it or a rune
+	// Fields splits at, the directive is inert.
+	if rest[len(form)] != ' ' || !bytes.HasPrefix(rest[len(form)+1:], fields[0]) {
 		return lead, "", true
 	}
 	return lead, string(fields[0]), true

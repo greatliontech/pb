@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/token"
@@ -166,6 +167,11 @@ func parseRules(n ast.Node) ([]Rule, error) {
 			line("id", func(s string) error {
 				if strings.Contains(s, ":") {
 					return fmt.Errorf("%w: %s: id %q holds a colon, the rule name's separator", ErrInvalid, where, s)
+				}
+				// A suppression comment names the rule as one word
+				// (REQ-lint-suppression).
+				if strings.ContainsFunc(s, unicode.IsSpace) {
+					return fmt.Errorf("%w: %s: id %q holds whitespace; an id is one word", ErrInvalid, where, s)
 				}
 				r.ID = s
 				return nil

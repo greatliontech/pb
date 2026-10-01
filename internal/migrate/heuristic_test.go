@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -292,11 +293,38 @@ func TestNoHeuristicProperty(t *testing.T) {
 			// One import: the ruleset at the discovered version under
 			// its alias (REQ-migrate-rules).
 			rs := list2(doc["rulesets"])
-			if len(rs) != 1 {
+			// A second, the first module as the ruleset holding the
+			// local rules, where a value-bearing option gave any: the
+			// rule file's rules then each carry a value given.
+			ruleFile, ruleData, hasRuleFile := read(path.Join(g.rooted(g.dirs[0]), RuleFileName))
+			wantImports := 1
+			if hasRuleFile {
+				wantImports = 2
+			}
+			if len(rs) != wantImports {
 				fail(lintfile.FileName, data, "rulesets %v", rs)
 			}
 			if imp := mapping(rs[0]); text(imp["path"]) != Ruleset || text(imp["version"]) != g.versions[Ruleset] || text(imp["alias"]) != RulesetAlias {
 				fail(lintfile.FileName, data, "the ruleset import %v: given %s at %s", imp, Ruleset, g.versions[Ruleset])
+			}
+			if hasRuleFile {
+				want := g.modulePath
+				if g.dirs[0] != "." {
+					want += "/" + g.dirs[0]
+				}
+				if imp := mapping(rs[1]); text(imp["path"]) != want || text(imp["alias"]) != LocalRulesetAlias || text(imp["version"]) != "" {
+					fail(lintfile.FileName, data, "the local ruleset import %v: given %s", imp, want)
+				}
+				if len(list2(ruleFile["rules"])) == 0 {
+					fail(RuleFileName, ruleData, "a rule file with no rule")
+				}
+				for _, r := range list2(ruleFile["rules"]) {
+					rule := mapping(r)
+					value, given := g.valued[text(rule["id"])]
+					if !given || !strings.Contains(text(rule["cel"]), "'"+celString.Replace(value)+"'") || !strings.Contains(text(rule["message"]), value) {
+						fail(RuleFileName, ruleData, "rule %v given nowhere", rule)
+					}
+				}
 			}
 			g.selection(rt, lintfile.FileName, data, doc, "")
 			for dir, sel := range mapping(doc["modules"]) {
@@ -507,6 +535,7 @@ type given struct {
 	overrideValues map[string]bool
 	managed        bool                // buf.gen.yaml's managed mode enabled, its defaults then the spec's constants
 	config         string              // the configuration's directory below the root, "" for the root
+	valued         map[string]string   // the local rules' ids the value-bearing options give, <RULE>_<value>, to the value
 	requires       map[string][]string // per module directory, the providers its file imports
 	prefixes       map[string]bool     // go_package prefixes the managed mode gave
 	suffixes       map[string]bool     // java_package suffixes the managed mode gave
@@ -521,6 +550,7 @@ type given struct {
 func newGiven() *given {
 	return &given{
 		requires: map[string][]string{},
+		valued:   map[string]string{},
 		depPaths: map[string]bool{}, versions: map[string]string{}, entries: map[string]bool{"STANDARD": true, "FILE": true},
 		ignores: map[string]bool{}, refs: map[string]bool{}, patterns: map[string]bool{}, extra: map[string]string{}, locals: map[string]bool{}, outs: map[string]bool{}, opts: map[string]bool{},
 		overrideValues: map[string]bool{}, prefixes: map[string]bool{}, suffixes: map[string]bool{}, javaPrefixes: map[string]bool{}, overridePaths: map[string]bool{}, used: map[string]bool{}, forbidden: map[string]bool{},
@@ -566,6 +596,14 @@ func (g *given) whole(rt *rapid.T, name string, data []byte) {
 func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]any, dir string) {
 	for _, key := range []string{"enable", "exclude"} {
 		for _, e := range list(sel[key]) {
+			// A local rule: enabled under its alias, its id the rule
+			// and the value given.
+			if id, ok := strings.CutPrefix(e, LocalRulesetAlias+":"); ok {
+				if _, given := g.valued[id]; key != "enable" || !given {
+					rt.Fatalf("%s: %s %q given nowhere\n%s", name, key, e, data)
+				}
+				continue
+			}
 			bare, ok := strings.CutPrefix(e, RulesetAlias+":")
 			if !ok || !g.named(bare, dir) || !rulesetDeclares(bare) {
 				rt.Fatalf("%s: %s %q given nowhere\n%s", name, key, e, data)
@@ -580,8 +618,15 @@ func (g *given) selection(rt *rapid.T, name string, data []byte, sel map[string]
 			}
 		}
 		for _, r := range list(m["rules"]) {
-			// A rule named, or one of a category named: an ignore_only
-			// over a category is the ruleset's rules carrying its tag.
+			// A local rule standing in for the one ignored; else a rule
+			// named, or one of a category named: an ignore_only over a
+			// category is the ruleset's rules carrying its tag.
+			if id, ok := strings.CutPrefix(r, LocalRulesetAlias+":"); ok {
+				if _, given := g.valued[id]; !given {
+					rt.Fatalf("%s: ignore rule %q given nowhere\n%s", name, r, data)
+				}
+				continue
+			}
 			bare, ok := strings.CutPrefix(r, RulesetAlias+":")
 			tagged := false
 			for _, tag := range strings.Fields(rulesetRules[bare].tags) {
@@ -711,11 +756,22 @@ func (g *given) section(rt *rapid.T, b *strings.Builder, indent, kind, dir strin
 		}
 	}
 	if kind == "lint" {
+		// A value-bearing option: its value names the local rule the
+		// migration declares, the rule it reshapes excluded beside it
+		// (REQ-migrate-rule-options) — a marker, or a value needing an
+		// escape in the expression or a quoted YAML spelling, one no
+		// id carries (a colon, whitespace), or buf's default, which
+		// declares nothing.
 		for _, o := range []string{"enum_zero_value_suffix", "service_suffix"} {
 			if rapid.Bool().Draw(rt, o) {
 				sx := g.draw(rt, "sx")
-				g.forbidden[sx] = true // a rule-shaping option's value is unmapped, never a value of pb's
-				fmt.Fprintf(b, "%s  %s: %s\n", indent, o, sx)
+				if v := rapid.SampledFrom([]string{"", "it's", `a\b`, "a b", "a:b", "a\nb", "\t", ruleOptions[o].def}).Draw(rt, o+" value"); v != "" {
+					sx = v
+				}
+				fmt.Fprintf(b, "%s  %s: %s\n", indent, o, strconv.Quote(sx))
+				rule := ruleOptions[o].rules[0]
+				g.valued[rule+"_"+sx] = sx
+				g.entries[rule] = true
 			}
 		}
 		// The uniqueness allowances and the empties, each spelled true

@@ -66,8 +66,11 @@ where the configuration names several modules or lies below the
 root, a module file at each module's root, the lint file always —
 buf checks every module under a selection, explicit or its default,
 and the file spells the one buf applied (REQ-migrate-rules) — the
-generation file where a `buf.gen.yaml` lies at the configuration's
-directory; then run `pb dep tidy` over the result, so the written
+rule file the value-bearing options declare their rules in, in the
+configuration's first module, where any declares a rule
+(REQ-migrate-rule-options), the generation file where a
+`buf.gen.yaml` lies at the configuration's directory; then run
+`pb dep tidy` over the result, so the written
 workspace is tidy and its lockfile pinned. Every path buf's files
 spell relative to the configuration's directory — a module's, a
 section's, an input's, an output directory's — is read relative to
@@ -326,15 +329,27 @@ reads it, a one-component package no version; an
 option shaping a rule the selection does not enable is a mapped fact
 saying so. A value-bearing option — `enum_zero_value_suffix`
 (`_UNSPECIFIED`), `service_suffix` (`Service`) — set to anything but
-its default, where the selection enables the rule it reshapes, is an
-unmapped fact — the selection untouched, the
-ruleset's rule still checking buf's default — naming the rule and
-the recipe standing in for the option: the
-rule excluded, and a workspace ruleset declaring a one-line rule
-over the ruleset's function of that name
-(`buf.serviceSuffix(service, '<value>')`,
-`buf.enumZeroValueSuffix(enumValue, '<value>')`, the value spelled
-as a CEL string); a buf spelling naming a variant of the ruleset,
+its default, where the selection enables the rule it reshapes, maps
+to an exclusion of the rule and an enabling of a rule the migration
+declares: a rule file `buf-options.rules.yaml` written in the
+configuration's first module, which the lint file imports as a
+ruleset from the working tree under the alias `local`
+(`check-rules.md` REQ-lint-rulesets-imported), its one import the
+ruleset at the lint file's version under the alias `buf`, and per
+value a lint rule of severity `error` over the ruleset's target —
+`service`, `enum-value` — whose id is the rule's and the value,
+`_`-joined (`SERVICE_SUFFIX_Svc`), whose expression calls the
+ruleset's function of that name with the value spelled as a CEL
+string (`buf.serviceSuffix(service, '<value>')`,
+`buf.enumZeroValueSuffix(enumValue, '<value>')`) and whose message
+names the value; an `ignore` entry naming the rule names the local
+rule in its place, as the variants' do; one id per value, two
+sections setting one value sharing the rule, declared where a module
+is checked under the section (a section no module reads, or whose
+module ignores the kind, declares nothing); a value no id carries —
+holding a colon or whitespace of any kind (`check-rules.md`
+REQ-rules-file-schema) — is an unmapped fact naming the rule and the
+recipe; a buf spelling naming a variant of the ruleset,
 which buf never declared, is no rule or category of buf's;
 buf's own check plugins and an option the migration does not model
 are unmapped facts; a key spelled at its default is no fact.
@@ -356,8 +371,13 @@ under the root of such a module — the module's file set being every
 regular file, a symbolic link carried as one and never followed —
 each `//` comment on a leading block's line whose text opens
 with `buf:lint:ignore` and an id is rewritten to `// pb:ignore <ID>`,
-the id and any trailing text kept, the file otherwise byte-for-byte
-as it was, and the rewrite is reported per file with its count; a
+the id kept — or, where the module's selection reads the rule under a
+rule standing in for it, a variant or a local rule
+(REQ-migrate-rule-options), the stand-in's bare id in its place, so
+the comment names the rule the module is checked under — and any
+trailing text kept, the file otherwise byte-for-byte as it was, and
+the rewrite is reported per file with its count, the count of
+directives renamed beside it; a
 rewritten directive on a line pb does not read — a block inside a
 declaration continued from the line before, leading a statement
 declaring no entity but the file's — an `option`, `reserved`,
@@ -376,8 +396,9 @@ directive; every other directive is left as it
 was, buf having honored none — one parted from its id by anything
 but one space among them, as buf reads the form. A module whose lint section honors none keeps
 its comments as they are, a mapped fact saying so
-(REQ-migrate-rule-options). A bare id suffices, the migrated lint
-file importing one ruleset.
+(REQ-migrate-rule-options). A bare id suffices: the migrated lint
+file enables each id once, buf's rules through one ruleset and the
+local rules under ids carrying their value.
 
 ## Generation
 
