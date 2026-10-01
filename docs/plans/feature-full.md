@@ -145,9 +145,12 @@ formatter and the language server
       mutant then classified by its oracle; what the bracket cannot
       name filed against gomutant with the residue chunk 13 measured;
       the runner-oracle-sandbox-bound issue closes
-- [ ] 19. Platforms, the portable half: the suite on macOS and Windows
-      runners in continuous integration and cross-compiled release
-      binaries with no C toolchain; the file rules witnessed there
+- [ ] 19. Platforms, the portable half: the repository made public at
+      this chunk for the macOS and Windows runners (its history
+      scanned once more for any private or customer name, the README
+      the one word `wip`, no license yet); the suite on macOS and
+      Windows runners in continuous integration and cross-compiled
+      release binaries with no C toolchain; the file rules witnessed there
       (case folding, the rename of an open file on windows, the user
       directories); ocifs's store and export on both in its own
       matrix; the local scheme's `.exe` resolution on windows
