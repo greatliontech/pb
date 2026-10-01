@@ -94,7 +94,7 @@ formatter and the language server
       `pb build` writes, bytes trusted by being named, never verified
       through the trust policy (the pinned form's role, stated in the
       clause); the alignment engine unchanged below the base's loader
-- [ ] 11. Migrate closure: every golden of the corpus reports zero
+- [x] 11. Migrate closure: every golden of the corpus reports zero
       unmapped facts, and a local run over the real configurations
       reports the same, recorded per repository by name in the
       commit message; a shape the local run finds missing enters the
@@ -145,3 +145,10 @@ formatter and the language server
       Docker Desktop daemon can witness (the docker runner's live
       cases on darwin and windows) tracked to a machine reporting
       back
+- [ ] 21. The plugin catalog's growth: recipes for
+      protocolbuffers/python, grpc/python, protocolbuffers/java,
+      grpc/java and community/planetscale-vtprotobuf in pb-plugins,
+      each of its kind (a protoc generator or grpc plugin built from
+      C++ per platform, an upstream release's executables, a Go
+      package cross-compiled); pb's catalog copy grows by the five,
+      the plugin-catalog-growth issue closes
