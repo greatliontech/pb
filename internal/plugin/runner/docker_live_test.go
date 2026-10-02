@@ -46,7 +46,13 @@ func requireDaemon(t *testing.T) *DockerRunner {
 	}
 	r, err := NewDockerRunner("")
 	if err != nil {
-		t.Fatal(err)
+		// A daemon answers but is no daemon the runner uses — one
+		// running Windows containers — which is no daemon for the
+		// live arms.
+		if os.Getenv("PB_TEST_REQUIRE_DOCKER") != "" {
+			t.Fatalf("PB_TEST_REQUIRE_DOCKER is set and the daemon is unusable: %v", err)
+		}
+		t.Skipf("no usable docker daemon: %v", err)
 	}
 	return r
 }

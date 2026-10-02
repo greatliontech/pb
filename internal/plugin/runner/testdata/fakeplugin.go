@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -71,8 +72,12 @@ func main() {
 		emit("stdout-with-stderr")
 		return
 	case behavior.Write:
-		err := os.WriteFile("/probe", []byte("x"), 0o644)
-		emit(fmt.Sprintf("write-err=%v", err != nil))
+		// The root, and the directory the plugin itself lies in — the
+		// export, wherever the row presents it.
+		errRoot := os.WriteFile("/probe", []byte("x"), 0o644)
+		exe, _ := os.Executable()
+		errBeside := os.WriteFile(filepath.Join(filepath.Dir(exe), "probe"), []byte("x"), 0o644)
+		emit(fmt.Sprintf("write-err=%v", errRoot != nil && errBeside != nil))
 		return
 	case behavior.World:
 		// The world as the process sees it: every mount as

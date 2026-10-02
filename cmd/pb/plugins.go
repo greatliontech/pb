@@ -40,6 +40,17 @@ func acquirerConfig(s *dep.Session) (oci.Config, error) {
 	}, nil
 }
 
+// updateSubstrates are the substrates an update offers: every runner
+// the host has, whatever its row and whether or not its export
+// streams — an update runs nothing and streams nothing, the pin it
+// moves being the lockfile's for every machine (dep-verbs.md
+// REQ-dep-update); the floor and the byte path govern a run, at
+// generate.
+func updateSubstrates(cands []runner.Candidate) []oci.Candidate {
+	substrates, _, _ := dep.Substrates(cands, false, true)
+	return substrates
+}
+
 // pullMode reads the plugin-pull setting (plugin-execution.md
 // REQ-plugin-core-verifies): the store by default, the daemon where
 // stated and the selection may run daemon images; a value naming
@@ -83,12 +94,8 @@ func (u *lazyUpdater) UpdatePlugin(ctx context.Context, ref string) (lockfile.Pl
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
 		u.acq = acq
-		// An update runs nothing: the substrates it offers are the
-		// runners the host has, whatever their rows, the pin it moves
-		// being the lockfile's for every machine (dep-verbs.md
-		// REQ-dep-update); the floor governs a run, at generate.
 		cands, account := sel.Candidates(ctx, plugin.TierNone)
-		u.substrates, u.account = dep.Substrates(cands, false), account
+		u.substrates, u.account = updateSubstrates(cands), account
 	}
 	before, after, err := u.acq.UpdatePlugin(ctx, ref, u.substrates)
 	if errors.Is(err, oci.ErrNoCandidate) {

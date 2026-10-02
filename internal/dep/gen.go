@@ -63,17 +63,31 @@ type RunnerSelection interface {
 	Candidates(ctx context.Context, floor string) (candidates []runner.Candidate, account string)
 }
 
+// exportStreams is the platform's fact of whether an export streams
+// to a daemon (runner.ExportStreams); tests point it elsewhere to
+// exercise the withholding on every host.
+var exportStreams = runner.ExportStreams
+
 // Substrates are the acquirer's candidates for the runners selected,
 // in their order: each runner's platform, the daemon byte path on a
 // runner that runs daemon images where daemonPull selects it
-// (plugin-execution.md REQ-plugin-core-verifies).
-func Substrates(candidates []runner.Candidate, daemonPull bool) []oci.Candidate {
-	out := make([]oci.Candidate, len(candidates))
-	for i, c := range candidates {
+// (plugin-execution.md REQ-plugin-core-verifies). A runner that runs
+// daemon images is withheld under the store byte path where the
+// platform's export cannot be streamed to a daemon (exportStreams;
+// platforms.md REQ-plat-oci-substrate): offered lists the candidates
+// the substrates stand for, in the same order, and withheld says why
+// one was not, empty where every candidate was.
+func Substrates(candidates []runner.Candidate, daemonPull, exportStreams bool) (substrates []oci.Candidate, offered []runner.Candidate, withheld string) {
+	for _, c := range candidates {
 		_, daemon := c.Runner.(runner.DaemonImages)
-		out[i] = oci.Candidate{Platform: c.Runner.Platform(), Daemon: daemon && daemonPull}
+		if daemon && !daemonPull && !exportStreams {
+			withheld = fmt.Sprintf("the %s runner streams no export on this platform under the store byte path (select the daemon byte path, plugin-pull docker)", c.Name)
+			continue
+		}
+		substrates = append(substrates, oci.Candidate{Platform: c.Runner.Platform(), Daemon: daemon && daemonPull})
+		offered = append(offered, c)
 	}
-	return out
+	return substrates, offered, withheld
 }
 
 // LocalDeps are the local scheme's seams, present together or not at
@@ -203,7 +217,10 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		return fmt.Errorf("generate: %w", err)
 	}
 
-	substrates := Substrates(candidates, deps.DaemonPull)
+	substrates, offered, withheld := Substrates(candidates, deps.DaemonPull, exportStreams)
+	if withheld != "" {
+		account += "; " + withheld
+	}
 	// Every plugin is acquired — verified and pinned — before any
 	// runs, and the pins persist whatever follows: a first-use
 	// resolution is the record even when a later entry fails
@@ -247,11 +264,11 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				// The candidate the image was acquired for is the
 				// runner; an acquisition naming one the run never
 				// offered is the seam's fault, refused.
-				if k := plugins[i].Candidate; k < 0 || k >= len(candidates) {
-					acqErr = fmt.Errorf("the acquisition named substrate %d of the %d offered", k, len(candidates))
+				if k := plugins[i].Candidate; k < 0 || k >= len(offered) {
+					acqErr = fmt.Errorf("the acquisition named substrate %d of the %d offered", k, len(offered))
 					break
 				}
-				runners[i] = candidates[plugins[i].Candidate]
+				runners[i] = offered[plugins[i].Candidate]
 			}
 			if pulled, ok := plugins[i].Image.(*plugin.Pulled); ok {
 				if _, daemon := runners[i].Runner.(runner.DaemonImages); !daemon {

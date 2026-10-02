@@ -38,9 +38,9 @@ and tracked to its witness as any deferral is.
 
 ## Plugin execution
 
-**REQ-plat-oci-substrate** (behavior): An `oci` plugin MUST run on
-the substrate whose platform its image serves, on every platform the
-same way: the native runner exports the image's entry for the host's
+**REQ-plat-oci-substrate** (behavior): An `oci` plugin MUST run on the
+substrate whose platform its image serves, on every platform the same
+way: the native runner exports the image's entry for the host's
 platform and executes its entrypoint under the sandbox row the host
 reaches, where that row meets the tier the policy requires
 (`plugin-execution.md` REQ-plugin-min-tier — `Strong` unless lowered,
@@ -49,24 +49,27 @@ under the policy's explicit lowering); the `docker` runner hands the
 image's entry for the daemon's platform to a daemon running Linux
 containers — Docker Desktop's on `darwin` and `windows`, whose
 platform is `linux` at the daemon's architecture (`linux/arm64` on an
-Apple-silicon host, `linux/amd64` under WSL2). The entry sought is
-the substrate's platform and exactly one must match
+Apple-silicon host, `linux/amd64` under WSL2). The entry sought is the
+substrate's platform and exactly one must match
 (REQ-plugin-platform-strict): an image serving no entry for the host
-is refused under the native runner naming the platforms it serves,
-and runner selection's default chooses per entry
+is refused under the native runner naming the platforms it serves, and
+runner selection's default chooses per entry
 (REQ-plugin-runner-selection): `native` where the image serves the
-host and the row meets the floor, `docker` for the rest where a
-daemon is reachable, so one run mixes what runs natively with what
-a daemon must run and the report says which.
-On an `OS` row the plugin's world is the export and the platform's
-own system libraries, which every `darwin` and `windows` binary
-links (`libSystem`, the system DLLs), and nothing else; the Linux
-`OS` row's static-entrypoint rule is that platform's alone. A daemon
-in a virtual machine leaves the host's cgroup tree unreadable to pb:
-a memory kill there is attributed as the daemon's record affords it
-and the record says which source spoke (REQ-plugin-resource-bounds);
-pb hands the daemon the export as a stream and binds no host
-directory, so the daemon's file sharing is never consulted.
+host and the row meets the floor, `docker` for the rest where a daemon
+is reachable, so one run mixes what runs natively with what a daemon
+must run and the report says which. On an `OS` row the plugin's world
+is the export and the platform's own system libraries, which every
+`darwin` and `windows` binary links (`libSystem`, the system DLLs),
+and nothing else; the Linux `OS` row's static-entrypoint rule is that
+platform's alone. A daemon in a virtual machine leaves the host's
+cgroup tree unreadable to pb: a memory kill there is attributed as the
+daemon's record affords it and the record says which source spoke
+(REQ-plugin-resource-bounds); pb hands the daemon the export as a
+stream and binds no host directory, so the daemon's file sharing is
+never consulted — on windows, where an export carries no file modes,
+the stream is refused naming the daemon byte path
+(`plugin-execution.md` REQ-plugin-core-verifies), the daemon's pull of
+the verified digest the one byte path there.
 
 **REQ-plat-local-runner** (behavior): A `local` plugin, a host command,
 MUST run on the native runner on every platform, under the sandbox

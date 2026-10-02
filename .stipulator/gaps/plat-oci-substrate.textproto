@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-plat-oci-substrate"
 reason: "An oci plugin on darwin and windows needs the sandbox rows and the native runner those platforms have not yet (the feature-full plan's chunks 14, 15 and 17) and a Docker Desktop daemon only real hardware witnesses; the Linux half is witnessed by the runner suite's live arms."
-content_hash: "5a4ae1e42899ce4c0256baa3d7c29b918d31103fc8f60bec15b4328d19061483"
-source_hash: "52ee8fd0a1fd9b4d8dabe6cb3f1d533866cf5c31966fcacbc344d1e651ecde6a"
+content_hash: "6686c7b857811aab3ae3c65e7f11b5d7da306a406dca9d09c1b08928974d0d0c"
+source_hash: "85d03c1eda29e646d57a3a47c26f0712f61d89655e60b7c8b03239885f9b2152"
 lands { manual { condition: "the native runner runs an oci plugin on darwin and windows under their sandbox rows and the docker runner's live cases run against a Docker Desktop daemon on both" } }

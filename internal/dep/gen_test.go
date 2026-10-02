@@ -1161,7 +1161,10 @@ func TestGenOverrides(t *testing.T) {
 	// runs, naming the way to select the docker runner.
 	diag.Reset()
 	runs := &daemonStubRunner{stubRunner{res: run.res}}
-	deps = GenDeps{Acquirer: acq, Runner: one(runs), Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
+	// The daemon's runner under the daemon byte path: on a platform
+	// whose export streams to no daemon it is withheld under the store
+	// byte path (TestSubstratesWithholdTheStream).
+	deps = GenDeps{Acquirer: acq, Runner: one(runs), DaemonPull: true, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -1207,7 +1210,7 @@ func TestGenPulledImage(t *testing.T) {
 	image := repo + "@" + digest
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Pulled{Repository: repo, Digest: digest, Entry: "linux/arm/v6"}}}
 	run := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run), DaemonPull: true}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if p, ok := run.spec.Image.(*plugin.Pulled); !ok || p.Reference() != image || p.Entry != "linux/arm/v6" || len(run.spec.Process.Argv) != 0 {
@@ -1299,7 +1302,13 @@ func TestGenRunnerPerEntry(t *testing.T) {
 			t.Fatalf("%s was offered %+v, want %+v", ref, got, offered)
 		}
 	}
-	// Without the daemon byte path no candidate pulls from the daemon.
+	// Without the daemon byte path no candidate pulls from the daemon
+	// — where the export streams; where it does not, the docker
+	// runner is withheld under that byte path, which
+	// TestSubstratesWithholdTheStream pins.
+	if !runner.ExportStreams {
+		return
+	}
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: sel}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -1435,5 +1444,57 @@ func TestGenSelectsAcrossSeams(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), served+": 0 file(s) into gen (runner native, tier Strong, bounds cgroups)") {
 		t.Fatalf("report = %q", out.String())
+	}
+}
+
+// Under the store byte path on a platform whose export cannot be
+// streamed to a daemon, the docker runner is no substrate for an
+// exported entry: withheld with the reason, the native runner
+// offered alone; under the daemon byte path, or where the export
+// streams, it stands (platforms.md REQ-plat-oci-substrate,
+// REQ-plugin-core-verifies).
+func TestSubstratesWithholdTheStream(t *testing.T) {
+	native := &stubRunner{}
+	docker := &daemonStubRunner{}
+	cands := []runner.Candidate{{Name: runner.RunnerNative, Runner: native}, {Name: runner.RunnerDocker, Runner: docker}}
+	subs, offered, withheld := Substrates(cands, false, false)
+	if len(subs) != 1 || len(offered) != 1 || offered[0].Name != runner.RunnerNative || !strings.Contains(withheld, "the docker runner streams no export on this platform under the store byte path") {
+		t.Fatalf("the store byte path with no stream: %+v %+v %q", subs, offered, withheld)
+	}
+	subs, offered, withheld = Substrates(cands, true, false)
+	if len(subs) != 2 || !subs[1].Daemon || withheld != "" {
+		t.Fatalf("the daemon byte path with no stream: %+v %+v %q", subs, offered, withheld)
+	}
+	subs, offered, withheld = Substrates(cands, false, true)
+	if len(subs) != 2 || subs[1].Daemon || withheld != "" {
+		t.Fatalf("the store byte path with a stream: %+v %+v %q", subs, offered, withheld)
+	}
+}
+
+// A daemon-local override runs on the docker runner even where the
+// store byte path withholds that runner for exported entries: the
+// daemon holds the image already, nothing streams
+// (REQ-plugin-override, platforms.md REQ-plat-oci-substrate).
+func TestGenDaemonLocalOverrideWhileWithheld(t *testing.T) {
+	prev := exportStreams
+	exportStreams = false
+	t.Cleanup(func() { exportStreams = prev })
+	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/q:v1\n    out: gen\n")
+	native := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	docker := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
+	sel := &stubSelection{cands: []runner.Candidate{{Name: runner.RunnerNative, Runner: native}, {Name: runner.RunnerDocker, Runner: docker}}}
+	acq := &perRefAcquirer{}
+	var out strings.Builder
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: sel, Overrides: map[string]string{"ghcr.io/o/q:v1": OverrideDaemonPrefix + "plugins/q:dev"}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if d, ok := docker.spec.Image.(*plugin.DaemonLocal); !ok || d.Reference != "plugins/q:dev" || native.spec.Image != nil {
+		t.Fatalf("the daemon-local override ran %+v on docker, %+v on native", docker.spec.Image, native.spec.Image)
+	}
+	if !strings.Contains(out.String(), "(runner docker, ") {
+		t.Fatalf("report = %q", out.String())
+	}
+	if len(acq.offered) != 0 {
+		t.Fatalf("an override of a daemon-local image was acquired: %+v", acq.offered)
 	}
 }

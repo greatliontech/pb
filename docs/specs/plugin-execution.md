@@ -256,10 +256,25 @@ explicit lowering (`REQ-plugin-min-tier`) — the export at its host
 path, read-only, with no network, where only a static entrypoint
 loads: a plugin whose entrypoint is a script, dynamically linked, or
 unreadable is refused before it runs, the refusal naming the sandbox's
-reason. That row's exposures are the lowering's to accept: a plugin
-that dereferences image-absolute paths at runtime observes the host's
-resolution, the row presents no hostname so the plugin observes the
-host's, and the IPC the row leaves open to the same user — unix
+reason; on the darwin and windows `OS` rows — Seatbelt's and the
+AppContainer's, admitted by the same lowering — the export at its host
+path, read and executed, with no network, the entrypoint an image for
+the host as the row loads it, beside it the platform's execution
+substrate as the sandbox's ladder states it and nothing else: on
+darwin what Apple's `system.sb` admits (the system libraries and
+frameworks, the services every process reaches) and the sandbox's own
+calling binary — pb itself — read and executed; on windows what the
+platform grants every package (the system's own files and services),
+the package's own directory writable with the temporary directory
+redirected into it, and the launch's variables in the environment —
+`TEMP` and `TMP` redirected, `LOCALAPPDATA` and `SystemRoot` carried
+from the host where the stated environment lacks them — the one
+injection the native runner makes (`platforms.md`
+REQ-plat-oci-substrate). That row's exposures are the lowering's to
+accept: a plugin that dereferences image-absolute paths at runtime
+observes the host's resolution, the row presents no hostname so the
+plugin observes the host's, the substrate the row grants every process
+is readable, and the IPC the row leaves open to the same user — unix
 sockets by path, and abstract sockets and signals where the kernel
 does not scope them — is reachable by a plugin that goes for it, its
 own doing as the `docker` deviations are; pb hands it the standard
@@ -277,43 +292,57 @@ SELinux and none, the kernel reporting none or `unconfined`, where it
 names neither — all as the running plugin sees them on a daemon whose
 account of itself is true (`REQ-plugin-reported-tier`: pb audits no
 daemon at a run; the invariant holds the list complete against a
-conforming one) — and the native runner's world is the image's alone,
-no confinement reported, as the running plugin sees it; enforced by
-`TestDockerDeviations` against a live daemon and the native runner.
+conforming one) — and the native runner's world is the image's alone
+but for the row's stated substrate and, on windows, the launch's four
+variables, no confinement reported, as the running plugin sees it;
+enforced by `TestDockerDeviations` against a live daemon and the
+native runner.
 
-**REQ-plugin-resource-bounds** (behavior): Every plugin process — every
-scheme, every tier — MUST run under bounded memory, CPU, process count,
-and wall-clock time: implementation-declared defaults, overridable
-through the trust policy. A plugin exceeding a bound is terminated and
-reported as a plugin failure naming the bound exceeded wherever the
-enforcing mechanism attributes the termination: the wall clock always,
-and otherwise as the mechanism's own accounting affords — under
-cgroups, memory kills and refused forks from the kernel's event
-counters where the runner reads them (the native runner) — a memory
-kill attributed when the plugin died by a kill and one was counted
-over the run, the counter placing no kill in time; a refused fork
-when the plugin then failed — and the memory kill alone where the
-runner reads a daemon's record of the container (the `docker`
-runner): a plugin that died by a kill is read against the daemon's
-event log for the container around its finish, on the daemon's own
-clock, before the container's release, an oom event there being the
-memory bound — the record's own flag is set from that same event
-and places it nowhere in time, and a kill the daemon recorded
-nowhere is a death the record cannot tell apart; a kill or a
-refusal the plugin outlived terminated nothing of it, and its
-response, or its own failure, stands; a refused fork under the
-daemon being the
-plugin's own failure surfaced verbatim and an exit status of 137
-there being the CPU-time bound, an external kill, or the plugin's own
-exit 137, which that record cannot tell apart; CPU time, a POSIX
-rlimit under every accounting, whose
-exhaustion arrives as an unlabeled kill and is reported as either the
-CPU-time bound or an external kill — never claimed as one; and under
-POSIX rlimits a refused allocation or fork is not a termination and
-the plugin's own resulting failure is surfaced verbatim. The
-mechanism enforcing the memory and process bounds is machine-scoped,
-not mandated; a run's report names the mechanism actually in effect,
-so every failure is read against a named enforcement.
+**REQ-plugin-resource-bounds** (behavior): Every plugin process —
+every scheme, every tier — MUST run under bounded memory, CPU, process
+count, and wall-clock time: implementation-declared defaults,
+overridable through the trust policy. A plugin exceeding a bound is
+terminated and reported as a plugin failure naming the bound exceeded
+wherever the enforcing mechanism attributes the termination: the wall
+clock always, and otherwise as the mechanism's own accounting affords
+— under the native runner's accounting — cgroups' memory kills and
+refused forks from the kernel's event counters, the CPU-time kill told
+by the dead process's own CPU time at the bound; on darwin the
+watchdog's kills by the memory, CPU-time and process bounds; on
+windows the Job Object's memory kills, refused processes and CPU-time
+kills — a memory kill attributed when the plugin died by a kill (a
+signal, or on windows the sandbox's exit code 137) and one was counted
+over the run, the counter placing no kill in time, and under the Job
+Object when one was counted and the plugin then failed, the refused
+commit a death the payload may die of before the kill lands; a refused
+fork or process when the plugin then failed, and a process kill when
+it died by one; a CPU-time kill when one was counted and the plugin
+died by a kill, and on darwin a death by SIGXCPU, the kernel's own
+label for the bound at its limit, the rlimit's whatever the accounting
+(Linux ends the process at the limit instead, a kill the sandbox
+counts) — the CPU-time bound's enforcement on the Linux rows the
+rlimit, whatever accounts for memory and processes — and the memory
+kill alone where the runner reads a daemon's record of the container
+(the `docker` runner): a plugin that died by a kill is read against
+the daemon's event log for the container around its finish, on the
+daemon's own clock, before the container's release, an oom event there
+being the memory bound — the record's own flag is set from that same
+event and places it nowhere in time, and a kill the daemon recorded
+nowhere is a death the record cannot tell apart; a kill or a refusal
+the plugin outlived terminated nothing of it, and its response, or its
+own failure, stands; a refused fork under the daemon being the
+plugin's own failure surfaced verbatim and an exit status of 137 there
+being the CPU-time bound, an external kill, or the plugin's own exit
+137, which that record cannot tell apart; CPU time where no accounting
+counted the kill — the daemon's record, or a hard limit's forced kill
+the native accounting could not tell — arrives as an unlabeled kill
+and is reported as either the CPU-time bound or an external kill,
+never claimed as one; and under POSIX rlimits a refused allocation or
+fork is not a termination and the plugin's own resulting failure is
+surfaced verbatim. The mechanism enforcing the memory and process
+bounds is machine-scoped, not mandated; a run's report names the
+mechanism actually in effect, so every failure is read against a named
+enforcement.
 
 **REQ-plugin-min-tier** (behavior): `oci` execution MUST require sandbox
 tier `Strong` unless the trust policy explicitly lowers the requirement;

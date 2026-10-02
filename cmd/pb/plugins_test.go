@@ -49,12 +49,12 @@ func TestAcquirerConfig(t *testing.T) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}
 	docker, _ := runner.Only(runner.RunnerDocker, daemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
-	if got := dep.Substrates(docker, true); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Daemon: true}}) {
-		t.Fatalf("the docker runner's substrate under the daemon byte path: %+v", got)
+	if got, _, withheld := dep.Substrates(docker, true, true); withheld != "" || !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Daemon: true}}) {
+		t.Fatalf("the docker runner's substrate under the daemon byte path: %+v (%q)", got, withheld)
 	}
 	native, _ := runner.Only(runner.RunnerNative, noDaemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
-	if got := dep.Substrates(native, false); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}) {
-		t.Fatalf("the native runner's substrate: %+v", got)
+	if got, _, withheld := dep.Substrates(native, false, true); withheld != "" || !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}) {
+		t.Fatalf("the native runner's substrate: %+v (%q)", got, withheld)
 	}
 }
 
@@ -112,4 +112,17 @@ func TestLazyUpdaterOpensOnFirstPlugin(t *testing.T) {
 		t.Fatalf("a plugin named under an unavailable runner: %v", err)
 	}
 	up.Close()
+}
+
+// An update offers every runner the host has as a substrate, the
+// docker runner's included where the platform's export cannot be
+// streamed: an update streams nothing (REQ-dep-update,
+// REQ-plugin-platform-strict).
+func TestUpdateSubstratesOfferEveryRunner(t *testing.T) {
+	cands := []runner.Candidate{{Name: runner.RunnerNative, Runner: noDaemonRunner{}}, {Name: runner.RunnerDocker, Runner: daemonRunner{}}}
+	got := updateSubstrates(cands)
+	want := []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}, {Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("an update's substrates = %+v, want %+v", got, want)
+	}
 }

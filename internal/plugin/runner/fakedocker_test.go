@@ -45,6 +45,10 @@ func fakeDocker(args []string) int {
 			fmt.Fprintln(os.Stderr, "Cannot connect to the Docker daemon at unix:///var/run/docker.sock")
 			return 1
 		}
+		if _, err := os.Stat(filepath.Join(dir, "windows")); err == nil {
+			fmt.Println("windows fakearch")
+			return 0
+		}
 		fmt.Println("linux fakearch")
 	case "info":
 		if slices.Contains(args, "{{.SystemTime}}") {
@@ -244,8 +248,17 @@ func fakeDaemon(t *testing.T) string {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
-	if err := os.Symlink(self, filepath.Join(bin, "docker")); err != nil {
-		t.Fatal(err)
+	// The fake is this binary under the daemon's name: linked where
+	// a link is this process's to make, copied otherwise (windows).
+	name := filepath.Join(bin, "docker"+exeSuffix())
+	if err := os.Symlink(self, name); err != nil {
+		b, err := os.ReadFile(self)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(name, b, 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	dir := t.TempDir()
 	t.Setenv("PATH", bin)
