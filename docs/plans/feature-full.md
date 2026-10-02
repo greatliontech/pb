@@ -133,7 +133,7 @@ formatter and the language server
       runner binding every entry, the report naming each entry's
       runner (witnessed on Linux with an image serving another
       platform alone)
-- [ ] 17. The native runner on darwin and windows over the sandbox's
+- [x] 17. The native runner on darwin and windows over the sandbox's
       row: `local` plugins under no floor, `oci` plugins from the
       image's entry for the host under the policy's lowering to `OS`,
       the row's world the export and the platform's system
