@@ -250,7 +250,12 @@ halted or left incomplete failing the verb naming why, a store the
 library refuses to open (a layout it does not recognize) not emptied
 and the refusal, which names what to delete, reported; and the kept
 evidence (`provenance.md` REQ-prov-plugin-evidence-store) emptied with
-it, temporary files included; neither flag empties both. A plugin
+it, temporary files included; `--sources` empties the dependency
+source store (`lsp.md` REQ-lsp-dependency-files names it) — every
+module and well-known directory under it and every temporary an
+atomic extraction left, recognized by name and layout alone as the
+module cache is; with no flag every store is emptied, and a flag
+empties its own store and no other. A plugin
 running in another process reads its image from the store's export,
 which its acquirer holds for the run's life (a hold, ocifs's api
 contract) from the moment its acquisition returns: an emptying

@@ -1846,6 +1846,16 @@ func TestLint(t *testing.T) {
 	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err != nil || out.String() != "" || diag.String() != "pb lint: zero lint rules enabled\n" {
 		t.Fatalf("zero rules: %v %q %q", err, out.String(), diag.String())
 	}
+	// A build that does not compile is judged by no rule: the run
+	// fails naming the compile's error and reports no finding, the
+	// findings its files would carry included.
+	fx = newCheck(t, "rulesets:\n  - path: example.com/house\n    alias: house\n")
+	fx.write(t, "b/b.proto", "syntax = \"proto3\";\npackage b;\nmessage Use {\n  a.Missing thing = 1;\n  string Loud = 2;\n}\n")
+	out.Reset()
+	diag.Reset()
+	if err := Lint(ctx, fx.session(t, "."), &out, &diag); err == nil || errors.Is(err, ErrFindings) || !strings.Contains(err.Error(), "a.Missing") || out.String() != "" {
+		t.Fatalf("a build that does not compile: %v %q", err, out.String())
+	}
 	// A build list that pins one dependency and fails on another keeps
 	// the pin: the record survives the failure (REQ-lock-first-use).
 	fx = newDep(t, map[string]string{

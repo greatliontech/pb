@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-lsp-fresh"
+reason: "the language server lands with the plan chunk 21.3; its invariants are stated ahead of the code"
+content_hash: "11049d468165d2fe5651a23d4b581e7188497035fb48b2698b2b924f7499743a"
+source_hash: "a76cde96461101c1dceb7aa842dca5e50a8b3667669655e2802b55b92049ac87"
+lands { manual { condition: "the feature-full plan chunk 21.3 lands" } }

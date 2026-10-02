@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
-  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
+  content_hash: "173cd25e5d9c2bff3e98600ad3f1f3c6cbc2a186f8264d2be3e8955f5c7617fc"
+  source_hash: "87b4c86c69d9685b1e50373faa860d39077a84421a6a5bd06d64e966dd2c7468"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Lint"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
-  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
+  content_hash: "173cd25e5d9c2bff3e98600ad3f1f3c6cbc2a186f8264d2be3e8955f5c7617fc"
+  source_hash: "87b4c86c69d9685b1e50373faa860d39077a84421a6a5bd06d64e966dd2c7468"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.prepare"
   role: BINDING_ROLE_IMPLEMENTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-check-lint-verb"
-  content_hash: "b2178fbebece1f1d4b2283eafdf3a8a8a399c634701cee78c2f470fce9c24423"
-  source_hash: "cad5aee5a1c8b47a12711e25d43184a4e6c5d5fed20906d682016048a8a62c7a"
+  content_hash: "173cd25e5d9c2bff3e98600ad3f1f3c6cbc2a186f8264d2be3e8955f5c7617fc"
+  source_hash: "87b4c86c69d9685b1e50373faa860d39077a84421a6a5bd06d64e966dd2c7468"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestLint"
   role: BINDING_ROLE_TESTS

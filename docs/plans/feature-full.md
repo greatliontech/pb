@@ -168,6 +168,31 @@ formatter and the language server
       to diagnostics), `pb lsp` over the compile and the lint engine
       — diagnostics, definition, hover, references over the build's
       descriptors — and document formatting through the formatter
+  - [x] 21.1. Triage gate.
+  - [x] 21.2. The spec (docs/specs/lsp.md): the session, documents
+        as overlays, the diagnostics' content and freshness,
+        navigation and hover, dependency files, formatting, the
+        lifecycle and transport, the invariants.
+  - [ ] 21.3. `pb lsp` over go.lsp.dev's binding: the session loaded
+        read-only and reloaded as the verbs load theirs, an unpinned
+        requirement diagnosed, documents overlaid,
+        the compile's errors and the lint's findings published as
+        diagnostics with the client's version, a dependency's file
+        addressed by the client's capability (served under the
+        `pb-module` scheme, or as a file of a read-only copy
+        extracted into the dependency source store, `pb clean
+        --sources` emptying it), the lifecycle and the transport; the
+        server package placed in the layering table; an in-process
+        client suite with the parity, supersession and tree-digest
+        witnesses and a dependency's address under each client
+        capability; the verb documented.
+  - [ ] 21.4. Definition, hover and references over the resolved
+        build's descriptors, the cursor mapped through the parser's
+        tree.
+  - [ ] 21.5. Formatting into the canonical form through the
+        formatter.
+  - [ ] 21.6. Close-out: consolidation, the spec's statements
+        settled, the campaign.
 - [ ] 23. The runner suite's kernel surfaces declared to gomutant's
       observation bracket where paths name them, a SandboxRunner.Run
       mutant then classified by its oracle; what the bracket cannot

@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-lsp-unpinned"
+reason: "the language server lands with the plan chunk 21.3; its contract is stated ahead of the code"
+content_hash: "36c8d6838fa7cfaa7f6a96d3aaf43ce3abb1963ea1d883d013047e26684fc601"
+source_hash: "9023831a09c0327913223d55d46b789a293988ec80a6ab9b50e0fbc463097763"
+lands { manual { condition: "the feature-full plan chunk 21.3 lands" } }

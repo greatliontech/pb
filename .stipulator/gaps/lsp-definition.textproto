@@ -1,0 +1,8 @@
+# proto-file: proto/stipulator/v1/records.proto
+# proto-message: stipulator.v1.Gap
+
+requirement_id: "REQ-lsp-definition"
+reason: "navigation lands with the plan chunk 21.4; its contract is stated ahead of the code"
+content_hash: "98b8048297fbb985204590cf9bb2c569933e57a3781720a349a53533f5dadfe3"
+source_hash: "73cbb652b3314dfeb74d627efcbba5d09e37f6e3bd9dacae14550ab6ea4344b1"
+lands { manual { condition: "the feature-full plan chunk 21.4 lands" } }

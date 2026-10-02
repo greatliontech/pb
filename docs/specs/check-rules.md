@@ -203,7 +203,7 @@ the bound entity's declaration in the checked schema — its file, and
 the declaration's first line and column — a file's its first lexical
 element's, a leading comment passed over — 1-based, the column
 counted in Unicode code points — each byte starting a UTF-8
-sequence, as the compiler counts; for a pair whose new side is
+sequence, a tab one point; for a pair whose new side is
 absent, the old
 side's declaration in the base, marked as the base's; for a `package`
 rule, the first of the package's checked files in path order, without
@@ -571,7 +571,13 @@ module file: it is no protobuf dependency and joins no build list.
 MUST evaluate every enabled lint rule over the checked modules, each
 module's files under the selection governing it, and report the
 findings as REQ-check-findings-output says; with zero lint rules
-enabled under every selection it reports that on standard error.
+enabled under every selection it reports that on standard error. A
+build that does not compile is judged by no rule: the run fails
+naming what failed — one error of the parse, else the import check's
+report whole (`module-resolution.md`
+REQ-resolve-unsatisfied-imports), else one error of the compile,
+the compiler stopping at its first — and reports no finding
+(REQ-check-exit-status: a run that fails to complete).
 
 **REQ-check-breaking-verb** (behavior): `pb breaking`, taking no
 arguments, MUST materialize each module under check's base, pair it

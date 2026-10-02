@@ -16,8 +16,9 @@ REQ-format-comments.
 
 **own file** (term): A file of a workspace module's file set
 (`module-archive.md` REQ-archive-file-set) whose name ends in
-`.proto` — a workspace copy of a well-known file among them, no file
-of the build but a file of the tree — named by its path from the
+`.proto` — a workspace copy of a file of the well-known imports
+(`module-resolution.md`) among them, no file of the build but a file
+of the tree — named by its path from the
 workspace root.
 
 **corpus** (term): The pairs of files under
