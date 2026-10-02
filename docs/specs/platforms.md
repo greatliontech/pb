@@ -123,7 +123,9 @@ loudly naming the file — a rerun by the user succeeding once it is
 released — never a partial file, since the rename is the only step
 that touches the target. A
 lock file the vcs store leaves in place (REQ-dep-clean) is left on
-every platform, `windows` being unable to unlink an open one.
+every platform: a process waiting on it holds it open, and a file
+recreated under its name would grant a second holder over a live
+claim.
 
 **REQ-plat-user-dirs** (behavior): The user configuration file and
 the default cache and store directories MUST live under the

@@ -11,7 +11,7 @@ require (
 	github.com/google/go-containerregistry v0.22.0
 	github.com/greatliontech/gitprov v0.0.0-20261002085106-62ab00b70019
 	github.com/greatliontech/glob v0.2.0
-	github.com/greatliontech/ocifs v0.12.2-0.20261001225356-090049ded950
+	github.com/greatliontech/ocifs v0.12.2
 	github.com/greatliontech/sandbox v0.4.1
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/spf13/cobra v1.10.2
@@ -108,7 +108,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.18 // indirect
 	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
-	github.com/greatliontech/gmdb v0.5.1 // indirect
+	github.com/greatliontech/gmdb v0.5.4 // indirect
 	github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect

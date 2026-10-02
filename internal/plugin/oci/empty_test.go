@@ -74,6 +74,15 @@ func TestEmptyEmptiesTheStoreAndItsEvidence(t *testing.T) {
 	if entries, err := os.ReadDir(evidenceDir); err != nil || len(entries) != 1 || entries[0].Name() != "notes.txt" {
 		t.Fatalf("evidence store after the emptying: %v, %v; want the stranger alone, entries and temporaries gone", entries, err)
 	}
+	// The store's claims retire with their rows and the probes with
+	// their opens, each unlinking its lock file on every platform:
+	// the locks tier holds no file once the store is closed.
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if entries, err := os.ReadDir(filepath.Join(workDir, "locks")); err != nil || len(entries) != 0 {
+		t.Fatalf("the plugin store's locks after the emptying: %v, %v; want none", entries, err)
+	}
 
 	absent := filepath.Join(t.TempDir(), "never")
 	if kept, err := Empty(ctx, absent, filepath.Join(absent, "evidence")); err != nil || len(kept) != 0 {
