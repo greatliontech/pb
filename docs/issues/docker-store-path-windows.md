@@ -12,18 +12,10 @@ the daemon's pull of the verified digest is the one byte path
 daemon's protocol tests over the stream skip on windows with it:
 that coverage is withheld there until the stream's design lands.
 
-Two designs lift the refusal, with a tradeoff the user weighs:
+Resolution (decided): the stream is built from the store's verified
+image — its layers and configuration, an OCI archive the daemon
+loads — instead of the export's tree, on every platform, so the
+modes and ownership the image declares reach the daemon byte for
+byte and the export tree leaves the daemon's path.
 
-- An ocifs export carrying the image's file modes on windows as a
-  record beside the tree (the filesystem holds none), which the
-  stream reads: the smaller change, a second source of truth beside
-  the tree that every reader of a windows export must honour.
-- The stream built from the store's verified image — its layers and
-  configuration, an OCI archive the daemon loads — instead of the
-  export's tree: modes and ownership byte for byte on every
-  platform, the export tree out of the daemon's path everywhere,
-  which would replace the export-tar byte path on the unix rows too
-  and so changes what every platform's daemon receives.
-
-Lands: user decision — the record beside the tree, or the stream
-from the store's image.
+Lands: docs/plans/feature-full.md chunk 28.

@@ -201,3 +201,12 @@ formatter and the language server
       interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,
       connectrpc/python; the catalog then holds buf's tiers one and
       two whole
+- [ ] 28. The docker runner's stream from the store's verified image:
+      the daemon handed the image's own layers and configuration (an
+      OCI archive it loads) instead of a tar of the export's tree, on
+      every platform, so the modes and ownership the image declares
+      reach the daemon byte for byte and the export tree leaves the
+      daemon's path; plugin-execution.md's store byte path and
+      platforms.md's windows refusal amended; the
+      docker-store-path-windows issue closes, the windows row's
+      protocol coverage restored
