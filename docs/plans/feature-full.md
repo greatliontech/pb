@@ -110,7 +110,7 @@ formatter and the language server
       is, the Go and npm ones cross-compiled, protocolbuffers/js from
       its release; pb's catalog copy grows with it; the
       plugin-catalog-growth issue closes but for grpc/java
-- [ ] 13. Platforms, the portable half: the repository made public at
+- [x] 13. Platforms, the portable half: the repository made public at
       this chunk for the macOS and Windows runners (its history
       scanned once more for any private or customer name, the README
       the one word `wip`, no license yet); the suite on macOS and
