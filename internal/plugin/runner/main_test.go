@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/greatliontech/pb/internal/provenance/trust"
@@ -14,9 +15,24 @@ import (
 )
 
 var (
-	rootfsDir string // the fake plugin built statically for Linux into a bare tree
+	rootfsDir string // the fake plugin built statically for the host into a bare tree
 	rootfsErr error
 )
+
+// pluginName is the fake plugin's file name in the tree, and
+// pluginEntry its tree-absolute path as the image's entrypoint spells
+// it: forward slashes on every platform, the host's executable suffix.
+var (
+	pluginName  = "plugin" + exeSuffix()
+	pluginEntry = "/" + pluginName
+)
+
+func exeSuffix() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}
 
 // TestMain builds the fake plugin once into a bare rootfs every runner
 // consumes, pins the property oracles' seed (rapidtest), hands the
@@ -31,8 +47,8 @@ func TestMain(m *testing.M) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	cmd := exec.Command("go", "build", "-o", filepath.Join(dir, "plugin"), "testdata/fakeplugin.go")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS=linux")
+	cmd := exec.Command("go", "build", "-o", filepath.Join(dir, pluginName), "testdata/fakeplugin.go")
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS="+runtime.GOOS)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		rootfsErr = fmt.Errorf("building the fake plugin: %v\n%s", err, out)
 	} else {

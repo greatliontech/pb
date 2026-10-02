@@ -1,4 +1,4 @@
-//go:build !linux
+//go:build !linux && !darwin && !windows
 
 package runner
 
@@ -6,8 +6,8 @@ import "testing"
 
 func setupSandbox(m *testing.M) int { return m.Run() }
 
-// requireSandbox skips: the native runner is Linux-only.
+// requireSandbox skips: this platform has no sandbox row.
 func requireSandbox(t *testing.T) {
 	t.Helper()
-	t.Skip("the native runner is Linux-only")
+	t.Skip("no sandbox row on this platform")
 }

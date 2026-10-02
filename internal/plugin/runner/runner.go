@@ -52,12 +52,17 @@ type Result struct {
 }
 
 // Accounting names the mechanism that enforced a run's memory and
-// process bounds; CPU time is a POSIX rlimit under either.
+// process bounds, and counted the CPU-time bound's kill where it
+// could: the kernel's cgroups or POSIX rlimits on Linux, the
+// sandbox's watchdog on darwin, the Job Object on windows, the
+// daemon's record under the docker runner (REQ-plugin-resource-bounds).
 type Accounting string
 
 const (
-	BoundsCgroups Accounting = "cgroups"
-	BoundsRlimits Accounting = "rlimits"
+	BoundsCgroups   Accounting = "cgroups"
+	BoundsRlimits   Accounting = "rlimits"
+	BoundsWatchdog  Accounting = "watchdog"
+	BoundsJobObject Accounting = "job-object"
 )
 
 // ErrBoundExceeded is the class of a run terminated by a resource

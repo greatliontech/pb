@@ -69,6 +69,9 @@ func NewDockerRunner(cli string) (*DockerRunner, error) {
 	if _, err := fmt.Sscan(string(out), &os_, &arch); err != nil || os_ == "" || arch == "" {
 		return nil, fmt.Errorf("%s version: the daemon named no platform (%q)", r.cli(), strings.TrimSpace(string(out)))
 	}
+	if os_ != "linux" {
+		return nil, fmt.Errorf("%s version: the daemon runs %s containers; the docker runner hands images to a daemon running Linux containers (platforms.md REQ-plat-oci-substrate)", r.cli(), os_)
+	}
 	r.platform = plugin.Platform{OS: os_, Arch: arch}
 	out, err = r.docker(ctx, nil, "info", "--format", "{{json .SecurityOptions}}")
 	if err != nil {
@@ -163,6 +166,9 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 	limits := spec.Limits
 	if err := CheckSpec(spec); err != nil {
 		return nil, err
+	}
+	if _, export := spec.Image.(*plugin.Export); export && !ExportStreams {
+		return nil, errors.New("runner: an export carries no file modes on this platform, so the docker runner cannot hand it to the daemon as a stream; select the daemon byte path (plugin-pull docker), which pulls the verified digest (platforms.md REQ-plat-oci-substrate)")
 	}
 	if spec.Scheme == plugin.SchemeLocal {
 		return nil, errors.New("runner: a local plugin is a host binary; the docker runner runs images only")

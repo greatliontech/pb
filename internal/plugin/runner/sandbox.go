@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux || darwin || windows
 
 package runner
 
@@ -8,15 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"syscall"
 
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/sandbox"
 )
 
-// SandboxRunner is the native runner: sandbox's create-only Linux
-// backend behind the runner seam. pb's request is intent only — the
+// SandboxRunner is the native runner: the sandbox's row for the host
+// behind the runner seam — Linux's namespaces or Landlock, darwin's
+// Seatbelt, windows' AppContainer (platforms.md REQ-plat-oci-substrate,
+// REQ-plat-local-runner). pb's request is intent only — the
 // image export as the Root, no grants, no network, the policy's
 // limits, the tier floor as MinTier — and the report is the
 // backend's: the tier of the row that fully applied, and the
@@ -119,7 +120,7 @@ func (r *SandboxRunner) Run(ctx context.Context, spec Spec) (result *Result, err
 		return nil, fmt.Errorf("runner: reading the run's accounting: %w", err)
 	}
 	tier, ok := tierOf(sb.Tier())
-	if !ok || (st.Accounting != sandbox.AccountingCgroups && st.Accounting != sandbox.AccountingRlimits) {
+	if !ok || st.Accounting == sandbox.AccountingNone {
 		return nil, fmt.Errorf("runner: the sandbox reported tier %v and accounting %v for a bounded run", sb.Tier(), st.Accounting)
 	}
 	if err := outcome(es, st, limits, runCtx.Err(), ctx.Err(), werr); err != nil {
@@ -135,6 +136,10 @@ func accountingOf(a sandbox.Accounting) Accounting {
 		return BoundsCgroups
 	case sandbox.AccountingRlimits:
 		return BoundsRlimits
+	case sandbox.AccountingWatchdog:
+		return BoundsWatchdog
+	case sandbox.AccountingJobObject:
+		return BoundsJobObject
 	}
 	return Accounting(a.String())
 }
@@ -205,10 +210,6 @@ func startError(scheme string, err error, stderr []byte) error {
 	return fmt.Errorf("runner: starting the plugin process: %w (stderr: %s)", err, tailBytes(stderr))
 }
 
-// diedByKill reports the death a bound's kill is: the plugin ended by
-// SIGKILL, not by an exit of its own.
-func diedByKill(es sandbox.ExitStatus) bool { return es.Signaled && es.Signal == syscall.SIGKILL }
-
 // waitFailed tells a wait that failed from a wait that reports the
 // run context's own end: the kill the context issued can land on a
 // payload already exiting, and the sandbox then returns the context's
@@ -220,39 +221,60 @@ func waitFailed(werr, clock error) bool {
 
 // outcome reads a finished run into its report, in the order the
 // facts bind (REQ-plugin-resource-bounds): a bound the accounting
-// counted names itself where it ended the plugin — a memory kill the
-// cgroup counted is the memory bound when the plugin died by a kill,
-// the counter placing no kill in time; a fork it refused the process
-// bound when the plugin then failed; a kill or refusal the plugin
-// outlived terminated nothing of it, and its response, or its own
-// failure, stands; then the run context's end — the
-// caller's cancellation, or the wall clock, whose kill can land on a
-// payload already exiting, in which case the wait error is the
-// context's own and reads the same way; then a SIGKILL nothing
-// counted, the CPU-time bound — RLIMIT_CPU under every accounting,
-// whose hard limit is the forced, unlabeled kill a namespace init
-// receives — or an external kill, which no accounting tells apart,
-// so neither is claimed. Rlimits count nothing: a refused allocation
-// or fork fails the plugin on its own terms, surfaced verbatim. On
-// the one path where the wait error is the context's own — the
-// payload exited clean as the kill landed — the sandbox releases its
-// cgroup before reading the counters, so a bound counted in that
-// same instant is not seen and the clock names the end.
+// counted names itself where it ended the plugin — a memory kill
+// counted is the memory bound when the plugin died by a kill, the
+// counter placing no kill in time, and under the Job Object when the
+// plugin then failed, the Job's refused commit a death the payload
+// may die of before the kill lands; a fork or a process the process
+// bound refused is that bound when the plugin then failed, and a
+// kill by it (darwin's watchdog ends the group) when the plugin died
+// by a kill; a kill or refusal the plugin outlived terminated
+// nothing of it, and its response, or its own failure, stands; then
+// the run context's end — the caller's cancellation, or the wall
+// clock, whose kill can land on a payload already exiting, in which
+// case the wait error is the context's own and reads the same way;
+// then the CPU-time bound: a kill it counted — on Linux the
+// kernel's at RLIMIT_CPU, told by the dead process's own CPU time
+// at the bound, darwin's watchdog's and the windows Job's behind
+// their own readings — or, on darwin, a death by SIGXCPU, the
+// kernel's own label for the bound at its limit, the rlimit's doing
+// ahead of the watchdog's sample; then a kill nothing counted: an external kill,
+// or a CPU-time death the accounting could not tell (a zombie's
+// time unread, or short of the bound by what the kernel allows), so
+// neither is claimed. Rlimits count nothing of memory or processes:
+// a refused allocation or fork fails the plugin on its own terms,
+// surfaced verbatim. On the one path where the wait error is the
+// context's own — the payload exited clean as the kill landed — the
+// sandbox releases its accounting before reading the counters, so a
+// bound counted in that same instant is not seen and the clock
+// names the end. The CPU-time bound's enforcement is the rlimit on
+// the Linux rows, whatever accounts for memory and processes there.
 func outcome(es sandbox.ExitStatus, st sandbox.Stats, l trust.Limits, clock, parent, werr error) error {
-	if st.MemoryKills > 0 && diedByKill(es) {
-		return fmt.Errorf("%w: memory (%d bytes) (enforced by %s)", ErrBoundExceeded, l.Memory, st.Accounting)
+	by := accountingOf(st.Accounting)
+	if st.MemoryKills > 0 && (killed(es) || st.Accounting == sandbox.AccountingJobObject && es.Code != 0) {
+		return fmt.Errorf("%w: memory (%d bytes) (enforced by %s)", ErrBoundExceeded, l.Memory, by)
 	}
-	if st.ForksRefused > 0 && es.Code != 0 {
-		return fmt.Errorf("%w: process count (%d) (enforced by %s)", ErrBoundExceeded, l.Pids, st.Accounting)
+	if st.ForksRefused > 0 && es.Code != 0 || st.ProcessKills > 0 && killed(es) {
+		return fmt.Errorf("%w: process count (%d) (enforced by %s)", ErrBoundExceeded, l.Pids, by)
 	}
-	if clock != nil && (es.Signaled || werr != nil) {
+	if clock != nil && (es.Signaled || werr != nil || killed(es)) {
 		if parent != nil {
 			return fmt.Errorf("runner: plugin run cancelled: %w", parent)
 		}
 		return fmt.Errorf("%w: wall clock (%s, enforced by the runner)", ErrBoundExceeded, l.Timeout)
 	}
-	if es.Signaled && es.Signal == syscall.SIGKILL {
-		return fmt.Errorf("runner: plugin killed by SIGKILL: the CPU-time bound (%s over %g cores, enforced by rlimits) or an external kill — rlimits cannot attribute which", l.Timeout, l.CPU)
+	cpuBy := by
+	if by == BoundsCgroups || by == BoundsRlimits {
+		cpuBy = BoundsRlimits
+	}
+	if cpuSignalled(es) {
+		return fmt.Errorf("%w: CPU time (%s over %g cores) (enforced by %s)", ErrBoundExceeded, l.Timeout, l.CPU, BoundsRlimits)
+	}
+	if st.CPUKills > 0 && killed(es) {
+		return fmt.Errorf("%w: CPU time (%s over %g cores) (enforced by %s)", ErrBoundExceeded, l.Timeout, l.CPU, cpuBy)
+	}
+	if killed(es) {
+		return fmt.Errorf("runner: plugin killed (%s): the CPU-time bound (%s over %g cores) where the accounting could not tell it, or an external kill — neither is claimed", killSpelling, l.Timeout, l.CPU)
 	}
 	return nil
 }

@@ -33,9 +33,14 @@ func dockerSpec(t *testing.T, rootfs string, l trust.Limits) Spec {
 	}
 }
 
-// exportFixture is a small tree shaped like an image export.
+// exportFixture is a small tree shaped like an image export; a test
+// over the store byte path skips where that path is no byte path
+// (windows: an export there carries no file modes).
 func exportFixture(t *testing.T) string {
 	t.Helper()
+	if !ExportStreams {
+		t.Skip("the docker runner streams no export on this platform")
+	}
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "bin"), 0o755); err != nil {
 		t.Fatal(err)
@@ -407,13 +412,27 @@ func TestWriteTar(t *testing.T) {
 	}
 }
 
+// A daemon running other than Linux containers is no daemon for the
+// runner: the runner refuses naming the containers it runs
+// (platforms.md REQ-plat-oci-substrate).
+func TestDockerRefusesNonLinuxDaemon(t *testing.T) {
+	dir := fakeDaemon(t)
+	os.WriteFile(filepath.Join(dir, "windows"), nil, 0o644)
+	if _, err := NewDockerRunner(""); err == nil || !strings.Contains(err.Error(), "the daemon runs windows containers") {
+		t.Fatalf("a windows daemon: %v", err)
+	}
+}
+
 // A response the daemon relays is judged exactly like the native
 // runner's (REQ-plugin-response-authority).
 func TestDockerResponseAuthority(t *testing.T) {
 	dir := fakeDaemon(t)
 	bad, _ := proto.Marshal(&pluginpb.CodeGeneratorResponse{Error: proto.String("declared failure")})
 	os.WriteFile(filepath.Join(dir, "stdout"), bad, 0o644)
-	r, _ := NewDockerRunner("")
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
 	res, err := r.Run(context.Background(), dockerSpec(t, exportFixture(t), trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: time.Minute}))
 	if err != nil {
 		t.Fatal(err)

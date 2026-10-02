@@ -164,10 +164,10 @@ func TestDefaultCandidates(t *testing.T) {
 	}
 }
 
-// Without injection the default is wired to the real runners: on
-// Linux an unadorned Open offers the sandbox runner first, whose
-// platform is the host's; off Linux the native runner is absent and
-// says so.
+// Without injection the default is wired to the real runners: where
+// the platform has a sandbox row an unadorned Open offers the sandbox
+// runner first, whose platform is the host's; where it has none the
+// native runner is absent and says so.
 func TestOpenDefaultIsWired(t *testing.T) {
 	t.Setenv("PATH", t.TempDir()) // no docker here
 	sel, err := Open(nil, userconfig.Value{})
@@ -175,9 +175,9 @@ func TestOpenDefaultIsWired(t *testing.T) {
 		t.Fatal(err)
 	}
 	cands, account := sel.Candidates(context.Background(), plugin.TierMinimal)
-	if runtime.GOOS != "linux" {
+	if _, err := NativeRunner(); err != nil {
 		if len(cands) != 0 || !strings.Contains(account, "the native runner is unavailable") || !strings.Contains(account, "no daemon is reachable") {
-			t.Fatalf("off linux: %+v %q", cands, account)
+			t.Fatalf("no sandbox row here: %+v %q", cands, account)
 		}
 		return
 	}

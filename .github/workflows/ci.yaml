@@ -136,3 +136,12 @@ jobs:
       - name: The suite but the runner's
         run: go test $(go list ./... | grep -v /internal/plugin/runner) -count=1 -timeout=30m
         shell: bash
+      # The runner suite on this platform: the native arm demanded —
+      # the sandbox's OS row, Seatbelt's on macOS and the
+      # AppContainer's on windows, which these runners deliver — and
+      # the docker arms skipping: the macOS runner has no daemon and
+      # the windows runner's runs Windows containers, no daemon for
+      # the runner (docs/issues/docker-desktop-live.md).
+      - name: The runner suite, the native arm demanded
+        run: PB_TEST_REQUIRE_SANDBOX=1 go test ./internal/plugin/runner/ -count=1 -timeout=30m
+        shell: bash
