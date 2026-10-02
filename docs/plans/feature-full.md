@@ -119,7 +119,7 @@ formatter and the language server
       (case folding, the rename of an open file on windows, the user
       directories); ocifs's store and export on both in its own
       matrix; the local scheme's `.exe` resolution on windows
-- [ ] 14. The sandbox's darwin row: the Seatbelt backend
+- [x] 14. The sandbox's darwin row: the Seatbelt backend
       (sandbox-exec profile, rlimits, a process group), its probe
       reporting `OS` or `Minimal`, its `Reach`, on the macOS runners;
       the row admitting an entrypoint that executes a sibling of the
