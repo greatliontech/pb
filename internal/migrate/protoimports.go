@@ -73,7 +73,7 @@ func moduleFiles(ws billy.Filesystem, cfgDir string, d declared) ([]moduleFile, 
 	}
 	dir := path.Join(cfgDir, d.dir)
 	var protos []moduleFile
-	err = util.Walk(ws, dir, func(p string, info fs.FileInfo, err error) error {
+	err = rootpath.Walk(ws, dir, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

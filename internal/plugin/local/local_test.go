@@ -57,8 +57,10 @@ func TestResolve(t *testing.T) {
 	if p, err := a.Resolve("./tools/bin/gen"); err != nil || p != filepath.Join(root, "tools", "bin", "gen") {
 		t.Fatalf("dot-relative: %q %v", p, err)
 	}
+	// An absolute value is spelled with slashes on every platform; the
+	// resolved path is the host's.
 	abs := filepath.Join(root, "tools", "bin", "gen")
-	if p, err := a.Resolve(abs); err != nil || p != abs {
+	if p, err := a.Resolve(filepath.ToSlash(abs)); err != nil || p != abs {
 		t.Fatalf("absolute: %q %v", p, err)
 	}
 	cases := []struct{ value, text string }{

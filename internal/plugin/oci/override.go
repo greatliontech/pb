@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -265,10 +264,13 @@ func untar(ctx context.Context, archive, dir string) error {
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(dir, filepath.FromSlash(h.Name))
-		if rel, err := filepath.Rel(dir, target); err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
+		// A member's name is local to the layout as the host reads
+		// it: no parent step, no volume, no rooted spelling, on any
+		// platform's separators (filepath.IsLocal).
+		if !filepath.IsLocal(filepath.FromSlash(h.Name)) {
 			return fmt.Errorf("archive entry %q escapes the layout", h.Name)
 		}
+		target := filepath.Join(dir, filepath.FromSlash(h.Name))
 		switch h.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0o755); err != nil {

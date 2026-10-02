@@ -17,8 +17,7 @@ func TestCleanCommand(t *testing.T) {
 	// configuration and the trusted root beside it are not the cache's.
 	config := plant(t, "cache: .\n")
 	cache := filepath.Dir(config)
-	cacheHome := t.TempDir()
-	t.Setenv("XDG_CACHE_HOME", cacheHome)
+	cacheHome := cacheHome(t)
 	origin := strings.Repeat("cd", 32)
 	for _, p := range []string{filepath.Join(cache, "root.json"), filepath.Join(cache, "example.com", "m", "@v", "v1.0.0.zip"), filepath.Join(cache, "vcs", origin, "snapshots", "HEAD"), filepath.Join(cache, "vcs", origin, "lock"), filepath.Join(cacheHome, "pb", "plugin-evidence", "sha256", "ab.json")} {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {

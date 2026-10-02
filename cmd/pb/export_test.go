@@ -40,7 +40,10 @@ func TestWorkingTreeResolvesSymlinkedCwd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := strings.TrimPrefix(filepath.ToSlash(filepath.Join(real, "proj")), "/"); dir != want {
+	// The directory is spelled relative to the tree's root: the volume
+	// on windows, `/` elsewhere.
+	volume := filepath.ToSlash(filepath.VolumeName(real) + string(filepath.Separator))
+	if want := strings.TrimPrefix(filepath.ToSlash(filepath.Join(real, "proj")), volume); dir != want {
 		t.Fatalf("working directory %q, want %q", dir, want)
 	}
 }

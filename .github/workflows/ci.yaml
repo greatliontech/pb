@@ -23,12 +23,13 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v4
-      # The current release, tracking patches: it satisfies go.mod's
-      # floor and the pinned spec verifier's own, so neither pins the
-      # other's toolchain.
+      # The module's own toolchain: go1.27.1's go/types races under
+      # go/packages' concurrent loader
+      # (docs/issues/go-types-race-under-go1.27.md), so the suite runs
+      # on what go.mod declares, the spec verification's witnesses too.
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       # The native runner's Strong row needs unprivileged user
       # namespaces; Ubuntu 24.04 restricts them through AppArmor for
       # unconfined programs. A host without the knob has no such
@@ -90,8 +91,13 @@ jobs:
       # arm's exposure to the daemon's own record loss doubles with
       # it, from about one job in three thousand to one in fifteen
       # hundred at the worst measured rate, which is accepted.
+      # The verifier is built once under the toolchain its own module
+      # asks for, then runs the witnesses under the module's: a `go run`
+      # would hand its switched GOROOT down to every test it executes.
+      - name: Install the spec verifier
+        run: GOTOOLCHAIN=auto go install github.com/greatliontech/stipulator/cmd/stipulator@v0.64.11
       - name: Spec verification
-        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 go run github.com/greatliontech/stipulator/cmd/stipulator@v0.64.11 check
+        run: systemd-run --user --scope -q -p Delegate=yes env PB_TEST_REQUIRE_SANDBOX=1 PB_TEST_REQUIRE_CGROUPS=1 PB_TEST_REQUIRE_DOCKER=1 "$(go env GOPATH)/bin/stipulator" check
       # The native runner's OS row is reached only where user
       # namespaces are refused, which no floor can ask for: the
       # AppArmor knob is closed again and the row's arm demanded — a
@@ -119,7 +125,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)

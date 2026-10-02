@@ -35,8 +35,7 @@ func (daemonRunner) RunsDaemonImages() {}
 // path the setting selects for that runner (REQ-plugin-core-verifies).
 func TestAcquirerConfig(t *testing.T) {
 	plant(t, "plugin-pull: docker\n")
-	cacheHome := t.TempDir()
-	t.Setenv("XDG_CACHE_HOME", cacheHome)
+	cacheHome := cacheHome(t)
 	settings, err := userconfig.Load()
 	if err != nil {
 		t.Fatal(err)

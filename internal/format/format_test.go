@@ -55,6 +55,7 @@ func pairs(t *testing.T) map[string][2][]byte {
 		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".proto") {
 			return err
 		}
+		p = filepath.ToSlash(p) // the corpus is keyed by slash paths on every platform
 		golden := strings.TrimSuffix(p, ".proto") + ".golden"
 		in, err := os.ReadFile(p)
 		if err != nil {

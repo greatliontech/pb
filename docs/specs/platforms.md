@@ -99,8 +99,9 @@ binary per platform.
 
 **REQ-plat-files** (invariant): Every file pb writes MUST read the
 same on every platform, every rule the file contracts state in Unix
-terms holding on each: paths inside files are spelled with
-forward slashes and emitted with LF (`module-file.md`
+terms holding on each: paths inside files, and the tree-relative
+paths pb prints — a report's, a fact's, a refusal's — are spelled
+with forward slashes, the files emitted with LF (`module-file.md`
 REQ-modfile-emission, `module-lockfile.md`
 REQ-lock-canonical-emission, `workspace.md` REQ-work-emission,
 `check-rules.md` REQ-lint-emission, `generation.md`

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,7 +41,7 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 	t.Setenv("PBNOPROXY", "")
 
 	p = plant(t, "cache: mod\ntrustedroot: root.json\n")
-	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the user configuration file "+p+": gitprov: read trusted root "+`"`+filepath.Join(filepath.Dir(p), "root.json")+`"`) {
+	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the user configuration file "+p+": gitprov: read trusted root "+strconv.Quote(filepath.Join(filepath.Dir(p), "root.json"))) {
 		t.Fatalf("the file's trusted root: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(filepath.Dir(p), "mod")); err != nil {
@@ -57,13 +58,31 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 	// directory (dep-verbs.md, the module cache term), refused under
 	// the default layer's name.
 	plant(t, "# nothing stated\n")
-	t.Setenv("XDG_CACHE_HOME", filepath.Join(os.DevNull, "cache"))
+	// A user cache directory that cannot be created: a regular file
+	// stands where the platform's directory would be, under the
+	// variable's value — the home's on darwin, where the
+	// configuration moves with it and an absent file is an empty
+	// configuration, which "nothing stated" is.
+	cache := userconfig.CacheLocation()
+	blocked := filepath.Join(t.TempDir(), "cache")
+	if cache.Sub == "" {
+		if err := os.WriteFile(blocked, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(cache.Dir(blocked)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(cache.Dir(blocked), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv(cache.Var, blocked)
 	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the platform default: module cache: ") {
 		t.Fatalf("the default cache: %v", err)
 	}
-	cacheHome := t.TempDir()
-	t.Setenv("XDG_CACHE_HOME", cacheHome)
 	plant(t, "noproxy: corp.example.com\n")
+	cacheHome := cacheHome(t)
 	t.Setenv("PBPROXY", "https://p.example")
 	if err := assemble(); err != nil {
 		t.Fatal(err)
@@ -89,8 +108,6 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 // they match resolves to an SSH origin through the assembled client
 // (REQ-resolve-ssh).
 func TestClientPrivateOriginSettings(t *testing.T) {
-	cacheHome := t.TempDir()
-	t.Setenv("XDG_CACHE_HOME", cacheHome)
 	var client *fetch.Client
 	assemble := func() error {
 		settings, err := userconfig.Load()
@@ -101,6 +118,7 @@ func TestClientPrivateOriginSettings(t *testing.T) {
 		return err
 	}
 	p := plant(t, "netrc: creds\n")
+	cacheHome(t) // the default cache under the test, never the developer's
 	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the user configuration file "+p+": netrc: open "+filepath.Join(filepath.Dir(p), "creds")) {
 		t.Fatalf("the file's absent credential file: %v", err)
 	}
@@ -113,15 +131,19 @@ func TestClientPrivateOriginSettings(t *testing.T) {
 	t.Setenv("PBNETRC", "")
 
 	plant(t, "# nothing stated\n")
-	t.Setenv("HOME", t.TempDir()) // no credential file at the default location
+	// The cache stated, so the home decides the credential file's
+	// default location alone (darwin derives the cache from it too).
+	t.Setenv("PBCACHE", t.TempDir())
+	t.Setenv(homeVar(), t.TempDir()) // no credential file at the default location
 	if err := assemble(); err != nil {
 		t.Fatalf("the default location absent: %v", err)
 	}
-	t.Setenv("HOME", "") // no home to derive the default location from
+	t.Setenv(homeVar(), "") // no home to derive the default location from
 	if err := assemble(); err != nil {
 		t.Fatalf("no home: %v", err)
 	}
-	t.Setenv("HOME", t.TempDir())
+	t.Setenv(homeVar(), t.TempDir())
+	t.Setenv("PBCACHE", "")
 	t.Setenv("PBSSH", "corp.example.com,[")
 	if err := assemble(); err == nil || !strings.Contains(err.Error(), "the PBSSH environment variable: invalid ssh setting: ssh pattern \"[\": syntax error in pattern") {
 		t.Fatalf("the environment's ssh patterns: %v", err)

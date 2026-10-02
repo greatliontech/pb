@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -98,7 +99,9 @@ func TestStoreUnreadableIsAbsent(t *testing.T) {
 		t.Fatalf("a directory at the entry: Load = %v %v, want absent", out, ok)
 	}
 	os.Remove(entry)
-	if os.Geteuid() != 0 {
+	// An unreadable entry: a mode no root reads past, which windows
+	// has no mode to express.
+	if os.Geteuid() != 0 && runtime.GOOS != "windows" {
 		if err := os.WriteFile(entry, []byte(`{"carriers":[{"where":"x","bundle":"e30="}]}`), 0o000); err != nil {
 			t.Fatal(err)
 		}

@@ -34,7 +34,9 @@ func TestRepositorySearch(t *testing.T) {
 		t.Fatal(err)
 	}
 	sep := string(filepath.Separator)
-	got := ceilings("relative:" + sep + ":" + link + sep + ":" + filepath.Join(dir, "nonesuch") + "::" + dir + sep + "x" + sep + ".." + sep + "y" + sep + ":" + sep)
+	ls := string(os.PathListSeparator)     // git reads the list as PATH is read, the platform's separator
+	root := filepath.VolumeName(dir) + sep // the filesystem's root, a volume's on windows
+	got := ceilings("relative" + ls + root + ls + link + sep + ls + filepath.Join(dir, "nonesuch") + ls + ls + dir + sep + "x" + sep + ".." + sep + "y" + sep + ls + root)
 	if len(got) != 2 || got[0].path != link || got[0].dir == nil || got[1].path != dir+sep+"x"+sep+".."+sep+"y" || got[1].dir != nil {
 		t.Fatalf("ceilings = %+v", got)
 	}

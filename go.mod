@@ -11,7 +11,7 @@ require (
 	github.com/google/go-containerregistry v0.22.0
 	github.com/greatliontech/gitprov v0.0.0-20260924154249-7a9e6efd46be
 	github.com/greatliontech/glob v0.2.0
-	github.com/greatliontech/ocifs v0.11.1-0.20260928153432-cb559ccf7538
+	github.com/greatliontech/ocifs v0.12.2-0.20261001225356-090049ded950
 	github.com/greatliontech/sandbox v0.4.1
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/spf13/cobra v1.10.2

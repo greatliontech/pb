@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -193,7 +194,8 @@ func TestAcquiresAPublishedImage(t *testing.T) {
 	if err != nil || string(b) != "the plugin" {
 		t.Fatalf("the export's entrypoint: %q, %v", b, err)
 	}
-	if fi, _ := os.Stat(filepath.Join(rootfsOf(t, got), "protoc-gen-x")); fi.Mode()&0o100 == 0 {
+	// windows has no executable bit to keep.
+	if fi, _ := os.Stat(filepath.Join(rootfsOf(t, got), "protoc-gen-x")); runtime.GOOS != "windows" && fi.Mode()&0o100 == 0 {
 		t.Fatal("the entrypoint is not executable in the export")
 	}
 }

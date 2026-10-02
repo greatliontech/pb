@@ -5,11 +5,36 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/userconfig"
 )
+
+// cacheHome relocates the user cache directory for the test and
+// returns it: through the cache's own variable where the platform has
+// one, and where the cache and the configuration both derive from
+// the home (darwin), under the home plant set — so it runs after
+// plant, never moving the configuration away.
+func cacheHome(t *testing.T) string {
+	t.Helper()
+	cache, config := userconfig.CacheLocation(), userconfig.ConfigLocation()
+	if cache.Var == config.Var {
+		return cache.Dir(os.Getenv(cache.Var))
+	}
+	base := t.TempDir()
+	t.Setenv(cache.Var, base)
+	return cache.Dir(base)
+}
+
+// homeVar is the variable the platform reads the home from.
+func homeVar() string {
+	if runtime.GOOS == "windows" {
+		return "USERPROFILE"
+	}
+	return "HOME"
+}
 
 // plant writes a user configuration file under a fresh configuration
 // directory and returns the file's path.

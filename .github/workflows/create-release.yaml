@@ -48,7 +48,7 @@ jobs:
         id: tip
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - uses: greatliontech/semrel@main
         if: steps.tip.outputs.at-tip == 'true'
         id: semrel

@@ -3,9 +3,10 @@
 package atomicfile
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/go-git/go-billy/v6/osfs"
@@ -27,7 +28,8 @@ func TestWriteRefusesOpenTargetOnWindows(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = Write(fsys, "f", ".tmp-", 0o644, []byte("new"))
-	if err == nil || !strings.Contains(err.Error(), target) {
+	var link *os.LinkError
+	if err == nil || !errors.As(err, &link) || link.New != "f" || !errors.Is(err, fs.ErrPermission) {
 		held.Close()
 		t.Fatalf("a write over an open file: %v", err)
 	}

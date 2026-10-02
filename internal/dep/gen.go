@@ -381,7 +381,7 @@ func moduleFileUnder(m modfiles.Module, dir string) string {
 func (s *Session) moduleFileWithin(dir string) (string, error) {
 	var found string
 	errFound := errors.New("found")
-	err := util.Walk(s.WS, dir, func(p string, fi os.FileInfo, err error) error {
+	err := rootpath.Walk(s.WS, dir, func(p string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
