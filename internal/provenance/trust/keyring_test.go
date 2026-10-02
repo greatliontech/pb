@@ -73,6 +73,9 @@ func TestParseKeyring(t *testing.T) {
 		"rule key listed twice": {"modules:\n  - keys: [" + sshFP + ", " + sshFP + "]\n" + keyring, `modules[0].keys: fingerprint "` + sshFP + `" listed twice`},
 		"keyring entry twice":   {keyring + "  - kind: ssh\n    fingerprint: " + sshFP + "\n    key: " + ssh.Public() + "\n", `keyring[2]: fingerprint "` + sshFP + `" listed twice`},
 		"key of the other kind, an OpenPGP block under ssh": {"keyring:\n  - kind: ssh\n    fingerprint: " + pgp.Fingerprint() + "\n    key: |\n" + block(pgp.Public(t)), "keyring[0].key:"},
+		// The YAML literal keeps a line's trailing blank, and the
+		// verifier reads the block's body lines as written.
+		"key with a trailing blank on a body line": {"keyring:\n  - kind: openpgp\n    fingerprint: " + pgp.Fingerprint() + "\n    key: |\n" + block(sigstoretest.BlankEdge(t, pgp.Public(t), "trailing")), "blank edge"},
 		"rule key empty":         {"modules:\n  - keys: [\"\"]\n" + keyring, "modules[0].keys must hold non-empty lines of text"},
 		"plugins rule with keys": {"plugins:\n  - prefix: ghcr.io/x\n    keys: [" + sshFP + "]\n" + keyring, "plugins[0]: a plugins rule carries no keys"},
 	}
