@@ -124,7 +124,7 @@ formatter and the language server
       reporting `OS` or `Minimal`, its `Reach`, on the macOS runners;
       the row admitting an entrypoint that executes a sibling of the
       image's tree, as a bundled runtime's launcher does
-- [ ] 15. The sandbox's windows row: the AppContainer and Job Object
+- [x] 15. The sandbox's windows row: the AppContainer and Job Object
       backend, its probe, its `Reach`, on the windows runners; the
       row admitting a sibling's execution as the darwin row does
 - [ ] 16. Runner selection per entry: the default choosing `native`
