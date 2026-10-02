@@ -180,3 +180,33 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "edcf665d73ce4e8c14c4eead3f3338e6d8523e888163c7898a5e1f4b260bcc15"
 }
+
+bindings {
+  requirement_id: "REQ-plat-oci-substrate"
+  content_hash: "6686c7b857811aab3ae3c65e7f11b5d7da306a406dca9d09c1b08928974d0d0c"
+  source_hash: "85d03c1eda29e646d57a3a47c26f0712f61d89655e60b7c8b03239885f9b2152"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestGenSelectsAcrossSeams"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "57498a9a22c8346cc6e07837bb3bc28cc45ec256d4414f5b1cf2e7a52fa10459"
+}
+
+bindings {
+  requirement_id: "REQ-plat-oci-substrate"
+  content_hash: "6686c7b857811aab3ae3c65e7f11b5d7da306a406dca9d09c1b08928974d0d0c"
+  source_hash: "85d03c1eda29e646d57a3a47c26f0712f61d89655e60b7c8b03239885f9b2152"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/runner.TestRunHappyPath"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "e8d771f6535a18f9af20693df003e0cac8f980b8d52444a1d705ea1f2cd3ca44"
+}
+
+bindings {
+  requirement_id: "REQ-plat-oci-substrate"
+  content_hash: "6686c7b857811aab3ae3c65e7f11b5d7da306a406dca9d09c1b08928974d0d0c"
+  source_hash: "85d03c1eda29e646d57a3a47c26f0712f61d89655e60b7c8b03239885f9b2152"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/runner.SandboxRunner.Run"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "40e7f58e4ed27e3838f78fe78d13c31916af25234a2668662505cdfacc68225e"
+}
