@@ -371,8 +371,13 @@ func TestRunMemoryBound(t *testing.T) {
 // run names it where the accounting counted the kill: on darwin the
 // watchdog's, on windows the Job's, always; on Linux the kernel's
 // at RLIMIT_CPU told by the dead process's own CPU time within the
-// sandbox's allowance, which a loaded host may miss — the report
-// then names the bound as one of two causes
+// sandbox's allowance, which a kernel accounting CPU time by the
+// tick misses under load — the limit fires on the tick-sampled
+// clock, the zombie reports the scheduler's, and their difference
+// under contention outgrows the allowance
+// (docs/issues/cpu-kill-attribution-tick-clock.md) — so the Linux
+// arm pins the kill and the report naming the bound either way, the
+// mapping from a counted kill to the bound pinned by TestOutcome
 // (REQ-plugin-resource-bounds).
 func TestRunCPUBound(t *testing.T) {
 	requireSandbox(t)
@@ -381,33 +386,18 @@ func TestRunCPUBound(t *testing.T) {
 	}
 	// CPU 1 over 10s allows 11 CPU-seconds; spinning every core burns
 	// them well inside the wall clock.
-	// Where the kill is told from the dead process's time within an
-	// allowance, a loaded host may leave one run's kill uncounted —
-	// the report then names the bound as one of two causes, claiming
-	// neither — so the arm there runs up to three times and fails
-	// only where none was attributed: a broken attribution fails
-	// every run, a loaded host rarely three.
-	attempts := 1
-	if !cpuKillCounted {
-		attempts = 3
+	start := time.Now()
+	_, err := run(t, behavior.Spin, limits(func(l *trust.Limits) { l.CPU = 1; l.Timeout = 10 * time.Second }))
+	if time.Since(start) >= 10*time.Second && !errors.Is(err, ErrBoundExceeded) {
+		// Reaching the wall clock means the host could not spare the
+		// CPU to make CPU time outrun it — a harness cap, stated.
+		t.Skipf("the host could not sustain the CPU throughput this case needs (%v)", err)
 	}
-	var err error
-	for i := 0; i < attempts; i++ {
-		start := time.Now()
-		_, err = run(t, behavior.Spin, limits(func(l *trust.Limits) { l.CPU = 1; l.Timeout = 10 * time.Second }))
-		if time.Since(start) >= 10*time.Second && !errors.Is(err, ErrBoundExceeded) {
-			// Reaching the wall clock means the host could not spare
-			// the CPU to make CPU time outrun it — a harness cap, stated.
-			t.Skipf("the host could not sustain the CPU throughput this case needs (%v)", err)
-		}
-		if errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "CPU time (10s over 1 cores) (enforced by ") {
-			return
-		}
-		if cpuKillCounted || err == nil || !strings.Contains(err.Error(), "the CPU-time bound (10s over 1 cores) where the accounting could not tell it, or an external kill") {
-			break
-		}
+	attributed := errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "CPU time (10s over 1 cores) (enforced by ")
+	uncounted := err != nil && !errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "the CPU-time bound (10s over 1 cores) where the accounting could not tell it, or an external kill")
+	if !attributed && !(uncounted && !cpuKillCounted) {
+		t.Fatalf("the CPU-time bound's kill: %v", err)
 	}
-	t.Fatalf("the CPU-time bound's kill: %v", err)
 }
 
 // An unbounded Spec, one without argv, or one without a tier floor
