@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-lsp-dependency-files"
-reason: "the language server lands with the plan chunk 21.3; its contract is stated ahead of the code"
-content_hash: "d39588d5b95065e79a7d3d6770fd2485052221791fdc25f417fd7158cedff09a"
-source_hash: "3f479cf413d368ea6abebe5d98f922d294bb6274d83a64a3e34373e10ebc7f29"
-lands { manual { condition: "the feature-full plan chunk 21.3 lands" } }

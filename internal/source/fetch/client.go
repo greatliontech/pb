@@ -77,6 +77,12 @@ type Client struct {
 	// Fetcher fetches origin repositories for the direct source. The
 	// zero value is ready; tests inject a file transport.
 	Fetcher direct.Fetcher
+	// ReadOnly refuses first use: a pair the pin store does not pin is
+	// answered with an *UnpinnedError instead of being fetched and
+	// pinned, so a reader that may not write the lockfile — the
+	// language server (lsp.md REQ-lsp-session) — resolves at the pins
+	// alone and never records one.
+	ReadOnly bool
 
 	origins map[string]origin.Origin
 	repos   map[string]*direct.Repo

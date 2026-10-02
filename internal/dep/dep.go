@@ -43,6 +43,12 @@ type Config struct {
 	WS     billy.Filesystem
 	Dir    string
 	Client *fetch.Client
+	// ReadOnly loads the session at the lockfile's pins alone: a pair
+	// the lockfile does not pin is refused (fetch.UnpinnedError), never
+	// fetched and pinned, and the lockfile is never written — the
+	// language server's session (lsp.md REQ-lsp-session), the verbs'
+	// being read-write (REQ-lock-first-use).
+	ReadOnly bool
 }
 
 // Session is one loaded resolution root: the workspace, its pin store
@@ -54,7 +60,9 @@ type Session struct {
 	Client *fetch.Client
 	Driver *resolve.Driver
 
-	lockOrig []byte // the lockfile bytes as loaded; "" when absent
+	lockOrig []byte        // the lockfile bytes as loaded; "" when absent
+	readOnly bool          // the lockfile never written (Config.ReadOnly)
+	policy   *trust.Policy // the root's trust policy, the client's while the session is wired
 }
 
 // Load locates the resolution root governing cfg.Dir (workspace.LoadFor,
@@ -66,7 +74,7 @@ func Load(cfg Config) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Session{WS: cfg.WS, Root: root, Client: cfg.Client}
+	s := &Session{WS: cfg.WS, Root: root, Client: cfg.Client, readOnly: cfg.ReadOnly}
 
 	lockPath := path.Join(root.Dir, workspace.LockFileName)
 	if b, err := fs.ReadFile(fsys, lockPath); err == nil {
@@ -81,26 +89,41 @@ func Load(cfg Config) (*Session, error) {
 		return nil, err
 	}
 
-	// The policy is the root's alone: reset before the conditional read
-	// so a reused client never carries the previous root's trust
-	// configuration into this session. An absent policy file is the
+	// The policy is the root's alone. An absent policy file is the
 	// empty policy — the one place that default is folded, so no
 	// consumer handles a nil policy.
-	s.Client.Policy = &trust.Policy{}
+	policy := &trust.Policy{}
 	trustPath := path.Join(root.Dir, trust.FileName)
 	if b, err := fs.ReadFile(fsys, trustPath); err == nil {
 		p, err := trust.Parse(b)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", trustPath, err)
 		}
-		s.Client.Policy = p
+		policy = p
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 
-	s.Client.Lock = s.Lock
-	s.Driver = &resolve.Driver{Root: root, Client: s.Client}
+	// The client is wired to this session only once the whole load
+	// succeeded: a reused client — the language server's, across
+	// reloads — keeps serving the last session loaded where this one
+	// fails, and never carries one root's policy, pins or mode into
+	// the next.
+	s.policy = policy
+	s.Wire()
 	return s, nil
+}
+
+// Wire wires the session's client to this session — its trust policy,
+// its pin store, its mode — the one place the client is set from a
+// session: Load's end, and a reader keeping an earlier session after a
+// later load rewired the client and was then discarded (the language
+// server's failed reload after a superseded one).
+func (s *Session) Wire() {
+	s.Client.Policy = s.policy
+	s.Client.Lock = s.Lock
+	s.Client.ReadOnly = s.readOnly
+	s.Driver = &resolve.Driver{Root: s.Root, Client: s.Client}
 }
 
 // GenFile is the root's generation configuration, parsed
@@ -147,6 +170,11 @@ func savePins(s *Session, stepErr error) error {
 // its recorded facts changed (REQ-lock-canonical-emission): unchanged
 // pins rewrite nothing.
 func (s *Session) SaveLock() error {
+	// A read-only session records no pin and rewrites nothing, not even
+	// a lockfile whose spelling is not canonical (REQ-lsp-tree-untouched).
+	if s.readOnly {
+		return nil
+	}
 	// A lockfile appears when a resolving verb first records a pin
 	// (REQ-dep-init's second half): an empty pin store never creates
 	// one.

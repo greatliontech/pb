@@ -74,10 +74,30 @@ type checkRun struct {
 // checked modules grouped by the selection governing each with its
 // enabled rules of the kind, the checked schema compiled.
 func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error) {
+	run, err := assembleRun(ctx, s, kind, nil)
+	if err != nil {
+		return nil, err
+	}
+	result, err := compile.Compile(ctx, run.mods)
+	if err != nil {
+		return nil, err
+	}
+	run.compiled(result)
+	return run, nil
+}
+
+// assembleRun is prepare short of the compile: the build list and the
+// modules' files — an overlay's bytes in place of a file's where one
+// names it (Overlay) — the lint file, its rulesets and selection, the
+// checked modules grouped. The verbs compile what it assembles with
+// compile.Compile; the language server with compile.CompileAll, over
+// the same groups (lsp.md REQ-lsp-parity).
+func assembleRun(ctx context.Context, s *Session, kind check.Kind, overlay Overlay) (*checkRun, error) {
 	_, mods, err := s.Modules(ctx)
 	if err != nil {
 		return nil, err
 	}
+	overlay.apply(s, mods)
 	lf, err := s.LintFile()
 	if err != nil {
 		return nil, err
@@ -109,11 +129,7 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 			return nil, fmt.Errorf("%s: modules names %q, which is no workspace module", lintfile.FileName, d)
 		}
 	}
-	result, err := compile.Compile(ctx, mods)
-	if err != nil {
-		return nil, err
-	}
-	run := &checkRun{kind: kind, lint: lf, sel: sel, mods: mods, set: env1.NewSet(result.Files), files: result.Files, group: map[string]*checkGroup{}}
+	run := &checkRun{kind: kind, lint: lf, sel: sel, mods: mods, group: map[string]*checkGroup{}}
 	// The root's selection governs every module without an entry,
 	// as one group; a module with an entry is a group of its own,
 	// located at its directory.
@@ -142,6 +158,11 @@ func prepare(ctx context.Context, s *Session, kind check.Kind) (*checkRun, error
 		}
 	}
 	return run, nil
+}
+
+// compiled sets the run's checked schema from a compile's result.
+func (r *checkRun) compiled(result *compile.Result) {
+	r.set, r.files = env1.NewSet(result.Files), result.Files
 }
 
 // checkGroup is the files one selection governs and the rules of the
@@ -231,22 +252,33 @@ func Lint(ctx context.Context, s *Session, out, diag io.Writer) error {
 		fmt.Fprintln(diag, "pb lint: zero lint rules enabled")
 		return nil
 	}
-	env, err := env1.New(run.set, nil)
+	findings, err := run.lintFindings()
 	if err != nil {
 		return fmt.Errorf("lint: %w", err)
 	}
+	return run.report(findings, out)
+}
+
+// lintFindings evaluates every group's lint rules over its files and admits
+// the findings as each group's selection has them: the verb's
+// judgement, which the language server publishes unchanged.
+func (r *checkRun) lintFindings() ([]check.Finding, error) {
+	env, err := env1.New(r.set, nil)
+	if err != nil {
+		return nil, err
+	}
 	var findings []check.Finding
-	for _, g := range run.groups {
+	for _, g := range r.groups {
 		if !g.evaluates() {
 			continue
 		}
-		report, err := eval.Lint(env, g.checked, run.source, g.rules)
+		report, err := eval.Lint(env, g.checked, r.source, g.rules)
 		if err != nil {
-			return fmt.Errorf("lint: %w", err)
+			return nil, err
 		}
-		findings = append(findings, g.admit(run.sel, run.kind, report.Findings)...)
+		findings = append(findings, g.admit(r.sel, r.kind, report.Findings)...)
 	}
-	return run.report(findings, out)
+	return findings, nil
 }
 
 // setBase is a descriptor set standing as a base: its files linked

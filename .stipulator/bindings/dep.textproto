@@ -498,7 +498,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Clean"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c6b1987f695240c45c79cdbcfaa32c160ba45d58d502bf5b02d59850c0eb9c84"
+  shape_hash: "1ca0f35f4bc5a04a67ab93320a6ace5b48f871ff7ab0cd1beb61ac01c5118dcd"
 }
 
 bindings {
@@ -699,4 +699,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateVerb"
   role: BINDING_ROLE_TESTS
   shape_hash: "eccecd62161243cd85687131e2e2e9f2576257fffbfaeb33ea812e88c359a79b"
+}
+
+bindings {
+  requirement_id: "REQ-dep-clean"
+  content_hash: "5e50de65aca4530bc874460d599f8ce2f5adfa7702cd1bc54f0da4055571d84f"
+  source_hash: "76134fd2ae1833d3c3b32f1f053bc217a47b5858ab3c50443f39d641300977c8"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.emptySources"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a493e6c755f1a10eccb15461d70e688d58564d7e8318089245cd143cabc7afde"
 }

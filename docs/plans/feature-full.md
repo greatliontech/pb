@@ -173,7 +173,7 @@ formatter and the language server
         as overlays, the diagnostics' content and freshness,
         navigation and hover, dependency files, formatting, the
         lifecycle and transport, the invariants.
-  - [ ] 21.3. `pb lsp` over go.lsp.dev's binding: the session loaded
+  - [x] 21.3. `pb lsp` over go.lsp.dev's binding: the session loaded
         read-only and reloaded as the verbs load theirs, an unpinned
         requirement diagnosed, documents overlaid,
         the compile's errors and the lint's findings published as

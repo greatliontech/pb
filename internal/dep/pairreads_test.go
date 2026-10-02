@@ -134,7 +134,7 @@ func TestPairReadsGoThroughTheDriver(t *testing.T) {
 		}
 	}
 	slices.Sort(sites)
-	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Download.RulesetDownload", "internal/dep:Modules.Zip", "internal/dep:Update.RulesetZip", "internal/dep:closure.RulesetZip", "internal/dep:prepare.RulesetZip", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
+	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Download.RulesetDownload", "internal/dep:Modules.Zip", "internal/dep:Update.RulesetZip", "internal/dep:assembleRun.RulesetZip", "internal/dep:closure.RulesetZip", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
 	if !slices.Equal(sites, want) {
 		t.Fatalf("fetch-client content readers used across the module: %v, want exactly %v — a build-list pair is read through the driver or modfiles.Load, never handed to the client", sites, want)
 	}

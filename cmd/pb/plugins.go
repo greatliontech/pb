@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/greatliontech/pb/internal/plugin"
-	"path/filepath"
 
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/module/lockfile"
@@ -121,9 +120,11 @@ func (u *lazyUpdater) Close() error {
 // REQ-plugin-core-verifies, provenance.md
 // REQ-prov-plugin-evidence-store).
 func pluginStoreDirs() (workDir, evidenceDir string, err error) {
-	base, err := userconfig.UserCacheDir()
-	if err != nil {
-		return "", "", fmt.Errorf("resolving the user cache directory for the plugin store (set XDG_CACHE_HOME or HOME): %w", err)
+	if workDir, err = userCacheSubdir("the plugin store", "plugins"); err != nil {
+		return "", "", err
 	}
-	return filepath.Join(base, "pb", "plugins"), filepath.Join(base, "pb", "plugin-evidence"), nil
+	if evidenceDir, err = userCacheSubdir("the plugin store", "plugin-evidence"); err != nil {
+		return "", "", err
+	}
+	return workDir, evidenceDir, nil
 }

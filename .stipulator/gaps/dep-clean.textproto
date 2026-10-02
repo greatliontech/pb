@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-dep-clean"
-reason: "the dependency source store and its --sources flag land with the language server, the plan chunk 21.3; the verb empties the two stores it has until then"
-content_hash: "5e50de65aca4530bc874460d599f8ce2f5adfa7702cd1bc54f0da4055571d84f"
-source_hash: "76134fd2ae1833d3c3b32f1f053bc217a47b5858ab3c50443f39d641300977c8"
-lands { manual { condition: "the feature-full plan chunk 21.3 lands" contradicted: true } }

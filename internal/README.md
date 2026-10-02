@@ -22,7 +22,7 @@ while the tree does another.
 | migrate | migrate.md | `migrate`, `migrate/bufconfig` |
 | format | format.md | `format` |
 | driver | module-resolution.md | `resolve` |
-| verbs | dep-verbs.md, check-rules.md §Verbs, export.md, build.md, format.md §The verb | `dep`, `cmd/pb` |
+| verbs | dep-verbs.md, check-rules.md §Verbs, export.md, build.md, format.md §The verb, lsp.md | `dep`, `lsp`, `cmd/pb` |
 
 The rows are the order, top to bottom. Source, proto and plugin stand
 level: none imports another, in either direction. The plugin

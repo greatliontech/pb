@@ -101,12 +101,16 @@ next reload (REQ-lsp-reload) tries again.
 module pair, a ruleset import, wherever declared — that the lockfile
 does not pin MUST leave the server serving with no build, as an
 `initialize` that loads no session does, every judgement placing one
-diagnostic per unpinned pair on the lockfile where one exists, else
-on the build home, at its first line, while the pair is unpinned and
-required: severity error, source `pb`, code `unpinned`, naming the
-pair and the verb that pins it (`pb dep download`). The server
-resolves nothing on the user's behalf: a build the lockfile does not
-fix is not one `pb lint` would judge the same way twice.
+diagnostic per unpinned pair the resolution meets — every pair the
+workspace's modules and the lint file declare, read through the
+root's replacements, and the first pair beyond them the resolution
+stops at, a pair a declared one requires being known only once the
+declared one is pinned and read — on the lockfile where one exists,
+else on the build home, at its first line, while the pair is
+unpinned and required: severity error, source `pb`, code `unpinned`,
+naming the pair and the verb that pins it (`pb dep download`). The
+server resolves nothing on the user's behalf: a build the lockfile
+does not fix is not one `pb lint` would judge the same way twice.
 
 **REQ-lsp-reload** (behavior): The server MUST reload the session
 when a file the resolution reads changes on disk — the workspace
@@ -230,10 +234,12 @@ for a build that does not compile.
 file as the file's origin has it: one the build read from the
 working tree as a `file://` URI of that file; a dependency's by the
 client's capability: where the client offers `workspace/textDocumentContent`,
-as `pb-module://<module path>@<version>/<file path>`, a file of the
-well-known imports (`module-resolution.md`) as
-`pb-module://well-known/<file path>` — a module's locator carries
-`@<version>`, the well-known set's none — the scheme declared in
+as `pb-module://<module path>@<version>/<file path>`, spelled on the
+wire in the URI's canonical form — the `@` before the version
+percent-encoded as `%40` — a file of the well-known imports
+(`module-resolution.md`) as `pb-module://well-known/<file path>` — a
+module's locator carries the version, the well-known set's none —
+the scheme declared in
 the server's capabilities and served through that request with the
 bytes the build read; otherwise as a `file://` URI into the
 dependency source store, where the server copies a dependency's
@@ -304,7 +310,8 @@ diagnostics the server publishes MUST be `pb lint`'s verdict for
 that tree: a build that compiles, the verb's findings one to one,
 each at its placement and at the same line and column under
 conversion; one that does not, compile errors and no lint finding,
-what the verb names among them. The server judges with the verb's
+what the verb names among them — the file and what failed in it,
+the message the server's own. The server judges with the verb's
 engine over the verb's build, never a build of its own.
 
 **REQ-lsp-fresh** (invariant): A publish MUST never carry a judgement
@@ -316,4 +323,6 @@ judgement's publish set.
 
 **REQ-lsp-tree-untouched** (invariant): The server MUST write nothing
 under the client root's resolution root, whatever documents it
-holds, edits it answers or pins it lacks.
+holds, edits it answers or pins it lacks; the stores under the user
+cache (the dependency source store, the module cache) are the one
+exception, where the user has placed the cache under the root.

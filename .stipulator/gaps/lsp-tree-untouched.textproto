@@ -1,8 +1,0 @@
-# proto-file: proto/stipulator/v1/records.proto
-# proto-message: stipulator.v1.Gap
-
-requirement_id: "REQ-lsp-tree-untouched"
-reason: "the language server lands with the plan chunk 21.3; its invariants are stated ahead of the code"
-content_hash: "9c0cb5cbb1141528c511004d5f2cf4838f0c27c40921927c07b387b69c140e0a"
-source_hash: "e559d7856771d2ea4945382565ec4019d20a08744926bd1ad44b99d51bc718bb"
-lands { manual { condition: "the feature-full plan chunk 21.3 lands" } }

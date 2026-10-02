@@ -223,3 +223,58 @@ func WorkspaceFiles(fsys fs.FS, base string) (map[string][]byte, map[string][]by
 	}
 	return files, rules, nil
 }
+
+// WellKnownSet is the toolchain's well-known imports whole: every
+// embedded google/protobuf source file by its import path, with its
+// bytes — the set the language server serves and copies (lsp.md
+// REQ-lsp-dependency-files), enumerated from the embedded tree itself
+// so it never lags the toolchain.
+func WellKnownSet() (map[string][]byte, error) {
+	probe := wellKnownProbe()
+	set := map[string][]byte{}
+	var walk func(dir string) error
+	walk = func(dir string) error {
+		res, err := probe.FindFileByPath(dir)
+		if err != nil {
+			return fmt.Errorf("well-known imports: %s: %w", dir, err)
+		}
+		d, ok := res.Source.(fs.ReadDirFile)
+		if !ok {
+			return fmt.Errorf("well-known imports: %s is no directory of the embedded set", dir)
+		}
+		entries, err := d.ReadDir(-1)
+		d.Close()
+		if err != nil {
+			return fmt.Errorf("well-known imports: %s: %w", dir, err)
+		}
+		for _, e := range entries {
+			p := path.Join(dir, e.Name())
+			if e.IsDir() {
+				if err := walk(p); err != nil {
+					return err
+				}
+				continue
+			}
+			if !module.IsProtoFile(p) {
+				continue
+			}
+			res, err := probe.FindFileByPath(p)
+			if err != nil {
+				return fmt.Errorf("well-known imports: %s: %w", p, err)
+			}
+			b, err := io.ReadAll(res.Source)
+			if c, ok := res.Source.(io.Closer); ok {
+				c.Close()
+			}
+			if err != nil {
+				return fmt.Errorf("well-known imports: %s: %w", p, err)
+			}
+			set[p] = b
+		}
+		return nil
+	}
+	if err := walk("google"); err != nil {
+		return nil, err
+	}
+	return set, nil
+}

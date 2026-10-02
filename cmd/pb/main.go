@@ -52,5 +52,6 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(breakingCmd())
 	root.AddCommand(migrateCmd())
 	root.AddCommand(formatCmd())
+	root.AddCommand(lspCmd())
 	return root
 }

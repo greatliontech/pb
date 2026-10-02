@@ -28,6 +28,18 @@ func ModfileHash(b []byte) string {
 	return "sha256:" + hex.EncodeToString(h[:])
 }
 
+// UnpinnedError is a read-only client's answer for a pair its pin
+// store does not pin: the pair, and the list — modules or rulesets —
+// the pin would be recorded in.
+type UnpinnedError struct {
+	Path, Version string
+	List          string
+}
+
+func (e *UnpinnedError) Error() string {
+	return fmt.Sprintf("%s@%s is not pinned in the lockfile's %s list; run pb dep download", e.Path, e.Version, e.List)
+}
+
 // Module returns the verified module file for (modPath, v) — the
 // requirement loader version selection consumes. An unpinned pair runs
 // the full first-use pipeline (fetch, verify, evaluate provenance,
@@ -198,6 +210,9 @@ func (c *Client) pinnedZip(ctx context.Context, modPath string, v version.Versio
 // digest, module facts, provenance evaluation, and the pin, recorded
 // complete in one step in the list the pair belongs to.
 func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version, pins lockfile.Pins) (*modfile.File, error) {
+	if c.ReadOnly {
+		return nil, &UnpinnedError{Path: modPath, Version: v.String(), List: pins.Name()}
+	}
 	zip, err := c.fetch(ctx, modPath, v, KindZip)
 	if err != nil {
 		return nil, err

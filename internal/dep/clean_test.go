@@ -16,23 +16,35 @@ import (
 )
 
 // Clean empties the selected stores and nothing else (REQ-dep-clean):
-// with no flag both, with a flag that store alone; the module cache's
-// entries go, the vcs store keeps its origins' locks, the plugin
-// store's emptying is asked once and its kept images reported; a
-// cache absent is empty already.
+// with no flag every store, with a flag that store alone; the module
+// cache's entries go, the vcs store keeps its origins' locks, the
+// plugin store's emptying is asked once and its kept images reported,
+// the source store's copies and temporaries go and its strangers
+// stay; a cache absent is empty already.
 func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 	ctx := context.Background()
 	for name, tc := range map[string]struct {
-		modules, plugins bool
-		wantModules      bool
-		wantPlugins      bool
+		modules, plugins, sources bool
+		wantModules               bool
+		wantPlugins               bool
+		wantSources               bool
 	}{
-		"both by default": {false, false, true, true},
-		"modules alone":   {true, false, true, false},
-		"plugins alone":   {false, true, false, true},
+		"every store by default": {false, false, false, true, true, true},
+		"modules alone":          {true, false, false, true, false, false},
+		"plugins alone":          {false, true, false, false, true, false},
+		"sources alone":          {false, false, true, false, false, true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			cache := osfs.New(scratchtest.Dir(t))
+			sources := osfs.New(scratchtest.Dir(t))
+			// The source store's copies, a temporary an interrupted
+			// write left, and strangers: a file, a directory no copy's
+			// name spells, a name whose halves are not escaped.
+			for _, p := range []string{"example.com/m@v1.0.0/m.proto", "example.com/m@v1.0.0/sub/x.proto", "github.com/!org/n@v2.0.0/n.proto", "well-known@" + strings.Repeat("0f", 32) + "/google/protobuf/any.proto", ".pb-sources-123", "notes.txt", "stranger/x.proto", "Bad@v1.0.0/x.proto", "noversion@/x.proto", "photos@2024/img.proto", "example.com/m@latest/m.proto", "well-known@abc/x.proto"} {
+				if err := util.WriteFile(sources, p, []byte("x"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
 			origin := strings.Repeat("ab", 32)
 			// Beside the cache's own: a file at the root, a stranger
 			// under a module path, and a stranger under an @v
@@ -60,10 +72,30 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 					asked++
 					return []string{"sha256:" + strings.Repeat("ab", 32)}, nil
 				},
+				Sources: sources,
 			}
 			var out bytes.Buffer
-			if err := Clean(ctx, stores, &out, tc.modules, tc.plugins); err != nil {
+			if err := Clean(ctx, stores, &out, tc.modules, tc.plugins, tc.sources); err != nil {
 				t.Fatalf("Clean: %v", err)
+			}
+			sourceEntries, err := sources.ReadDir(".")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var sourceNames []string
+			for _, e := range sourceEntries {
+				sourceNames = append(sourceNames, e.Name())
+			}
+			slices.Sort(sourceNames)
+			if tc.wantSources {
+				if left, err := sources.ReadDir("example.com"); err != nil || len(left) != 1 || left[0].Name() != "m@latest" {
+					t.Fatalf("under example.com after the emptying: %v, %v; want the stranger m@latest alone", left, err)
+				}
+				if strings.Join(sourceNames, ",") != "Bad@v1.0.0,example.com,notes.txt,noversion@,photos@2024,stranger,well-known@abc" || !strings.Contains(out.String(), "sources: emptied\n") {
+					t.Fatalf("the source store after the emptying: %v, report %q; want the strangers alone", sourceNames, out.String())
+				}
+			} else if strings.Join(sourceNames, ",") != ".pb-sources-123,Bad@v1.0.0,example.com,github.com,notes.txt,noversion@,photos@2024,stranger,well-known@"+strings.Repeat("0f", 32)+",well-known@abc" || strings.Contains(out.String(), "sources:") {
+				t.Fatalf("the source store was touched: %v, report %q", sourceNames, out.String())
 			}
 			entries, err := cache.ReadDir(".")
 			if err != nil {
@@ -130,10 +162,15 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 		return nil, errors.New("held")
 	}}
 	var out bytes.Buffer
-	if err := Clean(ctx, failing, &out, true, false); err != nil || out.String() != "modules: emptied\n" {
+	if err := Clean(ctx, failing, &out, true, false, false); err != nil || out.String() != "modules: emptied\n" {
 		t.Fatalf("Clean over an absent cache: %v, %q", err, out.String())
 	}
-	if err := Clean(ctx, failing, &out, false, true); err == nil || !strings.Contains(err.Error(), "held") {
+	if err := Clean(ctx, failing, &out, false, true, false); err == nil || !strings.Contains(err.Error(), "held") {
 		t.Fatalf("a plugin store's failure: %v", err)
+	}
+	out.Reset()
+	failing.Sources = osfs.New(filepath.Join(absent.Root(), "sources"))
+	if err := Clean(ctx, failing, &out, false, false, true); err != nil || out.String() != "sources: emptied\n" {
+		t.Fatalf("Clean over an absent source store: %v, %q", err, out.String())
 	}
 }
