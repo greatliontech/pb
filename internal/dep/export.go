@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -290,6 +291,17 @@ func (s *Session) resolveLinks(dir string) (string, error) {
 			target, err := s.WS.Readlink(p)
 			if err != nil {
 				return "", err
+			}
+			// A target naming a volume (windows) is the host's
+			// absolute path, read against the tree's root as the host
+			// spells it (platforms.md REQ-plat-files): one on another
+			// volume leads out of the tree.
+			if host := filepath.FromSlash(target); filepath.VolumeName(host) != "" {
+				rel, err := filepath.Rel(s.WS.Root(), host)
+				if err != nil || !filepath.IsLocal(rel) {
+					return "", fmt.Errorf("%s passes through %s, a symbolic link leading out of the tree", dir, p)
+				}
+				target = "/" + filepath.ToSlash(rel)
 			}
 			if path.IsAbs(target) {
 				target = strings.TrimPrefix(path.Clean(target), "/")

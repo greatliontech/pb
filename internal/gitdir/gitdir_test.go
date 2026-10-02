@@ -3,6 +3,7 @@ package gitdir
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
@@ -41,8 +42,14 @@ func TestRepositorySearch(t *testing.T) {
 		t.Fatalf("ceilings = %+v", got)
 	}
 	// An entry resolves as the operating system resolves it: through
-	// the link first, then up.
-	if c := ceilings(link2 + sep + ".." + sep + "other"); len(c) != 1 || !c[0].is(filepath.Join(deep, "other")) || c[0].is(filepath.Join(dir, "other")) {
+	// the link first, then up on unix; windows reads the `..` before
+	// any link is followed, so there the entry names the link's
+	// sibling.
+	through, beside := filepath.Join(deep, "other"), filepath.Join(dir, "other")
+	if runtime.GOOS == "windows" {
+		through, beside = beside, through
+	}
+	if c := ceilings(link2 + sep + ".." + sep + "other"); len(c) != 1 || !c[0].is(through) || c[0].is(beside) {
 		t.Fatalf("an entry through a link and up: %+v", c)
 	}
 	never := func(string) bool { return false }
@@ -55,8 +62,8 @@ func TestRepositorySearch(t *testing.T) {
 	if root, ok := repositoryRoot(viaLink, nil, at(filepath.Join(link, "a"))); !ok || root != filepath.Join(link, "a") {
 		t.Fatalf("the nearest ancestor: %q %v", root, ok)
 	}
-	if root, ok := repositoryRoot(viaLink, nil, at(string(filepath.Separator))); !ok || root != string(filepath.Separator) {
-		t.Fatalf("the filesystem's root searched last: %q %v", root, ok)
+	if got, ok := repositoryRoot(viaLink, nil, at(root)); !ok || got != root {
+		t.Fatalf("the filesystem's root searched last: %q %v", got, ok)
 	}
 	// By identity, the ceiling stops a walk spelled either way; by
 	// spelling, only the walk spelled as the entry is.
@@ -66,10 +73,10 @@ func TestRepositorySearch(t *testing.T) {
 	if _, ok := repositoryRoot(viaReal, ceilings(link), at(dir)); ok {
 		t.Fatal("entered a ceiling named by identity through a link, reached directly")
 	}
-	if _, ok := repositoryRoot(viaLink, ceilings(":"+link), at(dir)); ok {
+	if _, ok := repositoryRoot(viaLink, ceilings(ls+link), at(dir)); ok {
 		t.Fatal("entered a ceiling named by spelling, reached as spelled")
 	}
-	if root, ok := repositoryRoot(viaReal, ceilings(":"+link), at(dir)); !ok || root != dir {
+	if root, ok := repositoryRoot(viaReal, ceilings(ls+link), at(dir)); !ok || root != dir {
 		t.Fatalf("a ceiling named by spelling stopped a walk spelled otherwise: %q %v", root, ok)
 	}
 	// A ceiling not on the path stops nothing; the start directory

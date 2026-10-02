@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -240,6 +242,41 @@ func TestExportTargetRefusals(t *testing.T) {
 	}
 	if got := tree(t, fx.ws, "elsewhere2/out"); len(got) != 4 {
 		t.Fatalf("through the absolute link the tree holds %v", keys(got))
+	}
+	// A target naming a volume, the host's absolute path on windows,
+	// is read against the tree's root: within it the tree lands where
+	// the link leads; on another volume it leads out of the tree.
+	if runtime.GOOS == "windows" {
+		if err := fx.ws.MkdirAll("elsewhere3", 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := fx.ws.Symlink(filepath.Join(fx.ws.Root(), "elsewhere3"), "volaway"); err != nil {
+			t.Fatal(err)
+		}
+		if err := Export(ctx, fx.session(t, "."), "volaway/out", "volaway/out", ExportOptions{}, &out); err != nil {
+			t.Fatalf("a volume-bearing link out of the modules: %v", err)
+		}
+		if got := tree(t, fx.ws, "elsewhere3/out"); len(got) != 4 {
+			t.Fatalf("through the volume-bearing link the tree holds %v", keys(got))
+		}
+		other := "Q:"
+		if strings.EqualFold(filepath.VolumeName(fx.ws.Root()), other) {
+			other = "R:"
+		}
+		if err := fx.ws.Symlink(other+`\elsewhere`, "volout"); err != nil {
+			t.Fatal(err)
+		}
+		if err := Export(ctx, fx.session(t, "."), "volout/out", "volout/out", ExportOptions{}, &out); err == nil || !strings.Contains(err.Error(), "leading out of the tree") {
+			t.Fatalf("a link to another volume: %v", err)
+		}
+		for _, name := range []string{"volaway", "volout"} {
+			if err := fx.ws.Remove(name); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := util.RemoveAll(fx.ws, "elsewhere3"); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// A link leading out of the tree is refused as such.
 	if err := fx.ws.Symlink("../../..", "up"); err != nil {

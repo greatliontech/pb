@@ -3,7 +3,7 @@ package migrate
 import (
 	"context"
 	"errors"
-	"github.com/greatliontech/pb/internal/testing/fetchtest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-billy/v6/util"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/source/fetch"
+	"github.com/greatliontech/pb/internal/testing/fetchtest"
 )
 
 // tree is an in-memory working tree with files at paths.
@@ -386,7 +387,9 @@ func TestRunAfterWriteFailures(t *testing.T) {
 	if err := Run(context.Background(), inv); err != nil || strings.Contains(out.String(), "link.proto") {
 		t.Fatalf("a linked proto: %v\n%s", err, out.String())
 	}
-	if target, err := ws.Readlink("a/link.proto"); err != nil || target != "../elsewhere/target.proto" {
+	// The target read back as the tree stores it: the host's spelling
+	// (billy's chroot spells a link's target with the host's separator).
+	if target, err := ws.Readlink("a/link.proto"); err != nil || filepath.ToSlash(target) != "../elsewhere/target.proto" {
 		t.Fatalf("the link replaced: %q %v", target, err)
 	}
 	if got := readTree(t, ws, "elsewhere/target.proto"); strings.Contains(got, "pb:ignore") {

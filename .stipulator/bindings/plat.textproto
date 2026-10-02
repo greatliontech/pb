@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.ValidatePaths"
   role: BINDING_ROLE_IMPLEMENTS
@@ -33,8 +33,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/atomicfile.Write"
   role: BINDING_ROLE_IMPLEMENTS
@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.TestPathCollisions"
   role: BINDING_ROLE_TESTS
@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/archive.TestCaseFoldCollisionProperty"
   role: BINDING_ROLE_TESTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestExportCollision"
   role: BINDING_ROLE_TESTS
@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-files"
-  content_hash: "1d1de4293c2f9e8ea632912c41b98513600cfc1e2fcbe84f6b89255a2e4ed001"
-  source_hash: "b600cec4bc8cd0fe722cec10646f807148fd45b8c4e83a7508dee3ede9529d5f"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/atomicfile.TestWrite"
   role: BINDING_ROLE_TESTS
@@ -139,4 +139,44 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenSchemeGate"
   role: BINDING_ROLE_TESTS
   shape_hash: "39b2884f6e40d83e41043fc1549e44c0022441cd0b54815423a9f9cc427ab3d1"
+}
+
+bindings {
+  requirement_id: "REQ-plat-files"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/rootpath.Walk"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c7397119ee8b84a953960b354e97781e7856427e1ab85ae9dec86f10993fb775"
+}
+
+bindings {
+  requirement_id: "REQ-plat-files"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/migrate.TestCorpus"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "679c03a7ea7c8c05ce2966842e4fbe1b77cee34a97781f7aa90ceb1c6c1e5ae2"
+}
+
+bindings {
+  requirement_id: "REQ-plat-files"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.Session.resolveLinks"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "f613ee5a6e29412c49cb5fad4671726d6e408e4ce87fbb5fea1e066b6755b848"
+}
+
+bindings {
+  requirement_id: "REQ-plat-files"
+  content_hash: "466649f5c50717d0f789e1d5ec1d2b92e1fb5ab3960236564c578f0b9984fa35"
+  source_hash: "562d5f6bccf62ebc3bdd7fd2b43241fd7082c917e89fee6020366c99b4d3e5f7"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestExportTargetRefusals"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "edcf665d73ce4e8c14c4eead3f3338e6d8523e888163c7898a5e1f4b260bcc15"
 }
