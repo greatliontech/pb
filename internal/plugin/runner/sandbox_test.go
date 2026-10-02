@@ -368,17 +368,11 @@ func TestRunMemoryBound(t *testing.T) {
 }
 
 // A plugin exhausting its CPU time is killed at the bound and the
-// run names it where the accounting counted the kill: on darwin the
-// watchdog's, on windows the Job's, always; on Linux the kernel's
-// at RLIMIT_CPU told by the dead process's own CPU time within the
-// sandbox's allowance, which a kernel accounting CPU time by the
-// tick misses under load — the limit fires on the tick-sampled
-// clock, the zombie reports the scheduler's, and their difference
-// under contention outgrows the allowance
-// (docs/issues/cpu-kill-attribution-tick-clock.md) — so the Linux
-// arm pins the kill and the report naming the bound either way, the
-// mapping from a counted kill to the bound pinned by TestOutcome
-// (REQ-plugin-resource-bounds).
+// run names the bound, the accounting having counted the kill: on
+// darwin the watchdog's, on windows the Job's, on Linux the kernel's
+// at RLIMIT_CPU told from the dead process's CPU clock, the one the
+// limit is checked on, whatever the host's load (the sandbox's
+// "Bounded means bounded"; REQ-plugin-resource-bounds).
 func TestRunCPUBound(t *testing.T) {
 	requireSandbox(t)
 	if runtime.NumCPU() < 2 {
@@ -393,9 +387,7 @@ func TestRunCPUBound(t *testing.T) {
 		// CPU to make CPU time outrun it — a harness cap, stated.
 		t.Skipf("the host could not sustain the CPU throughput this case needs (%v)", err)
 	}
-	attributed := errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "CPU time (10s over 1 cores) (enforced by ")
-	uncounted := err != nil && !errors.Is(err, ErrBoundExceeded) && strings.Contains(err.Error(), "the CPU-time bound (10s over 1 cores) where the accounting could not tell it, or an external kill")
-	if !attributed && !(uncounted && !cpuKillCounted) {
+	if !errors.Is(err, ErrBoundExceeded) || !strings.Contains(err.Error(), "CPU time (10s over 1 cores) (enforced by ") {
 		t.Fatalf("the CPU-time bound's kill: %v", err)
 	}
 }

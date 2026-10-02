@@ -294,8 +294,8 @@ github.com/greatliontech/ocifs v0.12.2 h1:SnM5lzzHcCrXLQrZJXAM7lHT9ujaveNUgjTLEx
 github.com/greatliontech/ocifs v0.12.2/go.mod h1:ZwuKpfnQFhkYewCcNGSbC3ftIKNDd1Q5Pp6IHAzwbz4=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f h1:ULmJKRCC/FL9qFX1C2vlBC5ZOUnijeKaLCbrwx/iZQI=
 github.com/greatliontech/projfs-go v0.0.0-20260525064235-9bffba15968f/go.mod h1:sCgbiWNeAJbqqg8yp0ywR2XTc59q8hpZJ8nzm538dnc=
-github.com/greatliontech/sandbox v0.9.0 h1:sISpRuKPSW99lOPTNLunkGxvfqueS5pQPmbuDGwdhBA=
-github.com/greatliontech/sandbox v0.9.0/go.mod h1:MVcyyIHa1BH+vo2+Tk1CT0kC1jDcLuLS1kr+waKMGuc=
+github.com/greatliontech/sandbox v0.9.1 h1:ZQIHjBcKALVY3NhZAzZVlB+eWzOkltqhFvGma21Wfbk=
+github.com/greatliontech/sandbox v0.9.1/go.mod h1:MVcyyIHa1BH+vo2+Tk1CT0kC1jDcLuLS1kr+waKMGuc=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0 h1:VlS2R0BC1oTBRePffJtkwjzy1jf0Cozphab/fqD/AJw=
 github.com/greatliontech/stipulator/stipulate/structural v0.3.0/go.mod h1:EamD9lGjaQ52lCU4ja1oKftZ7PMrDTC1Th9kVxBgSWk=
 github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 h1:B+8ClL/kCQkRiU82d9xajRPKYMrB7E0MbtzWVi1K4ns=
