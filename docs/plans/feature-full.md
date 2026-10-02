@@ -127,7 +127,7 @@ formatter and the language server
 - [x] 15. The sandbox's windows row: the AppContainer and Job Object
       backend, its probe, its `Reach`, on the windows runners; the
       row admitting a sibling's execution as the darwin row does
-- [ ] 16. Runner selection per entry: the default choosing `native`
+- [x] 16. Runner selection per entry: the default choosing `native`
       where the image serves the host and the row meets the floor,
       `docker` for the rest where a daemon is reachable, a layer's
       runner binding every entry, the report naming each entry's
