@@ -41,7 +41,9 @@ import (
 // places it nowhere in time, so a kill the plugin outlived sets it
 // too; a kill the daemon recorded nowhere, which it can lose under
 // load, is a death the record cannot tell apart and is reported as
-// such (docs/issues/docker-oom-event-lost.md); the daemon exposes
+// such (REQ-plugin-resource-bounds: the record's own limit, no
+// counter of the kernel's surviving the container's release); the
+// daemon exposes
 // no refused-fork counter, so a fork the process bound refused is
 // not attributable here and the plugin's own failure is surfaced
 // verbatim.

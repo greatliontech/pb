@@ -168,16 +168,6 @@ formatter and the language server
       to diagnostics), `pb lsp` over the compile and the lint engine
       — diagnostics, definition, hover, references over the build's
       descriptors — and document formatting through the formatter
-- [ ] 22. The docker runner runs each plugin container under a per-run
-      cgroup parent and attributes a memory kill from the parent's
-      `memory.events` delta, the kernel's hierarchical count outliving
-      the container's release; the daemon's event the fallback where
-      the host's cgroup tree is not pb's to read (a remote daemon, a
-      daemon in a VM), the record stating which source spoke; the
-      mechanism the user's fork between a per-user slice pool and an
-      in-container static shim (docs/issues/docker-oom-event-lost.md
-      holds the spike); the runner suite's live memory case records
-      its kill in every loaded run and no longer retries a lost event
 - [ ] 23. The runner suite's kernel surfaces declared to gomutant's
       observation bracket where paths name them, a SandboxRunner.Run
       mutant then classified by its oracle; what the bracket cannot

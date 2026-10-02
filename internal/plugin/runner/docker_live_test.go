@@ -106,8 +106,8 @@ func TestDockerLive(t *testing.T) {
 		t.Fatal("the kill did not end the run promptly")
 	}
 	// The memory bound is the daemon's recorded kill. The daemon can
-	// lose that record under load (docs/issues/docker-oom-event-lost.md;
-	// measured at 14% to 27% of loaded runs on Docker 29.7.2), in
+	// lose that record under load (REQ-plugin-resource-bounds; measured
+	// at 14% to 27% of loaded runs on Docker 29.7.2), in
 	// which case the death is reported as one the record cannot tell
 	// apart; a run so reported is retried, and the loss counted, so
 	// the arm proves the attribution where the daemon recorded the
@@ -126,7 +126,7 @@ func TestDockerLive(t *testing.T) {
 			if attempt < attempts {
 				continue
 			}
-			t.Fatalf("the daemon lost the memory kill's record %d of %d times (docs/issues/docker-oom-event-lost.md), so the attribution went unwitnessed", lost, attempts)
+			t.Fatalf("the daemon lost the memory kill's record %d of %d times (its own limit, REQ-plugin-resource-bounds), so the attribution went unwitnessed", lost, attempts)
 		}
 		t.Fatalf("memory bound: %v", err)
 	}
