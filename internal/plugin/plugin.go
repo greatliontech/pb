@@ -172,6 +172,11 @@ type Acquired struct {
 	Process Process
 	// Image is the image's world; nil for a host binary.
 	Image Image
+	// Candidate is the position, among the substrates the caller
+	// offered in order, of the one the image serves and the world was
+	// yielded for (REQ-plugin-runner-selection); 0 where one was
+	// offered or none.
+	Candidate int
 }
 
 // Platforms are the platforms pb is built for, in the platform term's

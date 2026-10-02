@@ -369,12 +369,14 @@ func TestDockerUnavailable(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 	os.Remove(filepath.Join(dir, "unavailable"))
-	r, err := Open(&docker, userconfig.Value{})
+	sel, err := Open(&docker, userconfig.Value{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := r.(*DockerRunner); !ok {
-		t.Fatalf("runner = %T", r)
+	if cands, _ := sel.Candidates(context.Background(), plugin.TierStrong); len(cands) != 1 || cands[0].Name != RunnerDocker {
+		t.Fatalf("candidates = %+v", cands)
+	} else if _, ok := cands[0].Runner.(*DockerRunner); !ok {
+		t.Fatalf("runner = %T", cands[0].Runner)
 	}
 }
 

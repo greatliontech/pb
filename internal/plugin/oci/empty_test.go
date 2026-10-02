@@ -35,7 +35,7 @@ func TestEmptyEmptiesTheStoreAndItsEvidence(t *testing.T) {
 	fx := newFixture(t)
 	workDir, evidenceDir := t.TempDir(), t.TempDir()
 	a := newAcquirerAt(t, fx, &lockfile.File{}, &trust.Policy{}, nil, workDir, evidenceDir)
-	if _, err := a.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil {
+	if _, err := a.Acquire(ctx, fx.host+"/org/plugin:v1", Host()); err != nil {
 		t.Fatal(err)
 	}
 	digest, err := v1.NewHash(fx.digest)
@@ -144,7 +144,7 @@ func TestAcquirerHoldsItsExportsThroughEmptying(t *testing.T) {
 	fx := newFixture(t)
 	workDir, evidenceDir := t.TempDir(), t.TempDir()
 	a := newAcquirerAt(t, fx, &lockfile.File{}, &trust.Policy{}, nil, workDir, evidenceDir)
-	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1")
+	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1", Host())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func TestAcquiresAPublishedImage(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := newAcquirerAt(t, &fixture{host: host}, &lockfile.File{}, &trust.Policy{}, nil, t.TempDir(), "")
-	got, err := a.Acquire(ctx, host+"/org/plugin:v1")
+	got, err := a.Acquire(ctx, host+"/org/plugin:v1", Host())
 	if err != nil {
 		t.Fatalf("Acquire: %v", err)
 	}

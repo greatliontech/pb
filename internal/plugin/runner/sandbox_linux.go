@@ -41,6 +41,21 @@ type SandboxRunner struct {
 // Platform is the host's: the sandbox runs the host's kernel.
 func (r *SandboxRunner) Platform() plugin.Platform { return plugin.HostPlatform() }
 
+// Reach is the tier of the row the host reaches for an oci run's
+// intent, as Start would select it (REQ-plugin-runner-selection: the
+// default's native candidate stands where this meets the floor).
+func (r *SandboxRunner) Reach(ctx context.Context) (string, error) {
+	row, _, err := sandbox.Reach(ctx, sandbox.Spec{})
+	if err != nil {
+		return "", err
+	}
+	tier, ok := tierOf(row)
+	if !ok {
+		return "", fmt.Errorf("runner: the sandbox reaches an unknown tier %v", row)
+	}
+	return tier, nil
+}
+
 // Run executes the plugin process (REQ-plugin-response-authority's
 // transport half: stdout and stderr are collected verbatim; judgment
 // is the caller's). The wall clock is the runner's — sandbox adds no

@@ -30,29 +30,31 @@ type daemonRunner struct{ noDaemonRunner }
 
 func (daemonRunner) RunsDaemonImages() {}
 
-// The acquirer is assembled from the settings and the runner: the
-// store beside the module cache, the runner's platform, and the byte
-// path the setting selects for that runner (REQ-plugin-core-verifies).
+// The acquirer is assembled from the session: the store beside the
+// module cache, the lockfile and the trust policy; the substrates it
+// serves are the selection's, under the floor, the daemon byte path
+// on the docker runner's alone where selected
+// (REQ-plugin-core-verifies, REQ-plugin-runner-selection).
 func TestAcquirerConfig(t *testing.T) {
-	plant(t, "plugin-pull: docker\n")
 	cacheHome := cacheHome(t)
-	settings, err := userconfig.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
 	// The trusted root plugin signatures verify against is the one
 	// module evidence verifies against (REQ-prov-plugin-signature).
 	s := &dep.Session{Lock: &lockfile.File{}, Client: &fetch.Client{Policy: &trust.Policy{}, TrustedRoot: sigstoretest.New(t).TrustedRoot()}}
-	cfg, err := acquirerConfig(settings, daemonRunner{}, s)
+	cfg, err := acquirerConfig(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot, Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Pull: oci.PullDaemon}
+	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot}
 	if !reflect.DeepEqual(cfg, want) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}
-	if _, err := acquirerConfig(settings, noDaemonRunner{}, s); err == nil || !strings.Contains(err.Error(), "the user configuration file ") {
-		t.Fatalf("the byte path under a runner without a daemon: %v", err)
+	docker, _ := runner.Only(runner.RunnerDocker, daemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
+	if got := dep.Substrates(docker, true); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Daemon: true}}) {
+		t.Fatalf("the docker runner's substrate under the daemon byte path: %+v", got)
+	}
+	native, _ := runner.Only(runner.RunnerNative, noDaemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
+	if got := dep.Substrates(native, false); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}) {
+		t.Fatalf("the native runner's substrate: %+v", got)
 	}
 }
 
@@ -62,20 +64,21 @@ func TestAcquirerConfig(t *testing.T) {
 // (REQ-plugin-core-verifies, REQ-uc-precedence).
 func TestPullMode(t *testing.T) {
 	file := "the user configuration file /home/u/.config/pb/config.yaml"
+	native, docker := runner.Only(runner.RunnerNative, noDaemonRunner{}), runner.Only(runner.RunnerDocker, daemonRunner{})
 	for _, c := range []struct {
 		value userconfig.Value
-		run   runner.Runner
-		want  oci.PullMode
+		sel   *runner.Selection
+		want  bool
 		text  string
 	}{
-		{userconfig.Value{}, noDaemonRunner{}, oci.PullStore, ""},
-		{userconfig.Value{Value: "store", From: file}, noDaemonRunner{}, oci.PullStore, ""},
-		{userconfig.Value{Value: "docker", From: file}, daemonRunner{}, oci.PullDaemon, ""},
-		{userconfig.Value{Value: "docker", From: file}, noDaemonRunner{}, 0, file + `: plugin-pull "docker": only the docker runner`},
-		{userconfig.Value{Value: "docker", From: "the PBPLUGINPULL environment variable"}, noDaemonRunner{}, 0, `the PBPLUGINPULL environment variable: plugin-pull "docker"`},
-		{userconfig.Value{Value: "rsync", From: file}, daemonRunner{}, 0, file + `: plugin-pull "rsync" names no byte path (byte paths: store, docker)`},
+		{userconfig.Value{}, native, false, ""},
+		{userconfig.Value{Value: "store", From: file}, native, false, ""},
+		{userconfig.Value{Value: "docker", From: file}, docker, true, ""},
+		{userconfig.Value{Value: "docker", From: file}, native, false, file + `: plugin-pull "docker": only the docker runner has a daemon to pull plugins, and the caller names runner native for every entry, which runs no daemon images`},
+		{userconfig.Value{Value: "docker", From: "the PBPLUGINPULL environment variable"}, native, false, `the PBPLUGINPULL environment variable: plugin-pull "docker"`},
+		{userconfig.Value{Value: "rsync", From: file}, docker, false, file + `: plugin-pull "rsync" names no byte path (byte paths: store, docker)`},
 	} {
-		got, err := pullMode(c.value, c.run)
+		got, err := pullMode(c.value, c.sel)
 		if c.text == "" {
 			if err != nil || got != c.want {
 				t.Errorf("%+v: %v %v", c.value, got, err)

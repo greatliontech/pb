@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/go-git/go-billy/v6/util"
@@ -17,6 +18,7 @@ import (
 	"github.com/greatliontech/pb/internal/plugin"
 	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/plugin/genrequest"
+	"github.com/greatliontech/pb/internal/plugin/oci"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
@@ -39,14 +41,39 @@ type LocalAcquirer interface {
 	Acquire(ctx context.Context, value string, args []string) (*plugin.Acquired, error)
 }
 
-// ImageAcquirer is the oci scheme's acquirer, which also honors an
-// override: an entry's reference materialized from a source the
-// invocation names in its place (REQ-plugin-override). What it yields
-// is an image, so its results carry the image's world always, which
-// the verb hands to the runner whole.
+// ImageAcquirer is the oci scheme's acquirer: an entry's image for
+// the first of the candidate substrates it serves, in the order
+// given (REQ-plugin-platform-strict, REQ-plugin-runner-selection),
+// honoring an override too: an entry's reference materialized from a
+// source the invocation names in its place (REQ-plugin-override).
+// What it yields is an image, so its results carry the image's world
+// always, which the verb hands to the runner whole, and the
+// candidate the world was yielded for.
 type ImageAcquirer interface {
-	Acquirer
-	AcquireOverride(ctx context.Context, ref, source string) (*plugin.Acquired, error)
+	Acquire(ctx context.Context, ref string, candidates []oci.Candidate) (*plugin.Acquired, error)
+	AcquireOverride(ctx context.Context, ref, source string, candidates []oci.Candidate) (*plugin.Acquired, error)
+}
+
+// RunnerSelection is the run's runner selection (plugin-execution.md
+// REQ-plugin-runner-selection): the runners an oci entry under the
+// tier floor may run on, in order of preference — one, where a layer
+// named it; the capable ones, under the default — and why the others
+// cannot, which an entry none can run reports.
+type RunnerSelection interface {
+	Candidates(ctx context.Context, floor string) (candidates []runner.Candidate, account string)
+}
+
+// Substrates are the acquirer's candidates for the runners selected,
+// in their order: each runner's platform, the daemon byte path on a
+// runner that runs daemon images where daemonPull selects it
+// (plugin-execution.md REQ-plugin-core-verifies).
+func Substrates(candidates []runner.Candidate, daemonPull bool) []oci.Candidate {
+	out := make([]oci.Candidate, len(candidates))
+	for i, c := range candidates {
+		_, daemon := c.Runner.(runner.DaemonImages)
+		out[i] = oci.Candidate{Platform: c.Runner.Platform(), Daemon: daemon && daemonPull}
+	}
+	return out
 }
 
 // LocalDeps are the local scheme's seams, present together or not at
@@ -58,13 +85,17 @@ type LocalDeps struct {
 }
 
 // GenDeps are the seams the gen verb runs over: the oci acquirer and
-// the selected runner for oci entries, and the local scheme's pair
+// the runner selection for oci entries, and the local scheme's pair
 // where the host has a native runner — without one, no local plugin
 // runs.
 type GenDeps struct {
 	Acquirer ImageAcquirer
-	Runner   runner.Runner
-	Local    *LocalDeps
+	Runner   RunnerSelection
+	// DaemonPull selects the daemon byte path (plugin-execution.md
+	// REQ-plugin-core-verifies) for the entries the docker runner
+	// runs: the daemon pulls the verified digest itself.
+	DaemonPull bool
+	Local      *LocalDeps
 	// NoLocal says why Local is nil where it is: the native runner's
 	// refusal, naming the platform, which a local entry's refusal
 	// then carries (platforms.md REQ-plat-local-runner).
@@ -108,7 +139,27 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 			return fmt.Errorf("generate: local plugins run on the native runner, and %s (plugin %s)", reason, p.Command())
 		}
 	}
-	_, daemonRunner := deps.Runner.(runner.DaemonImages)
+	limits := exec.EffectiveLimits()
+	minTier := exec.EffectiveMinTier()
+	// The runners an oci entry may run on, in order of preference,
+	// with the selection's account of itself (REQ-plugin-runner-selection):
+	// the acquisition admits the first the entry's image serves, so
+	// the entry runs there and nowhere else; a daemon-local image runs
+	// on the docker runner alone.
+	var candidates []runner.Candidate
+	var account string
+	if deps.Runner != nil && slices.ContainsFunc(gf.Plugins, func(p genfile.Plugin) bool { return p.Scheme == plugin.SchemeOCI }) {
+		// Read only where an oci entry needs it: the native runner's
+		// reach is a probe of the host.
+		candidates, account = deps.Runner.Candidates(ctx, minTier)
+	}
+	daemonRunner := -1
+	for i, c := range candidates {
+		if _, daemon := c.Runner.(runner.DaemonImages); daemon {
+			daemonRunner = i
+			break
+		}
+	}
 	// Overrides are judged before anything is acquired: the policy
 	// admits them or not, and every key names a declared oci entry
 	// (REQ-plugin-override).
@@ -123,8 +174,8 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if !found {
 			return fmt.Errorf("generate: override %s names no oci plugin entry", key)
 		}
-		if !daemonRunner && strings.HasPrefix(source, OverrideDaemonPrefix) {
-			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs (select it with --%s docker)", key, runner.FlagRunner)
+		if daemonRunner < 0 && strings.HasPrefix(source, OverrideDaemonPrefix) {
+			return fmt.Errorf("generate: override %s names a daemon-local image, which only the docker runner runs, and none is offered here (%s)", key, account)
 		}
 	}
 	diag := deps.Diagnostics
@@ -152,16 +203,19 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		return fmt.Errorf("generate: %w", err)
 	}
 
+	substrates := Substrates(candidates, deps.DaemonPull)
 	// Every plugin is acquired — verified and pinned — before any
 	// runs, and the pins persist whatever follows: a first-use
 	// resolution is the record even when a later entry fails
 	// (REQ-plugin-digest-pin, REQ-lock-first-use).
 	plugins := make([]*plugin.Acquired, len(gf.Plugins))
+	runners := make([]runner.Candidate, len(gf.Plugins))
 	var acqErr error
 	for i, entry := range gf.Plugins {
 		switch entry.Scheme {
 		case plugin.SchemeLocal:
 			plugins[i], acqErr = deps.Local.Acquirer.Acquire(ctx, entry.Ref, entry.Args)
+			runners[i] = runner.Candidate{Name: runner.RunnerNative, Runner: deps.Local.Runner}
 		default:
 			source, overridden := deps.Overrides[entry.Ref]
 			switch {
@@ -169,24 +223,43 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 				// A daemon-local image: the daemon's already, run by
 				// the docker runner as it is; the process is the
 				// image's own configuration, which the daemon applies.
+				// The docker runner among the candidates, which the
+				// overrides' judgement above found.
 				local := &plugin.DaemonLocal{Reference: strings.TrimPrefix(source, OverrideDaemonPrefix)}
 				plugins[i] = &plugin.Acquired{Image: local}
+				runners[i] = candidates[daemonRunner]
 				fmt.Fprintf(diag, "overriding %s with the daemon-local image %s\n", entry.Ref, local.Reference)
 			case overridden:
-				plugins[i], acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source)
+				plugins[i], acqErr = deps.Acquirer.AcquireOverride(ctx, entry.Ref, source, substrates)
 				if acqErr == nil {
 					fmt.Fprintf(diag, "overriding %s with %s\n", entry.Ref, source)
 				}
 			default:
-				plugins[i], acqErr = deps.Acquirer.Acquire(ctx, entry.Ref)
-				if acqErr == nil {
-					if pulled, ok := plugins[i].Image.(*plugin.Pulled); ok && !daemonRunner {
-						// The acquisition yielded a digest for the
-						// daemon to pull; the CLI refuses the byte path
-						// for this runner first, so this is the seam's
-						// own guard.
-						acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the selected runner runs no daemon images", pulled.Reference())
-					}
+				plugins[i], acqErr = deps.Acquirer.Acquire(ctx, entry.Ref, substrates)
+			}
+			if acqErr != nil {
+				if errors.Is(acqErr, oci.ErrNoCandidate) {
+					acqErr = fmt.Errorf("%w; %s", acqErr, account)
+				}
+				break
+			}
+			if runners[i].Runner == nil {
+				// The candidate the image was acquired for is the
+				// runner; an acquisition naming one the run never
+				// offered is the seam's fault, refused.
+				if k := plugins[i].Candidate; k < 0 || k >= len(candidates) {
+					acqErr = fmt.Errorf("the acquisition named substrate %d of the %d offered", k, len(candidates))
+					break
+				}
+				runners[i] = candidates[plugins[i].Candidate]
+			}
+			if pulled, ok := plugins[i].Image.(*plugin.Pulled); ok {
+				if _, daemon := runners[i].Runner.(runner.DaemonImages); !daemon {
+					// The acquisition yielded a digest for the daemon
+					// to pull for a runner that runs no daemon images:
+					// the seam's own guard.
+					acqErr = fmt.Errorf("the acquisition yields %s for a daemon to pull, and the %s runner runs no daemon images", pulled.Reference(), runners[i].Name)
+					break
 				}
 			}
 		}
@@ -222,8 +295,6 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 	if err := s.cleanOutputs(gf, mods); err != nil {
 		return err
 	}
-	limits := exec.EffectiveLimits()
-	minTier := exec.EffectiveMinTier()
 	// The one way past a tier refusal (REQ-plugin-min-tier).
 	const lowerFloorHint = "lower the floor explicitly in the trust policy's execution block to accept a weaker tier"
 	for i, entry := range gf.Plugins {
@@ -233,9 +304,9 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		// a sandbox row gives an image, so whatever row the host puts
 		// around the binary is reported and none is required
 		// (plugin-execution.md, "Local binaries").
-		run, floor := deps.Runner, minTier
+		run, floor := runners[i].Runner, minTier
 		if entry.Scheme == plugin.SchemeLocal {
-			run, floor = deps.Local.Runner, plugin.TierNone
+			floor = plugin.TierNone
 		}
 		// The world the acquisition yielded is the world the run is
 		// in, whole: the runner reads of it what its substrate needs.
@@ -264,7 +335,7 @@ func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("generate: plugin %s: %w", entry.Command(), err)
 		}
-		fmt.Fprintf(out, "%s: %d file(s) into %s (tier %s, bounds %s)\n", entry.Command(), n, entry.Out, res.Tier, res.Bounds)
+		fmt.Fprintf(out, "%s: %d file(s) into %s (runner %s, tier %s, bounds %s)\n", entry.Command(), n, entry.Out, runners[i].Name, res.Tier, res.Bounds)
 	}
 	return nil
 }

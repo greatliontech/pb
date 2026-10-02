@@ -4,6 +4,6 @@ package runner
 
 // NativeRunner returns the platform's native runner: sandbox's
 // create-only backend on Linux.
-func NativeRunner() (Runner, error) {
+func NativeRunner() (Native, error) {
 	return &SandboxRunner{}, nil
 }

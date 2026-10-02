@@ -48,7 +48,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/runner.Open"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "6ee589303126d0f5ab3fbcf8d044655bc4fcb7287cdc3136069ce66978a4db67"
+  shape_hash: "8cd7ebb4ed05da1a9f656dd59bffeca0b6c3501b3489187a3cca69c00dea8bca"
 }
 
 bindings {
@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-runner-selection"
-  content_hash: "40452a5939a982e48bfec6d0252bf3608453bcb932e035bc74f6db4db182e60f"
-  source_hash: "b21d07528e6fd038d8f146c9b9d6eaf318eed34bdb3c7b916a1cd059db8b9998"
+  content_hash: "dc9f2459adb61ffc6bb4901d55553ce1a27ee71342cdcaf6accca9d4f01d1777"
+  source_hash: "ce75c113841189491c21b650ffff08566f0fb01459be746040f6cf6218bd5eab"
   backend: "go"
   symbol: "github.com/greatliontech/pb/cmd/pb.TestGenerateSelectsFromTheFile"
   role: BINDING_ROLE_TESTS

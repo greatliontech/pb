@@ -5,7 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/greatliontech/pb/internal/testing/imagetest"
+	"github.com/greatliontech/pb/internal/userconfig"
 	iofs "io/fs"
+	"net/http/httptest"
 	"os"
 	pathpkg "path"
 	"path/filepath"
@@ -21,6 +30,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/plugin"
+	"github.com/greatliontech/pb/internal/plugin/oci"
 	"github.com/greatliontech/pb/internal/plugin/runner"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
@@ -38,7 +48,7 @@ type stubAcquirer struct {
 	onAcquire func()
 }
 
-func (s *stubAcquirer) Acquire(_ context.Context, ref string) (*plugin.Acquired, error) {
+func (s *stubAcquirer) Acquire(_ context.Context, ref string, _ []oci.Candidate) (*plugin.Acquired, error) {
 	s.got = append(s.got, ref)
 	if s.onAcquire != nil {
 		s.onAcquire()
@@ -68,6 +78,19 @@ func (s *stubRunner) Platform() plugin.Platform { return plugin.Platform{OS: "li
 type daemonStubRunner struct{ stubRunner }
 
 func (*daemonStubRunner) RunsDaemonImages() {}
+
+// one is the selection a layer made of the one runner: named native,
+// or docker where it runs daemon images.
+func one(r runner.Runner) RunnerSelection {
+	if r == nil {
+		return nil
+	}
+	name := runner.RunnerNative
+	if _, daemon := r.(runner.DaemonImages); daemon {
+		name = runner.RunnerDocker
+	}
+	return runner.Only(name, r)
+}
 
 func respBytes(t *testing.T, files map[string]string) []byte {
 	t.Helper()
@@ -105,7 +128,7 @@ func TestGenHappyPath(t *testing.T) {
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"a/x.pb.go": "code", "doc/readme.md": "d"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var out strings.Builder
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &out); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &out); err != nil {
 		t.Fatal(err)
 	}
 	if got := fx.read(t, "gen/go/a/x.pb.go"); got != "code" {
@@ -121,7 +144,7 @@ func TestGenHappyPath(t *testing.T) {
 	if req.GetParameter() != "k=v" || len(req.GetFileToGenerate()) != 1 || req.GetFileToGenerate()[0] != "x.proto" {
 		t.Fatalf("request = %+v", &req)
 	}
-	if !strings.Contains(out.String(), "2 file(s)") || !strings.Contains(out.String(), "(tier Strong, bounds cgroups)") {
+	if !strings.Contains(out.String(), "2 file(s)") || !strings.Contains(out.String(), "(runner native, tier Strong, bounds cgroups)") {
 		t.Fatalf("report = %q", out.String())
 	}
 	if !strings.Contains(strings.Join(acq.got, ","), "ghcr.io/o/p:v1") {
@@ -135,7 +158,7 @@ func TestGenTierFloor(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierOS, Bounds: runner.BoundsCgroups}}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "tier OS, below the required Strong") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
@@ -145,17 +168,17 @@ func TestGenTierFloor(t *testing.T) {
 		t.Fatalf("runner received floor %q", run.spec.MinTier)
 	}
 	refusing := &stubRunner{err: fmt.Errorf("%w: this host reaches the os row; strong required", runner.ErrTierUnreachable)}
-	err = Gen(ctx, s, GenDeps{Acquirer: acq, Runner: refusing}, &strings.Builder{})
+	err = Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(refusing)}, &strings.Builder{})
 	if !errors.Is(err, runner.ErrTierUnreachable) || !strings.Contains(err.Error(), "reaches the os row") || !strings.Contains(err.Error(), "lower the floor explicitly") {
 		t.Fatalf("err = %v", err)
 	}
 	// An explicitly lowered floor accepts the same run.
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{MinTier: plugin.TierOS}}
 	var out strings.Builder
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &out); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &out); err != nil {
 		t.Fatal(err)
 	}
-	if out.String() != "ghcr.io/o/p:v1: 0 file(s) into gen (tier OS, bounds cgroups)\n" {
+	if out.String() != "ghcr.io/o/p:v1: 0 file(s) into gen (runner native, tier OS, bounds cgroups)\n" {
 		t.Fatalf("report = %q", out.String())
 	}
 }
@@ -167,7 +190,7 @@ func TestGenContainment(t *testing.T) {
 		fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 		acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", hostile: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "is not a clean relative path inside the output directory") {
 			t.Fatalf("%q: err = %v", hostile, err)
 		}
@@ -186,7 +209,7 @@ func TestGenContainment(t *testing.T) {
 	}}
 	db, _ := proto.Marshal(dup)
 	runDup := &stubRunner{res: &runner.Result{Stdout: db, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: runDup}, &strings.Builder{})
+	err := Gen(ctx, sDup, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: one(runDup)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), `names file "x.go" twice`) {
 		t.Fatalf("duplicate name: %v", err)
 	}
@@ -198,7 +221,7 @@ func TestGenContainment(t *testing.T) {
 	resp := &pluginpb.CodeGeneratorResponse{File: []*pluginpb.CodeGeneratorResponse_File{{Name: proto.String("x.go"), InsertionPoint: proto.String("imports"), Content: proto.String("y")}}}
 	b, _ := proto.Marshal(resp)
 	run := &stubRunner{res: &runner.Result{Stdout: b, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: one(run)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "insertion point") {
 		t.Fatalf("insertion point: %v", err)
 	}
@@ -238,7 +261,7 @@ func TestGenPlumbing(t *testing.T) {
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{Limits: trust.Limits{Pids: 7}}}
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if run.spec.Limits.Pids != 7 {
@@ -248,7 +271,7 @@ func TestGenPlumbing(t *testing.T) {
 	declared := &pluginpb.CodeGeneratorResponse{Error: proto.String("cannot handle editions")}
 	b, _ := proto.Marshal(declared)
 	run2 := &stubRunner{res: &runner.Result{Stdout: b, Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run2}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run2)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "cannot handle editions") {
 		t.Fatalf("declared error: %v", err)
 	}
@@ -280,7 +303,7 @@ func TestGenContainmentProperty(t *testing.T) {
 		}
 		_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{name: "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: one(run)}, &strings.Builder{})
 		clean := name != "" && name != "." && name != ".." && !strings.HasPrefix(name, "/") && !strings.HasPrefix(name, "../") && pathpkg.Clean(name) == name
 		if clean && err != nil {
 			rt.Fatalf("clean %q refused: %v", name, err)
@@ -316,7 +339,7 @@ func TestGenFailurePaths(t *testing.T) {
 			"pb.gen.yaml": genEntry,
 		})
 		s := fx.session(t, ".")
-		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: okRun()}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(okRun())}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "example.com/missing") {
 			t.Fatalf("unresolvable build list: %v", err)
 		}
@@ -331,7 +354,7 @@ func TestGenFailurePaths(t *testing.T) {
 		fx.Endpoint("example.com/m1", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 		fx.Endpoint("example.com/m1", "v1.0.0", "mod", ws("example.com/m1", ""))
 		s := fx.session(t, ".")
-		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: okRun()}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(okRun())}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "example.com/m1") {
 			t.Fatalf("missing archive: %v", err)
 		}
@@ -344,7 +367,7 @@ func TestGenFailurePaths(t *testing.T) {
 			"pb.gen.yaml": genEntry,
 		})
 		s := fx.session(t, ".")
-		if err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: okRun()}, &strings.Builder{}); err == nil {
+		if err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(okRun())}, &strings.Builder{}); err == nil {
 			t.Fatal("uncompilable source accepted")
 		}
 	})
@@ -352,7 +375,7 @@ func TestGenFailurePaths(t *testing.T) {
 		// Grammar errors die at parse time; the build arm fires on
 		// semantic failures against the compiled set.
 		_, s := genFixture(t, genEntry+"overrides:\n  - files: x.proto\n    option: (m1.nosuch)\n    value: x\n")
-		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: okRun()}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(okRun())}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "no extension") {
 			t.Fatalf("bad override: %v", err)
 		}
@@ -380,20 +403,20 @@ func TestGenFailurePaths(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { os.Chmod(filepath.Join(dir, "a/blocked"), 0o755) })
-		if err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: okRun()}, &strings.Builder{}); err == nil {
+		if err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(okRun())}, &strings.Builder{}); err == nil {
 			t.Fatal("unreadable workspace directory accepted")
 		}
 	})
 	t.Run("acquire failure", func(t *testing.T) {
 		_, s := genFixture(t, genEntry)
-		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{err: context.DeadlineExceeded}, Runner: okRun()}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{err: context.DeadlineExceeded}, Runner: one(okRun())}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 			t.Fatalf("acquire failure: %v", err)
 		}
 	})
 	t.Run("runner failure", func(t *testing.T) {
 		_, s := genFixture(t, genEntry)
-		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: &stubRunner{err: context.DeadlineExceeded}}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: okAcq(), Runner: one(&stubRunner{err: context.DeadlineExceeded})}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1") {
 			t.Fatalf("runner failure: %v", err)
 		}
@@ -413,7 +436,7 @@ func TestGenPersistsPins(t *testing.T) {
 		},
 	}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if got := fx.read(t, "pb.lock"); !strings.Contains(got, "ghcr.io/o/p:v1") {
@@ -441,7 +464,7 @@ func TestGenWriteRealFS(t *testing.T) {
 	deps := func(files map[string]string) GenDeps {
 		return GenDeps{
 			Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
-			Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, files), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
+			Runner:   one(&stubRunner{res: &runner.Result{Stdout: respBytes(t, files), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}),
 		}
 	}
 
@@ -538,7 +561,7 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			s := fx.session(t, pathpkg.Join(root, "."))
 			deps := GenDeps{
 				Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}},
-				Runner:   &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", "sub/deep/x.go": "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}},
+				Runner:   one(&stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"ok.go": "x", "sub/deep/x.go": "y"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}),
 			}
 			err := Gen(ctx, s, deps, &strings.Builder{})
 			if err == nil || !strings.Contains(err.Error(), `passes through "sub", a symlink`) {
@@ -555,7 +578,7 @@ func TestGenSymlinkEscapeRefused(t *testing.T) {
 			if err := fx.ws.Symlink(filepath.Join(outside, "leaf"), at("gen/leaf.go")); err != nil {
 				t.Fatal(err)
 			}
-			deps.Runner = &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"leaf.go": "z"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+			deps.Runner = one(&stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"leaf.go": "z"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}})
 			if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 				t.Fatal(err)
 			}
@@ -577,7 +600,7 @@ func TestGenRequestDeterministic(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		_, s := genFixture(t, gen)
 		run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: run}, &strings.Builder{}); err != nil {
+		if err := Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}, Runner: one(run)}, &strings.Builder{}); err != nil {
 			t.Fatal(err)
 		}
 		runs = append(runs, run.spec.Stdin)
@@ -592,12 +615,12 @@ func TestGenRequestDeterministic(t *testing.T) {
 func TestGenNamesEntry(t *testing.T) {
 	okAcq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: x.proto\n    option: (m1.nosuch)\n    value: x\n")
-	err := Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: &stubRunner{}}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: one(&stubRunner{})}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: ") || !strings.Contains(err.Error(), "no extension") {
 		t.Fatalf("request build arm: %v", err)
 	}
 	_, s = genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{err: errors.New("registry down")}, Runner: &stubRunner{}}, &strings.Builder{})
+	err = Gen(ctx, s, GenDeps{Acquirer: &stubAcquirer{err: errors.New("registry down")}, Runner: one(&stubRunner{})}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: registry down") {
 		t.Fatalf("acquire arm: %v", err)
 	}
@@ -607,7 +630,7 @@ func TestGenNamesEntry(t *testing.T) {
 		{Stdout: respBytes(t, nil), Tier: "Absolute", Bounds: runner.BoundsCgroups},
 	} {
 		_, s = genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
-		err = Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: &stubRunner{res: res}}, &strings.Builder{})
+		err = Gen(ctx, s, GenDeps{Acquirer: okAcq, Runner: one(&stubRunner{res: res})}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: the runner reported no sandbox tier or bounds mechanism") {
 			t.Fatalf("runner report %+v: %v", res, err)
 		}
@@ -634,7 +657,7 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 		}
 	}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/q:v1: registry down") {
 		t.Fatalf("err = %v", err)
 	}
@@ -646,7 +669,7 @@ func TestGenPinsPersistAcrossLaterFailure(t *testing.T) {
 	}
 }
 
-func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string) (*plugin.Acquired, error) {
+func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string, _ []oci.Candidate) (*plugin.Acquired, error) {
 	s.overrides = append(s.overrides, ref+"="+source)
 	return s.acq, s.err
 }
@@ -676,7 +699,7 @@ func TestGenLocalEntry(t *testing.T) {
 	ociRun := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	var out strings.Builder
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun, Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(ociRun), Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
 		t.Fatal(err)
 	}
 	if loc.value != "tools/gen" || strings.Join(loc.args, "|") != "--a|b c" {
@@ -688,10 +711,10 @@ func TestGenLocalEntry(t *testing.T) {
 	if e, ok := ociRun.spec.Image.(*plugin.Export); ociRun.spec.Scheme != plugin.SchemeOCI || !ok || e.Rootfs != "/r" || ociRun.spec.MinTier != plugin.TierStrong {
 		t.Fatalf("oci run spec = %+v", ociRun.spec)
 	}
-	if !strings.Contains(out.String(), "tools/gen --a b c: 1 file(s) into gen (tier Minimal, bounds rlimits)") {
+	if !strings.Contains(out.String(), "tools/gen --a b c: 1 file(s) into gen (runner native, tier Minimal, bounds rlimits)") {
 		t.Fatalf("report = %q", out.String())
 	}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: ociRun}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(ociRun)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "local plugins run on the native runner, and none is wired here") {
 		t.Fatalf("no native runner: %v", err)
 	}
@@ -713,7 +736,7 @@ func TestGenTargets(t *testing.T) {
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
 	var requests [][]string
 	run := &recordingRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}, requests: &requests}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	// Paths are module-relative: the module's directory is the include
@@ -729,7 +752,7 @@ func TestGenTargets(t *testing.T) {
 	}
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n    files: [\"v2/**\"]\n")
 	s = fx.session(t, ".")
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), `plugin ghcr.io/o/p:v1: genrequest: the pattern "v2/**" selects no workspace file`) {
 		t.Fatalf("no match: %v", err)
 	}
@@ -776,7 +799,7 @@ func TestGenOverrideModuleScope(t *testing.T) {
 	s := fx.session(t, ".")
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
 	run := &recordingRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if len(run.whole) != 1 {
@@ -797,7 +820,7 @@ func TestGenOverrideModuleScope(t *testing.T) {
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\noverrides:\n  - files: \"**\"\n    module: example.com/gone\n    option: java_package\n    value: x\n")
 	s = fx.session(t, ".")
 	failing := &stubAcquirer{err: errors.New("registry down")}
-	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: run}, &strings.Builder{}); err == nil || err.Error() != "generate: overrides[0] names the module example.com/gone, which the build does not hold" {
+	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: one(run)}, &strings.Builder{}); err == nil || err.Error() != "generate: overrides[0] names the module example.com/gone, which the build does not hold" {
 		t.Fatalf("a scope naming no module: %v", err)
 	}
 }
@@ -823,7 +846,7 @@ func TestGenClean(t *testing.T) {
 	s := fx.session(t, ".")
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/plugin"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, map[string]string{"fresh.go": "new"}), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	for _, gone := range []string{"gen/go/stale.go", "gen/go/deep/old.go", "gen/ts/stale.ts"} {
@@ -843,7 +866,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/go/fresh.go") {
@@ -857,7 +880,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/p:v1\n    out: gen/ts\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if fx.exists(t, "gen/go/stale.go") || fx.exists(t, "gen/go/deep/old.go") || !fx.exists(t, "gen/go/fresh.go") {
@@ -871,7 +894,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/p:v1\n    out: a\n  - ref: ghcr.io/o/p:v1\n    out: .\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatalf("an entry cleaning nothing judged: %v", err)
 	}
 	if fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "a/fresh.go") || !fx.exists(t, "fresh.go") || !fx.exists(t, "a/x.proto") {
@@ -893,7 +916,7 @@ func TestGenClean(t *testing.T) {
 				fx.write(t, "pb.gen.yaml", "plugins:\n"+cleaning+keptEntry)
 			}
 			s = fx.session(t, ".")
-			err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+			err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 			if err == nil || !strings.Contains(err.Error(), "plugin ghcr.io/o/p:v1: clean refuses to empty gen/go, "+msg) {
 				t.Fatalf("kept %s under a cleaned directory, %s: %v", kept, order, err)
 			}
@@ -909,7 +932,7 @@ func TestGenClean(t *testing.T) {
 	fx.write(t, "gen/other.txt", "kept")
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/q:v1\n    out: gen\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatalf("a cleaned directory under a kept one: %v", err)
 	}
 	if fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/other.txt") || !fx.exists(t, "gen/ts/stale.ts") || !fx.exists(t, "gen/fresh.go") || !fx.exists(t, "gen/go/fresh.go") {
@@ -920,7 +943,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: true\n  - ref: ghcr.io/o/q:v1\n    out: a\n    clean: true\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "plugin ghcr.io/o/q:v1: clean refuses to empty a, which holds the module example.com/a at a") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "plugin ghcr.io/o/q:v1: clean refuses to empty a, which holds the module example.com/a at a") {
 		t.Fatalf("an entry's clean over a module: %v", err)
 	}
 	if !fx.exists(t, "gen/go/stale.go") {
@@ -931,7 +954,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n    clean: false\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if fx.exists(t, "gen/go/stale.go") {
@@ -950,7 +973,7 @@ func TestGenClean(t *testing.T) {
 		fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: "+out+"\n")
 		s = fx.session(t, ".")
 		counting := &stubRunner{res: run.res}
-		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: counting}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(counting)}, &strings.Builder{})
 		if out == "a/empty" {
 			if err != nil {
 				t.Fatalf("out %s: %v", out, err)
@@ -978,7 +1001,7 @@ func TestGenClean(t *testing.T) {
 	}
 	fx = newDep(t, rooted)
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatalf("root module, out gen: %v", err)
 	}
 	if fx.exists(t, "gen/stale.go") || !fx.exists(t, "gen/fresh.go") {
@@ -987,7 +1010,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, rooted)
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: proto\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty proto, which holds proto/x.proto of the module example.com/root") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty proto, which holds proto/x.proto of the module example.com/root") {
 		t.Fatalf("root module, out proto: %v", err)
 	}
 	if !fx.exists(t, "proto/x.proto") {
@@ -1010,7 +1033,7 @@ func TestGenClean(t *testing.T) {
 		"x.proto": "syntax = \"proto3\";\n",
 	})
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatalf("replacement, out under it holding no file: %v", err)
 	}
 	if fx.exists(t, "forks/x/gen/old") {
@@ -1018,7 +1041,7 @@ func TestGenClean(t *testing.T) {
 	}
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: forks/x\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty forks/x, which holds the module example.com/x at forks/x") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty forks/x, which holds the module example.com/x at forks/x") {
 		t.Fatalf("replacement directory: %v", err)
 	}
 	if !fx.exists(t, "forks/x/x.proto") {
@@ -1034,13 +1057,13 @@ func TestGenClean(t *testing.T) {
 	fx.write(t, "a/nested/gen/old", "x")
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: a/nested\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty a/nested, which holds the module file a/nested/pb.yaml") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty a/nested, which holds the module file a/nested/pb.yaml") {
 		t.Fatalf("nested module: %v", err)
 	}
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: a/wrap\n")
 	fx.write(t, "a/wrap/deep/pb.yaml", ws("example.com/deep", ""))
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "holds the module file a/wrap/deep/pb.yaml") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "holds the module file a/wrap/deep/pb.yaml") {
 		t.Fatalf("deeper module: %v", err)
 	}
 	if !fx.exists(t, "a/nested/pb.yaml") || !fx.exists(t, "a/nested/n.proto") || !fx.exists(t, "a/wrap/deep/pb.yaml") {
@@ -1068,7 +1091,7 @@ func TestGenClean(t *testing.T) {
 			t.Fatal(err)
 		}
 		s = fx.session(t, ".")
-		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{})
+		err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{})
 		if err == nil || !strings.Contains(err.Error(), "clean refuses to empty "+c.out+", reached through the symlink "+c.named) {
 			t.Fatalf("out %s through %s: %v", c.out, c.link, err)
 		}
@@ -1083,7 +1106,7 @@ func TestGenClean(t *testing.T) {
 	fx.write(t, "notes", "n")
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: notes\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty notes, which is not a directory") {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "clean refuses to empty notes, which is not a directory") {
 		t.Fatalf("a file as out: %v", err)
 	}
 	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "notes") {
@@ -1094,7 +1117,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	fx.write(t, "pb.gen.yaml", "clean: true\nplugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen/go\n  - ref: ghcr.io/o/p:v1\n    out: gen/ts\n    files: [\"typo/**\"]\n")
 	s = fx.session(t, ".")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), `the pattern "typo/**" selects no workspace file`) {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), `the pattern "typo/**" selects no workspace file`) {
 		t.Fatalf("dead pattern: %v", err)
 	}
 	if !fx.exists(t, "gen/go/stale.go") || !fx.exists(t, "gen/ts/stale.ts") {
@@ -1105,7 +1128,7 @@ func TestGenClean(t *testing.T) {
 	fx = newDep(t, files)
 	s = fx.session(t, ".")
 	failing := &stubAcquirer{err: errors.New("registry down")}
-	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: run}, &strings.Builder{}); err == nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: failing, Runner: one(run)}, &strings.Builder{}); err == nil {
 		t.Fatal("an acquisition failure generated")
 	}
 	if !fx.exists(t, "gen/go/stale.go") {
@@ -1123,7 +1146,7 @@ func TestGenOverrides(t *testing.T) {
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}}}
 	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	var diag strings.Builder
-	deps := GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}, Diagnostics: &diag}
+	deps := GenDeps{Acquirer: acq, Runner: one(run), Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}, Diagnostics: &diag}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -1138,13 +1161,13 @@ func TestGenOverrides(t *testing.T) {
 	// runs, naming the way to select the docker runner.
 	diag.Reset()
 	runs := &daemonStubRunner{stubRunner{res: run.res}}
-	deps = GenDeps{Acquirer: acq, Runner: runs, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
+	deps = GenDeps{Acquirer: acq, Runner: one(runs), Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	plain := &stubRunner{res: run.res}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}}, &strings.Builder{})
-	if err == nil || !strings.Contains(err.Error(), "only the docker runner runs (select it with --runner docker)") || plain.spec.Scheme != "" {
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(plain), Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "only the docker runner runs, and none is offered here (the caller names runner native for every entry)") || plain.spec.Scheme != "" {
 		t.Fatalf("daemon image under another runner: %v (ran: %+v)", err, plain.spec)
 	}
 	if d, ok := runs.spec.Image.(*plugin.DaemonLocal); !ok || d.Reference != "plugins/q:dev" || len(runs.spec.Process.Argv) != 0 {
@@ -1155,20 +1178,20 @@ func TestGenOverrides(t *testing.T) {
 	}
 	// A key naming no oci entry — a local entry included — and a
 	// policy forbidding overrides.
-	deps = GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/none:v1": "/tmp/x"}}
+	deps = GenDeps{Acquirer: acq, Runner: one(run), Overrides: map[string]string{"ghcr.io/o/none:v1": "/tmp/x"}}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "names no oci plugin entry") {
 		t.Fatalf("unknown key: %v", err)
 	}
 	_, sl := genFixture(t, "plugins:\n  - local: tools/gen\n    out: gen\n")
 	sl.Client.Policy = &trust.Policy{Execution: trust.Execution{Schemes: []string{plugin.SchemeOCI, plugin.SchemeLocal}}}
 	loc := &stubLocal{acq: &plugin.Acquired{Process: plugin.Process{Argv: []string{"/abs/tools/gen"}}}}
-	deps = GenDeps{Acquirer: acq, Runner: run, Local: &LocalDeps{Acquirer: loc, Runner: run}, Overrides: map[string]string{"tools/gen": "/tmp/x"}}
+	deps = GenDeps{Acquirer: acq, Runner: one(run), Local: &LocalDeps{Acquirer: loc, Runner: run}, Overrides: map[string]string{"tools/gen": "/tmp/x"}}
 	if err := Gen(ctx, sl, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "names no oci plugin entry") {
 		t.Fatalf("local key: %v", err)
 	}
 	off := false
 	s.Client.Policy = &trust.Policy{Execution: trust.Execution{PluginOverrides: &off}}
-	deps = GenDeps{Acquirer: acq, Runner: run, Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}}
+	deps = GenDeps{Acquirer: acq, Runner: one(run), Overrides: map[string]string{"ghcr.io/o/p:v1": "/tmp/layout"}}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err == nil || !strings.Contains(err.Error(), "forbids plugin overrides") {
 		t.Fatalf("forbidden: %v", err)
 	}
@@ -1184,24 +1207,233 @@ func TestGenPulledImage(t *testing.T) {
 	image := repo + "@" + digest
 	acq := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Pulled{Repository: repo, Digest: digest, Entry: "linux/arm/v6"}}}
 	run := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: run}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(run)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if p, ok := run.spec.Image.(*plugin.Pulled); !ok || p.Reference() != image || p.Entry != "linux/arm/v6" || len(run.spec.Process.Argv) != 0 {
 		t.Fatalf("runner received %+v", run.spec)
 	}
 	plain := &stubRunner{res: run.res}
-	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: plain}, &strings.Builder{})
+	err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(plain)}, &strings.Builder{})
 	if err == nil || !strings.Contains(err.Error(), "runs no daemon images") || plain.spec.Image != nil {
 		t.Fatalf("a runner without a daemon ran a pulled image: %v %+v", err, plain.spec)
 	}
 	// A store acquisition's world reaches the runner whole: the
 	// export with the admitted entry it is, which no runner reads.
 	stored := &stubAcquirer{acq: &plugin.Acquired{Image: &plugin.Export{Rootfs: "/r", Entry: "linux/arm/v6"}, Process: plugin.Process{Argv: []string{"/p"}}}}
-	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: plain}, &strings.Builder{}); err != nil {
+	if err := Gen(ctx, s, GenDeps{Acquirer: stored, Runner: one(plain)}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
 	if e, ok := plain.spec.Image.(*plugin.Export); !ok || e.Rootfs != "/r" || e.Entry != "linux/arm/v6" {
 		t.Fatalf("the store path's spec: %+v", plain.spec)
+	}
+}
+
+// stubSelection is a runner selection of the candidates given, in
+// order, with what it says is absent.
+type stubSelection struct {
+	cands  []runner.Candidate
+	absent string
+}
+
+func (s *stubSelection) Candidates(context.Context, string) ([]runner.Candidate, string) {
+	return s.cands, s.absent
+}
+
+// perRefAcquirer answers each reference with its own acquisition,
+// recording the candidates it was offered.
+type perRefAcquirer struct {
+	byRef   map[string]*plugin.Acquired
+	errs    map[string]error
+	offered map[string][]oci.Candidate
+}
+
+func (p *perRefAcquirer) Acquire(_ context.Context, ref string, cands []oci.Candidate) (*plugin.Acquired, error) {
+	if p.offered == nil {
+		p.offered = map[string][]oci.Candidate{}
+	}
+	p.offered[ref] = cands
+	return p.byRef[ref], p.errs[ref]
+}
+
+func (p *perRefAcquirer) AcquireOverride(ctx context.Context, ref, _ string, cands []oci.Candidate) (*plugin.Acquired, error) {
+	return p.Acquire(ctx, ref, cands)
+}
+
+// The default selection runs each entry on the first candidate its
+// image serves: one entry natively, the next on the docker runner,
+// each runner receiving its own entry and the report naming each
+// entry's runner; the candidates are offered to the acquisition in
+// the selection's order, the daemon byte path on the docker runner's
+// alone (REQ-plugin-runner-selection, REQ-plat-oci-substrate,
+// REQ-gen-verb).
+func TestGenRunnerPerEntry(t *testing.T) {
+	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/native:v1\n    out: gen/a\n  - ref: ghcr.io/o/foreign:v1\n    out: gen/b\n")
+	res := func() *runner.Result {
+		return &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}
+	}
+	native := &stubRunner{res: res()}
+	docker := &daemonStubRunner{stubRunner{res: res()}}
+	sel := &stubSelection{cands: []runner.Candidate{{Name: runner.RunnerNative, Runner: native}, {Name: runner.RunnerDocker, Runner: docker}}}
+	acq := &perRefAcquirer{byRef: map[string]*plugin.Acquired{
+		"ghcr.io/o/native:v1":  {Image: &plugin.Export{Rootfs: "/n"}, Process: plugin.Process{Argv: []string{"/p"}}, Candidate: 0},
+		"ghcr.io/o/foreign:v1": {Image: &plugin.Pulled{Repository: "ghcr.io/o/foreign", Digest: "sha256:" + strings.Repeat("ab", 32), Entry: "linux/amd64"}, Candidate: 1},
+	}}
+	var out strings.Builder
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: sel, DaemonPull: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if n, ok := native.spec.Image.(*plugin.Export); !ok || n.Rootfs != "/n" {
+		t.Fatalf("the native runner ran %+v", native.spec.Image)
+	}
+	if d, ok := docker.spec.Image.(*plugin.Pulled); !ok || d.Repository != "ghcr.io/o/foreign" {
+		t.Fatalf("the docker runner ran %+v", docker.spec.Image)
+	}
+	want := "ghcr.io/o/native:v1: 0 file(s) into gen/a (runner native, tier Strong, bounds cgroups)\nghcr.io/o/foreign:v1: 0 file(s) into gen/b (runner docker, tier Strong, bounds cgroups)\n"
+	if out.String() != want {
+		t.Fatalf("report = %q, want %q", out.String(), want)
+	}
+	offered := []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "amd64"}}, {Platform: plugin.Platform{OS: "linux", Arch: "amd64"}, Daemon: true}}
+	for _, ref := range []string{"ghcr.io/o/native:v1", "ghcr.io/o/foreign:v1"} {
+		if got := acq.offered[ref]; len(got) != 2 || got[0] != offered[0] || got[1] != offered[1] {
+			t.Fatalf("%s was offered %+v, want %+v", ref, got, offered)
+		}
+	}
+	// Without the daemon byte path no candidate pulls from the daemon.
+	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: sel}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := acq.offered["ghcr.io/o/foreign:v1"]; got[1].Daemon {
+		t.Fatalf("the store byte path offered a daemon pull: %+v", got)
+	}
+}
+
+// An entry no candidate serves is refused naming what its image
+// serves (the acquisition's account) and why no other runner was
+// offered (the selection's); an acquisition naming a candidate never
+// offered, or yielding a daemon's pull for a runner without one, is
+// refused as the seam's fault; a daemon-local override needs the
+// docker runner among the candidates (REQ-plugin-runner-selection,
+// REQ-plugin-override).
+func TestGenNoRunnerForEntry(t *testing.T) {
+	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n")
+	native := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	only := &stubSelection{cands: []runner.Candidate{{Name: runner.RunnerNative, Runner: native}}, absent: "no daemon is reachable for the docker runner (docker version: no daemon)"}
+	refused := &perRefAcquirer{errs: map[string]error{"ghcr.io/o/p:v1": fmt.Errorf("oci: ghcr.io/o/p:v1 has no linux/amd64 entry in its manifest list (found [linux/arm64]): the image does not support this platform (%w)", oci.ErrNoCandidate)}}
+	err := Gen(ctx, s, GenDeps{Acquirer: refused, Runner: only}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "generate: plugin ghcr.io/o/p:v1: oci: ghcr.io/o/p:v1 has no linux/amd64 entry") || !strings.Contains(err.Error(), "; no daemon is reachable for the docker runner") {
+		t.Fatalf("an entry no candidate serves: %v", err)
+	}
+	none := &stubSelection{absent: "the native runner's row reaches tier OS, below the floor Strong; no daemon is reachable for the docker runner (docker version: no daemon)"}
+	refused.errs["ghcr.io/o/p:v1"] = fmt.Errorf("oci: ghcr.io/o/p:v1 serves [linux/arm64], and no runner here runs any of them (%w)", oci.ErrNoCandidate)
+	err = Gen(ctx, s, GenDeps{Acquirer: refused, Runner: none}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "serves [linux/arm64], and no runner here runs any of them (the image serves no substrate offered); the native runner's row reaches tier OS, below the floor Strong; no daemon") {
+		t.Fatalf("an entry with no candidate: %v", err)
+	}
+	// Another failure of the acquisition carries no account of the
+	// selection: it is not about the runners.
+	refused.errs["ghcr.io/o/p:v1"] = errors.New("registry down")
+	err = Gen(ctx, s, GenDeps{Acquirer: refused, Runner: only}, &strings.Builder{})
+	if err == nil || err.Error() != "generate: plugin ghcr.io/o/p:v1: registry down" {
+		t.Fatalf("a registry failure: %v", err)
+	}
+	wild := &perRefAcquirer{byRef: map[string]*plugin.Acquired{"ghcr.io/o/p:v1": {Image: &plugin.Export{Rootfs: "/r"}, Process: plugin.Process{Argv: []string{"/p"}}, Candidate: 3}}}
+	err = Gen(ctx, s, GenDeps{Acquirer: wild, Runner: only}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "the acquisition named substrate 3 of the 1 offered") || native.spec.Image != nil {
+		t.Fatalf("a candidate never offered: %v %+v", err, native.spec)
+	}
+	pulled := &perRefAcquirer{byRef: map[string]*plugin.Acquired{"ghcr.io/o/p:v1": {Image: &plugin.Pulled{Repository: "ghcr.io/o/p", Digest: "sha256:" + strings.Repeat("ab", 32)}}}}
+	err = Gen(ctx, s, GenDeps{Acquirer: pulled, Runner: only}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "the native runner runs no daemon images") || native.spec.Image != nil {
+		t.Fatalf("a daemon's pull for the native runner: %v %+v", err, native.spec)
+	}
+	err = Gen(ctx, s, GenDeps{Acquirer: pulled, Runner: only, Overrides: map[string]string{"ghcr.io/o/p:v1": OverrideDaemonPrefix + "local/p"}}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "only the docker runner runs, and none is offered here (no daemon is reachable for the docker runner") {
+		t.Fatalf("a daemon-local override without the docker runner: %v", err)
+	}
+}
+
+// pushIndexAt pushes to the registry at host a manifest list of one
+// image per platform, each with an entrypoint, and returns the
+// reference.
+func pushIndexAt(t *testing.T, host, repo string, platforms ...v1.Platform) string {
+	t.Helper()
+	idx := v1.ImageIndex(empty.Index)
+	for _, p := range platforms {
+		img, err := random.Image(64, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		img, err = mutate.ConfigFile(img, &v1.ConfigFile{OS: p.OS, Architecture: p.Architecture, Config: v1.Config{Entrypoint: []string{"/plugin"}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		pl := p
+		idx = mutate.AppendManifests(idx, mutate.IndexAddendum{Add: img, Descriptor: v1.Descriptor{Platform: &pl}})
+	}
+	ref := host + "/" + repo + ":v1"
+	r, err := name.ParseReference(ref, name.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := remote.WriteIndex(r, idx); err != nil {
+		t.Fatal(err)
+	}
+	return ref
+}
+
+// The selection and the acquisition composed, on the host: under the
+// default with no daemon on PATH, an image serving another platform
+// alone is refused naming the platforms it serves, the row the host
+// reaches, the floor and the daemon it lacks — the plan's witness —
+// and, under a selection of one runner, an image serving the host is
+// acquired from a live registry and run on that runner with the
+// export for the host's entry (REQ-plugin-runner-selection,
+// REQ-plat-oci-substrate, REQ-plugin-platform-strict).
+func TestGenSelectsAcrossSeams(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the native runner's row is reached on linux")
+	}
+	t.Setenv("PATH", t.TempDir()) // no docker here
+	srv := httptest.NewServer(imagetest.Handler(false))
+	t.Cleanup(srv.Close)
+	host := strings.TrimPrefix(srv.URL, "http://")
+	foreign := pushIndexAt(t, host, "org/foreign", v1.Platform{OS: "plan9", Architecture: "mips"})
+	served := pushIndexAt(t, host, "org/served", v1.Platform{OS: "plan9", Architecture: "mips"}, v1.Platform{OS: runtime.GOOS, Architecture: runtime.GOARCH})
+	newAcquirer := func(t *testing.T, s *Session) *oci.Acquirer {
+		t.Helper()
+		acq, err := oci.New(oci.Config{WorkDir: t.TempDir(), Lock: s.Lock, Policy: s.Client.Policy})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { acq.Close() })
+		return acq
+	}
+	_, s := genFixture(t, "plugins:\n  - ref: "+foreign+"\n    out: gen\n")
+	s.Client.Policy = &trust.Policy{}
+	sel, err := runner.Open(nil, userconfig.Value{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = Gen(ctx, s, GenDeps{Acquirer: newAcquirer(t, s), Runner: sel}, &strings.Builder{})
+	if err == nil || !strings.Contains(err.Error(), "generate: plugin "+foreign+": ") || !strings.Contains(err.Error(), "plan9/mips") || !strings.Contains(err.Error(), "the floor Strong") || !strings.Contains(err.Error(), "no daemon is reachable for the docker runner") {
+		t.Fatalf("an image serving another platform alone: %v", err)
+	}
+	_, s = genFixture(t, "plugins:\n  - ref: "+served+"\n    out: gen\n")
+	s.Client.Policy = &trust.Policy{}
+	run := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
+	var out strings.Builder
+	if err := Gen(ctx, s, GenDeps{Acquirer: newAcquirer(t, s), Runner: one(run)}, &out); err != nil {
+		t.Fatal(err)
+	}
+	e, ok := run.spec.Image.(*plugin.Export)
+	if !ok || e.Entry != runtime.GOOS+"/"+runtime.GOARCH || run.spec.Process.Argv[0] != "/plugin" {
+		t.Fatalf("the runner received %+v", run.spec)
+	}
+	if _, err := os.Stat(e.Rootfs); err != nil {
+		t.Fatalf("the export: %v", err)
+	}
+	if !strings.Contains(out.String(), served+": 0 file(s) into gen (runner native, tier Strong, bounds cgroups)") {
+		t.Fatalf("report = %q", out.String())
 	}
 }

@@ -52,35 +52,34 @@ func v1Platform(p plugin.Platform) v1.Platform {
 // EvidenceDir the evidence kept with it (provenance.md
 // REQ-prov-plugin-evidence-store), empty keeping none; TrustedRoot
 // is the root plugin signatures verify against, nil leaving every
-// image unsigned (require-provenance then fails closed); a zero
-// Platform means the host's.
+// image unsigned (require-provenance then fails closed).
 type Config struct {
 	WorkDir     string
 	EvidenceDir string
 	Lock        *lockfile.File
 	Policy      *trust.Policy
 	TrustedRoot *gitprov.TrustedRoot
-	Platform    plugin.Platform
 	// Transport carries every round trip to a registry outside this
 	// process; nil is the registry client's own. A suite serving its
 	// registries in this process hands the transport serving them.
 	Transport http.RoundTripper
-	// Pull is the byte path an acquisition yields (plugin-execution.md
-	// REQ-plugin-core-verifies): the zero value exports from the store.
-	Pull PullMode
 }
 
-// PullMode is the byte path by which a verified image reaches the
-// runner: pb's store, or a Docker daemon pulling the verified digest.
-type PullMode int
+// Candidate is a substrate an acquisition may serve, in the order the
+// caller prefers them (plugin-execution.md REQ-plugin-runner-selection):
+// its platform, which the image must serve with exactly one entry
+// (REQ-plugin-platform-strict), and the byte path by which the
+// verified image reaches it (REQ-plugin-core-verifies) — pb's store
+// exporting it, or, where Daemon is set, a Docker daemon pulling the
+// verified digest itself.
+type Candidate struct {
+	Platform plugin.Platform
+	Daemon   bool
+}
 
-const (
-	// PullStore exports the verified image from pb's store.
-	PullStore PullMode = iota
-	// PullDaemon verifies without materializing and yields the
-	// repository at the verified digest for the daemon to pull.
-	PullDaemon
-)
+// Host is the one candidate every caller without a selection has:
+// the host's platform, served from the store.
+func Host() []Candidate { return []Candidate{{Platform: plugin.HostPlatform()}} }
 
 // Acquirer materializes plugin images: verified through the seam,
 // pinned in the lockfile, exported to a root filesystem.
@@ -91,8 +90,6 @@ type Acquirer struct {
 	policy    *trust.Policy
 	root      *gitprov.TrustedRoot
 	kept      *evidence.Store // nil keeps none
-	platform  plugin.Platform
-	pull      PullMode
 
 	mu      sync.Mutex
 	pending map[string]*acquisition // digest-or-tag target -> in-flight state
@@ -112,6 +109,32 @@ type acquisition struct {
 	entry            string // the manifest-list entry the seam admitted, os/arch with its variant
 	resolved         string
 	provenance       lockfile.Provenance
+	// candidates are the substrates the acquisition may serve, in
+	// order; asked is the one the pull in flight asked the store for,
+	// and chosen the one the seam admitted — the first candidate the
+	// image serves — which the pull is retargeted to where they
+	// differ (errRetarget).
+	candidates []Candidate
+	asked      int
+	chosen     int
+	// retargets says the acquisition asks the store for a candidate's
+	// platform and follows the seam's verdict to another (acquire);
+	// an update resolves alone and follows nothing.
+	retargets bool
+}
+
+// ErrNoCandidate is the class of a refusal where the image serves no
+// candidate's platform: what it serves is named, and the caller adds
+// why no other substrate was offered.
+var ErrNoCandidate = errors.New("the image serves no substrate offered")
+
+// errRetarget is the seam's answer where the image serves no entry
+// for the candidate the pull asked for but does for a later one: the
+// acquisition pulls again for that one, the seam then agreeing.
+type errRetarget struct{ chosen int }
+
+func (e errRetarget) Error() string {
+	return fmt.Sprintf("the image serves candidate %d, not the one asked for", e.chosen)
 }
 
 // New constructs the acquirer and its verifying store.
@@ -119,18 +142,12 @@ func New(cfg Config) (*Acquirer, error) {
 	if cfg.Lock == nil || cfg.Policy == nil {
 		return nil, errors.New("oci: acquirer needs a lockfile and a trust policy")
 	}
-	platform := cfg.Platform
-	if platform == (plugin.Platform{}) {
-		platform = plugin.HostPlatform()
-	}
 	a := &Acquirer{
-		kept:     evidenceStore(cfg.EvidenceDir),
-		lock:     cfg.Lock,
-		policy:   cfg.Policy,
-		root:     cfg.TrustedRoot,
-		platform: platform,
-		pull:     cfg.Pull,
-		pending:  map[string]*acquisition{},
+		kept:    evidenceStore(cfg.EvidenceDir),
+		lock:    cfg.Lock,
+		policy:  cfg.Policy,
+		root:    cfg.TrustedRoot,
+		pending: map[string]*acquisition{},
 	}
 	// The ambient credential store answers every registry
 	// (REQ-plugin-registry-credentials): a pull, a tag listing and a
@@ -140,7 +157,7 @@ func New(cfg Config) (*Acquirer, error) {
 	// run on this host, is never asked for it.
 	opts := []ocifs.Option{
 		ocifs.WithWorkDir(cfg.WorkDir),
-		ocifs.WithDefaultPlatform(v1Platform(platform)),
+		ocifs.WithDefaultPlatform(v1Platform(plugin.HostPlatform())),
 		ocifs.WithVerifier(a.verify),
 		ocifs.WithEnableDefaultKeychain(),
 		ocifs.WithAuthSource(stagingHost, authn.AuthConfig{}),
@@ -175,17 +192,20 @@ func (a *Acquirer) Close() error {
 	return errors.Join(err, a.fs.Close())
 }
 
-// Acquire materializes ref (REQ-plugin-digest-pin, REQ-lock-first-use):
-// a pinned reference is materialized at its pinned digest — the tag is
-// never re-resolved — and a first use resolves the tag once through
-// the seam, records the pin, and materializes. Under PullDaemon the
-// seam runs the same and the pin is recorded the same, but nothing
-// materializes: the acquisition yields the repository at the verified
-// digest for the daemon to pull (REQ-plugin-core-verifies).
-func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, error) {
+// Acquire materializes ref (REQ-plugin-digest-pin, REQ-lock-first-use)
+// for the first candidate its image serves (REQ-plugin-platform-strict,
+// REQ-plugin-runner-selection): a pinned reference is materialized at
+// its pinned digest — the tag is never re-resolved — and a first use
+// resolves the tag once through the seam, records the pin, and
+// materializes. A candidate the daemon serves yields the repository
+// at the verified digest for the daemon to pull, nothing
+// materializing (REQ-plugin-core-verifies); another yields the
+// store's export. No candidate at all runs the seam too, whose
+// refusal names what the image serves.
+func (a *Acquirer) Acquire(ctx context.Context, ref string, candidates []Candidate) (*plugin.Acquired, error) {
 	pin, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
 	target := ref
-	acq := &acquisition{declaredRef: ref}
+	acq := &acquisition{declaredRef: ref, candidates: candidates}
 	if pinned {
 		target = genfile.ReferenceRepository(ref) + "@" + pin.Digest
 		acq.pinnedDigest = pin.Digest
@@ -209,23 +229,66 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 		}
 		return a.lock.AddPlugin(p)
 	}
-	if a.pull == PullDaemon {
-		// Resolution runs the seam and materializes nothing (ocifs
-		// api.md REQ-api-resolve); the daemon fetches the content at
-		// the digest the seam admitted.
-		res, err := a.fs.Resolve(ctx, target)
-		if err != nil {
-			return nil, err
-		}
-		if err := record(); err != nil {
-			return nil, err
-		}
-		return &plugin.Acquired{Image: &plugin.Pulled{Repository: genfile.ReferenceRepository(ref), Digest: res.Digest.String(), Entry: acq.entry}}, nil
+	acquired, err := a.acquire(ctx, target, acq)
+	if err != nil {
+		return nil, err
 	}
-	// One acquisition: the pull resolves and runs the seam, and the
-	// export of the image it returned materializes exactly that,
-	// resolving nothing again (ocifs api.md REQ-api-export).
-	img, err := a.fs.Pull(ctx, target)
+	if err := record(); err != nil {
+		return nil, err
+	}
+	return acquired, nil
+}
+
+// acquire runs the seam over target for the acquisition's candidates
+// and yields the image for the one admitted. The store is asked for
+// the first candidate's platform; where the seam admits a later one,
+// the store is asked again for that one and the seam, over the same
+// artifact, agrees. A candidate the daemon serves is resolved and
+// not materialized (ocifs api.md REQ-api-resolve); one the store
+// serves is pulled, and the export of the image the pull returned
+// materializes exactly that, resolving nothing again (REQ-api-export).
+func (a *Acquirer) acquire(ctx context.Context, target string, acq *acquisition) (*plugin.Acquired, error) {
+	acq.retargets = true
+	retargeted := false
+	for {
+		var acquired *plugin.Acquired
+		var err error
+		if acq.asked < len(acq.candidates) && acq.candidates[acq.asked].Daemon {
+			acquired, err = a.resolve(ctx, target, acq)
+		} else {
+			acquired, err = a.pull(ctx, target, acq)
+		}
+		var retarget errRetarget
+		if errors.As(err, &retarget) {
+			// One retarget: the seam's verdict over the one artifact.
+			// A second is an artifact that changed between the two
+			// askings — a tag moved under the acquisition — which no
+			// pass is going to settle.
+			if retargeted {
+				return nil, fmt.Errorf("oci: %s: the image changed under the acquisition (the seam admitted candidate %d, then %d)", acq.declaredRef, acq.asked, retarget.chosen)
+			}
+			retargeted = true
+			acq.asked = retarget.chosen
+			continue
+		}
+		return acquired, err
+	}
+}
+
+func (a *Acquirer) resolve(ctx context.Context, target string, acq *acquisition) (*plugin.Acquired, error) {
+	res, err := a.fs.Resolve(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	return &plugin.Acquired{Image: &plugin.Pulled{Repository: genfile.ReferenceRepository(acq.declaredRef), Digest: res.Digest.String(), Entry: acq.entry}, Candidate: acq.chosen}, nil
+}
+
+func (a *Acquirer) pull(ctx context.Context, target string, acq *acquisition) (*plugin.Acquired, error) {
+	var opts []ocifs.PullOption
+	if acq.asked < len(acq.candidates) {
+		opts = append(opts, ocifs.PullWithPlatform(v1Platform(acq.candidates[acq.asked].Platform)))
+	}
+	img, err := a.fs.Pull(ctx, target, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -247,14 +310,11 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 	if err != nil {
 		return nil, err
 	}
-	if err := record(); err != nil {
-		return nil, err
-	}
 	process, err := processOf(img.ConfigFile())
 	if err != nil {
-		return nil, fmt.Errorf("oci: %s: %v", ref, err)
+		return nil, fmt.Errorf("oci: %s: %v", acq.declaredRef, err)
 	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs, Entry: acq.entry}}, nil
+	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs, Entry: acq.entry}, Candidate: acq.chosen}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the
@@ -264,12 +324,12 @@ func (a *Acquirer) Acquire(ctx context.Context, ref string) (*plugin.Acquired, e
 // (dep-verbs.md REQ-dep-update). Nothing materializes. A reference
 // with no pin, or one the seam refuses, fails and leaves the pin.
 // Returns the pin as it was and as it is.
-func (a *Acquirer) UpdatePlugin(ctx context.Context, ref string) (before, after lockfile.PluginPin, err error) {
+func (a *Acquirer) UpdatePlugin(ctx context.Context, ref string, candidates []Candidate) (before, after lockfile.PluginPin, err error) {
 	before, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
 	if !pinned {
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, fmt.Errorf("oci: %s: no pin to update", ref)
 	}
-	acq := &acquisition{declaredRef: ref, fresh: true}
+	acq := &acquisition{declaredRef: ref, fresh: true, candidates: candidates}
 	if err := a.enter(ref, acq); err != nil {
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 	}
@@ -337,8 +397,10 @@ func (a *Acquirer) leave(target string) {
 
 // verify is the store's verification seam (verification-seam.md): it
 // holds the resolution to the pinned digest (REQ-plugin-digest-pin),
-// requires a platform entry for the host (REQ-plugin-platform-strict —
-// an artifact that is not a manifest list is refused the same way),
+// requires a platform entry for a candidate (REQ-plugin-platform-strict
+// — an artifact that is not a manifest list is refused the same
+// way), the first candidate served being the one admitted, the pull
+// retargeted to it where it asked for another,
 // and evaluates the trust policy (REQ-plugin-verify-before-run):
 // the image's signature evidence is judged on every acquisition,
 // unsigned images pass only under allow-unsigned and are recorded as
@@ -356,11 +418,14 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	if acq.pinnedDigest != "" && digest != acq.pinnedDigest {
 		return fmt.Errorf("oci: %s resolved to %s, pin records %s (%w)", acq.declaredRef, digest, acq.pinnedDigest, lockfile.ErrPinMismatch)
 	}
-	entry, err := a.checkPlatforms(acq.declaredRef, id.Artifact)
+	entry, chosen, err := checkPlatforms(acq.declaredRef, id.Artifact, acq.candidates)
 	if err != nil {
 		return err
 	}
-	acq.entry = entry
+	acq.entry, acq.chosen = entry, chosen
+	if acq.retargets && chosen != acq.asked {
+		return errRetarget{chosen: chosen}
+	}
 	// Evidence is always judged — the module pipeline's semantics:
 	// what verifies is recorded even under allow-unsigned, and none
 	// is recorded only when nothing was accepted for a tolerable
@@ -467,23 +532,29 @@ func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decis
 	return rec, err
 }
 
-// checkPlatforms admits the one manifest-list entry for the host —
-// os and architecture, the variant not consulted — and returns its
-// platform as a daemon spells it, variant included, so the runner can
-// name exactly that child (REQ-plugin-platform-strict). None is a
-// refusal attributing the gap to the image; several (an index
-// carrying more than one variant for the host) is a refusal too:
-// choosing among them would be a fallback, as the store's own rule
-// holds.
-func (a *Acquirer) checkPlatforms(ref string, artifact []byte) (string, error) {
+// checkPlatforms admits the one manifest-list entry for the first
+// candidate the image serves — os and architecture, the variant not
+// consulted — and returns its platform as a daemon spells it, variant
+// included, so the runner can name exactly that child, with the
+// candidate's position (REQ-plugin-platform-strict). None for any
+// candidate is a refusal attributing the gap to the image; several
+// for a candidate (an index carrying more than one variant for it)
+// is a refusal too, never a step to the next candidate: choosing
+// among them would be a fallback, as the store's own rule holds.
+func checkPlatforms(ref string, artifact []byte, candidates []Candidate) (string, int, error) {
 	var top v1.IndexManifest
 	if err := json.Unmarshal(artifact, &top); err != nil {
-		return "", fmt.Errorf("oci: %s: unreadable top-level artifact: %v", ref, err)
+		return "", 0, fmt.Errorf("oci: %s: unreadable top-level artifact: %v", ref, err)
 	}
 	if top.MediaType != types.OCIImageIndex && top.MediaType != types.DockerManifestList {
-		return "", fmt.Errorf("oci: %s is not a manifest list (%s): the manifest list is the image's platform declaration, and pb refuses what it cannot match", ref, top.MediaType)
+		return "", 0, fmt.Errorf("oci: %s is not a manifest list (%s): the manifest list is the image's platform declaration, and pb refuses what it cannot match", ref, top.MediaType)
 	}
-	var listed, admitted []string
+	type entry struct {
+		platform plugin.Platform
+		spelled  string
+	}
+	var entries []entry
+	var listed []string
 	for _, m := range top.Manifests {
 		if m.Platform == nil {
 			continue
@@ -495,16 +566,33 @@ func (a *Acquirer) checkPlatforms(ref string, artifact []byte) (string, error) {
 		if m.Platform.Variant != "" {
 			spelled += "/" + m.Platform.Variant
 		}
+		entries = append(entries, entry{plugin.Platform{OS: m.Platform.OS, Arch: m.Platform.Architecture}, spelled})
 		listed = append(listed, spelled)
-		if m.Platform.OS == a.platform.OS && m.Platform.Architecture == a.platform.Arch {
-			admitted = append(admitted, spelled)
+	}
+	for i, c := range candidates {
+		var admitted []string
+		for _, e := range entries {
+			if e.platform == c.Platform {
+				admitted = append(admitted, e.spelled)
+			}
 		}
+		switch len(admitted) {
+		case 1:
+			return admitted[0], i, nil
+		case 0:
+			continue
+		}
+		return "", 0, fmt.Errorf("oci: %s has %d entries for %s in its manifest list (%v): choosing among them would be a fallback, and pb refuses it", ref, len(admitted), c.Platform, admitted)
 	}
-	switch len(admitted) {
-	case 1:
-		return admitted[0], nil
-	case 0:
-		return "", fmt.Errorf("oci: %s has no %s entry in its manifest list (found %v): the image does not support this platform", ref, a.platform, listed)
+	if len(candidates) == 1 {
+		return "", 0, fmt.Errorf("oci: %s has no %s entry in its manifest list (found %v): the image does not support this platform (%w)", ref, candidates[0].Platform, listed, ErrNoCandidate)
 	}
-	return "", fmt.Errorf("oci: %s has %d entries for %s in its manifest list (%v): choosing among them would be a fallback, and pb refuses it", ref, len(admitted), a.platform, admitted)
+	wanted := make([]string, len(candidates))
+	for i, c := range candidates {
+		wanted[i] = c.Platform.String()
+	}
+	if len(candidates) == 0 {
+		return "", 0, fmt.Errorf("oci: %s serves %v, and no runner here runs any of them (%w)", ref, listed, ErrNoCandidate)
+	}
+	return "", 0, fmt.Errorf("oci: %s has no entry for %v in its manifest list (found %v): the image does not support the platforms the runners here run (%w)", ref, wanted, listed, ErrNoCandidate)
 }

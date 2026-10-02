@@ -31,13 +31,17 @@ func generateCmd() *cobra.Command {
 				flag = &runnerFlag
 			}
 			// The settings and the session are loaded apart here, the
-			// runner between them: a runner refusal precedes a
-			// workspace's.
+			// runner and the byte path between them: a settings
+			// refusal precedes a workspace's.
 			settings, err := userconfig.Load()
 			if err != nil {
 				return err
 			}
-			run, err := runner.Open(flag, settings.Get(userconfig.KeyRunner))
+			sel, err := runner.Open(flag, settings.Get(userconfig.KeyRunner))
+			if err != nil {
+				return err
+			}
+			pull, err := pullMode(settings.Get(userconfig.KeyPluginPull), sel)
 			if err != nil {
 				return err
 			}
@@ -56,7 +60,7 @@ func generateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg, err := acquirerConfig(settings, run, s)
+			cfg, err := acquirerConfig(s)
 			if err != nil {
 				return err
 			}
@@ -65,7 +69,7 @@ func generateCmd() *cobra.Command {
 				return err
 			}
 			defer acq.Close()
-			deps := dep.GenDeps{Acquirer: acq, Runner: run, Diagnostics: os.Stderr, Overrides: overrideMap}
+			deps := dep.GenDeps{Acquirer: acq, Runner: sel, DaemonPull: pull, Diagnostics: os.Stderr, Overrides: overrideMap}
 			// Local plugins run on the native runner wherever it exists.
 			// The session's root is a path within the working tree,
 			// which is rooted at the host's filesystem root.

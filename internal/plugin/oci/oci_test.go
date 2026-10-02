@@ -60,6 +60,9 @@ var fixtureSerial atomic.Int64
 
 func hostPlatform() v1.Platform { return v1Platform(plugin.HostPlatform()) }
 
+// Daemon is the host's platform served by a daemon's pull.
+func Daemon() []Candidate { return []Candidate{{Platform: plugin.HostPlatform(), Daemon: true}} }
+
 func pushIndex(t *testing.T, ref string, platforms ...v1.Platform) string {
 	return pushIndexEnv(t, ref, []string{"A=1"}, platforms...)
 }
@@ -189,7 +192,7 @@ func TestAcquireReadsTheAmbientCredentialStore(t *testing.T) {
 	dockerConfig(t, `{}`)
 	lock := &lockfile.File{}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	if _, err := a.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
+	if _, err := a.Acquire(ctx, ref, Host()); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
 		t.Fatalf("no login: %v", err)
 	}
 	if _, ok := lock.Plugin(ref, lockfile.SchemeOCI); ok {
@@ -201,7 +204,7 @@ func TestAcquireReadsTheAmbientCredentialStore(t *testing.T) {
 	dockerConfig(t, login(fx.host, "reader", "s3cret"))
 	lock = &lockfile.File{}
 	a = newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	if _, err := a.Acquire(ctx, ref); err != nil {
+	if _, err := a.Acquire(ctx, ref, Host()); err != nil {
 		t.Fatalf("with the login: %v", err)
 	}
 	if pin := pinOf(t, a, ref); pin.Digest != fx.digest {
@@ -230,7 +233,7 @@ func TestAcquireEvidenceReadsTheAmbientCredentialStore(t *testing.T) {
 		dockerConfig(t, login(fx.host, "reader", "s3cret"))
 		lock := &lockfile.File{}
 		a := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-		if _, err := a.Acquire(ctx, ref); err != nil {
+		if _, err := a.Acquire(ctx, ref, Host()); err != nil {
 			t.Fatalf("%v with the login: %v", posture, err)
 		}
 		if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Provenance != imageRecord(signerSAN) {
@@ -241,7 +244,7 @@ func TestAcquireEvidenceReadsTheAmbientCredentialStore(t *testing.T) {
 		dockerConfig(t, `{}`)
 		lock = &lockfile.File{}
 		a = newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-		if _, err := a.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
+		if _, err := a.Acquire(ctx, ref, Host()); err == nil || !strings.Contains(err.Error(), fx.host) || !strings.Contains(err.Error(), "401") {
 			t.Fatalf("%v with no login: %v", posture, err)
 		}
 		if _, ok := lock.Plugin(ref, lockfile.SchemeOCI); ok {
@@ -263,7 +266,7 @@ func TestAcquireOverrideReadsNoCredentialStore(t *testing.T) {
 	if _, err := layout.Write(layoutDir, indexFor(t, hostPlatform())); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", layoutDir); err != nil {
+	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", layoutDir, Host()); err != nil {
 		t.Fatalf("an override under a broken credential helper: %v", err)
 	}
 }
@@ -327,7 +330,7 @@ func TestAcquireFirstUse(t *testing.T) {
 	fx := newFixture(t)
 	lock := &lockfile.File{}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1")
+	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1", Host())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +366,7 @@ func TestAcquirePinnedIgnoresMovedTag(t *testing.T) {
 	ref := fx.host + "/org/plugin:v1"
 	lock := &lockfile.File{}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	first, err := a.Acquire(ctx, ref)
+	first, err := a.Acquire(ctx, ref, Host())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +378,7 @@ func TestAcquirePinnedIgnoresMovedTag(t *testing.T) {
 	// Over a cold store, so the pin and not the store's own memory of
 	// the tag holds the digest.
 	cold := newAcquirerAt(t, fx, lock, &trust.Policy{}, nil, t.TempDir(), "")
-	again, err := cold.Acquire(ctx, ref)
+	again, err := cold.Acquire(ctx, ref, Host())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,7 +404,7 @@ func TestAcquirePinMismatchFailsClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := newAcquirer(t, fx, lock, &trust.Policy{}, nil)
-	_, err := a.Acquire(ctx, ref)
+	_, err := a.Acquire(ctx, ref, Host())
 	if err == nil {
 		t.Fatal("bogus pin acquired")
 	}
@@ -419,7 +422,7 @@ func TestAcquirePlatformStrict(t *testing.T) {
 	foreign := fx.host + "/org/foreign:v1"
 	pushIndex(t, foreign, v1.Platform{OS: "plan9", Architecture: "mips"})
 	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	_, err := a.Acquire(ctx, foreign)
+	_, err := a.Acquire(ctx, foreign, Host())
 	if err == nil || !strings.Contains(err.Error(), "does not support this platform") || !strings.Contains(err.Error(), "plan9/mips") {
 		t.Fatalf("foreign platform: %v", err)
 	}
@@ -430,7 +433,7 @@ func TestAcquirePlatformStrict(t *testing.T) {
 	if err := remote.Write(r, img, remote.WithTransport(fixtures)); err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.Acquire(ctx, bare)
+	_, err = a.Acquire(ctx, bare, Host())
 	if err == nil || !strings.Contains(err.Error(), "not a manifest list") {
 		t.Fatalf("bare manifest: %v", err)
 	}
@@ -440,7 +443,7 @@ func TestAcquirePlatformStrict(t *testing.T) {
 	host := hostPlatform()
 	several := fx.host + "/org/several:v1"
 	pushIndex(t, several, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v1"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v2"})
-	_, err = a.Acquire(ctx, several)
+	_, err = a.Acquire(ctx, several, Host())
 	if err == nil || !strings.Contains(err.Error(), "2 entries for "+host.OS+"/"+host.Architecture+" in its manifest list (["+host.OS+"/"+host.Architecture+"/v1 "+host.OS+"/"+host.Architecture+"/v2])") {
 		t.Fatalf("several entries: %v", err)
 	}
@@ -457,12 +460,12 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 	// The host's entry sits second: the admitted entry is the one
 	// that matched, not the first listed.
 	pushIndex(t, ref, v1.Platform{OS: "plan9", Architecture: "mips"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v9"})
-	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
+	a, err := New(Config{WorkDir: t.TempDir(), Lock: &lockfile.File{}, Policy: &trust.Policy{}, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { a.Close() })
-	got, err := a.Acquire(ctx, ref)
+	got, err := a.Acquire(ctx, ref, Daemon())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -470,12 +473,12 @@ func TestAcquireAdmittedPlatform(t *testing.T) {
 		t.Fatalf("admitted entry = %q, want %q", entryOf(t, got), want)
 	}
 	plain := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil || entryOf(t, got) != host.OS+"/"+host.Architecture {
+	if got, err := plain.Acquire(ctx, fx.host+"/org/plugin:v1", Host()); err != nil || entryOf(t, got) != host.OS+"/"+host.Architecture {
 		t.Fatalf("an entry without a variant: %+v %v", got, err)
 	}
 	// The store path exports that same child: the one entry that
 	// matched, whatever its variant — its own marker is in the export.
-	got, err = plain.Acquire(ctx, ref)
+	got, err = plain.Acquire(ctx, ref, Host())
 	if err != nil || entryOf(t, got) != host.OS+"/"+host.Architecture+"/v9" {
 		t.Fatalf("the store path's admitted child: %+v %v", got, err)
 	}
@@ -559,22 +562,22 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 			governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 
 			noRule := newAcquirer(t, fx.fixture, &lockfile.File{}, &trust.Policy{Default: trust.RequireProvenance}, fx.sig.TrustedRoot())
-			if _, err := noRule.Acquire(ctx, ref); !errors.Is(err, ErrNoIdentityRule) {
+			if _, err := noRule.Acquire(ctx, ref, Host()); !errors.Is(err, ErrNoIdentityRule) {
 				t.Fatalf("require without an identity rule: %v", err)
 			}
 			noRoot := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, nil)
-			if _, err := noRoot.Acquire(ctx, ref); !errors.Is(err, ErrNoTrustedRoot) {
+			if _, err := noRoot.Acquire(ctx, ref, Host()); !errors.Is(err, ErrNoTrustedRoot) {
 				t.Fatalf("require without a trusted root: %v", err)
 			}
 			unsigned := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
-			if _, err := unsigned.Acquire(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
+			if _, err := unsigned.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrNoEvidence) {
 				t.Fatalf("require on an unsigned image: %v", err)
 			}
 
 			fx.signBundle(t, "someone@example.com", signerIssuer, sigstoretest.BundleOptions{})
 			lock := &lockfile.File{}
 			other := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-			if _, err := other.Acquire(ctx, ref); !errors.Is(err, image.ErrIdentityNotAccepted) {
+			if _, err := other.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrIdentityNotAccepted) {
 				t.Fatalf("another signer: %v", err)
 			}
 			if len(lock.Plugins) != 0 {
@@ -583,7 +586,7 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 
 			fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
 			signed := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-			if _, err := signed.Acquire(ctx, ref); err != nil {
+			if _, err := signed.Acquire(ctx, ref, Host()); err != nil {
 				t.Fatal(err)
 			}
 			if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Provenance != imageRecord(signerSAN) {
@@ -597,13 +600,13 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.After, accepted)
 			corruptPolicy := &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}
 			a3 := newAcquirer(t, corrupt.fixture, &lockfile.File{}, corruptPolicy, corrupt.sig.TrustedRoot())
-			if got, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err != nil || pinOf(t, a3, corrupt.host+"/org/plugin:v1").Provenance != imageRecord(signerSAN) {
+			if got, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1", Host()); err != nil || pinOf(t, a3, corrupt.host+"/org/plugin:v1").Provenance != imageRecord(signerSAN) {
 				t.Fatalf("rejected evidence past the accepted carrier: %+v %v", got, err)
 			}
 			corrupt.signBundleOrdered(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true}, imagetest.Before, accepted)
 			lock3 := &lockfile.File{}
 			a4 := newAcquirer(t, corrupt.fixture, lock3, corruptPolicy, corrupt.sig.TrustedRoot())
-			if _, err := a4.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
+			if _, err := a4.Acquire(ctx, corrupt.host+"/org/plugin:v1", Host()); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
 				t.Fatalf("rejected evidence before the accepted carrier: %v", err)
 			}
 			if len(lock3.Plugins) != 0 {
@@ -624,33 +627,33 @@ func TestAcquireOpportunisticVerification(t *testing.T) {
 	tolerant := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, signerSAN)}}
 
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, tolerant, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref, Host()); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("verified evidence not recorded under allow-unsigned: %+v %v", got, err)
 	}
 	noRule := newAcquirer(t, fx.fixture, &lockfile.File{}, &trust.Policy{}, fx.sig.TrustedRoot())
-	if got, err := noRule.Acquire(ctx, ref); err != nil || pinOf(t, noRule, ref).Provenance != (lockfile.Provenance{}) {
+	if got, err := noRule.Acquire(ctx, ref, Host()); err != nil || pinOf(t, noRule, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("a signed image with no identity rule: %+v %v", got, err)
 	}
 	otherRule := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/other/**")}}
 	other := newAcquirer(t, fx.fixture, &lockfile.File{}, otherRule, fx.sig.TrustedRoot())
-	if got, err := other.Acquire(ctx, ref); err != nil || pinOf(t, other, ref).Provenance != (lockfile.Provenance{}) {
+	if got, err := other.Acquire(ctx, ref, Host()); err != nil || pinOf(t, other, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("identity non-acceptance not tolerated as none: %+v %v", got, err)
 	}
 	noRoot := newAcquirer(t, fx.fixture, &lockfile.File{}, tolerant, nil)
-	if got, err := noRoot.Acquire(ctx, ref); err != nil || pinOf(t, noRoot, ref).Provenance != (lockfile.Provenance{}) {
+	if got, err := noRoot.Acquire(ctx, ref, Host()); err != nil || pinOf(t, noRoot, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("no trusted root not tolerated as none: %+v %v", got, err)
 	}
 
 	bare := newSignedFixture(t, true)
 	a2 := newAcquirer(t, bare.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(bare.host+"/org", trust.AllowUnsigned, signerSAN)}}, bare.sig.TrustedRoot())
-	if got, err := a2.Acquire(ctx, bare.host+"/org/plugin:v1"); err != nil || pinOf(t, a2, bare.host+"/org/plugin:v1").Provenance != (lockfile.Provenance{}) {
+	if got, err := a2.Acquire(ctx, bare.host+"/org/plugin:v1", Host()); err != nil || pinOf(t, a2, bare.host+"/org/plugin:v1").Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("absence not tolerated as none: %+v %v", got, err)
 	}
 
 	corrupt := newSignedFixture(t, true)
 	corrupt.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true})
 	a3 := newAcquirer(t, corrupt.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.AllowUnsigned, signerSAN)}}, corrupt.sig.TrustedRoot())
-	if _, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1"); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
+	if _, err := a3.Acquire(ctx, corrupt.host+"/org/plugin:v1", Host()); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
 		t.Fatalf("rejected evidence tolerated under allow-unsigned: %v", err)
 	}
 }
@@ -666,7 +669,7 @@ func TestAcquireIdentityRuleFlows(t *testing.T) {
 		rule(fx.host+"/org/plugin", trust.RequireProvenance, "https://github.com/acme/plugin/**"),
 	}}
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, policy, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref, Host()); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("the longest-prefix rule's identity did not govern: %+v %v", got, err)
 	}
 	reversed := &trust.Policy{Plugins: []trust.Rule{
@@ -674,7 +677,7 @@ func TestAcquireIdentityRuleFlows(t *testing.T) {
 		rule(fx.host+"/org/plugin", trust.RequireProvenance, "https://github.com/other/**"),
 	}}
 	b := newAcquirer(t, fx.fixture, &lockfile.File{}, reversed, fx.sig.TrustedRoot())
-	if _, err := b.Acquire(ctx, ref); !errors.Is(err, image.ErrIdentityNotAccepted) {
+	if _, err := b.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrIdentityNotAccepted) {
 		t.Fatalf("the shorter rule's identity governed: %v", err)
 	}
 }
@@ -691,7 +694,7 @@ func TestAcquireLegacySignatureTag(t *testing.T) {
 	sigstoretest.RefuseNetwork(t)
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 	a := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
-	if got, err := a.Acquire(ctx, ref); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := a.Acquire(ctx, ref, Host()); err != nil || pinOf(t, a, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("the legacy tag's envelope: %+v %v", got, err)
 	}
 }
@@ -717,7 +720,7 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, signerSAN)}}
 
 	// Unsigned: nothing found, nothing kept, asked again each time.
-	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
+	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot(), kept).Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("unsigned: %v", err)
 	}
 	if entries, _ := os.ReadDir(kept); len(entries) != 0 {
@@ -728,7 +731,7 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	lock := &lockfile.File{}
 	workDir := t.TempDir()
 	first := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := first.Acquire(ctx, ref); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := first.Acquire(ctx, ref, Host()); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("first use: %+v %v", got, err)
 	}
 	if entries, _ := os.ReadDir(filepath.Join(kept, "sha256")); len(entries) != 1 {
@@ -740,13 +743,13 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	// acquisition.
 	fx.unreachable(t)
 	offline := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := offline.Acquire(ctx, ref); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := offline.Acquire(ctx, ref, Host()); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("offline with kept evidence: %+v %v", got, err)
 	}
 	offline.Close()
 	// Without kept evidence the same acquisition needs the registry.
 	unkept := newAcquirerAt(t, fx.fixture, lock, governed, fx.sig.TrustedRoot(), workDir, "")
-	if _, err := unkept.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), "unreachable") {
+	if _, err := unkept.Acquire(ctx, ref, Host()); err == nil || !strings.Contains(err.Error(), "unreachable") {
 		t.Fatalf("offline without kept evidence: %v", err)
 	}
 	unkept.Close()
@@ -754,13 +757,13 @@ func TestAcquireKeepsEvidence(t *testing.T) {
 	// registry gone fails the acquisition.
 	other := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, "https://github.com/other/**")}}
 	tightened := newAcquirerAt(t, fx.fixture, &lockfile.File{}, other, fx.sig.TrustedRoot(), workDir, kept)
-	if _, err := tightened.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), "unreachable") {
+	if _, err := tightened.Acquire(ctx, ref, Host()); err == nil || !strings.Contains(err.Error(), "unreachable") {
 		t.Fatalf("a tightened policy offline: %v", err)
 	}
 	tightened.Close()
 	// A pinned record the kept evidence no longer bears refetches too:
 	// with the registry gone, the run fails rather than passing.
-	if _, err := newAcquirerAt(t, fx.fixture, lock, other, fx.sig.TrustedRoot(), workDir, kept).Acquire(ctx, ref); err == nil {
+	if _, err := newAcquirerAt(t, fx.fixture, lock, other, fx.sig.TrustedRoot(), workDir, kept).Acquire(ctx, ref, Host()); err == nil {
 		t.Fatal("a pinned record judged from kept evidence the policy refuses passed")
 	}
 }
@@ -777,7 +780,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 		return &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.RequireProvenance, san)}}
 	}
 	firstReferrer := fx.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{})
-	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(signerSAN), fx.sig.TrustedRoot(), kept).Acquire(ctx, ref); err != nil {
+	if _, err := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(signerSAN), fx.sig.TrustedRoot(), kept).Acquire(ctx, ref, Host()); err != nil {
 		t.Fatal(err)
 	}
 	store := evidence.Store{Dir: kept}
@@ -795,7 +798,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	workDir := t.TempDir()
 	pinnedToSecond := &lockfile.File{}
 	second := newAcquirerAt(t, fx.fixture, pinnedToSecond, accepting(otherSAN), fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := second.Acquire(ctx, ref); err != nil || pinOf(t, second, ref).Provenance != imageRecord(otherSAN) {
+	if got, err := second.Acquire(ctx, ref, Host()); err != nil || pinOf(t, second, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("the second signer: %+v %v", got, err)
 	}
 	second.Close()
@@ -818,7 +821,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	}
 	if os.Geteuid() != 0 {
 		unwritable := newAcquirerKeeping(t, fx.fixture, &lockfile.File{}, accepting(otherSAN), fx.sig.TrustedRoot(), sealed)
-		if got, err := unwritable.Acquire(ctx, ref); err != nil || pinOf(t, unwritable, ref).Provenance != imageRecord(otherSAN) {
+		if got, err := unwritable.Acquire(ctx, ref, Host()); err != nil || pinOf(t, unwritable, ref).Provenance != imageRecord(otherSAN) {
 			t.Fatalf("an unwritable evidence store changed the outcome: %+v %v", got, err)
 		}
 	}
@@ -828,7 +831,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	fx.unreachable(t)
 	broad := accepting("https://github.com/acme/plugin/**")
 	offline := newAcquirerAt(t, fx.fixture, pinnedToSecond, broad, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := offline.Acquire(ctx, ref); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(otherSAN) {
+	if got, err := offline.Acquire(ctx, ref, Host()); err != nil || pinOf(t, offline, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("the pinned record over kept evidence offline: %+v %v", got, err)
 	}
 	offline.Close()
@@ -837,7 +840,7 @@ func TestAcquireKeptEvidenceReplaced(t *testing.T) {
 	corruptRef := corrupt.host + "/org/plugin:v1"
 	corrupt.signBundle(t, signerSAN, signerIssuer, sigstoretest.BundleOptions{TwoSignatures: true})
 	corruptKept := t.TempDir()
-	if _, err := newAcquirerKeeping(t, corrupt.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}, corrupt.sig.TrustedRoot(), corruptKept).Acquire(ctx, corruptRef); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
+	if _, err := newAcquirerKeeping(t, corrupt.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(corrupt.host+"/org", trust.RequireProvenance, signerSAN)}}, corrupt.sig.TrustedRoot(), corruptKept).Acquire(ctx, corruptRef, Host()); err == nil || !strings.Contains(err.Error(), "evidence rejected") {
 		t.Fatalf("rejected: %v", err)
 	}
 	if entries, _ := os.ReadDir(corruptKept); len(entries) != 0 {
@@ -860,10 +863,10 @@ func TestUpdatePlugin(t *testing.T) {
 	lock := &lockfile.File{}
 	workDir := t.TempDir()
 	first := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if _, _, err := first.UpdatePlugin(ctx, ref); err == nil || !strings.Contains(err.Error(), "no pin to update") {
+	if _, _, err := first.UpdatePlugin(ctx, ref, Host()); err == nil || !strings.Contains(err.Error(), "no pin to update") {
 		t.Fatalf("an unpinned reference updated: %v", err)
 	}
-	if _, err := first.Acquire(ctx, ref); err != nil {
+	if _, err := first.Acquire(ctx, ref, Host()); err != nil {
 		t.Fatal(err)
 	}
 	firstPin := pinOf(t, first, ref)
@@ -877,12 +880,12 @@ func TestUpdatePlugin(t *testing.T) {
 	// implicitly (REQ-plugin-digest-pin) — over a cold store, so the
 	// pin and not the cache holds it.
 	still := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), t.TempDir(), kept)
-	if again, err := still.Acquire(ctx, ref); err != nil || pinOf(t, still, ref).Digest != oldDigest {
+	if again, err := still.Acquire(ctx, ref, Host()); err != nil || pinOf(t, still, ref).Digest != oldDigest {
 		t.Fatalf("an acquisition re-resolved the tag: %+v %v", again, err)
 	}
 	still.Close()
 	updater := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	before, after, err := updater.UpdatePlugin(ctx, ref)
+	before, after, err := updater.UpdatePlugin(ctx, ref, Host())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -903,7 +906,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// An acquisition at the moved pin runs the new image under its
 	// new record, the kept evidence reproducing it.
 	moved := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if got, err := moved.Acquire(ctx, ref); err != nil || pinOf(t, moved, ref).Digest != fx.digest || pinOf(t, moved, ref).Provenance != imageRecord(otherSAN) {
+	if got, err := moved.Acquire(ctx, ref, Host()); err != nil || pinOf(t, moved, ref).Digest != fx.digest || pinOf(t, moved, ref).Provenance != imageRecord(otherSAN) {
 		t.Fatalf("an acquisition at the moved pin: %+v %v", got, err)
 	}
 	moved.Close()
@@ -914,7 +917,7 @@ func TestUpdatePlugin(t *testing.T) {
 	const thirdSAN = "https://github.com/acme/plugin/.github/workflows/release.yml@refs/tags/v3"
 	fx.signBundleOrdered(t, thirdSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Before, otherReferrer)
 	refreshing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if _, after3, err := refreshing.UpdatePlugin(ctx, ref); err != nil || after3.Digest != fx.digest || after3.Provenance != imageRecord(thirdSAN) {
+	if _, after3, err := refreshing.UpdatePlugin(ctx, ref, Host()); err != nil || after3.Digest != fx.digest || after3.Provenance != imageRecord(thirdSAN) {
 		t.Fatalf("the update judged kept evidence instead of fetching: %+v %v", after3, err)
 	}
 	refreshing.Close()
@@ -923,7 +926,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// require-provenance the update fails and the pin stands.
 	fx.digest = pushIndex(t, ref, hostPlatform())
 	refusing := newAcquirerAt(t, fx.fixture, lock, both, fx.sig.TrustedRoot(), workDir, kept)
-	if _, _, err := refusing.UpdatePlugin(ctx, ref); !errors.Is(err, image.ErrNoEvidence) {
+	if _, _, err := refusing.UpdatePlugin(ctx, ref, Host()); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("an unsigned image under require-provenance updated: %v", err)
 	}
 	if pin, _ := lock.Plugin(ref, lockfile.SchemeOCI); pin.Digest != after.Digest || pin.Provenance != imageRecord(thirdSAN) {
@@ -934,7 +937,7 @@ func TestUpdatePlugin(t *testing.T) {
 	// none: the explicit update, not a silent downgrade.
 	tolerant := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/acme/plugin/**")}}
 	downgrading := newAcquirerAt(t, fx.fixture, lock, tolerant, fx.sig.TrustedRoot(), workDir, kept)
-	if _, after2, err := downgrading.UpdatePlugin(ctx, ref); err != nil || after2.Digest != fx.digest || after2.Provenance != (lockfile.Provenance{}) {
+	if _, after2, err := downgrading.UpdatePlugin(ctx, ref, Host()); err != nil || after2.Digest != fx.digest || after2.Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("the explicit update to an unsigned image: %+v %v", after2, err)
 	}
 }
@@ -950,12 +953,12 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	lock := &lockfile.File{}
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, signerSAN)}}
 	first := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-	if got, err := first.Acquire(ctx, ref); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := first.Acquire(ctx, ref, Host()); err != nil || pinOf(t, first, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("first use: %+v %v", got, err)
 	}
 	// The same pin, the same image, the evidence the same: verified again.
 	again := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
-	if got, err := again.Acquire(ctx, ref); err != nil || pinOf(t, again, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := again.Acquire(ctx, ref, Host()); err != nil || pinOf(t, again, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("re-acquisition: %+v %v", got, err)
 	}
 	// A second signature the policy also accepts, sorting before the
@@ -966,7 +969,7 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	fx.signBundleOrdered(t, otherSAN, signerIssuer, sigstoretest.BundleOptions{}, imagetest.Before, recorded)
 	broad := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/acme/plugin/**")}}
 	both := newAcquirer(t, fx.fixture, lock, broad, fx.sig.TrustedRoot())
-	if got, err := both.Acquire(ctx, ref); err != nil || pinOf(t, both, ref).Provenance != imageRecord(signerSAN) {
+	if got, err := both.Acquire(ctx, ref, Host()); err != nil || pinOf(t, both, ref).Provenance != imageRecord(signerSAN) {
 		t.Fatalf("a second accepted signer displaced the record: %+v %v", got, err)
 	}
 	// A policy under which only the other signer is accepted leaves
@@ -974,13 +977,13 @@ func TestAcquireReverifiesPinnedRecord(t *testing.T) {
 	// record kept.
 	otherRule := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, otherSAN)}}
 	stale := newAcquirer(t, fx.fixture, lock, otherRule, fx.sig.TrustedRoot())
-	if _, err := stale.Acquire(ctx, ref); !errors.Is(err, lockfile.ErrProvenanceDowngrade) || !strings.Contains(err.Error(), otherSAN) {
+	if _, err := stale.Acquire(ctx, ref, Host()); !errors.Is(err, lockfile.ErrProvenanceDowngrade) || !strings.Contains(err.Error(), otherSAN) {
 		t.Fatalf("a pinned record no longer borne: %v", err)
 	}
 	// A policy accepting neither: refused as absent, the record kept.
 	none := &trust.Policy{Plugins: []trust.Rule{rule(fx.host+"/org", trust.AllowUnsigned, "https://github.com/other/**")}}
 	gone := newAcquirer(t, fx.fixture, lock, none, fx.sig.TrustedRoot())
-	if _, err := gone.Acquire(ctx, ref); !errors.Is(err, lockfile.ErrProvenanceDowngrade) {
+	if _, err := gone.Acquire(ctx, ref, Host()); !errors.Is(err, lockfile.ErrProvenanceDowngrade) {
 		t.Fatalf("a pinned record with no accepted evidence: %v", err)
 	}
 	if pin, ok := lock.Plugin(ref, lockfile.SchemeOCI); !ok || pin.Provenance != imageRecord(signerSAN) {
@@ -1013,7 +1016,7 @@ func TestAcquireExportFailureFailsClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.Chmod(exports, 0o755) })
-	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1")
+	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1", Host())
 	if err == nil || got != nil {
 		t.Fatalf("acquisition with an unwritable export cache returned %+v, %v", got, err)
 	}
@@ -1029,7 +1032,7 @@ func TestAcquireRefusesBareEnv(t *testing.T) {
 	fx := newFixture(t)
 	pushIndexEnv(t, fx.host+"/org/bare:v1", []string{"A=1", "PB_SECRET"}, hostPlatform())
 	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
-	_, err := a.Acquire(ctx, fx.host+"/org/bare:v1")
+	_, err := a.Acquire(ctx, fx.host+"/org/bare:v1", Host())
 	if err == nil || !strings.Contains(err.Error(), `"PB_SECRET" is not KEY=VALUE`) {
 		t.Fatalf("bare env: %v", err)
 	}
@@ -1069,7 +1072,7 @@ func TestAcquireOverride(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, source := range []string{layoutDir, archive, saved} {
-		got, err := a.AcquireOverride(ctx, ref, source)
+		got, err := a.AcquireOverride(ctx, ref, source, Host())
 		if err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
@@ -1087,14 +1090,14 @@ func TestAcquireOverride(t *testing.T) {
 	if _, err := layout.Write(foreign, indexFor(t, v1.Platform{OS: "plan9", Architecture: "mips"})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, foreign); err == nil || !strings.Contains(err.Error(), "has no "+plugin.HostPlatform().OS+"/"+plugin.HostPlatform().Arch+" entry in its manifest list") {
+	if _, err := a.AcquireOverride(ctx, ref, foreign, Host()); err == nil || !strings.Contains(err.Error(), "has no "+plugin.HostPlatform().OS+"/"+plugin.HostPlatform().Arch+" entry in its manifest list") {
 		t.Fatalf("foreign platform: %v", err)
 	}
 	// The policy holds: require-provenance with no identity rule fails
 	// closed, and with one the override's evidence is sought where it
 	// was staged, which holds none.
 	strict := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{Default: trust.RequireProvenance}, nil)
-	if _, err := strict.AcquireOverride(ctx, ref, layoutDir); !errors.Is(err, ErrNoIdentityRule) {
+	if _, err := strict.AcquireOverride(ctx, ref, layoutDir, Host()); !errors.Is(err, ErrNoIdentityRule) {
 		t.Fatalf("require-provenance without an identity rule: %v", err)
 	}
 	// Evidence for the override's own digest attached at the declared
@@ -1113,10 +1116,10 @@ func TestAcquireOverride(t *testing.T) {
 	imagetest.Attach(t, sfx.repo, overrideDigest, imagetest.BundleArtifact(sfx.sig.Bundle(t, overrideDigest.String(), signerSAN, signerIssuer, sigstoretest.BundleOptions{}), imagetest.CosignSignPredicate), remote.WithTransport(fixtures))
 	governed := &trust.Policy{Plugins: []trust.Rule{rule(sfx.host+"/org", trust.RequireProvenance, signerSAN)}}
 	judged := newAcquirer(t, sfx.fixture, &lockfile.File{}, governed, sfx.sig.TrustedRoot())
-	if _, err := judged.AcquireOverride(ctx, sfx.host+"/org/plugin:v1", layoutDir); !errors.Is(err, image.ErrNoEvidence) {
+	if _, err := judged.AcquireOverride(ctx, sfx.host+"/org/plugin:v1", layoutDir, Host()); !errors.Is(err, image.ErrNoEvidence) {
 		t.Fatalf("require-provenance on an override: %v", err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, filepath.Join(t.TempDir(), "missing")); err == nil {
+	if _, err := a.AcquireOverride(ctx, ref, filepath.Join(t.TempDir(), "missing"), Host()); err == nil {
 		t.Fatal("a missing source acquired")
 	}
 }
@@ -1239,12 +1242,12 @@ func TestAcquireOverridePlatformless(t *testing.T) {
 	if _, err := layout.Write(dir, bare); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, dir); err != nil {
+	if _, err := a.AcquireOverride(ctx, ref, dir, Host()); err != nil {
 		t.Fatalf("platform-less layout: %v", err)
 	}
 	archive := filepath.Join(t.TempDir(), "saved.tar")
 	tarDir(t, dir, archive)
-	if _, err := a.AcquireOverride(ctx, ref, archive); err != nil {
+	if _, err := a.AcquireOverride(ctx, ref, archive, Host()); err != nil {
 		t.Fatalf("platform-less archive: %v", err)
 	}
 	// No platform anywhere: refused naming the image.
@@ -1258,14 +1261,14 @@ func TestAcquireOverridePlatformless(t *testing.T) {
 	if _, err := layout.Write(none, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: img})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, none); err == nil || !strings.Contains(err.Error(), "names no platform") {
+	if _, err := a.AcquireOverride(ctx, ref, none, Host()); err == nil || !strings.Contains(err.Error(), "names no platform") {
 		t.Fatalf("no platform: %v", err)
 	}
 	saved := filepath.Join(t.TempDir(), "legacy.tar")
 	if err := tarball.WriteToFile(saved, name.MustParseReference("plugin:dev"), img); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, saved); err == nil || !strings.Contains(err.Error(), "names no platform") {
+	if _, err := a.AcquireOverride(ctx, ref, saved, Host()); err == nil || !strings.Contains(err.Error(), "names no platform") {
 		t.Fatalf("legacy tarball without a platform: %v", err)
 	}
 }
@@ -1290,10 +1293,10 @@ func TestAcquireOverrideRefusals(t *testing.T) {
 		}
 		return dir
 	}
-	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{})); err == nil || !strings.Contains(err.Error(), "declares no entrypoint") {
+	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{}), Host()); err == nil || !strings.Contains(err.Error(), "declares no entrypoint") {
 		t.Fatalf("no entrypoint: %v", err)
 	}
-	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"SECRET"}})); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
+	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"SECRET"}}), Host()); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
 		t.Fatalf("bare env: %v", err)
 	}
 	archive := filepath.Join(t.TempDir(), "links.tar")
@@ -1468,7 +1471,7 @@ func TestStagingIsInProcess(t *testing.T) {
 	if _, err := layout.Write(dir, indexFor(t, hostPlatform())); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", dir); err != nil {
+	if _, err := a.AcquireOverride(ctx, fx.host+"/org/plugin:v1", dir, Host()); err != nil {
 		t.Fatal(err)
 	}
 	staged, err := name.ParseReference(stagingRepo + ":override")
@@ -1484,7 +1487,7 @@ func TestStagingIsInProcess(t *testing.T) {
 	if !strings.HasSuffix(stagingHost, ".invalid") {
 		t.Fatalf("the staging host %q is not under the reserved domain", stagingHost)
 	}
-	if _, err := b.Acquire(ctx, fx.host+"/org/plugin:v1"); err != nil {
+	if _, err := b.Acquire(ctx, fx.host+"/org/plugin:v1", Host()); err != nil {
 		t.Fatalf("an acquisition beside the staging: %v", err)
 	}
 }
@@ -1511,13 +1514,13 @@ func TestAcquireDaemonPull(t *testing.T) {
 	fx := newFixture(t)
 	lock := &lockfile.File{}
 	work := t.TempDir()
-	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
+	a, err := New(Config{WorkDir: work, Lock: lock, Policy: &trust.Policy{}, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { a.Close() })
 	ref := fx.host + "/org/plugin:v1"
-	got, err := a.Acquire(ctx, ref)
+	got, err := a.Acquire(ctx, ref, Daemon())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1552,7 +1555,7 @@ func TestAcquireDaemonPull(t *testing.T) {
 	// The tag moves; the pin holds and the daemon is handed the
 	// pinned digest.
 	pushIndex(t, ref, hostPlatform())
-	again, err := a.Acquire(ctx, ref)
+	again, err := a.Acquire(ctx, ref, Daemon())
 	if err != nil || pulledRef(t, again) != pulledRef(t, got) {
 		t.Fatalf("pinned acquisition: %+v %v", again, err)
 	}
@@ -1561,12 +1564,12 @@ func TestAcquireDaemonPull(t *testing.T) {
 	if err := wrong.AddPlugin(lockfile.PluginPin{Ref: ref, Scheme: lockfile.SchemeOCI, Digest: "sha256:" + strings.Repeat("0", 64)}); err != nil {
 		t.Fatal(err)
 	}
-	b, err := New(Config{WorkDir: t.TempDir(), Lock: wrong, Policy: &trust.Policy{}, Pull: PullDaemon, Transport: fixtures})
+	b, err := New(Config{WorkDir: t.TempDir(), Lock: wrong, Policy: &trust.Policy{}, Transport: fixtures})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { b.Close() })
-	if _, err := b.Acquire(ctx, ref); err == nil || !strings.Contains(err.Error(), strings.Repeat("0", 64)) {
+	if _, err := b.Acquire(ctx, ref, Daemon()); err == nil || !strings.Contains(err.Error(), strings.Repeat("0", 64)) {
 		t.Fatalf("a pin the registry does not hold: %v", err)
 	}
 }
@@ -1604,4 +1607,70 @@ func entryOf(t *testing.T, a *plugin.Acquired) string {
 	}
 	t.Fatalf("image %+v carries no admitted entry", a.Image)
 	return ""
+}
+
+// The acquisition serves the first candidate the image serves, in
+// the order offered: an image serving the second alone is acquired
+// for it — the store asked again for that platform after the seam's
+// verdict — by the daemon's pull where that candidate's byte path is
+// the daemon's, by the store's export otherwise; a first candidate
+// the image serves with several entries is refused, never stepped
+// over; an image serving no candidate, or offered none, is refused
+// naming what it serves and the candidates (REQ-plugin-runner-selection,
+// REQ-plugin-platform-strict).
+func TestAcquireCandidates(t *testing.T) {
+	fx := newFixture(t)
+	host := hostPlatform()
+	foreign := plugin.Platform{OS: "plan9", Arch: "mips"}
+	ref := fx.host + "/org/second:v1"
+	pushIndex(t, ref, v1.Platform{OS: "plan9", Architecture: "mips", Variant: "v7"})
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	got, err := a.Acquire(ctx, ref, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: foreign}})
+	if err != nil {
+		t.Fatalf("the second candidate served: %v", err)
+	}
+	if got.Candidate != 1 || entryOf(t, got) != "plan9/mips/v7" || rootfsOf(t, got) == "" {
+		t.Fatalf("acquired for candidate %d, entry %q", got.Candidate, entryOf(t, got))
+	}
+	got, err = a.Acquire(ctx, ref, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: foreign, Daemon: true}})
+	if err != nil {
+		t.Fatalf("the second candidate served by the daemon: %v", err)
+	}
+	if p, ok := got.Image.(*plugin.Pulled); !ok || got.Candidate != 1 || p.Entry != "plan9/mips/v7" {
+		t.Fatalf("the daemon candidate's world: %+v (candidate %d)", got.Image, got.Candidate)
+	}
+	// The first candidate served stays first, whatever follows.
+	both := fx.host + "/org/both:v1"
+	pushIndex(t, both, v1.Platform{OS: "plan9", Architecture: "mips"}, v1.Platform{OS: host.OS, Architecture: host.Architecture})
+	if got, err := a.Acquire(ctx, both, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: foreign}}); err != nil || got.Candidate != 0 || entryOf(t, got) != host.OS+"/"+host.Architecture {
+		t.Fatalf("the first candidate served: %v, candidate %d", err, got.Candidate)
+	}
+	// Several entries for the first candidate: refused, the second
+	// not consulted.
+	several := fx.host + "/org/several2:v1"
+	pushIndex(t, several, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v1"}, v1.Platform{OS: host.OS, Architecture: host.Architecture, Variant: "v2"}, v1.Platform{OS: "plan9", Architecture: "mips"})
+	if _, err := a.Acquire(ctx, several, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: foreign}}); err == nil || !strings.Contains(err.Error(), "2 entries for "+host.OS+"/"+host.Architecture) {
+		t.Fatalf("several entries for the first candidate: %v", err)
+	}
+	// No candidate served: the refusal names the candidates and what
+	// the image serves; none offered: what it serves alone.
+	_, err = a.Acquire(ctx, ref, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: plugin.Platform{OS: "linux", Arch: "s390x"}}})
+	if !errors.Is(err, ErrNoCandidate) || !strings.Contains(err.Error(), "has no entry for ["+host.OS+"/"+host.Architecture+" linux/s390x] in its manifest list (found [plan9/mips/v7])") {
+		t.Fatalf("no candidate served: %v", err)
+	}
+	_, err = a.Acquire(ctx, ref, nil)
+	if !errors.Is(err, ErrNoCandidate) || !strings.Contains(err.Error(), "serves [plan9/mips/v7], and no runner here runs any of them") {
+		t.Fatalf("no candidate offered: %v", err)
+	}
+	// An update resolves alone and follows the seam's verdict to
+	// whichever candidate the image serves: the pin moves.
+	if _, _, err := a.UpdatePlugin(ctx, ref, []Candidate{{Platform: plugin.HostPlatform()}, {Platform: foreign}}); err != nil {
+		t.Fatalf("an update over two candidates: %v", err)
+	}
+	// An image serving another platform alone, the host's candidate
+	// alone: the one-platform refusal, as the host's own.
+	_, err = a.Acquire(ctx, ref, Host())
+	if !errors.Is(err, ErrNoCandidate) || !strings.Contains(err.Error(), "has no "+host.OS+"/"+host.Architecture+" entry in its manifest list (found [plan9/mips/v7]): the image does not support this platform") {
+		t.Fatalf("the host alone: %v", err)
+	}
 }

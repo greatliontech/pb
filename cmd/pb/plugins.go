@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/greatliontech/pb/internal/plugin"
 	"path/filepath"
 
 	"github.com/greatliontech/pb/internal/dep"
@@ -22,14 +24,9 @@ const (
 // acquirerConfig assembles the plugin acquirer: pb's plugin store and
 // the evidence kept with it, which sit beside the module cache rather
 // than inside it (the module cache root holds module artifacts only,
-// dep-verbs.md REQ-dep-cache-layout), the session's lockfile and trust
-// policy, the runner's platform, and the byte path the settings
-// select for that runner.
-func acquirerConfig(settings *userconfig.Settings, run runner.Runner, s *dep.Session) (oci.Config, error) {
-	pull, err := pullMode(settings.Get(userconfig.KeyPluginPull), run)
-	if err != nil {
-		return oci.Config{}, err
-	}
+// dep-verbs.md REQ-dep-cache-layout), and the session's lockfile and
+// trust policy.
+func acquirerConfig(s *dep.Session) (oci.Config, error) {
 	workDir, evidenceDir, err := pluginStoreDirs()
 	if err != nil {
 		return oci.Config{}, err
@@ -40,43 +37,44 @@ func acquirerConfig(settings *userconfig.Settings, run runner.Runner, s *dep.Ses
 		Lock:        s.Lock,
 		Policy:      s.Client.Policy,
 		TrustedRoot: s.Client.TrustedRoot,
-		Platform:    run.Platform(),
-		Pull:        pull,
 	}, nil
 }
 
-// pullMode reads the plugin-pull setting: the store by default, the
-// daemon where stated and the runner runs daemon images; a value
-// naming neither byte path, or the daemon under a runner that runs
-// none, is refused naming the layer the value came from.
-func pullMode(v userconfig.Value, run runner.Runner) (oci.PullMode, error) {
+// pullMode reads the plugin-pull setting (plugin-execution.md
+// REQ-plugin-core-verifies): the store by default, the daemon where
+// stated and the selection may run daemon images; a value naming
+// neither byte path, or the daemon under a selection with no docker
+// runner, is refused naming the layer the value came from.
+func pullMode(v userconfig.Value, sel *runner.Selection) (daemon bool, err error) {
 	switch v.Value {
 	case "", pullStore:
-		return oci.PullStore, nil
+		return false, nil
 	case pullDaemon:
-		if _, daemon := run.(runner.DaemonImages); !daemon {
-			return 0, v.Wrap(fmt.Errorf("plugin-pull %q: only the docker runner has a daemon to pull plugins (select it with --%s docker)", v.Value, runner.FlagRunner))
+		if ok, why := sel.Daemon(); !ok {
+			return false, v.Wrap(fmt.Errorf("plugin-pull %q: only the docker runner has a daemon to pull plugins, and %s", v.Value, why))
 		}
-		return oci.PullDaemon, nil
+		return true, nil
 	}
-	return 0, v.Wrap(fmt.Errorf("plugin-pull %q names no byte path (byte paths: %s, %s)", v.Value, pullStore, pullDaemon))
+	return false, v.Wrap(fmt.Errorf("plugin-pull %q names no byte path (byte paths: %s, %s)", v.Value, pullStore, pullDaemon))
 }
 
 // lazyUpdater is the update verb's plugin updater, the acquirer
 // opened on the first plugin named and closed with the verb.
 type lazyUpdater struct {
-	settings *userconfig.Settings
-	session  *dep.Session
-	acq      *oci.Acquirer
+	settings   *userconfig.Settings
+	session    *dep.Session
+	acq        *oci.Acquirer
+	substrates []oci.Candidate
+	account    string // the selection's account, for a refusal
 }
 
 func (u *lazyUpdater) UpdatePlugin(ctx context.Context, ref string) (lockfile.PluginPin, lockfile.PluginPin, error) {
 	if u.acq == nil {
-		run, err := runner.Open(nil, u.settings.Get(userconfig.KeyRunner))
+		sel, err := runner.Open(nil, u.settings.Get(userconfig.KeyRunner))
 		if err != nil {
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
-		cfg, err := acquirerConfig(u.settings, run, u.session)
+		cfg, err := acquirerConfig(u.session)
 		if err != nil {
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
@@ -85,8 +83,18 @@ func (u *lazyUpdater) UpdatePlugin(ctx context.Context, ref string) (lockfile.Pl
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
 		u.acq = acq
+		// An update runs nothing: the substrates it offers are the
+		// runners the host has, whatever their rows, the pin it moves
+		// being the lockfile's for every machine (dep-verbs.md
+		// REQ-dep-update); the floor governs a run, at generate.
+		cands, account := sel.Candidates(ctx, plugin.TierNone)
+		u.substrates, u.account = dep.Substrates(cands, false), account
 	}
-	return u.acq.UpdatePlugin(ctx, ref)
+	before, after, err := u.acq.UpdatePlugin(ctx, ref, u.substrates)
+	if errors.Is(err, oci.ErrNoCandidate) {
+		err = fmt.Errorf("%w; %s", err, u.account)
+	}
+	return before, after, err
 }
 
 // Close releases the acquirer if one was opened; a second close is

@@ -297,6 +297,19 @@ func TestNativeRunnerIsSandbox(t *testing.T) {
 	}
 }
 
+// The native runner says the tier its row reaches before anything
+// runs, a tier of the seam's vocabulary, which the default's
+// selection holds to the floor (REQ-plugin-runner-selection).
+func TestNativeRunnerReaches(t *testing.T) {
+	tier, err := (&SandboxRunner{}).Reach(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plugin.ValidTier(tier) || tier == plugin.TierNone {
+		t.Fatalf("reach = %q", tier)
+	}
+}
+
 // The root is read-only: a plugin writing anywhere in it fails
 // (REQ-plugin-sandboxed).
 func TestRunReadonlyRoot(t *testing.T) {

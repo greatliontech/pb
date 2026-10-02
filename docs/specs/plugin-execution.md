@@ -48,7 +48,10 @@ empty naming no runner; the default choosing per entry by capability,
 not heuristics — `native` where the entry's image serves the host's
 platform and the sandbox's row for the entry meets the tier the
 policy requires (`platforms.md` REQ-plat-oci-substrate,
-REQ-plugin-min-tier), else `docker` where a daemon is reachable, else
+REQ-plugin-min-tier), else `docker` where a daemon is reachable — an
+image serving several entries for the host's platform refused under
+`native`, never stepped past to `docker`
+(REQ-plugin-platform-strict) — else
 the entry refused naming the platforms its image serves, the row the
 host reaches and the floor — every input a stated fact, so the choice
 is the same on every run; and a layer naming no runner, or a named
@@ -114,7 +117,9 @@ implicitly — only by the explicit update of the pin (`dep-verbs.md`
 REQ-dep-update).
 
 **REQ-plugin-platform-strict** (invariant): A plugin whose manifest list
-contains no entry matching the host platform MUST be refused with an
+contains no entry matching the platform of the substrate that runs it
+— the host's under the native runner, the daemon's under `docker`
+(`platforms.md` REQ-plat-oci-substrate) — MUST be refused with an
 error attributing the gap to the image — an artifact that is not a
 manifest list is refused the same way, since the manifest list is the
 author's platform declaration (the plugin image term) — and no
@@ -122,10 +127,11 @@ emulation, substitution, or fallback exists. Matching granularity is
 `<os>/<arch>`, deliberately: the platform variant is not consulted, and
 variant-aware selection is a future amendment, not implied behavior.
 Exactly one entry matches, or none does: a manifest list carrying
-several entries for the host — variants of one architecture — is
-refused naming them, since choosing among them would be a fallback,
-as the store's own rule holds — so an image published for the host's
-architecture in several variants is refused on it. The one entry
+several entries for the substrate's platform — variants of one
+architecture — is refused naming them, since choosing among them
+would be a fallback, as the store's own rule holds — so an image
+published for that architecture in several variants is refused on
+it. The one entry
 admitted, its variant included, is the child of the verified index
 the run uses, on every byte path.
 

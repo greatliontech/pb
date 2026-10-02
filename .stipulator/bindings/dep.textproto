@@ -248,7 +248,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "9c1b2a89bcf87b5a4f247abee98413cd43158da63b171c8848283f04ae674ad2"
+  shape_hash: "7c0e08062421bf51ef1009db788952c129abffd909d2555e0c4c276fc51bc397"
 }
 
 bindings {

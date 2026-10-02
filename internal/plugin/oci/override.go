@@ -112,7 +112,7 @@ func (t *inProcessTransport) RoundTrip(req *http.Request) (*http.Response, error
 // through the seam by digest, which runs the platform check and the trust
 // policy against the declared reference exactly as for any
 // acquisition (REQ-plugin-verify-before-run, REQ-plugin-core-verifies).
-func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*plugin.Acquired, error) {
+func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string, candidates []Candidate) (*plugin.Acquired, error) {
 	idx, release, err := loadOverride(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("oci: override %s for %s: %w", source, ref, err)
@@ -134,27 +134,26 @@ func (a *Acquirer) AcquireOverride(ctx context.Context, ref, source string) (*pl
 		return nil, fmt.Errorf("oci: override %s for %s: staging: %w", source, ref, err)
 	}
 	target := stagingRepo + "@" + digest.String()
-	acq := &acquisition{declaredRef: ref}
+	// The staging is this process's registry, which no daemon
+	// reaches: every candidate is served from the store, the daemon's
+	// runner importing the export as it does any.
+	stored := make([]Candidate, len(candidates))
+	for i, c := range candidates {
+		stored[i] = Candidate{Platform: c.Platform}
+	}
+	acq := &acquisition{declaredRef: ref, candidates: stored}
 	if err := a.enter(target, acq); err != nil {
 		return nil, err
 	}
 	defer a.leave(target)
-	img, err := a.fs.Pull(ctx, target)
-	if err != nil {
-		return nil, err
-	}
-	rootfs, err := img.Export(ctx)
+	acquired, err := a.acquire(ctx, target, acq)
 	if err != nil {
 		return nil, err
 	}
 	if acq.resolved == "" {
 		return nil, fmt.Errorf("oci: override %s for %s: acquisition ran no verification seam", source, ref)
 	}
-	process, err := processOf(img.ConfigFile())
-	if err != nil {
-		return nil, fmt.Errorf("oci: override %s for %s: %v", source, ref, err)
-	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs}}, nil
+	return acquired, nil
 }
 
 // withPlatforms fills in, for every image the manifest list carries
