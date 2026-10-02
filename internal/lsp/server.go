@@ -4,8 +4,10 @@
 // overlaid on the tree, and every change is judged by dep.Judge — the
 // lint verb's own assembly, compile and evaluation — the judgement
 // published as diagnostics over the publish set. The binding is
-// go.lsp.dev's; the server implements the protocol's Server interface
-// for the methods it serves and refuses the rest as unimplemented.
+// github.com/greatliontech/lsp (docs/specs/binding.md there: the
+// framing, the ids and cancellation, the handler chain, the codec);
+// the server implements the protocol's Server interface for the
+// methods it serves and leaves the rest unimplemented.
 package lsp
 
 import (
@@ -16,9 +18,9 @@ import (
 	"sync"
 
 	"github.com/go-git/go-billy/v6"
-	"go.lsp.dev/jsonrpc2"
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/jsonrpc2"
+	"github.com/greatliontech/lsp/protocol"
+	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/dep"
@@ -121,15 +123,20 @@ func New(deps Deps) (*Server, error) {
 }
 
 // serve runs the connection over stream to its end and returns the
-// exit status (REQ-lsp-lifecycle).
+// exit status (REQ-lsp-lifecycle). The connection is the binding's,
+// dispatching through the server's chain; a failure the connection
+// survives — a notification whose params do not decode, dropped —
+// is logged.
 func (s *Server) serve(ctx context.Context, stream jsonrpc2.Stream) int {
 	ctx, stop := context.WithCancel(ctx)
 	defer stop()
-	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(codec{}))
 	s.mu.Lock()
-	s.conn, s.client = conn, protocol.ClientDispatcher(conn)
+	_, conn, client := protocol.NewServer(ctx, s, stream,
+		protocol.WithHandlerChain(s.chain),
+		protocol.WithErrorObserver(func(err error) { s.deps.Logger.Warn("a message was dropped", "error", err) }),
+	)
+	s.conn, s.client = conn, client
 	s.mu.Unlock()
-	conn.Go(ctx, s.handler())
 	<-conn.Done()
 	s.mu.Lock()
 	if s.cancel != nil {
@@ -147,30 +154,23 @@ func (s *Server) serve(ctx context.Context, stream jsonrpc2.Stream) int {
 	return 1
 }
 
-// handler is the connection's handler chain: the lifecycle's guard,
-// then the protocol's dispatch to the server's methods, a
-// notification's error — a method the dispatch does not know,
-// `$/cancelRequest` among them, or params that do not decode —
-// logged and dropped, since the connection would otherwise end on it
-// (REQ-lsp-lifecycle; a call's error is its answer, a method unknown
-// refused by Request). A cancellation is read only once the request
-// it names has been answered, handlers running in wire order on the
-// read loop, so its work has always finished; the binding's own
-// cancel handler is not used, deriving as it does a context from
-// the pooled request context, which the connection recycles under
-// it. The work a change starts runs on its own goroutine (judge),
-// and a request the server makes of the client is made from one
-// too, so the loop is never held.
-func (s *Server) handler() jsonrpc2.Handler {
-	routed := protocol.ServerHandler(s, nil)
-	dispatch := func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
-		result, err := routed(ctx, req)
-		if err != nil && !req.IsCall() {
-			s.deps.Logger.Warn("a notification was dropped", "method", req.Method(), "error", err)
-			return nil, nil
-		}
-		return result, err
-	}
+// chain is the connection's inbound handler chain over the binding's
+// typed dispatch (whose fallback refuses an unhandled call and drops
+// an unhandled notification, `$/cancelRequest` among them): the
+// lifecycle's guard, then the dispatch, nothing released — every
+// message is handled on the read loop in wire order, so a change
+// never overtakes the one before it (REQ-lsp-lifecycle). No cancel
+// observer: nothing is released, so a cancellation is read only once
+// the request it names has been answered, its work finished, and an
+// observer would cost each call its context's materialization for no
+// effect; one joins the chain with the first handler that releases.
+// The guard answers no notification with an error: under the binding
+// a notification handler's error ends the connection, and a
+// notification before `initialize` or after `shutdown` is dropped. The
+// work a change starts runs on its own goroutine (judge), and a
+// request the server makes of the client is made from one too, so
+// the loop is never held.
+func (s *Server) chain(dispatch jsonrpc2.Handler) jsonrpc2.Handler {
 	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 		s.mu.Lock()
 		st := s.state
@@ -179,7 +179,10 @@ func (s *Server) handler() jsonrpc2.Handler {
 		case protocol.MethodExit:
 		case protocol.MethodInitialize:
 			if st != uninitialized {
-				return nil, jsonrpc2.ErrInvalidRequest
+				if req.IsCall() {
+					return nil, jsonrpc2.ErrInvalidRequest
+				}
+				return nil, nil
 			}
 		default:
 			switch st {
@@ -197,11 +200,6 @@ func (s *Server) handler() jsonrpc2.Handler {
 		}
 		return dispatch(ctx, req)
 	}
-}
-
-// Request refuses a call of a method the server does not serve.
-func (s *Server) Request(ctx context.Context, method string, params any) (any, error) {
-	return nil, jsonrpc2.ErrMethodNotFound
 }
 
 // Initialize settles the connection: the client root, the position
@@ -450,6 +448,10 @@ func (s *Server) TextDocumentContent(ctx context.Context, params *protocol.TextD
 func (s *Server) change(reload bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// The guard keeps a notification after shutdown from its handler
+	// (REQ-lsp-lifecycle), and with nothing released no handler can be
+	// running when shutdown takes the state; this check is the backstop
+	// for a chain that releases, which none does today.
 	if s.state != serving {
 		return
 	}

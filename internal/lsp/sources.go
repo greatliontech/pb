@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-billy/v6/osfs"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/dep"

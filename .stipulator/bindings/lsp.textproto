@@ -68,7 +68,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.placements"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fde79208879bb53cedbc8b5ccc3ca7085990f9226af6f959ebc4a66b7af87896"
+  shape_hash: "2b6fb92a6e5a93ec23c69ab191188262c8cf65125be6c8c0282556360ccfee7b"
 }
 
 bindings {
@@ -98,7 +98,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.DidChangeWatchedFiles"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "2b15f635695028cf7cd2d8bf43741f9b6f8dee1e91ad916e687f97186c1e010d"
+  shape_hash: "9a64efce107df6b7b7067d70b9ea6ceb0af08ee91f1a1c1664f881ea33cee7b5"
 }
 
 bindings {
@@ -108,7 +108,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.DidSave"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "3cb6216952c6f1c2f56eb1f15f4c31749ed79dc5faecb1b25034e4f59e158c4d"
+  shape_hash: "cc650b2b36583ada4b6dd27895e80266f505598da3d404c9f802c0f5091e77a8"
 }
 
 bindings {
@@ -178,7 +178,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.overlay"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "5d9ff6b0fd03724a0f678e666aef966147955319c5caaedacff5533c18f2d521"
+  shape_hash: "e888689ed3faaa70c464246910ea9b7ceaaba812c16cec1899e696edb2c56fb8"
 }
 
 bindings {
@@ -208,7 +208,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.outside"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "d83778e2d8f64cd9c3d808594624be908edfd3decd3beee032cdc3027c0f0097"
+  shape_hash: "8a05f0fa65a4e948c3298029a0158a605e63a193575753071d54db5aa7118f80"
 }
 
 bindings {
@@ -218,7 +218,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.placements"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fde79208879bb53cedbc8b5ccc3ca7085990f9226af6f959ebc4a66b7af87896"
+  shape_hash: "2b6fb92a6e5a93ec23c69ab191188262c8cf65125be6c8c0282556360ccfee7b"
 }
 
 bindings {
@@ -248,7 +248,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.placements"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "fde79208879bb53cedbc8b5ccc3ca7085990f9226af6f959ebc4a66b7af87896"
+  shape_hash: "2b6fb92a6e5a93ec23c69ab191188262c8cf65125be6c8c0282556360ccfee7b"
 }
 
 bindings {
@@ -258,7 +258,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.publishSet"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c4deb6a1c3da741b3d67131a49a10851ff0e67010efeb1c55a67d8060b75d0a5"
+  shape_hash: "04ac9fdc4e8b4725ae2eab8244f258bd6306718b0eee791cd0741aa37288f3f7"
 }
 
 bindings {
@@ -328,7 +328,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.position"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "0033b5ef9937cf048f4b15f4a58f6048a1c4d0d1109d9aa3899f59e747b696c8"
+  shape_hash: "3c55af8a61d61993bda49d67d9f92f4a47acdadb2b8ba58c23ff64efe970fda6"
 }
 
 bindings {
@@ -368,7 +368,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.moduleURI"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "f16909b6a4b332f63ccdd8e6992f93ba43b806d62841cc1e4e3bc0156a72637f"
+  shape_hash: "ed0182c333460033b94a6ab8cc3792b704759809ea14e536185fe170aa21155e"
 }
 
 bindings {
@@ -388,7 +388,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.moduleContent"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "08623e627ed190104af67cdde322f20c9b0824184cdd3158adb1e5709c9b1d6c"
+  shape_hash: "f229e9f3dc6635435f04f24112e418c457d224e4d81e29056f225a50dc35433f"
 }
 
 bindings {
@@ -426,16 +426,6 @@ bindings {
   content_hash: "238535909b8b18493e2059ea56780a1aa31b439a5ba77a2e37d3ba967dbc6b52"
   source_hash: "b46e1bded72875385daea79842a10da51e5a2ab193d4de56fa15cba2c59884c5"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lsp.robust.Read"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "38e14aa14c16f78ffdaccf8885ae7b39e8e1c01884e85d19f0858c92ed9d89f4"
-}
-
-bindings {
-  requirement_id: "REQ-lsp-transport"
-  content_hash: "238535909b8b18493e2059ea56780a1aa31b439a5ba77a2e37d3ba967dbc6b52"
-  source_hash: "b46e1bded72875385daea79842a10da51e5a2ab193d4de56fa15cba2c59884c5"
-  backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Serve"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "df86c310fc5ea207a26f2f952254a40db7f9d4e4a417dc3848104d9b741f6cde"
@@ -456,19 +446,9 @@ bindings {
   content_hash: "bc26a20e2c1e8fe0e69590b0cc0dc98a87b600eeda9852a1ecac75725815f12d"
   source_hash: "d7bfa3a71042c894557d9355e857fef244e25daf51cd380ee4e7fb14b43a8061"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lsp.Server.handler"
-  role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c6da08d113963c5fb42618885064c139f9ba0dc5326f65f86df863f92a599a8c"
-}
-
-bindings {
-  requirement_id: "REQ-lsp-lifecycle"
-  content_hash: "bc26a20e2c1e8fe0e69590b0cc0dc98a87b600eeda9852a1ecac75725815f12d"
-  source_hash: "d7bfa3a71042c894557d9355e857fef244e25daf51cd380ee4e7fb14b43a8061"
-  backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.Initialize"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "63ee03b961e4b23b166de0bab5ab1cbf6bd9294b0f2db3b4df37ad163e2f38b5"
+  shape_hash: "5c7fb05bd8a8605a78118313553ffc9445bf17cca040478c7f75c4e01c739f36"
 }
 
 bindings {
@@ -538,7 +518,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/lsp.Server.publishSet"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "c4deb6a1c3da741b3d67131a49a10851ff0e67010efeb1c55a67d8060b75d0a5"
+  shape_hash: "04ac9fdc4e8b4725ae2eab8244f258bd6306718b0eee791cd0741aa37288f3f7"
 }
 
 bindings {
@@ -736,9 +716,9 @@ bindings {
   content_hash: "bc26a20e2c1e8fe0e69590b0cc0dc98a87b600eeda9852a1ecac75725815f12d"
   source_hash: "d7bfa3a71042c894557d9355e857fef244e25daf51cd380ee4e7fb14b43a8061"
   backend: "go"
-  symbol: "github.com/greatliontech/pb/internal/lsp.TestUnknownNotificationDropped"
+  symbol: "github.com/greatliontech/pb/internal/lsp.TestNotificationNeverEndsTheConnection"
   role: BINDING_ROLE_TESTS
-  shape_hash: "8ca077073f4e7186abbe8b37920e71d3b71d0c1d2b3b7be68134745be077ec58"
+  shape_hash: "71d1f194a81c02c06e6bb761ab0a0764b6aab543d345a30e850bcc75d2bb0c7d"
 }
 
 bindings {
@@ -789,4 +769,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/lsp.TestNoSessionAtStart"
   role: BINDING_ROLE_TESTS
   shape_hash: "e9e46feaabfed4f5c5f7d289d80fc1f3158309d0bcc8ba1f29ea80a7d7dc3fc1"
+}
+
+bindings {
+  requirement_id: "REQ-lsp-lifecycle"
+  content_hash: "bc26a20e2c1e8fe0e69590b0cc0dc98a87b600eeda9852a1ecac75725815f12d"
+  source_hash: "d7bfa3a71042c894557d9355e857fef244e25daf51cd380ee4e7fb14b43a8061"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lsp.Server.chain"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "a6ccd1c71658bf7842798c0ac7714157e0eab06b79e423ce7597abea34fbc5e9"
+}
+
+bindings {
+  requirement_id: "REQ-lsp-transport"
+  content_hash: "238535909b8b18493e2059ea56780a1aa31b439a5ba77a2e37d3ba967dbc6b52"
+  source_hash: "b46e1bded72875385daea79842a10da51e5a2ab193d4de56fa15cba2c59884c5"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lsp.Server.serve"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "c8811f6ddb55887ecf0e2dcd49e9f35219a67b7473b5fa68e90cd121bc497d48"
 }

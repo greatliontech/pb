@@ -8,8 +8,8 @@ import (
 	"path"
 	"sort"
 
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/protocol"
+	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/dep"

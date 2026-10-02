@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-lsp-lifecycle"
-reason: "the lifecycle lands with the plan chunk 21.3, its capability list whole with formatting at 21.5; its contract is stated ahead of the code"
+reason: "the lifecycle is served; its capability list is whole once formatting is, at the plan chunk 21.6"
 content_hash: "bc26a20e2c1e8fe0e69590b0cc0dc98a87b600eeda9852a1ecac75725815f12d"
 source_hash: "d7bfa3a71042c894557d9355e857fef244e25daf51cd380ee4e7fb14b43a8061"
-lands { manual { condition: "the feature-full plan chunk 21.5 lands" } }
+lands { manual { condition: "the feature-full plan chunk 21.6 lands" } }

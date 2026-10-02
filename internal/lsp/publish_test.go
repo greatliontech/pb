@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/protocol"
+	"github.com/greatliontech/lsp/uri"
 	"pgregory.net/rapid"
 )
 

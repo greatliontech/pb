@@ -3,7 +3,7 @@ package lsp
 import (
 	"testing"
 
-	"go.lsp.dev/protocol"
+	"github.com/greatliontech/lsp/protocol"
 )
 
 // Positions go through the byte offset: pb's line at `\n` and

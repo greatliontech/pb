@@ -12,8 +12,8 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/protocol"
+	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
@@ -243,16 +243,19 @@ func TestClientRootVolume(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if opened != root || srv.deps.OSRoot != root || srv.clientRoot != "elsewhere/ws" || !srv.hasRoot {
+	// A volume's letter is spelled as the URI canonicalizes it, lower
+	// case; the host names the same volume either way.
+	if !strings.EqualFold(opened, root) || !strings.EqualFold(srv.deps.OSRoot, root) || srv.clientRoot != "elsewhere/ws" || !srv.hasRoot {
 		t.Fatalf("the tree opened at %q, the client root %q under %q", opened, srv.clientRoot, srv.deps.OSRoot)
 	}
 }
 
-// A notification the server does not serve — a cancellation, a
-// custom method — or one whose params do not decode is dropped, and
-// the connection goes on; a call of an unknown method is refused
-// (REQ-lsp-lifecycle).
-func TestUnknownNotificationDropped(t *testing.T) {
+// A notification never ends the connection: one the server does not
+// serve — a cancellation, a custom method — one whose params do not
+// decode, a request method sent as one, initialize sent again as one,
+// each dropped and the connection going on; a call of an unknown
+// method is refused (REQ-lsp-lifecycle).
+func TestNotificationNeverEndsTheConnection(t *testing.T) {
 	fx := newFixture(t, checkTree())
 	fx.pin(t)
 	fx.start(t)
@@ -266,6 +269,10 @@ func TestUnknownNotificationDropped(t *testing.T) {
 		{protocol.MethodCancelRequest, &protocol.CancelParams{ID: protocol.Integer(7)}},
 		{"$/custom", map[string]int{"x": 1}},
 		{protocol.MethodTextDocumentDidChange, map[string]string{"textDocument": "not a document"}},
+		// A request method sent as a notification, and initialize again
+		// as one: neither can be answered, both are dropped.
+		{protocol.MethodTextDocumentHover, map[string]any{"textDocument": map[string]string{"uri": string(fx.uri("ws/a/a.proto"))}, "position": map[string]int{"line": 0, "character": 0}}},
+		{protocol.MethodInitialize, map[string]any{"capabilities": map[string]any{}}},
 	} {
 		if err := fx.conn.Notify(ctx, n.method, n.params); err != nil {
 			t.Fatalf("%s: %v", n.method, err)

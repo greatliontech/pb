@@ -3,7 +3,7 @@ package lsp
 import (
 	"unicode/utf8"
 
-	"go.lsp.dev/protocol"
+	"github.com/greatliontech/lsp/protocol"
 )
 
 // encoding is the position encoding selected for the connection

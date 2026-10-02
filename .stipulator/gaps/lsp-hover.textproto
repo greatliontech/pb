@@ -2,7 +2,7 @@
 # proto-message: stipulator.v1.Gap
 
 requirement_id: "REQ-lsp-hover"
-reason: "navigation lands with the plan chunk 21.4; its contract is stated ahead of the code"
+reason: "navigation lands with the plan chunk 21.5; its contract is stated ahead of the code"
 content_hash: "d9a97469c4bb898c2f618eba674dfe1d9b41a19e04fdbc92cd2fb718027bcba3"
 source_hash: "040aeecc65076a811b2afbd2f7a60ca847850d7f67f3d1fe542f752c79099dab"
-lands { manual { condition: "the feature-full plan chunk 21.4 lands" } }
+lands { manual { condition: "the feature-full plan chunk 21.5 lands" } }

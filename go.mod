@@ -11,13 +11,11 @@ require (
 	github.com/google/go-containerregistry v0.22.0
 	github.com/greatliontech/gitprov v0.0.0-20261002085106-62ab00b70019
 	github.com/greatliontech/glob v0.2.0
+	github.com/greatliontech/lsp v0.1.2
 	github.com/greatliontech/ocifs v0.12.2
 	github.com/greatliontech/sandbox v0.9.1
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/spf13/cobra v1.10.2
-	go.lsp.dev/jsonrpc2 v1.0.1
-	go.lsp.dev/protocol v1.0.1
-	go.lsp.dev/uri v1.0.1
 	golang.org/x/crypto v0.57.0
 	golang.org/x/mod v0.41.0
 	golang.org/x/net v0.59.0
@@ -75,6 +73,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/go-seccomp-bpf v1.6.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/fatih/color v1.19.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-chi/chi/v5 v5.3.1 // indirect

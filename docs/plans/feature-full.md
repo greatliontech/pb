@@ -186,12 +186,21 @@ formatter and the language server
         client suite with the parity, supersession and tree-digest
         witnesses and a dependency's address under each client
         capability; the verb documented.
-  - [ ] 21.4. Definition, hover and references over the resolved
+  - [x] 21.4. The binding moved to greatliontech/lsp (its v0.1.2:
+        a request whose context was asked for never recycled, a
+        request method sent as a notification dropped): the server's
+        own transport and dispatch workarounds removed — a malformed
+        body answered, an unknown or undecodable notification dropped
+        — the chain installed through the binding's option, its error
+        observer logged; the pb witnesses of those behaviours kept
+        and extended (an invalid-request body, a framing error, a
+        request method as a notification).
+  - [ ] 21.5. Definition, hover and references over the resolved
         build's descriptors, the cursor mapped through the parser's
         tree.
-  - [ ] 21.5. Formatting into the canonical form through the
+  - [ ] 21.6. Formatting into the canonical form through the
         formatter.
-  - [ ] 21.6. Close-out: consolidation, the spec's statements
+  - [ ] 21.7. Close-out: consolidation, the spec's statements
         settled, the campaign.
 - [ ] 23. The runner suite's kernel surfaces declared to gomutant's
       observation bracket where paths name them, a SandboxRunner.Run

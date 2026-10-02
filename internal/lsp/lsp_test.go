@@ -22,9 +22,9 @@ import (
 	"github.com/go-git/go-billy/v6/helper/iofs"
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/util"
-	"go.lsp.dev/jsonrpc2"
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
+	"github.com/greatliontech/lsp/jsonrpc2"
+	"github.com/greatliontech/lsp/protocol"
+	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
@@ -911,6 +911,20 @@ func TestLifecycle(t *testing.T) {
 	if err := fx.server.Shutdown(context.Background()); err == nil || !errorsAs(err, &jerr) || jerr.Code != jsonrpc2.Code(protocol.ErrorCodesInvalidRequest) {
 		t.Fatalf("a request after shutdown: %v", err)
 	}
+	// A notification after shutdown is dropped by the guard: the
+	// document is never held, let alone judged or published. The call
+	// after it is answered only once it was handled, in wire order.
+	fx.open(t, "ws/b/b.proto", 1, "syntax = \"proto3\";\n")
+	if err := fx.server.Shutdown(context.Background()); err == nil {
+		t.Fatal("a second shutdown was accepted")
+	}
+	fx.none(t, "ws/b/b.proto")
+	fx.srv.mu.Lock()
+	_, held := fx.srv.docs[fx.uri("ws/b/b.proto")]
+	fx.srv.mu.Unlock()
+	if held {
+		t.Fatal("a notification after shutdown reached its handler")
+	}
 	if err := fx.server.Exit(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -994,17 +1008,27 @@ func TestTransportMalformedFrame(t *testing.T) {
 	if r := read(); !strings.Contains(r, `"code":-32700`) {
 		t.Fatalf("the parse error's answer: %s", r)
 	}
+	// JSON that is no JSON-RPC message: answered invalid-request, the
+	// connection going on.
+	write(`{"id":2,"foo":"bar"}`)
+	if r := read(); !strings.Contains(r, `"code":-32600`) {
+		t.Fatalf("the invalid request's answer: %s", r)
+	}
 	write(`{"jsonrpc":"2.0","id":1,"method":"shutdown"}`)
 	if r := read(); !strings.Contains(r, `"id":1`) || !strings.Contains(r, `-32002`) {
-		t.Fatalf("the connection after the malformed frame: %s", r)
+		t.Fatalf("the connection after the malformed frames: %s", r)
 	}
-	fromClient.Close()
+	// A framing error ends the server, status 1 without a shutdown.
+	if _, err := fmt.Fprint(fromClient, "Content-Length: x\r\n\r\n{}"); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case st := <-status:
 		if st != 1 {
-			t.Fatalf("status after the stream's end: %d", st)
+			t.Fatalf("status after the framing error: %d", st)
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatal("the server did not end with the stream")
+		t.Fatal("the server did not end on the framing error")
 	}
+	fromClient.Close()
 }
