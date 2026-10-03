@@ -8,6 +8,23 @@
 // framing, the ids and cancellation, the handler chain, the codec);
 // the server implements the protocol's Server interface for the
 // methods it serves and leaves the rest unimplemented.
+//
+// Requests are handled one at a time on the connection's read loop,
+// in wire order, each answered before the next message is read: the
+// work a request does is a lookup in the last judgement's index, a
+// read of the content table, one file through the formatter, or
+// shutdown's wait for the judgement in flight — short enough that
+// serial handling is the simplest order-preserving shape, and the one
+// expensive thing, the judgement, is no request — a change starts it on its
+// own goroutine and the next change supersedes it. So the protocol's
+// cancellation has nothing to cancel and is accepted without effect
+// (REQ-lsp-lifecycle). The shape holds while every handler is short;
+// a handler whose work must outlast the loop (completion, references
+// across a large build, workspace symbols) would be released through
+// the binding's async path, and with it the chain would gain the
+// binding's cancel observer ahead of the dispatch, a witness that
+// cancels such a request mid-work, and the change trigger a state
+// check so a released handler starts no judgement after shutdown.
 package lsp
 
 import (
@@ -174,7 +191,7 @@ func (s *Server) serve(ctx context.Context, stream jsonrpc2.Stream) int {
 // observer: nothing is released, so a cancellation is read only once
 // the request it names has been answered, its work finished, and an
 // observer would cost each call its context's materialization for no
-// effect (docs/issues/lsp-cancel-witness.md).
+// effect (the package comment: the shape and what would change it).
 // The guard answers no notification with an error: under the binding
 // a notification handler's error ends the connection, and a
 // notification before `initialize` or after `shutdown` is dropped. The

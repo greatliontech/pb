@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -302,6 +303,47 @@ func TestNotificationNeverEndsTheConnection(t *testing.T) {
 	fx.open(t, "ws/a/a.proto", 1, strings.Replace(string(fx.text(t, "ws/a/a.proto")), "BadName", "fine", 1))
 	if p := fx.publishes(t, "ws/a/a.proto")[fx.uri("ws/a/a.proto")]; len(p.Diagnostics) != 0 {
 		t.Fatalf("after the dropped notifications: %s", render(p))
+	}
+}
+
+// A cancellation has no effect: a request cancelled while its answer
+// is outstanding is answered in wire order with its result, never
+// RequestCancelled, and the connection goes on (REQ-lsp-lifecycle).
+func TestCancellationHasNoEffect(t *testing.T) {
+	fx := newFixture(t, checkTree())
+	fx.pin(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{})
+	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
+	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
+	fx.publishes(t, "ws/a/a.proto")
+	ctx := context.Background()
+	// The hover over Thing's declaration, which answers with content.
+	pos := fx.token(t, "ws/a/a.proto", "Thing {", 0)
+	params := &protocol.HoverParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: protocol.TextDocumentIdentifier{URI: fx.uri("ws/a/a.proto")}, Position: pos}}
+	pending, err := fx.conn.Send(ctx, protocol.MethodTextDocumentHover, params)
+	if err != nil {
+		t.Fatalf("the request: %v", err)
+	}
+	n, ok := pending.ID().Number()
+	if !ok {
+		t.Fatalf("the request's id is no number: %v", pending.ID())
+	}
+	// The cancellation reaches the wire before the answer is read.
+	if err := fx.conn.Notify(ctx, protocol.MethodCancelRequest, &protocol.CancelParams{ID: protocol.Integer(n)}); err != nil {
+		t.Fatalf("the cancellation: %v", err)
+	}
+	var h *protocol.Hover
+	if err := pending.Await(ctx, &h); err != nil {
+		t.Fatalf("the cancelled request's answer: %v", err)
+	}
+	if h == nil || !strings.Contains(fmt.Sprint(h.Contents), "Thing") {
+		t.Fatalf("the cancelled request's answer is not the hover: %v", h)
+	}
+	// The connection goes on.
+	var again *protocol.Hover
+	if _, err := fx.conn.Call(ctx, protocol.MethodTextDocumentHover, params, &again); err != nil || again == nil {
+		t.Fatalf("the request after the cancellation: %v %v", again, err)
 	}
 }
 

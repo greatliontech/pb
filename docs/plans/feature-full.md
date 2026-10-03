@@ -316,3 +316,29 @@ formatter and the language server
       platforms.md's windows refusal amended; the
       docker-store-path-windows issue closes, the windows row's
       protocol coverage restored
+- [ ] 29. A replaced pair's files addressed by the pair whose bytes
+      they are: the `pb-module://` address and the source store's
+      copy named by the replacement pair where one applies, as Go's
+      module cache and gopls have it, the requirement's name kept to
+      the module graph (the module file; the unpinned diagnostics
+      already name the source pair); `modfiles.Module` carrying both
+      pairs, the requirement it stands for and the source whose
+      bytes it holds, `Load` filling both from the root's
+      replacements, every name of bytes read from the source pair
+      and every name of a requirement from the other; a replaced
+      module rendered once, `<path>@<version> => <replacement>` as
+      dep-verbs.md spells it, in `Module.Label` and `dep.Pair`
+      (today two renderings of a pair, the directory form
+      workspace.md's), workspace.md REQ-work-replace stating the
+      rendering beside the directory form, the export report
+      carrying it; lsp.md REQ-lsp-dependency-files amended; a
+      witness that changes a pinned replacement and sees the address
+      move with the bytes while the requirement's name stays; the
+      lsp-replacement-address issue closes
+- [ ] 30. The identity audit: every name a layer hands out for bytes
+      walked under the identity-audit issue's lenses across the
+      resolver, the stores, the lockfile and provenance keys, the
+      language server's addresses and the plugin references; each
+      finding a defect fixed here or an issue slotted; the Go
+      parallels note extended with what the walk finds; the
+      identity-audit issue closes

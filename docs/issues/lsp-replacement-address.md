@@ -15,22 +15,17 @@ judgement's first; a range navigation computed over the other lands
 in the wrong bytes. A directory replacement has no such address (its
 files are tree files).
 
-Two defensible contracts:
+Resolution: the address names the pair whose bytes it serves, the
+replacement's where one applies, as Go's module cache files a
+replacement under its own path and gopls addresses its files there;
+the requirement's name stays in the module graph (the module file),
+where a name is shown, and never in a file address, which
+identifies bytes; the unpinned diagnostics already name the source
+pair, the one `pb dep download` pins. The source store lays the
+copy out under the replacement pair; `modfiles.Module` carries
+both pairs, the requirement it stands for and the source whose
+bytes it holds, so no layer below the resolver reconstructs which
+is which. A directory replacement is untouched: its files are tree
+files.
 
-1. The address names the pair the build list asks for, as now: an
-   address is stable across replacement changes and spells what the
-   module file requires. It does not identify bytes, and no ordering
-   of the content request mends that: choosing it accepts the
-   wrong-range navigation above, in the window between a
-   replacement change and the next build that compiles.
-2. The address names the replacement pair (`<replacement
-   path>@<replacement version>`): an address identifies its bytes
-   and the window is gone; the client sees the replacement's
-   identity, not the requirement's, and the source-store copy lays
-   out under the replacement, like the module cache does.
-
-The tradeoff is the user's: what a client should see as a replaced
-dependency's identity on the wire — the requirement, with the
-window accepted, or its stand-in.
-
-Lands: user decision.
+Lands: 29.

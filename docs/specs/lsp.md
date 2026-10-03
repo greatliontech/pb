@@ -296,9 +296,10 @@ dropped, `exit` excepted; `initialized` taken as the client's go;
 `shutdown` ending every judgement in flight and answering, after
 which every request is answered `InvalidRequest` and every
 notification but `exit` dropped; `exit`, whenever it comes, ending
-the process with status 0 after `shutdown` and 1 without. A request
-cancelled by the client (`$/cancelRequest`) is answered
-`RequestCancelled` where its work had not finished. The server's
+the process with status 0 after `shutdown` and 1 without. Requests
+are answered in wire order; a cancellation (`$/cancelRequest`) has
+no effect, the request it names answered as if none had come, and
+no request is ever answered `RequestCancelled`. The server's
 capabilities state exactly what it serves — full document sync with
 open, close and save notifications, diagnostics pushed, definition,
 hover, references, formatting, the `pb-module` content scheme where
