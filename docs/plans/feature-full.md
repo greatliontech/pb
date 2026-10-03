@@ -147,7 +147,7 @@ formatter and the language server
       (chunk 21, every package its commits touched: internal/lsp,
       internal/dep, internal/proto/compile, internal/proto/modfiles,
       internal/source/fetch, cmd/pb), the plugin catalog's (chunks 3,
-      12, 19, 20 and 24, in greatliontech/pb-plugins: internal/catalog,
+      12, 19, 20, 24 and 25, in greatliontech/pb-plugins: internal/catalog,
       internal/recipe, internal/pipeline, internal/registry,
       internal/github, internal/web, internal/endpoints, cmd/catalog;
       pb's internal/migrate, cmd/pb's migrate verb,
@@ -275,7 +275,7 @@ formatter and the language server
   - [x] 24.4. Close-out: pb's catalog names grow by the seven,
         consolidation, the campaign (slotted with chunk 18's where
         not run).
-- [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
+- [x] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
   - [x] 25.1. Triage gate.
   - [x] 25.2. The kind and the two plugins: a package's script
@@ -286,7 +286,7 @@ formatter and the language server
         runtime links the C library), every platform served; CI's
         live tests on the windows row too; the README's kinds table
         amended.
-  - [ ] 25.3. Close-out: pb's catalog names grow by the two,
+  - [x] 25.3. Close-out: pb's catalog names grow by the two,
         consolidation, the campaign (slotted with chunk 18's where
         not run).
 - [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,

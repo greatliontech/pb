@@ -577,6 +577,7 @@ carries, a copy of the names the catalog repository
 - `buf.build/community/scalapb-scala`
 - `buf.build/community/sudorandom-connect-openapi`
 - `buf.build/community/timostamm-protobuf-ts`
+- `buf.build/connectrpc/dart`
 - `buf.build/connectrpc/es`
 - `buf.build/connectrpc/go`
 - `buf.build/connectrpc/gosimple`
@@ -602,6 +603,7 @@ carries, a copy of the names the catalog repository
 - `buf.build/pluginrpc/go`
 - `buf.build/protocolbuffers/cpp`
 - `buf.build/protocolbuffers/csharp`
+- `buf.build/protocolbuffers/dart`
 - `buf.build/protocolbuffers/go`
 - `buf.build/protocolbuffers/java`
 - `buf.build/protocolbuffers/js`
