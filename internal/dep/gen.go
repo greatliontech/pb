@@ -36,9 +36,12 @@ type Acquirer interface {
 }
 
 // LocalAcquirer yields a local entry's plugin from its command and
-// arguments; local.Acquirer is the production implementation.
+// arguments — a copy of the run's own, which Release removes with the
+// run (plugin-execution.md REQ-plugin-local-pin); local.Acquirer is
+// the production implementation.
 type LocalAcquirer interface {
 	Acquire(ctx context.Context, value string, args []string) (*plugin.Acquired, error)
+	Release() error
 }
 
 // ImageAcquirer is the oci scheme's acquirer: an entry's image for
@@ -123,7 +126,16 @@ const OverrideDaemonPrefix = "docker://"
 // REQ-plugin-reported-tier), and write the response's files under the
 // entry's out directory (REQ-gen-out-containment). Entry schemes are
 // gated by the trust policy's execution posture.
-func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) error {
+func Gen(ctx context.Context, s *Session, deps GenDeps, out io.Writer) (err error) {
+	// The local copies the run made go with it, whatever ended it; a
+	// removal that fails is the run's failure, joined to any other.
+	if deps.Local != nil {
+		defer func() {
+			if rerr := deps.Local.Acquirer.Release(); rerr != nil {
+				err = errors.Join(err, fmt.Errorf("generate: %w", rerr))
+			}
+		}()
+	}
 	gf, err := s.GenFile()
 	if err != nil {
 		return fmt.Errorf("generate: %w", err)

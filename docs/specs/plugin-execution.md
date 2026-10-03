@@ -223,7 +223,30 @@ re-resolved binary with identical content is a non-event. The pin is
 the command's alone, keyed by the command as written: entries naming
 one command with different arguments share it, and the arguments,
 with any file they name — an interpreter's script — are configuration
-the generation file holds, as `opt` is, never pinned.
+the generation file holds, as `opt` is, never pinned. The bytes the
+run executes are the bytes the pin names, by construction: the
+acquisition copies the resolved binary into a directory of the run's
+own, hashing the copy as it writes it, and the process the run
+executes is the copy — a binary rebuilt at its place between the
+acquisition and the run, a developer's build of their own plugin
+while generation runs, is what the next acquisition refuses — unless
+the trust policy disables local pinning — never what this run
+executes. The run's directory is made under the user cache directory
+beside the plugin store at the run's first local acquisition, holds
+every local entry's copy under the binary's own name, and is removed
+with its copies at the run's end, a removal that fails being the
+run's failure, joined to any other; a run that ends without
+removing it — a crash's — leaves residue the next run's first local
+acquisition removes, leaving to a later one what it cannot, or
+`pb clean --plugins` (`dep-verbs.md` REQ-dep-clean) removes, failing
+on what it cannot — a live run's directory never: the directory is
+held by its lock while the run lives, only a directory whose lock is
+free is residue, and a remover takes a directory out of a claim's
+reach before removing anything in it, so what a run claims no
+remover is at. A plugin that finds resources beside its own
+executable finds the run's directory: the arguments and the working
+directory are the configuration a local plugin reads its
+surroundings from.
 
 ## Execution
 

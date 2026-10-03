@@ -258,7 +258,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Gen"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "200a1e94823381d3d017caa3f9a8f7a05965d59532e4ad90d368e3d8d95bf608"
+  shape_hash: "5e5a16bfa7d031a29f3c01c9e491e927d334af3ebdc52fd885b5db0d7de3cca8"
 }
 
 bindings {

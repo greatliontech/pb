@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/plugin/local"
 	"github.com/greatliontech/pb/internal/plugin/oci"
 	"github.com/greatliontech/pb/internal/source/direct"
 	"github.com/greatliontech/pb/internal/userconfig"
@@ -49,7 +51,7 @@ func assembleStores(settings *userconfig.Settings) (dep.Stores, error) {
 		return dep.Stores{}, err
 	}
 	cacheDir := cache.Value
-	workDir, evidenceDir, err := pluginStoreDirs()
+	workDir, evidenceDir, runsDir, err := pluginStoreDirs()
 	if err != nil {
 		return dep.Stores{}, err
 	}
@@ -61,7 +63,10 @@ func assembleStores(settings *userconfig.Settings) (dep.Stores, error) {
 		ModuleCache: osfs.New(cacheDir),
 		VCS:         osfs.New(filepath.Join(cacheDir, direct.StoreDir)),
 		Plugins: func(ctx context.Context) ([]string, error) {
-			return oci.Empty(ctx, workDir, evidenceDir)
+			// The runs' residue swept whatever the store's emptying
+			// did: one is not the other's condition.
+			kept, err := oci.Empty(ctx, workDir, evidenceDir)
+			return kept, errors.Join(err, local.Sweep(runsDir))
 		},
 		Sources: osfs.New(sourcesDir),
 	}, nil

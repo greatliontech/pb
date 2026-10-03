@@ -10,7 +10,7 @@ while the tree does another.
 
 | Domain | Governing specs | Packages |
 |---|---|---|
-| shared rules | the contract-file prologue, atomic writes, the root-contained path rule, the repository search, each a rule several specs share | `contractfile`, `atomicfile`, `rootpath`, `gitdir` |
+| shared rules | the contract-file prologue, atomic writes, the root-contained path rule, the repository search, the file lock taken without waiting, each a rule several specs share | `contractfile`, `atomicfile`, `rootpath`, `gitdir`, `flock` |
 | plugin vocabulary | plugin-execution.md | `plugin` |
 | module | module-file.md, module-archive.md, module-resolution.md, workspace.md, module-lockfile.md | `module`, `module/archive`, `module/version`, `module/modfile`, `module/mvs`, `module/workspace`, `module/lockfile` |
 | provenance | provenance.md | `provenance`, `provenance/image`, `provenance/image/discover`, `provenance/image/evidence`, `provenance/trust` |

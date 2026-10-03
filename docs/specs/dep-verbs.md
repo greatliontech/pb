@@ -275,9 +275,12 @@ materialized — it stands until that run's end or the next emptying —
 a collection
 halted or left incomplete failing the verb naming why, a store the
 library refuses to open (a layout it does not recognize) not emptied
-and the refusal, which names what to delete, reported; and the kept
+and the refusal, which names what to delete, reported; the kept
 evidence (`provenance.md` REQ-prov-plugin-evidence-store) emptied with
-it, temporary files included; `--sources` empties the dependency
+it, temporary files included; and the residue of local runs — a
+run's directory of copies left by a run that ended without removing
+it — removed, a live run's kept, held by its lock
+(`plugin-execution.md` REQ-plugin-local-pin); `--sources` empties the dependency
 source store (`lsp.md` REQ-lsp-dependency-files names it) — every
 module and well-known directory under it and every temporary an
 atomic extraction left, recognized by name and layout alone as the
