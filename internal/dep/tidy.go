@@ -86,7 +86,7 @@ func tidyOnce(ctx context.Context, s *Session, imported map[string]bool) (change
 	// replacement's — by its place in the tree, a fetched one by module
 	// and version.
 	views, err := importcheck.Views(mods, func(m modfiles.Module, p string) string {
-		if m.Dir != "" {
+		if m.FromTree() {
 			return path.Join(s.Root.Dir, m.Dir, p)
 		}
 		return fmt.Sprintf("%s@%s: %s", m.Path, m.Version, p)

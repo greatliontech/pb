@@ -66,13 +66,13 @@ type Tree struct {
 func (s Tree) FileOf(mods []modfiles.Module, rel string) (i int, file string, ok bool) {
 	at := -1
 	for j, m := range mods {
-		if !m.Local && m.Dir == "" {
+		if !m.FromTree() {
 			continue
 		}
 		if !under(m.Dir, rel) {
 			continue
 		}
-		if at < 0 || len(m.Dir) > len(mods[at].Dir) {
+		if at < 0 || depth(m.Dir) > depth(mods[at].Dir) {
 			at = j
 		}
 	}
@@ -80,7 +80,7 @@ func (s Tree) FileOf(mods []modfiles.Module, rel string) (i int, file string, ok
 		return -1, "", false
 	}
 	file = rel
-	if d := mods[at].Dir; d != "" {
+	if d := mods[at].Dir; depth(d) > 0 {
 		file = strings.TrimPrefix(rel, d+"/")
 	}
 	// A module file in a directory below the module's and above the
@@ -98,9 +98,20 @@ func (s Tree) FileOf(mods []modfiles.Module, rel string) (i int, file string, ok
 }
 
 // under reports whether p lies under dir, the root's own directory
-// ("") holding every path.
+// — "." as the workspace loader spells a member at the root, "" as a
+// fetched module's — holding every path.
 func under(dir, p string) bool {
-	return dir == "" || p == dir || strings.HasPrefix(p, dir+"/")
+	return depth(dir) == 0 || p == dir || strings.HasPrefix(p, dir+"/")
+}
+
+// depth ranks a module directory as a prefix: the root's own, "." or
+// "", below every other, so a member at the root never outranks a
+// member in a directory of its own.
+func depth(dir string) int {
+	if dir == "" || dir == "." {
+		return 0
+	}
+	return len(dir)
 }
 
 // Judgement is one judgement of the build the language server

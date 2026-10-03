@@ -102,7 +102,11 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 			s.showMessage("the dependency source store could not be filled: " + err.Error())
 		}
 	}
-	placements := s.placements(sess, docs, j, unpinned, judgeErr != nil)
+	var f *buildFiles
+	if j != nil {
+		f = newFiles(sess.Root.Dir, j.Mods, s.wellKnown.files)
+	}
+	placements := s.placements(sess, docs, j, f, unpinned, judgeErr != nil)
 	// The navigation index, built here on the judgement's goroutine,
 	// never on the read loop, and not for a judgement a newer one has
 	// already superseded: its commit below would be refused.
@@ -111,7 +115,7 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	s.mu.Unlock()
 	var idx *index
 	if !superseded && j != nil && j.Compiles() {
-		idx = newIndex(j.Files, j.Mods, sess.Root.Dir, s.wellKnown.files)
+		idx = newIndex(j.Files, f)
 	}
 	if s.hold != nil {
 		s.hold(gen)
@@ -123,12 +127,9 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 		return
 	}
 	s.sess = sess
-	s.mods = nil
-	if j != nil {
-		s.mods = j.Mods
-		if idx != nil {
-			s.index = idx
-		}
+	s.files = f
+	if idx != nil {
+		s.index = idx
 	}
 	if reload {
 		s.reloadPending = false
@@ -195,7 +196,7 @@ type placed struct {
 // lint's findings — each at its placement; the unpinned diagnostics
 // on the lockfile, else the build home; and every outside `.proto`
 // document's on itself.
-func (s *Server) placements(sess *dep.Session, docs map[uri.URI]*document, j *dep.Judgement, unpinned []dep.Pair, failed bool) placed {
+func (s *Server) placements(sess *dep.Session, docs map[uri.URI]*document, j *dep.Judgement, f *buildFiles, unpinned []dep.Pair, failed bool) placed {
 	out := placed{lists: map[uri.URI][]protocol.Diagnostic{}, standing: map[uri.URI]bool{}}
 	add := func(u uri.URI, d protocol.Diagnostic) { out.lists[u] = append(out.lists[u], d) }
 
@@ -234,14 +235,13 @@ func (s *Server) placements(sess *dep.Session, docs map[uri.URI]*document, j *de
 	if j == nil || failed {
 		return out
 	}
-	texts := s.texts(sess, j.Mods, docs)
 	if !j.Compiles() {
 		for _, e := range j.Compile {
 			if e.Path == "" {
 				add(s.fileURI(sess.BuildHome()), s.diagnostic(nil, 0, 0, protocol.DiagnosticSeverityError, "compile", e.Message))
 				continue
 			}
-			u, text := texts.at(e.Path)
+			u, text := s.at(f, sess, e.Path)
 			start, end := 0, 0
 			if e.Line > 0 {
 				start, end = e.Offset, e.End
@@ -259,25 +259,25 @@ func (s *Server) placements(sess *dep.Session, docs map[uri.URI]*document, j *de
 			dirs[m.Dir] = true
 		}
 	}
-	for _, f := range j.Findings {
+	for _, finding := range j.Findings {
 		sev := protocol.DiagnosticSeverityWarning
-		if f.Severity == check.SeverityError {
+		if finding.Severity == check.SeverityError {
 			sev = protocol.DiagnosticSeverityError
 		}
 		switch {
-		case f.Path == "":
-			add(s.fileURI(sess.BuildHome()), s.diagnostic(nil, 0, 0, sev, f.Rule, f.Message))
-		case f.Line == 0 && dirs[f.Path]:
+		case finding.Path == "":
+			add(s.fileURI(sess.BuildHome()), s.diagnostic(nil, 0, 0, sev, finding.Rule, finding.Message))
+		case finding.Line == 0 && dirs[finding.Path]:
 			// A module's own selection locates its set and package
 			// findings at the module's directory: its module file.
-			add(s.fileURI(sess.ModuleFile(f.Path)), s.diagnostic(nil, 0, 0, sev, f.Rule, f.Message))
+			add(s.fileURI(sess.ModuleFile(finding.Path)), s.diagnostic(nil, 0, 0, sev, finding.Rule, finding.Message))
 		default:
-			u, text := texts.at(f.Path)
+			u, text := s.at(f, sess, finding.Path)
 			start := 0
-			if f.Line > 0 {
-				start = offsetOf(text, f.Line, f.Column)
+			if finding.Line > 0 {
+				start = offsetOf(text, finding.Line, finding.Column)
 			}
-			add(u, s.diagnostic(text, start, tokenEnd(text, start), sev, f.Rule, f.Message))
+			add(u, s.diagnostic(text, start, tokenEnd(text, start), sev, finding.Rule, finding.Message))
 		}
 	}
 	return out
@@ -294,46 +294,80 @@ func (s *Server) diagnostic(text []byte, start, end int, sev protocol.Diagnostic
 	}
 }
 
-// texts resolves a build's include-root-relative path to the file's
-// address and the bytes the judgement read: a tree file's at its
-// file URI, the document's text where one is open; a dependency's at
-// its dependency address with the bytes the build read; a well-known
+// buildFiles is a judgement's files by include-root-relative path — each
+// one's origin, by which its address is spelled, and the bytes the
+// judgement read, the overlay's where a document is open — and the
+// working tree's by their tree path: the one table the placements,
+// the navigation index and the content requests read
+// (REQ-lsp-dependency-files). A well-known path is the toolchain's:
+// a module's copy provides nothing (lsp.md, the build-file term).
+type buildFiles struct {
+	byPath map[string]file
+	byTree map[string]string // tree path → include-root-relative path
+}
+
+// file is one file of a judgement: its origin and its bytes.
+type file struct {
+	origin origin
+	text   []byte
+}
+
+// origin is where a file came from, as REQ-lsp-dependency-files
+// addresses it: a tree path for a file the build read from the
+// working tree, else a module's path and version, else the
+// well-known set's.
+type origin struct {
+	tree      string
+	modPath   string
+	version   string
+	wellKnown bool
+}
+
+// newFiles tabulates a judgement's modules and the well-known set;
+// rootDir is the resolution root's directory within the working
+// tree, from which a tree file's path is spelled.
+func newFiles(rootDir string, mods []modfiles.Module, wellKnown map[string][]byte) *buildFiles {
+	f := &buildFiles{byPath: map[string]file{}, byTree: map[string]string{}}
+	if providers, err := compile.Providers(mods); err == nil {
+		for p, i := range providers {
+			m := mods[i]
+			o := origin{modPath: m.Path, version: m.Version}
+			if m.FromTree() {
+				o = origin{tree: path.Join(rootDir, m.Dir, p)}
+				f.byTree[o.tree] = p
+			}
+			f.byPath[p] = file{origin: o, text: m.Files[p]}
+		}
+	}
+	// No module provides a well-known path (Module.Protos leaves a
+	// copy out), so the set's entries meet none.
+	for p, b := range wellKnown {
+		f.byPath[p] = file{origin: origin{wellKnown: true}, text: b}
+	}
+	return f
+}
+
+// address is a file's URI by its origin: a tree file's file URI, a
+// dependency's address by the client's capability, a well-known
 // file's likewise.
-type texts struct {
-	s     *Server
-	sess  *dep.Session
-	mods  []modfiles.Module
-	index map[string]int
-	docs  map[uri.URI]*document
+func (s *Server) address(o origin, p string) uri.URI {
+	switch {
+	case o.wellKnown:
+		return s.wellKnownURI(p)
+	case o.tree != "":
+		return s.fileURI(o.tree)
+	}
+	return s.moduleURI(o.modPath, o.version, p)
 }
 
-func (s *Server) texts(sess *dep.Session, mods []modfiles.Module, docs map[uri.URI]*document) *texts {
-	index, err := compile.Providers(mods)
-	if err != nil {
-		index = map[string]int{}
+// at is a build path's address and bytes from the table; a path no
+// module of the build provides is placed at the build home with no
+// bytes.
+func (s *Server) at(f *buildFiles, sess *dep.Session, p string) (uri.URI, []byte) {
+	if bf, ok := f.byPath[p]; ok {
+		return s.address(bf.origin, p), bf.text
 	}
-	return &texts{s: s, sess: sess, mods: mods, index: index, docs: docs}
-}
-
-func (t *texts) at(p string) (uri.URI, []byte) {
-	i, ok := t.index[p]
-	if !ok {
-		// A well-known file, or one no module of the build provides.
-		if modfiles.WellKnown(p) {
-			return t.s.wellKnownURI(p), t.s.wellKnown.files[p]
-		}
-		return t.s.fileURI(t.sess.BuildHome()), nil
-	}
-	m := t.mods[i]
-	if m.Local || m.Dir != "" {
-		tree := path.Join(t.sess.Root.Dir, m.Dir, p)
-		u := t.s.fileURI(tree)
-		if d := t.docs[u]; d != nil && d.proto {
-			return u, d.text
-		}
-		return u, m.Files[p]
-	}
-	return t.s.moduleURI(m, p), m.Files[p]
+	return s.fileURI(sess.BuildHome()), nil
 }
 
 // outside tells whether a `.proto` document is outside the build and

@@ -60,3 +60,42 @@ func TestFileOfNestingAndLinks(t *testing.T) {
 		}
 	}
 }
+
+// A member at the root is spelled "." by the loader: its files are
+// the member's, named from the root; a member in a directory of its
+// own, listed after it, owns the files under that directory, the
+// root's "." ranking below every real directory as a prefix.
+func TestFileOfRootMember(t *testing.T) {
+	ws := memfs.New()
+	for p, body := range map[string]string{
+		"ws/pb.work":   "use:\n  - .\n  - a\n",
+		"ws/pb.yaml":   "module: example.com/root\n",
+		"ws/r.proto":   "syntax = \"proto3\";\n",
+		"ws/x/b.proto": "syntax = \"proto3\";\n",
+		"ws/a/pb.yaml": "module: example.com/a\n",
+		"ws/a/x.proto": "syntax = \"proto3\";\n",
+	} {
+		if err := util.WriteFile(ws, p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root, err := workspace.LoadFor(iofs.New(ws), "ws")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := Tree{WS: ws, Root: root}
+	mods := modfiles.Members(root)
+	for rel, want := range map[string]struct {
+		i    int
+		file string
+	}{
+		"r.proto":   {0, "r.proto"},
+		"x/b.proto": {0, "x/b.proto"},
+		"a/x.proto": {1, "x.proto"},
+	} {
+		i, file, ok := tree.FileOf(mods, rel)
+		if !ok || i != want.i || file != want.file {
+			t.Errorf("%s: %d %q %v, want %d %q", rel, i, file, ok, want.i, want.file)
+		}
+	}
+}

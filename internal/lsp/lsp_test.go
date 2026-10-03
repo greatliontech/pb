@@ -1060,3 +1060,31 @@ func TestTransportMalformedFrame(t *testing.T) {
 	}
 	fromClient.Close()
 }
+
+// A single-module root — a module file and no workspace file, the
+// member spelled "." by the loader — is judged with its documents
+// overlaid: the open document's text feeds the judgement, its
+// findings land on it and it stands in the build (REQ-lsp-overlay,
+// REQ-lsp-outside).
+func TestSingleModuleRoot(t *testing.T) {
+	files := map[string]string{
+		"ws/pb.yaml":      ws("example.com/a", "  example.com/std: v1.0.0\n"),
+		"ws/pb.lint.yaml": "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\n",
+		"ws/a.proto":      "syntax = \"proto3\";\npackage a;\nimport \"std.proto\";\nmessage Thing {\n  std.S s = 1;\n}\n",
+	}
+	fx := newFixture(t, files)
+	fx.pin(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{})
+	fx.none(t, "ws/a.proto")
+	// The document drops its package: the ruleset's finding lands on
+	// the document, which the judgement read in the tree's place.
+	fx.open(t, "ws/a.proto", 1, "syntax = \"proto3\";\nimport \"std.proto\";\nmessage Thing {\n  std.S s = 1;\n}\n")
+	p := fx.publishes(t, "ws/a.proto")[fx.uri("ws/a.proto")]
+	if len(p.Diagnostics) != 1 || p.Diagnostics[0].Code != protocol.String("std:PACKAGE_DEFINED") {
+		t.Fatalf("the single-module root's document: %s", render(p))
+	}
+	if edits, err := fx.server.Formatting(context.Background(), &protocol.DocumentFormattingParams{TextDocument: protocol.TextDocumentIdentifier{URI: fx.uri("ws/a.proto")}}); err != nil || len(edits) != 1 {
+		t.Fatalf("the single-module root's own file formatted: %v %v", edits, err)
+	}
+}

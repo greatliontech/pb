@@ -261,9 +261,14 @@ eight big-endian bytes, so a toolchain's copy never serves
 another's — a copy present is compared with the bytes the build
 read at the session's load and replaced where it differs, nothing
 else written there, `pb clean --sources` emptying it (`dep-verbs.md`
-REQ-dep-clean). A request for a path no module of the build provides
-is an error naming it. Such a file is outside the build when opened
-as a document (REQ-lsp-outside): it is read, never edited.
+REQ-dep-clean). The content served for an address is the bytes the
+last judgement read for it, else — the module gone from the build
+since — those the last build that compiled read, while navigation
+answers from that build (REQ-lsp-definition's rule), so an address
+the server handed out is served while it stands; a request for a
+path neither provides is an error naming it. Such a file is outside
+the build when opened as a document (REQ-lsp-outside): it is read,
+never edited.
 
 ## Formatting
 

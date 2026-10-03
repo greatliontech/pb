@@ -14,35 +14,20 @@ import (
 
 	"github.com/greatliontech/lsp/protocol"
 	"github.com/greatliontech/lsp/uri"
-
-	"github.com/greatliontech/pb/internal/proto/compile"
-	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
 // index is what navigation reads of the last judgement that compiled
 // (REQ-lsp-definition), built on the judgement's goroutine from the
 // compile's retained syntax trees: every declaration by full name
 // with its name token's place, every file's spans — the tokens that
-// name a declaration, an import's path — the bytes each file held,
-// and each file's origin, by which its address is spelled. It holds
+// name a declaration, an import's path — and the judgement's file
+// table, the bytes each file held and its origin. It holds
 // everything a request reads, so a judgement committed between two
 // reads of it changes nothing it answers.
 type index struct {
-	decls  map[protoreflect.FullName]*decl
-	files  map[string]*fileIndex // by include-root-relative path
-	texts  map[string][]byte     // by the same path
-	origin map[string]origin     // by the same path
-}
-
-// origin is where a file came from, as REQ-lsp-dependency-files
-// addresses it: a tree path for a file the build read from the
-// working tree, else a module's path and version, else the
-// well-known set's.
-type origin struct {
-	tree      string
-	modPath   string
-	version   string
-	wellKnown bool
+	decls map[protoreflect.FullName]*decl
+	spans map[string]*fileIndex // by include-root-relative path
+	build *buildFiles
 }
 
 // decl is a declaration's name token in its file, with what hover
@@ -83,26 +68,9 @@ func (f *fileIndex) at(off int) *span {
 
 // newIndex walks every linked file of the build — the targets and
 // their imports, transitively — and records its declarations and
-// the tokens that bind names; rootDir is the resolution root's
-// directory within the working tree, from which a tree file's path
-// is spelled.
-func newIndex(files linker.Files, mods []modfiles.Module, rootDir string, wellKnown map[string][]byte) *index {
-	idx := &index{decls: map[protoreflect.FullName]*decl{}, files: map[string]*fileIndex{}, texts: map[string][]byte{}, origin: map[string]origin{}}
-	if providers, err := compile.Providers(mods); err == nil {
-		for p, i := range providers {
-			m := mods[i]
-			idx.texts[p] = m.Files[p]
-			if m.Local || m.Dir != "" {
-				idx.origin[p] = origin{tree: joinTree(rootDir, m.Dir, p)}
-			} else {
-				idx.origin[p] = origin{modPath: m.Path, version: m.Version}
-			}
-		}
-	}
-	for p, b := range wellKnown {
-		idx.texts[p] = b
-		idx.origin[p] = origin{wellKnown: true}
-	}
+// the tokens that bind names, over the judgement's file table.
+func newIndex(linked linker.Files, build *buildFiles) *index {
+	idx := &index{decls: map[protoreflect.FullName]*decl{}, spans: map[string]*fileIndex{}, build: build}
 	seen := map[string]bool{}
 	var visit func(f linker.File)
 	visit = func(f linker.File) {
@@ -118,10 +86,10 @@ func newIndex(files linker.Files, mods []modfiles.Module, rootDir string, wellKn
 			idx.file(res)
 		}
 	}
-	for _, f := range files {
+	for _, f := range linked {
 		visit(f)
 	}
-	for _, fi := range idx.files {
+	for _, fi := range idx.spans {
 		// A token binding what no indexed file declares — a map entry's
 		// field, a declaration with no source — leads nowhere and is
 		// dropped; an import's path stays.
@@ -150,13 +118,13 @@ type walker struct {
 }
 
 func (idx *index) file(res linker.Result) {
-	if _, ok := idx.texts[res.Path()]; !ok {
+	if _, ok := idx.build.byPath[res.Path()]; !ok {
 		// A file whose bytes nothing holds is not indexed: its offsets
 		// would name nothing.
 		return
 	}
 	w := &walker{idx: idx, res: res, tree: res.AST(), fi: &fileIndex{path: res.Path()}, resolver: linker.ResolverFromFile(res), extended: map[*ast.ExtendNode]bool{}}
-	idx.files[res.Path()] = w.fi
+	idx.spans[res.Path()] = w.fi
 	fdp := res.FileDescriptorProto()
 	for _, d := range w.tree.Decls {
 		switch n := d.(type) {
@@ -626,15 +594,9 @@ func (s *Server) locate(docURI uri.URI, pos protocol.Position) (*index, *span, b
 		return nil, nil, false
 	}
 	// The document's file is the one the index holds at its tree path.
-	var fi *fileIndex
-	var text []byte
-	for p, o := range idx.origin {
-		if o.tree == tree {
-			fi, text = idx.files[p], idx.texts[p]
-			break
-		}
-	}
-	if fi == nil || string(text) != string(doc.text) {
+	p, ok := idx.build.byTree[tree]
+	fi := idx.spans[p]
+	if !ok || fi == nil || string(idx.build.byPath[p].text) != string(doc.text) {
 		return nil, nil, false
 	}
 	sp := fi.at(offsetAt(doc.text, pos, enc))
@@ -651,28 +613,8 @@ func (s *Server) location(idx *index, path string, start, end int) protocol.Loca
 	s.mu.Lock()
 	enc := s.enc
 	s.mu.Unlock()
-	o := idx.origin[path]
-	var u uri.URI
-	switch {
-	case o.wellKnown:
-		u = s.wellKnownURI(path)
-	case o.tree != "":
-		u = s.fileURI(o.tree)
-	default:
-		u = s.moduleURI(modfiles.Module{Path: o.modPath, Version: o.version}, path)
-	}
-	return protocol.Location{URI: u, Range: rangeAt(idx.texts[path], start, end, enc)}
-}
-
-// joinTree joins tree path segments, empty ones skipped.
-func joinTree(parts ...string) string {
-	var kept []string
-	for _, p := range parts {
-		if p != "" && p != "." {
-			kept = append(kept, p)
-		}
-	}
-	return strings.Join(kept, "/")
+	bf := idx.build.byPath[path]
+	return protocol.Location{URI: s.address(bf.origin, path), Range: rangeAt(bf.text, start, end, enc)}
 }
 
 // Definition answers the declaration the name under the position
@@ -684,7 +626,7 @@ func (s *Server) Definition(ctx context.Context, params *protocol.DefinitionPara
 		return nil, nil
 	}
 	if sp.importPath != "" {
-		if _, known := idx.files[sp.importPath]; !known {
+		if _, known := idx.spans[sp.importPath]; !known {
 			return nil, nil
 		}
 		loc := s.location(idx, sp.importPath, 0, 0)
@@ -731,7 +673,7 @@ func (s *Server) References(ctx context.Context, params *protocol.ReferenceParam
 	if !ok || sp.target == "" {
 		return out, nil
 	}
-	for _, fi := range idx.files {
+	for _, fi := range idx.spans {
 		for _, candidate := range fi.spans {
 			if candidate.target != sp.target || (candidate.decl && !params.Context.IncludeDeclaration) {
 				continue

@@ -37,11 +37,11 @@ const wellKnownAuthority = "well-known"
 // canonical form the binding decodes to — the version's `@` percent
 // encoded in the path — so the address compares equal to what a
 // client sends back.
-func (s *Server) moduleURI(m modfiles.Module, file string) uri.URI {
+func (s *Server) moduleURI(modPath, version, file string) uri.URI {
 	if s.content {
-		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, m.Path, m.Version, file))
+		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, modPath, version, file))
 	}
-	return uri.File(filepath.Join(s.copyDir(m), filepath.FromSlash(file)))
+	return uri.File(filepath.Join(s.copyDir(modPath, version), filepath.FromSlash(file)))
 }
 
 // wellKnownURI is a well-known file's address, as moduleURI.
@@ -55,25 +55,22 @@ func (s *Server) wellKnownURI(file string) uri.URI {
 // copyDir is a module's copy directory in the source store:
 // `<escaped module path>@<escaped version>`, the path's segments
 // directories as the module cache lays them.
-func (s *Server) copyDir(m modfiles.Module) string {
-	return filepath.Join(s.deps.Sources, filepath.FromSlash(proxy.Escape(m.Path))+"@"+proxy.Escape(m.Version))
+func (s *Server) copyDir(modPath, version string) string {
+	return filepath.Join(s.deps.Sources, filepath.FromSlash(proxy.Escape(modPath))+"@"+proxy.Escape(version))
 }
 
 // moduleContent is the bytes the build read for a module-scheme URI:
-// the module's file, from the last committed judgement's modules, or
-// the well-known set's; an error naming a path no module of the
-// build provides.
-func moduleContent(mods []modfiles.Module, u uri.URI) ([]byte, error) {
+// the module's file, from the last committed judgement's table or
+// the navigation index's — an address navigation handed out is
+// served while the index stands, a build loaded or not — or the
+// well-known set's; an error naming a path no table provides.
+func (s *Server) moduleContent(u uri.URI) ([]byte, error) {
 	if u.Scheme() != moduleScheme {
 		return nil, fmt.Errorf("%s: not a %s URI", u, moduleScheme)
 	}
 	locator := u.Authority() + u.Path()
 	if rest, ok := strings.CutPrefix(locator, wellKnownAuthority+"/"); ok {
-		set, err := modfiles.WellKnownSet()
-		if err != nil {
-			return nil, err
-		}
-		b, ok := set[rest]
+		b, ok := s.wellKnown.files[rest]
 		if !ok {
 			return nil, fmt.Errorf("%s: no well-known import is named %s", u, rest)
 		}
@@ -88,16 +85,24 @@ func moduleContent(mods []modfiles.Module, u uri.URI) ([]byte, error) {
 	if !ok || file == "" {
 		return nil, fmt.Errorf("%s: a module locator names a file after the version", u)
 	}
-	if mods == nil {
-		return nil, fmt.Errorf("%s: no build is loaded", u)
+	s.mu.Lock()
+	tables := []*buildFiles{s.files}
+	if s.index != nil {
+		tables = append(tables, s.index.build)
 	}
-	for _, m := range mods {
-		if m.Path == modPath && m.Version == version {
-			if b, ok := m.Files[file]; ok {
-				return b, nil
-			}
-			break
+	s.mu.Unlock()
+	loaded := false
+	for _, t := range tables {
+		if t == nil {
+			continue
 		}
+		loaded = true
+		if bf, ok := t.byPath[file]; ok && bf.origin.modPath == modPath && bf.origin.version == version {
+			return bf.text, nil
+		}
+	}
+	if !loaded {
+		return nil, fmt.Errorf("%s: no build is loaded", u)
 	}
 	return nil, fmt.Errorf("%s: no module of the build provides %s@%s/%s", u, modPath, version, file)
 }
@@ -113,10 +118,10 @@ func (s *Server) copySources(mods []modfiles.Module) error {
 		return errors.New("no dependency source store is configured")
 	}
 	for _, m := range mods {
-		if m.Local || m.Dir != "" {
+		if m.FromTree() {
 			continue
 		}
-		if err := copyFiles(s.copyDir(m), m.Files); err != nil {
+		if err := copyFiles(s.copyDir(m.Path, m.Version), m.Files); err != nil {
 			return fmt.Errorf("%s@%s: %w", m.Path, m.Version, err)
 		}
 	}

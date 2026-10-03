@@ -8,6 +8,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/go-git/go-billy/v6/util"
+
 	"github.com/greatliontech/lsp/protocol"
 	"github.com/greatliontech/lsp/uri"
 	"pgregory.net/rapid"
@@ -521,8 +523,8 @@ func TestIndexSpansName(t *testing.T) {
 		t.Fatal("no index kept")
 	}
 	seen := 0
-	for path, fi := range idx.files {
-		text := idx.texts[path]
+	for path, fi := range idx.spans {
+		text := idx.build.byPath[path].text
 		for _, sp := range fi.spans {
 			seen++
 			tok := string(text[sp.start:sp.end])
@@ -555,7 +557,48 @@ func TestIndexSpansName(t *testing.T) {
 		t.Fatalf("the index holds %d spans; the fixture should give far more", seen)
 	}
 	// The toolchain's descriptor file is indexed too.
-	if _, ok := idx.files["google/protobuf/descriptor.proto"]; !ok {
+	if _, ok := idx.spans["google/protobuf/descriptor.proto"]; !ok {
 		t.Fatal("the well-known file is not indexed")
+	}
+}
+
+// An address navigation handed out is served by the content request
+// while the index stands, whatever the last judgement's modules: the
+// module file drops the dependency, the build no longer compiles,
+// the unchanged document still navigates to the dependency's address
+// from the last build that compiled, and its content is the bytes
+// that build read (REQ-lsp-dependency-files, REQ-lsp-definition).
+func TestDependencyContentOutlivesTheBuild(t *testing.T) {
+	fx := newFixture(t, navTree())
+	fx.pin(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{Workspace: &protocol.WorkspaceClientCapabilities{TextDocumentContent: &protocol.TextDocumentContentClientCapabilities{}}})
+	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto")
+	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
+	fx.publishes(t, "ws/a/a.proto")
+	define := func() uri.URI {
+		t.Helper()
+		got, err := fx.server.Definition(context.Background(), &protocol.DefinitionParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: protocol.TextDocumentIdentifier{URI: fx.uri("ws/a/a.proto")}, Position: fx.token(t, "ws/a/a.proto", "std.S s", 0)}})
+		if err != nil || got == nil {
+			t.Fatalf("definition: %v %v", got, err)
+		}
+		return got.(*protocol.Location).URI
+	}
+	dep := define()
+	// The module file drops the dependency: the build loads without
+	// it and no longer compiles.
+	if err := util.WriteFile(fx.ws, "ws/a/pb.yaml", []byte(ws("example.com/a", "")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fx.watched(t, "ws/a/pb.yaml", protocol.FileChangeTypeChanged)
+	if p := fx.publishes(t, "ws/a/a.proto")[fx.uri("ws/a/a.proto")]; len(p.Diagnostics) == 0 || p.Diagnostics[0].Code != protocol.String("compile") {
+		t.Fatalf("the build without the dependency: %s", render(p))
+	}
+	if got := define(); got != dep {
+		t.Fatalf("the address after the build went: %s, want %s", got, dep)
+	}
+	res, err := fx.server.TextDocumentContent(context.Background(), &protocol.TextDocumentContentParams{URI: dep})
+	if err != nil || !strings.Contains(res.Text, "message S") {
+		t.Fatalf("the dependency's content after the build went: %v %v", res, err)
 	}
 }

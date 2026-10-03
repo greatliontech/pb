@@ -124,6 +124,12 @@ func WellKnown(path string) bool {
 	return rerr == nil || rerr == io.EOF
 }
 
+// FromTree tells whether the module was read from the working tree
+// — a workspace module (Local, its Dir "." at the root), or a
+// directory replacement standing for a build-list pair (its Dir
+// set) — rather than from an archive (no Dir).
+func (m Module) FromTree() bool { return m.Local || m.Dir != "" }
+
 // Members is the root's workspace modules as the build's modules
 // name them — local, at their directories, in the root's order —
 // before their files are read: the module set that places a tree

@@ -26,7 +26,6 @@ import (
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/module"
 	"github.com/greatliontech/pb/internal/module/workspace"
-	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/source/fetch"
 )
@@ -83,7 +82,7 @@ type Server struct {
 	running       sync.WaitGroup           // the judgements started and not yet ended
 	reloadPending bool                     // a reload asked for and not yet committed by a judgement
 	sess          *dep.Session             // the last session loaded; nil before the first and after a failed initialize
-	mods          []modfiles.Module        // the last committed judgement's modules, which dependency content is served from
+	files         *buildFiles              // the last committed judgement's file table, which content requests read
 	index         *index                   // the last committed judgement that compiled, indexed, which navigation answers from
 	standing      map[uri.URI]bool         // per document, whether the last judgement found it a build file; absent until one has
 	wellKnown     *wellKnownCopy           // the toolchain's set, digested once
@@ -435,10 +434,7 @@ func (s *Server) DidChangeWatchedFiles(ctx context.Context, params *protocol.Did
 // `pb-module` scheme with the bytes the build read
 // (REQ-lsp-dependency-files).
 func (s *Server) TextDocumentContent(ctx context.Context, params *protocol.TextDocumentContentParams) (*protocol.TextDocumentContentResult, error) {
-	s.mu.Lock()
-	mods := s.mods
-	s.mu.Unlock()
-	b, err := moduleContent(mods, params.URI)
+	b, err := s.moduleContent(params.URI)
 	if err != nil {
 		return nil, err
 	}
