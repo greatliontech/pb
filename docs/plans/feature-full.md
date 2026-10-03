@@ -178,11 +178,12 @@ formatter and the language server
         and discovery through Maven's metadata or the npm registry
         as the recipe says; the README's kinds table amended;
         grpc/java and grpc/node enter.
-  - [ ] 19.4. community/scalapb-scala enters from upstream's native
-        executables at v0.11.17, the last release carrying them,
-        frozen there — its later versions ship as the jar alone and
-        come with the jvm kind at chunk 26, which re-kinds the
-        recipe; the README's ScalaPB sentence says so.
+  - [x] 19.4. community/scalapb-scala enters from upstream's native
+        executables at v0.11.17; the 0.11 line's later versions
+        (v0.11.18 to v0.11.20) ship as the jar alone with no release,
+        the 1.0 line's releases carry the executables again and
+        enter with the bump once one is stable; the README's ScalaPB
+        sentence says so.
   - [ ] 19.5. Close-out: pb's catalog names grow by the five
         entrants (grpc/java, grpc/node, community/scalapb-scala,
         community/chrusty-jsonschema,
@@ -242,9 +243,11 @@ formatter and the language server
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
 - [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,
-      upstream shipping no native executable, only the jar, and
-      community/scalapb-scala re-kinded for the versions past
-      v0.11.17, which ship as the jar alone): a jlink'd
+      upstream shipping no native executable, only the jar; and
+      community/scalapb-scala's v0.11.18 to v0.11.20, the jar alone
+      where the releases around them ship the executable, served by
+      this kind beside the release recipe — how one plugin's versions
+      span two kinds is this chunk's design question): a jlink'd
       runtime bundled in the image behind a
       native launcher as the entrypoint, plugin-execution.md's rows
       read first for an entrypoint executing a sibling of the image's
