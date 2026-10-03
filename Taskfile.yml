@@ -1,0 +1,72 @@
+version: "3"
+
+vars:
+  # The module's Go version, the toolchain CI pins through go.mod.
+  GOVER:
+    sh: sed -n 's/^go //p' go.mod
+
+# Every task runs under the module's toolchain, as CI does, not under
+# a newer one the host holds.
+env:
+  GOTOOLCHAIN: go{{.GOVER}}
+
+tasks:
+  default:
+    deps: [check]
+
+  fmt-check:
+    desc: Refuse unformatted files, as CI does
+    cmds:
+      - |
+        unformatted=$("$(go env GOROOT)/bin/gofmt" -l .) || exit 1
+        if [ -n "$unformatted" ]; then echo "$unformatted"; exit 1; fi
+
+  tidy-check:
+    desc: Refuse a go.mod or go.sum tidy would change, as CI does
+    cmds:
+      - go mod tidy -diff
+
+  build:
+    desc: Build every package for the host
+    cmds:
+      - go build ./...
+
+  cross:
+    desc: Build the pb command for every platform it serves, CGO disabled
+    cmds:
+      - |
+        for platform in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+          CGO_ENABLED=0 GOOS=${platform%/*} GOARCH=${platform#*/} go build -o /dev/null ./cmd/pb
+        done
+
+  vet:
+    desc: Static analysis for the host, darwin and windows, as CI runs it
+    cmds:
+      - go vet ./...
+      - GOOS=darwin go vet ./...
+      - GOOS=windows go vet ./...
+
+  test:
+    desc: "The suite but the runner's, under the race detector (minutes; the spec gate is `task check`)"
+    cmds:
+      - go test -race $(go list ./... | grep -v /internal/plugin/runner) -count=1 -timeout=30m
+
+  test:runner:
+    desc: "The runner suite with the native sandbox arm the host provides demanded (the Strong row where user namespaces are allowed, the OS row elsewhere); CI's linux leg demands the cgroups and docker arms too, under a delegated scope, which this does not reproduce"
+    cmds:
+      - PB_TEST_REQUIRE_SANDBOX=1 go test ./internal/plugin/runner/ -count=1 -timeout=30m
+
+  check:
+    desc: "The canonical verdict: hygiene, vet and the spec gate (the stipulator on PATH; CI pins its version and demands the live arms under a delegated scope, which this does not reproduce)"
+    deps: [fmt-check, tidy-check]
+    cmds:
+      - task: vet
+      - stipulator check
+
+  install:
+    desc: Install pb to ~/.local/bin with zsh completion
+    cmds:
+      - mkdir -p $HOME/.local/bin $HOME/.local/share/zsh/site-functions
+      - go build -o $HOME/.local/bin/pb ./cmd/pb
+      - $HOME/.local/bin/pb completion zsh > $HOME/.local/share/zsh/site-functions/_pb
+      - echo "note - ensure fpath includes ~/.local/share/zsh/site-functions before compinit"
