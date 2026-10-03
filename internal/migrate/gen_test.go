@@ -48,15 +48,18 @@ func specNames(t *testing.T, file, heading string) []string {
 }
 
 // The plugin catalog is the spec's list, name for name and in order,
-// each name buf's `buf.build/<owner>/<plugin>` whose repository under
-// the rename rule is one a plugin reference's grammar accepts.
+// no name twice, each name buf's `buf.build/<owner>/<plugin>` whose
+// repository under the rename rule is one a plugin reference's
+// grammar accepts.
 func TestPluginCatalogMatchesSpec(t *testing.T) {
 	names := specNames(t, "../../docs/specs/migrate.md", "Generation")
 	if strings.Join(names, " ") != strings.Join(Catalog, " ") || len(names) == 0 {
 		t.Fatalf("the spec lists %v, the code %v", names, Catalog)
 	}
-	if !sort.StringsAreSorted(Catalog) {
-		t.Errorf("the catalog is not sorted: %v", Catalog)
+	for i := 1; i < len(Catalog); i++ {
+		if Catalog[i-1] >= Catalog[i] {
+			t.Errorf("the catalog is not strictly sorted at %s, %s", Catalog[i-1], Catalog[i])
+		}
 	}
 	for _, n := range Catalog {
 		if !strings.HasPrefix(n, "buf.build/") || strings.Count(n, "/") != 2 {
@@ -104,9 +107,9 @@ func TestHighestVersionTag(t *testing.T) {
 }
 
 // catalogCommit pins the catalog repository's commit the copy is
-// held to; it moves when the copy changes, to the catalog commit the
-// copy then equals.
-const catalogCommit = "5c6d9fe7dd4ac51eae0e2a0cfb76e129e982b0e3"
+// held to; it moves when the copy changes, to the earliest catalog
+// commit the copy then equals.
+const catalogCommit = "3a54e7f08e16c92abc6a13a2b62ea38fd372bafb"
 
 // The catalog's identity: the publish workflow's, as migrate.md
 // states it for the trust policy rule.

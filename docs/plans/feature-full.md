@@ -194,7 +194,7 @@ formatter and the language server
         community/roadrunner-server-php-grpc), the
         plugin-catalog-growth issue closes, consolidation, the
         campaign (slotted with chunk 18's where not run).
-- [ ] 20. The rust kind: a crate's executable installed by cargo on a
+- [x] 20. The rust kind: a crate's executable installed by cargo on a
       runner of the platform itself, as the bazel kind builds — a
       cross toolchain for darwin and windows from one host needs SDKs
       and linkers the catalog does not carry — its versions
@@ -203,11 +203,11 @@ formatter and the language server
   - [x] 20.2. The kind and connectrpc/rust, a recipe's probe
         parameter for a plugin that refuses to run without one; the
         README's kinds table amended.
-  - [ ] 20.3. The kind's Linux trees static: cargo's musl targets
+  - [x] 20.3. The kind's Linux trees static: cargo's musl targets
         on the linux runners, the pipeline adding them beside the
         pinned toolchain, so a Linux entrypoint runs natively on an
         OS sandbox row, static as buf's is.
-  - [ ] 20.4. Close-out: pb's catalog names grow by connectrpc/rust,
+  - [x] 20.4. Close-out: pb's catalog names grow by connectrpc/rust,
         consolidation, the campaign (slotted with chunk 18's where
         not run).
 - [x] 21. The language server: its own spec (the capabilities served,

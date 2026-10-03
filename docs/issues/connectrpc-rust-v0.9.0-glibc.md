@@ -8,10 +8,19 @@ carry a glibc-linked executable over the catalog's base, which the
 OS row refuses (a dynamically linked entrypoint does not load there),
 so on such a host it runs under the docker runner, as the node,
 release and bazel kinds' plugins do. The catalog's pipeline never
-rebuilds a published tag: the plan leaves a signed tag out and pb
-refuses to publish over one, so the static build reaches
+rebuilds a published tag: its plan step leaves a signed tag out and
+pb refuses to publish over one, so the static build reaches
 connectrpc/rust with the next version upstream releases and the bump
 appends.
+
+The contracts in force decide this by default: the catalog's README
+(a published tree is the pipeline's at its publish) and pb's
+REQ-publish-immutable (a tag means one image forever, as a
+lockfile's pin has it) both keep the tag as it stands. What is asked
+is whether to waive them once, which is the user's: the tag was
+published on 2026-10-03, hours before the static rule, pb is
+pre-v1 (`.semrel.yaml` `development: true`), and no lockfile
+outside pb's own test runs is known to pin the digest.
 
 Two defensible contracts:
 
@@ -29,7 +38,8 @@ Two defensible contracts:
    REQ-lock-digest-enforcement until re-resolved, the tag now naming
    another image.
 
-The tradeoff is the user's: a tag's permanence against the one
-version's native run on OS-row hosts.
+The tradeoff is the user's: a tag's permanence, waived once while
+no installed base is known, against the one version's native run on
+OS-row hosts until upstream's next release.
 
 Lands: user decision.

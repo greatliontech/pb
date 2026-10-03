@@ -578,6 +578,7 @@ carries, a copy of the names the catalog repository
 - `buf.build/connectrpc/go`
 - `buf.build/connectrpc/gosimple`
 - `buf.build/connectrpc/query-es`
+- `buf.build/connectrpc/rust`
 - `buf.build/grpc-ecosystem/gateway`
 - `buf.build/grpc-ecosystem/openapiv2`
 - `buf.build/grpc-ecosystem/openapiv3`
