@@ -219,18 +219,14 @@ func (s *Server) placements(sess *dep.Session, docs map[uri.URI]*document, j *de
 	if sess == nil {
 		return out
 	}
-	for _, p := range unpinned {
+	if len(unpinned) > 0 {
 		home := sess.BuildHome()
 		if _, err := s.deps.WS.Stat(sess.LockPath()); err == nil {
 			home = sess.LockPath()
 		}
-		add(s.fileURI(home), protocol.Diagnostic{
-			Range:    protocol.Range{},
-			Severity: protocol.DiagnosticSeverityError,
-			Code:     protocol.String("unpinned"),
-			Source:   protocol.NewOptional("pb"),
-			Message:  protocol.String(fmt.Sprintf("%s is required and not pinned by the lockfile; run pb dep download", p)),
-		})
+		for _, p := range unpinned {
+			add(s.fileURI(home), s.diagnostic(nil, 0, 0, protocol.DiagnosticSeverityError, "unpinned", fmt.Sprintf("%s is required and not pinned by the lockfile; run pb dep download", p)))
+		}
 	}
 	if j == nil || failed {
 		return out
@@ -370,6 +366,10 @@ func (s *Server) at(f *buildFiles, sess *dep.Session, p string) (uri.URI, []byte
 	return s.fileURI(sess.BuildHome()), nil
 }
 
+// dependencyReason is the outside-the-build reason of a dependency's
+// file, addressed or read from the source store.
+const dependencyReason = "a dependency's file, read as the build read it"
+
 // outside tells whether a `.proto` document is outside the build and
 // the first reason that applies (lsp.md, the outside-the-build term).
 func (s *Server) outside(sess *dep.Session, j *dep.Judgement, u uri.URI) (string, bool) {
@@ -377,7 +377,7 @@ func (s *Server) outside(sess *dep.Session, j *dep.Judgement, u uri.URI) (string
 		return "no build is loaded", true
 	}
 	if u.Scheme() == moduleScheme {
-		return "a dependency's file, read as the build read it", true
+		return dependencyReason, true
 	}
 	_, file, reason := s.treeFile(sess.Tree, j.Mods, u)
 	if reason != "" {
@@ -398,7 +398,7 @@ func (s *Server) outside(sess *dep.Session, j *dep.Judgement, u uri.URI) (string
 func (s *Server) treeFile(tree dep.Tree, mods []modfiles.Module, u uri.URI) (rel, file, reason string) {
 	if s.deps.Sources != "" && u.IsFile() {
 		if _, err := relPath(s.deps.Sources, u.FsPath()); err == nil {
-			return "", "", "a dependency's file, read as the build read it"
+			return "", "", dependencyReason
 		}
 	}
 	treePath, ok := s.treePath(u)

@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,6 +59,9 @@ type fixture struct {
 type holding struct {
 	holding, release chan struct{}
 }
+
+// waitFor bounds every wait on the server.
+const waitFor = 20 * time.Second
 
 // recorder is the client: every publish and message recorded, a
 // registration accepted.
@@ -158,11 +164,7 @@ func (fx *fixture) pin(t *testing.T) {
 // start serves the fixture's server to the recorder.
 func (fx *fixture) start(t *testing.T) {
 	t.Helper()
-	var err error
-	fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: assemble.Client(fx.Fixture, "proxy"), Sources: fx.sources, Logger: slog.New(slog.NewTextHandler(os.Stderr, nil))})
-	if err != nil {
-		t.Fatal(err)
-	}
+	fx.newServer(t, slog.New(slog.NewTextHandler(os.Stderr, nil)))
 	fx.srv.hold = func(gen uint64) {
 		fx.mu.Lock()
 		h := fx.held[gen]
@@ -186,6 +188,30 @@ func (fx *fixture) start(t *testing.T) {
 	})
 }
 
+// newServer makes the fixture's server over its tree, client and
+// source store.
+func (fx *fixture) newServer(t *testing.T, logger *slog.Logger) {
+	t.Helper()
+	var err error
+	if fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: assemble.Client(fx.Fixture, "proxy"), Sources: fx.sources, Logger: logger}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// wire serves the fixture's server over pipes, as Serve does over
+// standard input and output: the writer the client sends frames on,
+// the reader it receives them from, and the server's status once
+// both pipe ends are closed — named from the client's side, as the
+// callers hold them.
+func (fx *fixture) wire(t *testing.T) (fromClient *io.PipeWriter, toClient *io.PipeReader, status chan int) {
+	t.Helper()
+	serverIn, clientOut := io.Pipe()
+	clientIn, serverOut := io.Pipe()
+	status = make(chan int, 1)
+	go func() { status <- Serve(context.Background(), fx.srv, serverIn, serverOut) }()
+	return clientOut, clientIn, status
+}
+
 // gen is the server's current generation.
 func (fx *fixture) gen() uint64 {
 	fx.srv.mu.Lock()
@@ -197,38 +223,14 @@ func (fx *fixture) gen() uint64 {
 // given generation.
 func (fx *fixture) waitGen(t *testing.T, gen uint64) {
 	t.Helper()
-	deadline := time.Now().Add(20 * time.Second)
-	for {
-		fx.srv.mu.Lock()
-		got := fx.srv.gen
-		fx.srv.mu.Unlock()
-		if got >= gen {
-			return
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("the server's generation is %d, want %d", got, gen)
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
+	fx.until(t, fmt.Sprintf("the server's generation reaching %d", gen), func() bool { return fx.srv.gen >= gen })
 }
 
 // waitStanding waits until a judgement has placed the document: its
 // standing is then known.
 func (fx *fixture) waitStanding(t *testing.T, tree string) {
 	t.Helper()
-	deadline := time.Now().Add(20 * time.Second)
-	for {
-		fx.srv.mu.Lock()
-		_, known := fx.srv.standing[fx.uri(tree)]
-		fx.srv.mu.Unlock()
-		if known {
-			return
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("%s was never placed", tree)
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
+	fx.until(t, tree+" placed", func() bool { _, known := fx.srv.standing[fx.uri(tree)]; return known })
 }
 
 // wait waits for the server's end, once.
@@ -288,19 +290,37 @@ func (fx *fixture) publishes(t *testing.T, want ...string) map[uri.URI]*protocol
 	for _, w := range want {
 		pending[fx.uri(w)] = true
 	}
-	deadline := time.After(20 * time.Second)
-	for len(pending) > 0 {
-		select {
-		case p := <-fx.client.publishes:
-			got[p.URI] = p
-			delete(pending, p.URI)
-		case m := <-fx.client.messages:
-			t.Fatalf("the server reported: %s", m)
-		case <-deadline:
-			t.Fatalf("no publish for %v within the deadline; got %v", keys(pending), keysOf(got))
-		}
-	}
+	fx.publishUntil(t, func() string { return fmt.Sprintf("%v (got %v)", keys(pending), keys(got)) }, time.After(waitFor), func(p *protocol.PublishDiagnosticsParams) bool {
+		got[p.URI] = p
+		delete(pending, p.URI)
+		return len(pending) == 0
+	})
 	return got
+}
+
+// message waits for the server's next message and asserts what it
+// says.
+func (fx *fixture) message(t *testing.T, contains string) {
+	t.Helper()
+	select {
+	case m := <-fx.client.messages:
+		if !strings.Contains(m, contains) {
+			t.Fatalf("the server reported %q, want %q", m, contains)
+		}
+	case <-time.After(waitFor):
+		t.Fatalf("no message saying %q within the deadline", contains)
+	}
+}
+
+// holdNext holds the next judgement at the fixture's seam: the
+// holding channel closes when the judgement reaches it, the release
+// channel lets it go on.
+func (fx *fixture) holdNext() *holding {
+	h := &holding{holding: make(chan struct{}), release: make(chan struct{})}
+	fx.mu.Lock()
+	fx.held[fx.gen()+1] = h
+	fx.mu.Unlock()
+	return h
 }
 
 // none asserts no publish for the URI arrives for a while.
@@ -320,22 +340,53 @@ func (fx *fixture) none(t *testing.T, tree string) {
 	}
 }
 
-func keys(m map[uri.URI]bool) []string {
-	var out []string
-	for u := range m {
-		out = append(out, string(u))
-	}
-	sort.Strings(out)
-	return out
+// keys is a map's URIs, sorted.
+func keys[V any](m map[uri.URI]V) []uri.URI {
+	return slices.Sorted(maps.Keys(m))
 }
 
-func keysOf(m map[uri.URI]*protocol.PublishDiagnosticsParams) []string {
-	var out []string
-	for u := range m {
-		out = append(out, string(u))
+// publishFor waits for the first publish accept takes, the server's
+// messages failing the test, within the fixture's deadline.
+func (fx *fixture) publishFor(t *testing.T, what string, accept func(*protocol.PublishDiagnosticsParams) bool) *protocol.PublishDiagnosticsParams {
+	t.Helper()
+	return fx.publishUntil(t, func() string { return what }, time.After(waitFor), accept)
+}
+
+// publishUntil is publishFor under a given deadline, one across
+// every publish the wait takes; what names the wait at its failure.
+func (fx *fixture) publishUntil(t *testing.T, what func() string, deadline <-chan time.Time, accept func(*protocol.PublishDiagnosticsParams) bool) *protocol.PublishDiagnosticsParams {
+	t.Helper()
+	for {
+		select {
+		case p := <-fx.client.publishes:
+			if accept(p) {
+				return p
+			}
+		case m := <-fx.client.messages:
+			t.Fatalf("the server reported: %s", m)
+		case <-deadline:
+			t.Fatalf("no publish for %s within the deadline", what())
+		}
 	}
-	sort.Strings(out)
-	return out
+}
+
+// until polls the condition under the server's lock until it holds,
+// within the fixture's deadline.
+func (fx *fixture) until(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(waitFor)
+	for {
+		fx.srv.mu.Lock()
+		ok := cond()
+		fx.srv.mu.Unlock()
+		if ok {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%s: never", what)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 }
 
 // render spells a publish for a failure message.
@@ -619,14 +670,11 @@ func TestSupersession(t *testing.T) {
 	// The judgement of version 2 is held once computed, past its
 	// context's last check; version 3's change then supersedes it, and
 	// released, it reaches the publish with a generation that moved.
-	h := &holding{holding: make(chan struct{}), release: make(chan struct{})}
-	fx.mu.Lock()
-	fx.held[fx.gen()+1] = h
-	fx.mu.Unlock()
+	h := fx.holdNext()
 	fx.change(t, "ws/a/a.proto", 2, strings.Replace(text, "BadName", "AlsoBad", 1))
 	select {
 	case <-h.holding:
-	case <-time.After(20 * time.Second):
+	case <-time.After(waitFor):
 		t.Fatal("the judgement of version 2 was not held")
 	}
 	// A notification carries no acknowledgement: the held judgement is
@@ -767,20 +815,7 @@ func TestDependencyAddress(t *testing.T) {
 			if !content {
 				want = uri.File(filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto"))
 			}
-			deadline := time.After(20 * time.Second)
-			var p *protocol.PublishDiagnosticsParams
-			for p == nil {
-				select {
-				case got := <-fx.client.publishes:
-					if got.URI == want {
-						p = got
-					}
-				case m := <-fx.client.messages:
-					t.Fatalf("the server reported: %s", m)
-				case <-deadline:
-					t.Fatalf("no publish for %s", want)
-				}
-			}
+			p := fx.publishFor(t, string(want), func(p *protocol.PublishDiagnosticsParams) bool { return p.URI == want })
 			if len(p.Diagnostics) != 1 || p.Diagnostics[0].Range.Start.Line != 2 || !strings.Contains(string(p.Diagnostics[0].Message.(protocol.String)), "nowhere.proto") {
 				t.Fatalf("the dependency file's diagnostic: %s", render(p))
 			}
@@ -815,27 +850,16 @@ func TestDependencyAddress(t *testing.T) {
 			if err := fx.server.DidOpen(context.Background(), &protocol.DidOpenTextDocumentParams{TextDocument: protocol.TextDocumentItem{URI: want, LanguageID: "proto", Version: 1, Text: broken["std.proto"]}}); err != nil {
 				t.Fatal(err)
 			}
-			deadline = time.After(20 * time.Second)
-			for seen := false; !seen; {
-				select {
-				case got := <-fx.client.publishes:
-					if got.URI != want {
-						continue
-					}
-					if v, _ := got.Version.Get(); v != 1 || len(got.Diagnostics) != 2 {
-						t.Fatalf("the copy as a document: %s", render(got))
-					}
-					var reason bool
-					for _, d := range got.Diagnostics {
-						reason = reason || d.Severity == protocol.DiagnosticSeverityInformation && strings.Contains(string(d.Message.(protocol.String)), "a dependency's file")
-					}
-					if !reason {
-						t.Fatalf("the copy as a document, its reason: %s", render(got))
-					}
-					seen = true
-				case <-deadline:
-					t.Fatal("no publish for the copy opened as a document")
-				}
+			got := fx.publishFor(t, "the copy opened as a document", func(p *protocol.PublishDiagnosticsParams) bool { return p.URI == want })
+			if v, _ := got.Version.Get(); v != 1 || len(got.Diagnostics) != 2 {
+				t.Fatalf("the copy as a document: %s", render(got))
+			}
+			var reason bool
+			for _, d := range got.Diagnostics {
+				reason = reason || d.Severity == protocol.DiagnosticSeverityInformation && strings.Contains(string(d.Message.(protocol.String)), "a dependency's file")
+			}
+			if !reason {
+				t.Fatalf("the copy as a document, its reason: %s", render(got))
 			}
 			entries, err := os.ReadDir(fx.sources)
 			if err != nil {
@@ -858,7 +882,7 @@ func TestDependencyAddress(t *testing.T) {
 				t.Fatal(err)
 			}
 			fx.watched(t, "ws/pb.lock", protocol.FileChangeTypeChanged)
-			deadline = time.After(20 * time.Second)
+			deadline := time.After(waitFor)
 			for {
 				b, err := os.ReadFile(want.FsPath())
 				if err == nil && string(b) == broken["std.proto"] {
@@ -884,7 +908,7 @@ func TestLifecycle(t *testing.T) {
 	fx.pin(t)
 	fx.start(t)
 	var jerr *jsonrpc2.Error
-	if err := fx.server.Shutdown(context.Background()); err == nil || !errorsAs(err, &jerr) || jerr.Code != jsonrpc2.Code(protocol.ErrorCodesServerNotInitialized) {
+	if err := fx.server.Shutdown(context.Background()); err == nil || !errors.As(err, &jerr) || jerr.Code != jsonrpc2.Code(protocol.ErrorCodesServerNotInitialized) {
 		t.Fatalf("a request before initialize: %v", err)
 	}
 	fx.open(t, "ws/a/a.proto", 1, "")
@@ -928,7 +952,7 @@ func TestLifecycle(t *testing.T) {
 	if err := fx.server.Shutdown(context.Background()); err != nil {
 		t.Fatalf("shutdown: %v", err)
 	}
-	if err := fx.server.Shutdown(context.Background()); err == nil || !errorsAs(err, &jerr) || jerr.Code != jsonrpc2.Code(protocol.ErrorCodesInvalidRequest) {
+	if err := fx.server.Shutdown(context.Background()); err == nil || !errors.As(err, &jerr) || jerr.Code != jsonrpc2.Code(protocol.ErrorCodesInvalidRequest) {
 		t.Fatalf("a request after shutdown: %v", err)
 	}
 	// A notification after shutdown is dropped by the guard: the
@@ -961,21 +985,6 @@ func TestLifecycle(t *testing.T) {
 	if status := fx.wait(t); status != 1 {
 		t.Fatalf("status after exit alone: %d", status)
 	}
-}
-
-func errorsAs(err error, target **jsonrpc2.Error) bool {
-	for err != nil {
-		if e, ok := err.(*jsonrpc2.Error); ok {
-			*target = e
-			return true
-		}
-		u, ok := err.(interface{ Unwrap() error })
-		if !ok {
-			return false
-		}
-		err = u.Unwrap()
-	}
-	return false
 }
 
 // writeFrame writes one Content-Length framed body to the server.
@@ -1022,14 +1031,8 @@ func readFrame(t *testing.T, r io.Reader) string {
 // ends the server, status 1 without a shutdown (REQ-lsp-transport).
 func TestTransportMalformedFrame(t *testing.T) {
 	fx := newFixture(t, checkTree())
-	var err error
-	if fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: assemble.Client(fx.Fixture, "proxy"), Sources: fx.sources}); err != nil {
-		t.Fatal(err)
-	}
-	toServer, fromClient := io.Pipe()
-	toClient, fromServer := io.Pipe()
-	status := make(chan int, 1)
-	go func() { status <- Serve(context.Background(), fx.srv, toServer, fromServer) }()
+	fx.newServer(t, nil)
+	fromClient, toClient, status := fx.wire(t)
 	write := func(body string) { writeFrame(t, fromClient, body) }
 	read := func() string { return readFrame(t, toClient) }
 	write("{not json")

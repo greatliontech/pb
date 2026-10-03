@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"bytes"
 	"unicode/utf8"
 
 	"github.com/greatliontech/lsp/protocol"
@@ -57,31 +58,21 @@ func selectEncoding(offered []protocol.PositionEncodingKind) encoding {
 func offsetOf(text []byte, line, col int) int {
 	off := 0
 	for l := 1; l < line; l++ {
-		i := indexByte(text, off, '\n')
+		i := bytes.IndexByte(text[off:], '\n')
 		if i < 0 {
 			return len(text)
 		}
-		off = i + 1
+		off += i + 1
 	}
-	end := indexByte(text, off, '\n')
-	if end < 0 {
-		end = len(text)
+	end := len(text)
+	if i := bytes.IndexByte(text[off:], '\n'); i >= 0 {
+		end = off + i
 	}
 	for points := 1; points < col && off < end; points++ {
 		_, n := utf8.DecodeRune(text[off:end])
 		off += n
 	}
 	return off
-}
-
-// indexByte is the index of c in text at or after from, or -1.
-func indexByte(text []byte, from int, c byte) int {
-	for i := from; i < len(text); i++ {
-		if text[i] == c {
-			return i
-		}
-	}
-	return -1
 }
 
 // position is the protocol's position of a byte offset in text
@@ -112,27 +103,32 @@ func position(text []byte, off int, enc encoding) protocol.Position {
 	if off > 0 && off < len(text) && text[off] == '\n' && text[off-1] == '\r' {
 		end = off - 1
 	}
-	units := uint32(0)
+	count := uint32(0)
 	for i := start; i < end; {
 		r, n := utf8.DecodeRune(text[i:])
 		if i+n > end {
 			break
 		}
-		switch enc {
-		case utf8e:
-			units += uint32(n)
-		case utf32:
-			units++
-		default:
-			if r >= 0x10000 {
-				units += 2
-			} else {
-				units++
-			}
-		}
+		count += units(r, n, enc)
 		i += n
 	}
-	return protocol.Position{Line: uint32(line), Character: units}
+	return protocol.Position{Line: uint32(line), Character: count}
+}
+
+// units is the width of one character — the rune and its byte
+// length — in the encoding's column units: its bytes under utf-8,
+// one under utf-32, one or two under utf-16.
+func units(r rune, n int, enc encoding) uint32 {
+	switch enc {
+	case utf8e:
+		return uint32(n)
+	case utf32:
+		return 1
+	}
+	if r >= 0x10000 {
+		return 2
+	}
+	return 1
 }
 
 // tokenEnd is the offset past the identifier starting at off — a run
@@ -180,24 +176,13 @@ func offsetAt(text []byte, pos protocol.Position, enc encoding) int {
 			i++
 		}
 	}
-	units := uint32(0)
-	for i < len(text) && units < pos.Character {
+	count := uint32(0)
+	for i < len(text) && count < pos.Character {
 		if text[i] == '\n' || text[i] == '\r' {
 			break
 		}
 		r, n := utf8.DecodeRune(text[i:])
-		switch enc {
-		case utf8e:
-			units += uint32(n)
-		case utf32:
-			units++
-		default:
-			if r >= 0x10000 {
-				units += 2
-			} else {
-				units++
-			}
-		}
+		count += units(r, n, enc)
 		i += n
 	}
 	return i

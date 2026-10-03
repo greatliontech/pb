@@ -311,7 +311,8 @@ it, and write nothing else to either; its own logging goes to
 standard error. A frame whose body is no JSON-RPC message is
 answered with the protocol's parse or invalid-request error and the
 connection goes on; a framing error, or the connection's end on
-either side, ends the server.
+either side, ends the server, every judgement in flight ended first,
+as `shutdown` ends them.
 
 ## Invariants
 

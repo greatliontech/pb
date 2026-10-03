@@ -78,8 +78,8 @@ type Server struct {
 	published     map[uri.URI]publishState // the client's state per file
 	gen           uint64                   // the change the current judgement is for
 	cancel        context.CancelFunc       // the running judgement's
-	ended         chan struct{}            // closed when the running judgement has ended
-	running       sync.WaitGroup           // the judgements started and not yet ended
+	ended         chan struct{}            // closed when the running judgement has ended, after every earlier one
+	registered    chan struct{}            // closed when the watcher registration has been answered
 	reloadPending bool                     // a reload asked for and not yet committed by a judgement
 	sess          *dep.Session             // the last session loaded; nil before the first and after a failed initialize
 	files         *buildFiles              // the last committed judgement's file table, which content requests read
@@ -146,10 +146,19 @@ func (s *Server) serve(ctx context.Context, stream jsonrpc2.Stream) int {
 	}
 	st := s.state
 	s.state = shutdown
+	ended, registered := s.ended, s.registered
 	s.mu.Unlock()
 	// A judgement in flight ends with the connection, before serve
-	// returns: nothing of the server outlives it.
-	s.running.Wait()
+	// returns, and so does the watcher registration, which the
+	// connection's end answers: nothing of the server outlives it.
+	// The latest judgement ends after every earlier one, each
+	// waiting for the one before it.
+	if ended != nil {
+		<-ended
+	}
+	if registered != nil {
+		<-registered
+	}
 	if st == shutdown {
 		return 0
 	}
@@ -165,7 +174,7 @@ func (s *Server) serve(ctx context.Context, stream jsonrpc2.Stream) int {
 // observer: nothing is released, so a cancellation is read only once
 // the request it names has been answered, its work finished, and an
 // observer would cost each call its context's materialization for no
-// effect; one joins the chain with the first handler that releases.
+// effect (docs/issues/lsp-cancel-witness.md).
 // The guard answers no notification with an error: under the binding
 // a notification handler's error ends the connection, and a
 // notification before `initialize` or after `shutdown` is dropped. The
@@ -271,10 +280,8 @@ func (s *Server) treePath(u uri.URI) (string, bool) {
 	if !u.IsFile() {
 		return "", false
 	}
-	p := filepath.Clean(u.FsPath())
-	root := filepath.Clean(s.deps.OSRoot)
-	rel, err := filepath.Rel(root, p)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+	rel, err := relPath(s.deps.OSRoot, u.FsPath())
+	if err != nil {
 		return "", false
 	}
 	if rel == "." {
@@ -292,19 +299,26 @@ func (s *Server) fileURI(tree string) uri.URI {
 // client offers it (REQ-lsp-reload), the session loaded and judged
 // (REQ-lsp-diagnostics).
 func (s *Server) Initialized(ctx context.Context, _ *protocol.InitializedParams) error {
+	// The registration is asked once, on the first `initialized`: a
+	// client sending another is reloaded again and asked nothing.
 	s.mu.Lock()
-	watch := s.watch
+	var registered chan struct{}
+	if s.watch && s.registered == nil {
+		registered = make(chan struct{})
+		s.registered = registered
+	}
 	s.mu.Unlock()
-	if watch {
-		go s.registerWatchers()
+	if registered != nil {
+		go s.registerWatchers(registered)
 	}
 	s.change(true)
 	return nil
 }
 
 // registerWatchers asks the client to report changes to the files
-// the resolution reads (REQ-lsp-reload).
-func (s *Server) registerWatchers() {
+// the resolution reads (REQ-lsp-reload), closing done once answered.
+func (s *Server) registerWatchers(done chan<- struct{}) {
+	defer close(done)
 	var watchers []protocol.FileSystemWatcher
 	for _, g := range watchedGlobs {
 		watchers = append(watchers, protocol.FileSystemWatcher{GlobPattern: protocol.Pattern(g)})
@@ -458,17 +472,13 @@ func (s *Server) change(reload bool) {
 		// loads the session from it.
 		root, rootErr = s.loadRoot()
 	}
+	// The chain's guard keeps a notification before `initialize` or
+	// after `shutdown` from its handler, and nothing is released, so
+	// the state here is serving (REQ-lsp-lifecycle).
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if reload {
 		s.root, s.rootErr = root, rootErr
-	}
-	// The guard keeps a notification after shutdown from its handler
-	// (REQ-lsp-lifecycle), and with nothing released no handler can be
-	// running when shutdown takes the state; this check is the backstop
-	// for a chain that releases, which none does today.
-	if s.state != serving {
-		return
 	}
 	if s.cancel != nil {
 		s.cancel()
@@ -486,9 +496,7 @@ func (s *Server) change(reload bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ended := make(chan struct{})
 	s.cancel, s.ended = cancel, ended
-	s.running.Add(1)
 	go func() {
-		defer s.running.Done()
 		defer close(ended)
 		if previous != nil {
 			<-previous

@@ -41,26 +41,16 @@ func TestUnparsableDependencyFile(t *testing.T) {
 	fx.start(t)
 	fx.initialize(t, protocol.ClientCapabilities{Workspace: &protocol.WorkspaceClientCapabilities{TextDocumentContent: &protocol.TextDocumentContentClientCapabilities{}}})
 	want := uri.MustParse("pb-module://example.com/std@v1.0.0/junk.proto")
-	deadline := time.After(20 * time.Second)
-	for {
-		select {
-		case p := <-fx.client.publishes:
-			for _, d := range p.Diagnostics {
-				if d.Code != protocol.String("compile") {
-					t.Fatalf("a diagnostic beside the compile's errors: %s", render(p))
-				}
+	p := fx.publishFor(t, string(want), func(p *protocol.PublishDiagnosticsParams) bool {
+		for _, d := range p.Diagnostics {
+			if d.Code != protocol.String("compile") {
+				t.Fatalf("a diagnostic beside the compile's errors: %s", render(p))
 			}
-			if p.URI == want {
-				if len(p.Diagnostics) != 1 || p.Diagnostics[0].Range.Start.Line != 1 {
-					t.Fatalf("the unparsable file's diagnostic: %s", render(p))
-				}
-				return
-			}
-		case m := <-fx.client.messages:
-			t.Fatalf("the server reported: %s", m)
-		case <-deadline:
-			t.Fatalf("no publish for %s", want)
 		}
+		return p.URI == want
+	})
+	if len(p.Diagnostics) != 1 || p.Diagnostics[0].Range.Start.Line != 1 {
+		t.Fatalf("the unparsable file's diagnostic: %s", render(p))
 	}
 }
 
@@ -101,14 +91,7 @@ func TestFailedReloadKeepsTheBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	fx.watched(t, "ws/b/pb.yaml", protocol.FileChangeTypeChanged)
-	select {
-	case m := <-fx.client.messages:
-		if !strings.Contains(m, "could not be loaded") {
-			t.Fatalf("the failure reported: %s", m)
-		}
-	case <-time.After(20 * time.Second):
-		t.Fatal("the failed reload was not reported")
-	}
+	fx.message(t, "could not be loaded")
 	fx.none(t, "ws/a/a.proto")
 	text := string(fx.text(t, "ws/a/a.proto"))
 	fx.open(t, "ws/a/a.proto", 1, strings.Replace(text, "BadName", "fine", 1))
@@ -128,32 +111,19 @@ func TestChangeDuringFirstJudgement(t *testing.T) {
 	fx.initialize(t, protocol.ClientCapabilities{})
 	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
 	text := string(fx.text(t, "ws/a/a.proto"))
-	h := &holding{holding: make(chan struct{}), release: make(chan struct{})}
-	fx.mu.Lock()
-	fx.held[fx.gen()+1] = h
-	fx.mu.Unlock()
+	h := fx.holdNext()
 	fx.open(t, "ws/a/a.proto", 1, text)
 	<-h.holding
 	next := fx.gen() + 1
 	fx.change(t, "ws/a/a.proto", 2, strings.Replace(text, "BadName", "fine", 1))
 	fx.waitGen(t, next)
 	close(h.release)
-	deadline := time.After(20 * time.Second)
-	for {
-		select {
-		case p := <-fx.client.publishes:
-			if p.URI != fx.uri("ws/a/a.proto") {
-				continue
-			}
-			if v, _ := p.Version.Get(); v == 2 {
-				if len(p.Diagnostics) != 0 {
-					t.Fatalf("version 2's publish: %s", render(p))
-				}
-				return
-			}
-		case <-deadline:
-			t.Fatal("no publish for version 2")
-		}
+	p := fx.publishFor(t, "version 2", func(p *protocol.PublishDiagnosticsParams) bool {
+		v, _ := p.Version.Get()
+		return p.URI == fx.uri("ws/a/a.proto") && v == 2
+	})
+	if len(p.Diagnostics) != 0 {
+		t.Fatalf("version 2's publish: %s", render(p))
 	}
 }
 
@@ -170,10 +140,7 @@ func TestReloadSupersededByChange(t *testing.T) {
 	fx.open(t, "ws/a/a.proto", 1, text)
 	fx.publishes(t, "ws/a/a.proto") // outside: no build is loaded
 	fx.pin(t)
-	h := &holding{holding: make(chan struct{}), release: make(chan struct{})}
-	fx.mu.Lock()
-	fx.held[fx.gen()+1] = h
-	fx.mu.Unlock()
+	h := fx.holdNext()
 	fx.watched(t, "ws/pb.lock", protocol.FileChangeTypeCreated)
 	<-h.holding
 	next := fx.gen() + 1
@@ -198,10 +165,7 @@ func TestShutdownWaitsForTheJudgement(t *testing.T) {
 	fx.start(t)
 	fx.initialize(t, protocol.ClientCapabilities{})
 	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
-	h := &holding{holding: make(chan struct{}), release: make(chan struct{})}
-	fx.mu.Lock()
-	fx.held[fx.gen()+1] = h
-	fx.mu.Unlock()
+	h := fx.holdNext()
 	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
 	<-h.holding
 	answered := make(chan error, 1)
@@ -217,10 +181,62 @@ func TestShutdownWaitsForTheJudgement(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	case <-time.After(20 * time.Second):
+	case <-time.After(waitFor):
 		t.Fatal("shutdown did not answer once the judgement ended")
 	}
 	fx.none(t, "ws/a/a.proto")
+}
+
+// The connection's end ends the server only once the judgement in
+// flight has ended: nothing of the server outlives Serve
+// (REQ-lsp-transport, REQ-lsp-lifecycle).
+func TestConnectionEndWaitsForTheJudgement(t *testing.T) {
+	fx := newFixture(t, checkTree())
+	fx.pin(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{})
+	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
+	h := fx.holdNext()
+	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
+	<-h.holding
+	fx.conn.Close()
+	select {
+	case fx.exit = <-fx.status:
+		fx.ended = true
+		t.Fatalf("the server ended with a judgement in flight: %d", fx.exit)
+	case <-time.After(300 * time.Millisecond):
+	}
+	close(h.release)
+	if status := fx.wait(t); status != 1 {
+		t.Fatalf("the server's status after the connection's end: %d", status)
+	}
+}
+
+// A second `initialized` from a client offering the watcher
+// registration asks no second registration and ends with the
+// connection like the first: one registration, Serve returning
+// (REQ-lsp-reload, REQ-lsp-transport).
+func TestInitializedTwiceRegistersOnce(t *testing.T) {
+	fx := newFixture(t, checkTree())
+	fx.pin(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{Workspace: &protocol.WorkspaceClientCapabilities{DidChangeWatchedFiles: &protocol.DidChangeWatchedFilesClientCapabilities{DynamicRegistration: ptr(true)}}})
+	if err := fx.server.Initialized(context.Background(), &protocol.InitializedParams{}); err != nil {
+		t.Fatal(err)
+	}
+	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
+	<-fx.client.registered
+	// A second registration would follow the second initialized
+	// within the window; none does.
+	select {
+	case r := <-fx.client.registered:
+		t.Fatalf("a second registration: %+v", r)
+	case <-time.After(300 * time.Millisecond):
+	}
+	fx.conn.Close()
+	if status := fx.wait(t); status != 1 {
+		t.Fatalf("the server's status: %d", status)
+	}
 }
 
 // The tree is rooted at the client root's volume, opened once
@@ -320,14 +336,7 @@ func TestNoSessionAtStart(t *testing.T) {
 	fx := newFixture(t, files)
 	fx.start(t)
 	fx.initialize(t, protocol.ClientCapabilities{})
-	select {
-	case m := <-fx.client.messages:
-		if !strings.Contains(m, "could not be loaded") {
-			t.Fatalf("the failure reported: %s", m)
-		}
-	case <-time.After(20 * time.Second):
-		t.Fatal("the failed load was not reported")
-	}
+	fx.message(t, "could not be loaded")
 	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
 	p := fx.publishes(t, "ws/a/a.proto")[fx.uri("ws/a/a.proto")]
 	if len(p.Diagnostics) != 1 || !strings.Contains(string(p.Diagnostics[0].Message.(protocol.String)), "no build is loaded") {
@@ -335,14 +344,7 @@ func TestNoSessionAtStart(t *testing.T) {
 	}
 	// Another failed reload while still no session has loaded.
 	fx.watched(t, "ws/pb.work", protocol.FileChangeTypeChanged)
-	select {
-	case m := <-fx.client.messages:
-		if !strings.Contains(m, "could not be loaded") {
-			t.Fatalf("the second failure reported: %s", m)
-		}
-	case <-time.After(20 * time.Second):
-		t.Fatal("the second failed load was not reported")
-	}
+	fx.message(t, "could not be loaded")
 	// Mended and reloaded, the build is judged.
 	if err := util.WriteFile(fx.ws, "ws/pb.work", []byte(checkTree()["ws/pb.work"]), 0o644); err != nil {
 		t.Fatal(err)

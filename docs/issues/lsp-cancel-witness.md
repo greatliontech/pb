@@ -14,5 +14,9 @@ Resolution: when a handler of the server first releases the read loop
 (`jsonrpc2.Async`) — a request whose work outlasts the loop — the
 chain gains the binding's cancel observer ahead of the typed dispatch,
 and a test cancels such a request mid-work and sees `RequestCancelled`.
+A released handler may then run past `shutdown`: the change trigger
+(`Server.change`), which today runs only on the read loop behind the
+chain's guard, regains its state check, so a released handler starts
+no judgement after `shutdown` has ended them (REQ-lsp-lifecycle).
 
 Lands: a server handler releases the read loop.

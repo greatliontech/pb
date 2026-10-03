@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,8 +15,6 @@ import (
 	"github.com/greatliontech/lsp/jsonrpc2"
 	"github.com/greatliontech/lsp/protocol"
 	"github.com/greatliontech/lsp/uri"
-
-	"github.com/greatliontech/pb/internal/testing/fetchtest/assemble"
 )
 
 // unformatted is a.proto's text with its layout disturbed, and
@@ -134,9 +131,7 @@ func TestFormattingWithoutASession(t *testing.T) {
 	fx := newFixture(t, files)
 	fx.start(t)
 	fx.initialize(t, protocol.ClientCapabilities{})
-	if m := <-fx.client.messages; !strings.Contains(m, "could not be loaded") {
-		t.Fatalf("the failed load: %s", m)
-	}
+	fx.message(t, "could not be loaded")
 	fx.open(t, "ws/a/a.proto", 1, unformatted)
 	fx.publishes(t, "ws/a/a.proto")
 	formatting := func() []protocol.TextEdit {
@@ -155,9 +150,7 @@ func TestFormattingWithoutASession(t *testing.T) {
 		t.Fatal(err)
 	}
 	fx.watched(t, "ws/pb.work", protocol.FileChangeTypeChanged)
-	if m := <-fx.client.messages; !strings.Contains(m, "could not be loaded") {
-		t.Fatalf("the failed reload: %s", m)
-	}
+	fx.message(t, "could not be loaded")
 	if edits := formatting(); len(edits) != 0 {
 		t.Fatalf("formatting with no root: %v", edits)
 	}
@@ -166,9 +159,7 @@ func TestFormattingWithoutASession(t *testing.T) {
 		t.Fatal(err)
 	}
 	fx.watched(t, "ws/pb.work", protocol.FileChangeTypeChanged)
-	if m := <-fx.client.messages; !strings.Contains(m, "could not be loaded") {
-		t.Fatalf("the lockfile's failure: %s", m)
-	}
+	fx.message(t, "could not be loaded")
 	if edits := formatting(); len(edits) != 1 {
 		t.Fatalf("formatting with the root mended: %v", edits)
 	}
@@ -225,14 +216,8 @@ func TestFormattingSourceStore(t *testing.T) {
 // has it for formatting (REQ-lsp-formatting).
 func TestFormattingOnTheWire(t *testing.T) {
 	fx := newFixture(t, checkTree())
-	var err error
-	if fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: assemble.Client(fx.Fixture, "proxy"), Sources: fx.sources}); err != nil {
-		t.Fatal(err)
-	}
-	toServer, fromClient := io.Pipe()
-	toClient, fromServer := io.Pipe()
-	status := make(chan int, 1)
-	go func() { status <- Serve(context.Background(), fx.srv, toServer, fromServer) }()
+	fx.newServer(t, nil)
+	fromClient, toClient, status := fx.wire(t)
 	writeFrame(t, fromClient, fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"workspaceFolders":[{"uri":%q,"name":"ws"}],"capabilities":{}}}`, fx.uri("ws")))
 	if r := readFrame(t, toClient); !strings.Contains(r, `"id":1`) {
 		t.Fatalf("initialize: %s", r)
@@ -256,7 +241,7 @@ func TestFormattingOnTheWire(t *testing.T) {
 	toClient.Close()
 	select {
 	case <-status:
-	case <-time.After(10 * time.Second):
+	case <-time.After(waitFor):
 		t.Fatal("the server did not end")
 	}
 }

@@ -578,8 +578,9 @@ func (w *walker) find(name protoreflect.FullName) protoreflect.Descriptor {
 // compiling build and the span under the position in the document,
 // where the document is an open build file whose contents are those
 // the build read; otherwise nothing (REQ-lsp-definition's rule). The
-// index read once here is what the request answers from.
-func (s *Server) locate(docURI uri.URI, pos protocol.Position) (*index, *span, bool) {
+// index read once here is what the request answers from, with the
+// document's text, which the span's offsets index.
+func (s *Server) locate(docURI uri.URI, pos protocol.Position) (*index, *span, []byte, bool) {
 	s.mu.Lock()
 	doc := s.docs[docURI]
 	standing := s.standing[docURI]
@@ -587,23 +588,23 @@ func (s *Server) locate(docURI uri.URI, pos protocol.Position) (*index, *span, b
 	enc := s.enc
 	s.mu.Unlock()
 	if doc == nil || !doc.proto || !standing || idx == nil {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 	tree, ok := s.treePath(docURI)
 	if !ok || tree == "" {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 	// The document's file is the one the index holds at its tree path.
 	p, ok := idx.build.byTree[tree]
 	fi := idx.spans[p]
 	if !ok || fi == nil || string(idx.build.byPath[p].text) != string(doc.text) {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 	sp := fi.at(offsetAt(doc.text, pos, enc))
 	if sp == nil {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
-	return idx, sp, true
+	return idx, sp, doc.text, true
 }
 
 // location is a span's place as the protocol has it: the file's
@@ -621,7 +622,7 @@ func (s *Server) location(idx *index, path string, start, end int) protocol.Loca
 // binds to, as its name token's location; an import's path, the
 // imported file at its first line (REQ-lsp-definition).
 func (s *Server) Definition(ctx context.Context, params *protocol.DefinitionParams) (protocol.DefinitionResult, error) {
-	idx, sp, ok := s.locate(params.TextDocument.URI, params.Position)
+	idx, sp, _, ok := s.locate(params.TextDocument.URI, params.Position)
 	if !ok {
 		return nil, nil
 	}
@@ -644,7 +645,7 @@ func (s *Server) Definition(ctx context.Context, params *protocol.DefinitionPara
 // fenced protobuf block, then its leading comments, the range the
 // token under the position (REQ-lsp-hover).
 func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	idx, sp, ok := s.locate(params.TextDocument.URI, params.Position)
+	idx, sp, text, ok := s.locate(params.TextDocument.URI, params.Position)
 	if !ok || sp.target == "" {
 		return nil, nil
 	}
@@ -657,10 +658,9 @@ func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*prot
 		value += "\n\n" + d.comments
 	}
 	s.mu.Lock()
-	doc := s.docs[params.TextDocument.URI]
 	enc := s.enc
 	s.mu.Unlock()
-	r := rangeAt(doc.text, sp.start, sp.end, enc)
+	r := rangeAt(text, sp.start, sp.end, enc)
 	return &protocol.Hover{Contents: &protocol.MarkupContent{Kind: protocol.MarkupKindMarkdown, Value: value}, Range: &r}, nil
 }
 
@@ -668,7 +668,7 @@ func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*prot
 // the build's files, the declaration itself where asked, in URI then
 // position order (REQ-lsp-references).
 func (s *Server) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
-	idx, sp, ok := s.locate(params.TextDocument.URI, params.Position)
+	idx, sp, _, ok := s.locate(params.TextDocument.URI, params.Position)
 	out := []protocol.Location{}
 	if !ok || sp.target == "" {
 		return out, nil
