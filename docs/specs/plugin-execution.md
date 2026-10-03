@@ -270,19 +270,24 @@ redirected into it, and the launch's variables in the environment —
 `TEMP` and `TMP` redirected, `LOCALAPPDATA` and `SystemRoot` carried
 from the host where the stated environment lacks them — the one
 injection the native runner makes (`platforms.md`
-REQ-plat-oci-substrate). That row's exposures are the lowering's to
-accept: a plugin that dereferences image-absolute paths at runtime
-observes the host's resolution, the row presents no hostname so the
-plugin observes the host's, the substrate the row grants every process
-is readable, and the IPC the row leaves open to the same user — unix
-sockets by path, and abstract sockets and signals where the kernel
-does not scope them — is reachable by a plugin that goes for it, its
-own doing as the `docker` deviations are; pb hands it the standard
-streams alone on every row. INV-docker-deviations: every mount over
-the image's root is a filesystem the runtime created under one of the
-three roots — mounted whole, or re-bound from one of those very
-filesystems as the runtime's masks are, never a host directory bound
-there — or a name file, every variable beyond the image's is an
+REQ-plat-oci-substrate). On every `OS` row the entrypoint's program
+is resolved in the export and its arguments reach the plugin as the
+image spells them, the working directory the one the image names,
+resolved in the export (its root where it names none), so an
+argument naming an image-absolute path names the host's. The `OS`
+rows' exposures are the lowering's to accept: a plugin that
+dereferences image-absolute paths at runtime — an argument among
+them — observes the host's resolution, the rows present no hostname
+so the plugin observes the host's, the substrate a row grants every
+process is readable, and the IPC a row leaves open to the same user
+— unix sockets by path, and abstract sockets and signals where the
+kernel does not scope them — is reachable by a plugin that goes for
+it, its own doing as the `docker` deviations are; pb hands it the
+standard streams alone on every row. INV-docker-deviations: every
+mount over the image's root is a filesystem the runtime created under
+one of the three roots — mounted whole, or re-bound from one of those
+very filesystems as the runtime's masks are, never a host directory
+bound there — or a name file, every variable beyond the image's is an
 injected one, `/dev` is writable while `/proc` itself and the root are
 not, the runtime's masks standing over the paths it masks — what a
 mask admits being the runtime's and the daemon's confinement's own —
@@ -381,8 +386,12 @@ are observable to a plugin that goes and reads them — its uid, the
 daemon's `/etc` files, a declared volume — and such a plugin's output
 is its own doing, not the runner's: the invariant binds what pb
 hands a plugin and takes from it, and pb passes no runner-specific
-fact by either. The native runner's `OS` row leaves the host's
-hostname and paths observable the same way (`REQ-plugin-sandboxed`).
+fact by either — what it hands is the image's process as the
+configuration declares it, the argv its entrypoint followed by its
+`cmd`, the arguments after the program reaching the plugin whole,
+as spelled, under every runner alike. The native runner's `OS` row
+leaves the host's hostname and paths observable the same way
+(`REQ-plugin-sandboxed`).
 
 **REQ-plugin-response-authority** (behavior): Generated output MUST come
 exclusively from the plugin's `CodeGeneratorResponse`; a plugin exiting

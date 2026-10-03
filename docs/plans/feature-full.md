@@ -292,17 +292,60 @@ formatter and the language server
 - [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,
       upstream shipping no native executable, only the jar; and
       community/scalapb-scala's v0.11.18 to v0.11.20, the jar alone
-      where the releases around them ship the executable, served by
-      this kind beside the release recipe — how one plugin's versions
-      span two kinds is this chunk's design question): a jlink'd
-      runtime bundled in the image behind a
-      native launcher as the entrypoint, plugin-execution.md's rows
-      read first for an entrypoint executing a sibling of the image's
-      tree, the linux row amended where it forbids it; grpc/kotlin,
-      connectrpc/kotlin, bufbuild/connect-kotlin, bufbuild/validate-java;
-      the node kind's runtime-bundled variant in the same shape, for a
-      package needing its files on disk or a native addon
-      (bufbuild/knit-ts, community/stephenh-ts-proto)
+      where the releases around them ship the executable — the jar
+      serving every version, as buf builds it, so the plugin moves
+      to this kind whole and its published versions stand): a
+      jlink'd runtime bundled in the image beside the jar, the
+      image's entrypoint the argv `/jre/bin/java -jar <jar>`, the
+      jar named relative to the working directory, the tree's root,
+      since an OS row resolves the program in the tree and hands the
+      arguments as spelled, as plugin-publish.md's build takes it,
+      no launcher; grpc/kotlin,
+      connectrpc/kotlin, bufbuild/connect-kotlin; bufbuild/validate-java,
+      a Go generator upstream, by the go kind; the node kind's
+      runtime-bundled variant in the same shape, for a package needing
+      its files on disk or a native addon (bufbuild/knit-ts,
+      community/stephenh-ts-proto)
+  - [x] 26.1. Triage gate.
+  - [x] 26.2. pb: an entrypoint argv with arguments across the
+        runners, witnessed — the native row's checks over argv[0],
+        the arguments carried, the docker runner's as the image
+        declares — plugin-execution.md's rows read first, amended
+        where a row's statement assumes a one-word entrypoint.
+  - [ ] 26.3. The catalog's jvm kind: a jar from Maven Central at
+        its coordinates (group, artifact, classifier and extension,
+        the file named by version; ScalaPB's a jar under `unix.sh`),
+        verified against the digest Maven publishes beside it (its
+        sha256 where it has one, its sha1 for every artifact), the
+        runtime linked by jlink from Temurin's jmods for every
+        platform on one host whose own jlink is the same pinned
+        release's (the JDK the catalog pins, its assets at
+        Adoptium's checksums), the tree `jre/` and the jar, the
+        entrypoint argv with the jar relative to the root, the
+        executables beside it named to the build, the Linux trees
+        over the base (the runtime links the C library), the probe
+        running the argv in the tree, versions from Maven's
+        metadata; the README's kinds table amended, its Membership
+        paragraph losing the launcher and the release kind's ScalaPB
+        sentence, the catalog's ScalaPB comment with it;
+        community/scalapb-zio-grpc, grpc/kotlin, connectrpc/kotlin,
+        bufbuild/connect-kotlin (deprecated upstream, frozen at its
+        last), community/scalapb-scala moved to the kind, v0.11.18
+        to v0.11.20 entering, its published v0.11.17 standing.
+  - [ ] 26.4. bufbuild/validate-java by the go kind
+        (cmd/protoc-gen-validate-java of the envoyproxy module at
+        its tag, deprecated upstream, frozen at v1.3.3).
+  - [ ] 26.5. The node kind's runtime-bundled variant: node's own
+        binary for every platform from nodejs.org at its published
+        checksums, the package installed with its dependencies into
+        the tree, the entrypoint argv `/node <script>` with the
+        script relative to the root, one host for every platform,
+        the Linux trees over the base;
+        bufbuild/knit-ts, community/stephenh-ts-proto; the README's
+        node row amended.
+  - [ ] 26.6. Close-out: pb's catalog names grow by the seven,
+        consolidation, the campaign (slotted with chunk 18's where
+        not run).
 - [ ] 27. The python kind, the jvm kind's shape over a standalone
       interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,
       connectrpc/python; the catalog then holds buf's tiers one and

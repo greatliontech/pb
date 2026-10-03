@@ -59,9 +59,15 @@ func requireDaemon(t *testing.T) *DockerRunner {
 
 func liveRun(t *testing.T, r Runner, param string, l trust.Limits) (*Result, error) {
 	t.Helper()
+	return liveRunProcess(t, r, plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, param, l)
+}
+
+// liveRunProcess is liveRun over the process given.
+func liveRunProcess(t *testing.T, r Runner, process plugin.Process, param string, l trust.Limits) (*Result, error) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
+	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: process, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
 }
 
 // The docker runner against a real daemon: the request reaches the
@@ -175,6 +181,37 @@ func TestRunnerIndependence(t *testing.T) {
 		if diff := responsesDiffer(a, b); diff != "" {
 			t.Fatalf("param %q: %s", param, diff)
 		}
+	}
+}
+
+// The arguments after the program reach the plugin whole, as
+// spelled — one of two words, an empty one, a lone dash — under the
+// native runner and the docker runner alike, and the two answer the
+// same bytes (REQ-plugin-runner-independence).
+func TestArgumentsCarried(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the native runner is Linux-only")
+	}
+	docker := requireDaemon(t)
+	native, err := NativeRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireSandbox(t)
+	run := func(r Runner) *Result {
+		t.Helper()
+		res, err := liveRunProcess(t, r, plugin.Process{Argv: []string{"/plugin", "--flag", "two words", "", "-"}}, behavior.Argv, limits(nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res
+	}
+	a, b := run(native), run(docker)
+	if got := content(t, a); got != "args=--flag|two words||- cwd=/" {
+		t.Fatalf("the native runner's argv: %q", got)
+	}
+	if diff := responsesDiffer(a, b); diff != "" {
+		t.Fatalf("the arguments under the two runners: %s", diff)
 	}
 }
 

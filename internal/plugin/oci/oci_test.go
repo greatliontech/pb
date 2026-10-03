@@ -1273,7 +1273,7 @@ func TestAcquireOverridePlatformless(t *testing.T) {
 	}
 }
 
-// An override is a plugin image like any: no entrypoint and a bare
+// An override is a plugin image like any: no process and a bare
 // environment entry are refused; an archive holding anything but
 // files and directories is refused.
 func TestAcquireOverrideRefusals(t *testing.T) {
@@ -1293,8 +1293,8 @@ func TestAcquireOverrideRefusals(t *testing.T) {
 		}
 		return dir
 	}
-	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{}), Host()); err == nil || !strings.Contains(err.Error(), "declares no entrypoint") {
-		t.Fatalf("no entrypoint: %v", err)
+	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{}), Host()); err == nil || !strings.Contains(err.Error(), "declares no process") {
+		t.Fatalf("no process: %v", err)
 	}
 	if _, err := a.AcquireOverride(ctx, ref, build(v1.Config{Entrypoint: []string{"/plugin"}, Env: []string{"SECRET"}}), Host()); err == nil || !strings.Contains(err.Error(), "not KEY=VALUE") {
 		t.Fatalf("bare env: %v", err)
@@ -1672,5 +1672,28 @@ func TestAcquireCandidates(t *testing.T) {
 	_, err = a.Acquire(ctx, ref, Host())
 	if !errors.Is(err, ErrNoCandidate) || !strings.Contains(err.Error(), "has no "+host.OS+"/"+host.Architecture+" entry in its manifest list (found [plan9/mips/v7]): the image does not support this platform") {
 		t.Fatalf("the host alone: %v", err)
+	}
+}
+
+// The plugin process is the image's: the argv its entrypoint
+// followed by its cmd, the environment and the working directory as
+// the configuration declares them; an image declaring no process
+// is refused (REQ-plugin-runner-independence).
+func TestProcessOf(t *testing.T) {
+	cfg := &v1.ConfigFile{Config: v1.Config{Entrypoint: []string{"/jre/bin/java", "-jar"}, Cmd: []string{"plugin.jar", ""}, Env: []string{"A=1"}, WorkingDir: "/w"}}
+	got, err := processOf(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(got.Argv, "|") != "/jre/bin/java|-jar|plugin.jar|" || strings.Join(got.Env, " ") != "A=1" || got.WorkDir != "/w" {
+		t.Fatalf("process = %+v", got)
+	}
+	// A cmd alone is the process, as an OCI runtime runs such an
+	// image; neither is no process.
+	if got, err := processOf(&v1.ConfigFile{Config: v1.Config{Cmd: []string{"x"}}}); err != nil || strings.Join(got.Argv, "|") != "x" {
+		t.Fatalf("an image with a cmd alone: %+v %v", got, err)
+	}
+	if _, err := processOf(&v1.ConfigFile{}); err == nil || !strings.Contains(err.Error(), "no process") {
+		t.Fatalf("an image declaring no process: %v", err)
 	}
 }

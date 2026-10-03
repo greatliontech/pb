@@ -360,13 +360,14 @@ func (acq *acquisition) pin() (lockfile.PluginPin, error) {
 }
 
 // processOf reads an image configuration into the plugin process: argv
-// as Entrypoint then Cmd, exactly as OCI runtimes compose them, the
-// environment as stated (KEY=VALUE throughout), and the working
-// directory. An image with no entrypoint is no plugin.
+// as Entrypoint then Cmd, exactly as OCI runtimes compose them (a cmd
+// alone is the process, as a runtime runs it), the environment as
+// stated (KEY=VALUE throughout), and the working directory. An image
+// declaring neither is no plugin.
 func processOf(cfg *v1.ConfigFile) (plugin.Process, error) {
 	argv := append(append([]string{}, cfg.Config.Entrypoint...), cfg.Config.Cmd...)
 	if len(argv) == 0 {
-		return plugin.Process{}, errors.New("the image declares no entrypoint: a plugin image's entrypoint is its plugin process")
+		return plugin.Process{}, errors.New("the image declares no process, neither an entrypoint nor a cmd: a plugin image's process is its plugin")
 	}
 	if err := plugin.CheckEnv(cfg.Config.Env); err != nil {
 		return plugin.Process{}, err

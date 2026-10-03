@@ -27,7 +27,7 @@ const (
 
 // Compared are the behaviors both runners must answer identically:
 // each ends in a response that reports nothing of the runner.
-var Compared = []string{Default, Net, Write, Host, Both, Env, Exit7}
+var Compared = []string{Default, Net, Write, Host, Argv, Both, Env, Exit7}
 
 // Probes report the runner's world on purpose and are compared by
 // no test.
