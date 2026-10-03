@@ -200,8 +200,8 @@ formatter and the language server
       cross toolchain for darwin and windows from one host needs SDKs
       and linkers the catalog does not carry — its versions
       crates.io's; connectrpc/rust
-  - [ ] 20.1. Triage gate.
-  - [ ] 20.2. The kind and connectrpc/rust; the README's kinds
+  - [x] 20.1. Triage gate.
+  - [x] 20.2. The kind and connectrpc/rust; the README's kinds
         table amended.
   - [ ] 20.3. Close-out: pb's catalog names grow by connectrpc/rust,
         consolidation, the campaign (slotted with chunk 18's where
