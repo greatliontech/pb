@@ -164,8 +164,8 @@ formatter and the language server
       lacks (community/chrusty-jsonschema's unprefixed tags,
       community/roadrunner-server-php-grpc's nested module); the
       plugin-catalog-growth issue closes
-  - [ ] 19.1. Triage gate.
-  - [ ] 19.2. The go kind from a repository tag: the version's tag
+  - [x] 19.1. Triage gate.
+  - [x] 19.2. The go kind from a repository tag: the version's tag
         resolved to its commit through the repository, the module
         fetched at that commit, a nested module's path carrying the
         version's major; discovery through the repository's
