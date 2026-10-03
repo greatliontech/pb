@@ -46,6 +46,14 @@ func (s *Server) config() dep.Config {
 // change superseded it, in which case nothing of it reaches the
 // client (REQ-lsp-diagnostics, REQ-lsp-fresh).
 func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
+	// What the judgement opened of an origin — repositories, listings,
+	// resolutions — is released at its end: the server lives for the
+	// editor's session, and a verb opening the origin after it must
+	// not wait on it (REQ-lsp-session, module-proxy.md
+	// REQ-proxy-direct-fetch).
+	if s.deps.Client != nil {
+		defer s.deps.Client.Release()
+	}
 	s.mu.Lock()
 	sess := s.sess
 	root, rootErr := s.root, s.rootErr

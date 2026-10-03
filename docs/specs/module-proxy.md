@@ -178,5 +178,8 @@ so an origin's history costs time and disk, never the process. The
 repositories are a fetch cache, never a source of truth: every artifact built from them verifies as
 REQ-proxy-client-verification has it. An origin's repositories are
 held by one process at a time, the lock beside them taken at opening
-and held to the process's end, another run waiting at its opening
-and failing with its context where that ends first.
+and held for the holder's scope — a verb's run to the process's end;
+a language server's judgement to its end, the server releasing what
+the judgement opened (`lsp.md` REQ-lsp-session) — another run
+waiting at its opening and failing with its context where that ends
+first.

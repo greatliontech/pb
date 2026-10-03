@@ -23,6 +23,9 @@ here ships, which the layering test at `internal/` enforces:
 - `prototest` — in-memory protobuf sources compiled with their
   well-known imports and source info, so a test holds a linked schema
   and the text it came from.
+- `flocktest` — whether a file's advisory lock is held, asked without
+  taking it, for a test that watches a lock the code under test takes
+  and releases.
 - `scratchtest` — a fresh directory under the package's own
   `testdata/scratch` for a test that must touch the operating system's
   filesystem, and the same bounded against the repository search, so

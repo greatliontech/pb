@@ -95,7 +95,13 @@ lint or lock file, a pinned dependency that cannot be fetched or
 fails verification — leaves the server serving with no build: every
 `.proto` document is then outside the build, the failure is reported
 to the client as a message (`window/showMessage`, error), and the
-next reload (REQ-lsp-reload) tries again.
+next reload (REQ-lsp-reload) tries again. What a judgement opens of
+an origin — its repositories in the direct source's store, the
+listing read, the origin resolved — is released at the judgement's
+end (`module-proxy.md` REQ-proxy-direct-fetch): a verb opening the
+origin after it proceeds without waiting on the server, and a
+redirect or listing changed is followed by the next judgement that
+resolves it.
 
 **REQ-lsp-unpinned** (behavior): A requirement of the build — a
 module pair, a ruleset import, wherever declared — that the lockfile

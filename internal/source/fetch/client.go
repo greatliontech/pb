@@ -109,6 +109,21 @@ func (c *Client) origin(ctx context.Context, modPath string) (origin.Origin, err
 	return o, nil
 }
 
+// Release gives back what the client holds of every origin — the
+// repositories opened, their listings, the origins resolved — so
+// another process's opening of an origin proceeds and the next
+// resolution lists and resolves anew: a reader that outlives a verb's
+// run, the language server, releases at each judgement's end
+// (lsp.md REQ-lsp-session, module-proxy.md REQ-proxy-direct-fetch);
+// a verb never needs to, its scope the process.
+func (c *Client) Release() {
+	for url, r := range c.repos {
+		r.Close()
+		delete(c.repos, url)
+	}
+	clear(c.origins)
+}
+
 // repo opens and memoizes an origin repository: one listing serves
 // every version resolved against it, the objects fetched as each
 // decision needs them.

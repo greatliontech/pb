@@ -38,8 +38,8 @@
 // process.
 //
 // An origin's repositories are held by one process at a time: the
-// lock beside them is taken at opening and kept for the process,
-// another run waiting at its opening. go-git writes a pack's index in
+// lock beside them is taken at opening and kept while an opening is
+// unreleased, another run waiting at its opening. go-git writes a pack's index in
 // place before the pack itself, so a reader beside a writer would
 // read a partial index; the lock is coarse because the reads are
 // everywhere and the writes are rare.
@@ -188,6 +188,14 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 	if err := hold(ctx, store, dir); err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
 	}
+	// An opening that fails past the hold releases it: the lock is
+	// the repository's, which no caller gets.
+	opened := false
+	defer func() {
+		if !opened {
+			release(store, dir)
+		}
+	}()
 	origin, err := store.Chroot(dir)
 	if err != nil {
 		return nil, fmt.Errorf("fetching %s: %w", repoURL, err)
@@ -211,17 +219,35 @@ func (f Fetcher) Fetch(ctx context.Context, repoURL string) (*Repo, error) {
 	}
 	repo := newRepo(snap, snapSt, hist, listed)
 	repo.origin = &connection{remote: remote, histRemote: histRemote, client: f.ClientOptions, dir: origin}
+	repo.store, repo.dir = store, dir
 	if len(repo.hashes) == 0 {
 		return nil, fmt.Errorf("fetching %s: the origin advertises no ref", repoURL)
 	}
+	opened = true
 	return repo, nil
+}
+
+// Close releases the opening's hold on the origin: the lock goes with
+// the last opening released, and another process's opening proceeds
+// (REQ-proxy-direct-fetch). A repository opened in place, or one
+// closed already, releases nothing.
+func (r *Repo) Close() {
+	if r.store == nil || r.closed {
+		return
+	}
+	r.closed = true
+	release(r.store, r.dir)
 }
 
 // held is the process's table of origin locks: one process holds an
 // origin's lock once, however many times it opens the origin — a
 // second client in one run would otherwise wait on the run's own
-// lock. The lock is a file lock, so the table is per process by
-// nature; it is released when the process ends.
+// lock — and holds it while any opening of the origin is unreleased
+// (REQ-proxy-direct-fetch): a verb never releases, its scope the
+// process; the language server releases what a judgement opened at
+// the judgement's end (lsp.md REQ-lsp-session). The lock is a file
+// lock, so the table is per process by nature; what the process
+// still holds at its end is released with it.
 var held = struct {
 	sync.Mutex
 	locks map[string]*originLock
@@ -231,12 +257,15 @@ var held = struct {
 // runs on its own goroutine, so a waiting opening answers its context
 // while the file lock, which cannot be interrupted, is still waited
 // for. The openings waiting are counted: a lock won after every
-// waiter gave up is released again, never held for nobody.
+// waiter gave up is released again, never held for nobody; the
+// openings holding are counted too, the lock released with the last
+// of them.
 type originLock struct {
 	done    chan struct{}
 	err     error
 	waiters int
-	file    billy.File // the locked file, kept open — and reachable — for the process
+	holders int
+	file    billy.File // the locked file, kept open — and reachable — while held
 }
 
 // hold takes the origin's lock in the store, exclusive, waiting for
@@ -244,7 +273,7 @@ type originLock struct {
 // whose files carry no lock (the in-memory filesystem) is the
 // process's own, and needs none.
 func hold(ctx context.Context, store billy.Filesystem, dir string) error {
-	key := store.Root() + "\x00" + dir
+	key := lockKey(store, dir)
 	held.Lock()
 	l, ok := held.locks[key]
 	if !ok {
@@ -270,23 +299,68 @@ func hold(ctx context.Context, store billy.Filesystem, dir string) error {
 	held.Unlock()
 	select {
 	case <-l.done:
+		held.Lock()
+		l.waiters--
+		if l.err == nil {
+			l.holders++
+		}
+		held.Unlock()
 		return l.err
 	case <-ctx.Done():
 		held.Lock()
+		l.waiters--
 		select {
 		case <-l.done:
-			// Won in the same instant: the taking counted this
-			// opening and kept the lock, as it is the process's now.
+			// Won in the same instant as this opening gave up: the
+			// lock is held for the other openings, or for nobody —
+			// then released.
+			if l.err == nil && l.waiters == 0 && l.holders == 0 {
+				unlock(key, l)
+			}
 		default:
-			l.waiters--
 		}
 		held.Unlock()
 		return fmt.Errorf("waiting for the store's lock: %w", ctx.Err())
 	}
 }
 
+// unlock releases and forgets an origin's lock, under held's mutex.
+// The entry is this lock's: the taking forgets an entry whose file
+// carries no lock itself, and a waiter that gave up finds the taking
+// done only where the file is held and the entry still stands.
+func unlock(key string, l *originLock) {
+	if l.file != nil {
+		_ = l.file.(billy.Locker).Unlock()
+		_ = l.file.Close()
+	}
+	delete(held.locks, key)
+}
+
+// release gives back one opening's hold on the origin's lock: the
+// lock is released and forgotten with the last holder, so another
+// process's opening proceeds; an origin whose store carries no lock
+// has nothing to release.
+func release(store billy.Filesystem, dir string) {
+	key := lockKey(store, dir)
+	held.Lock()
+	defer held.Unlock()
+	l, ok := held.locks[key]
+	if !ok {
+		return
+	}
+	l.holders--
+	if l.holders > 0 || l.waiters > 0 {
+		return
+	}
+	unlock(key, l)
+}
+
+// lockKey names an origin's lock in the process's table: the store
+// and the origin's directory in it.
+func lockKey(store billy.Filesystem, dir string) string { return store.Root() + "\x00" + dir }
+
 // lockFile opens the lock file and locks it, returning the locked
-// file to keep open for the process; a file that carries no lock is
+// file to keep open while held; a file that carries no lock is
 // closed again and nothing returned.
 func lockFile(store billy.Filesystem, path string) (billy.File, error) {
 	f, err := store.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o644)
@@ -358,6 +432,10 @@ type Repo struct {
 	fetchedTags    map[string]bool // tag refs fetched into the snapshots
 	headFetched    bool
 	historyFetched bool
+
+	store  billy.Filesystem // the store the opening holds the origin's lock in; nil for a repository opened in place
+	dir    string
+	closed bool
 
 	refs     []origin.Ref
 	refsDone bool

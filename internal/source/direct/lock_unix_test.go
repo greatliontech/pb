@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-billy/v6/osfs"
 	"github.com/go-git/go-billy/v6/util"
 
+	"github.com/greatliontech/pb/internal/testing/flocktest"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
 )
 
@@ -22,18 +23,8 @@ import (
 // file's lock: a non-blocking flock on a fresh descriptor is refused.
 func assertLocked(t *testing.T, path string) {
 	t.Helper()
-	f, err := os.OpenFile(path, os.O_RDWR, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err == nil {
-		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	if !flocktest.Held(t, path) {
 		t.Fatal("the process's lock was released behind it")
-	}
-	if !errors.Is(err, syscall.EWOULDBLOCK) {
-		t.Fatal(err)
 	}
 }
 
@@ -71,4 +62,72 @@ func TestEmptyWaitsForTheOriginsLock(t *testing.T) {
 	if _, err := store.Stat(store.Join(origin, "snapshots")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("the origin's repositories after the emptying: %v", err)
 	}
+}
+
+// assertUnlocked asserts that no open file description holds the
+// file's lock: a non-blocking flock on a fresh descriptor succeeds.
+func assertUnlocked(t *testing.T, path string) {
+	t.Helper()
+	if flocktest.Held(t, path) {
+		t.Fatal("the lock is still held")
+	}
+}
+
+// An origin's lock is held while any opening of it is unreleased and
+// goes with the last: two openings in one process hold it once,
+// closing one keeps it, closing the other frees it for another
+// process, closing twice is nothing, and the next opening takes it
+// again (REQ-proxy-direct-fetch).
+func TestCloseReleasesTheLockWithTheLastOpening(t *testing.T) {
+	ctx := context.Background()
+	c := newChain(t)
+	store := osfs.New(scratchtest.Dir(t))
+	fetcher := Fetcher{ClientOptions: c.ClientOptions(), Store: store}
+	first, err := fetcher.Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := fetcher.Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dirs, _ := store.ReadDir(".")
+	lock := filepath.Join(store.Root(), dirs[0].Name(), lockName)
+	assertLocked(t, lock)
+	first.Close()
+	assertLocked(t, lock)
+	second.Close()
+	assertUnlocked(t, lock)
+	second.Close()
+	assertUnlocked(t, lock)
+	third, err := fetcher.Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertLocked(t, lock)
+	third.Close()
+	assertUnlocked(t, lock)
+	// An opening the store carries no lock for releases nothing.
+	inMemory, err := (Fetcher{ClientOptions: c.ClientOptions()}).Fetch(ctx, "file:///")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inMemory.Close()
+}
+
+// An opening that fails past the hold — an origin with no ref to list
+// — holds nothing: the lock is released with the failure, no caller
+// having a repository to close (REQ-proxy-direct-fetch).
+func TestFailedOpeningHoldsNothing(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t)
+	store := osfs.New(scratchtest.Dir(t))
+	if _, err := (Fetcher{ClientOptions: f.ClientOptions(), Store: store}).Fetch(ctx, "file:///"); err == nil || !strings.Contains(err.Error(), "listing refs") {
+		t.Fatalf("an origin with no ref: %v", err)
+	}
+	dirs, err := store.ReadDir(".")
+	if err != nil || len(dirs) != 1 {
+		t.Fatalf("the store after the failed opening: %v %v", dirs, err)
+	}
+	assertUnlocked(t, filepath.Join(store.Root(), dirs[0].Name(), lockName))
 }

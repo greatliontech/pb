@@ -426,7 +426,7 @@ formatter and the language server
       the same, clean and the layout recognition reading the new
       names, an old entry cleaned and refetched; REQ-dep-cache-layout
       and REQ-dep-cache-transparent amended; the issue closes
-- [ ] 33. A scope for what a server holds of an origin
+- [x] 33. A scope for what a server holds of an origin
       (server-holds-origin-lock): the direct store's lock and the
       fetch client's memoized repositories, listings and origins held
       for a scope the holder names — a verb's run, a server's

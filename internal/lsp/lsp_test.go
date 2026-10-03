@@ -40,17 +40,19 @@ import (
 // recording client over a channel stream pair.
 type fixture struct {
 	*fetchtest.Fixture
-	ws        billy.Filesystem
-	root      string // the host root the tree is rooted at
-	sources   string
-	stdDigest string // the served std archive's digest, the store's key beside the pair
-	srv       *Server
-	server    protocol.Server // the dispatcher to the server
-	client    *recorder
-	conn      jsonrpc2.Conn
-	status    chan int
-	ended     bool
-	exit      int
+	ws         billy.Filesystem
+	root       string // the host root the tree is rooted at
+	sources    string
+	stdDigest  string              // the served std archive's digest, the store's key beside the pair
+	source     string              // the module source the fixture's clients read, "proxy" unless set
+	wireClient func(*fetch.Client) // applied to every client the fixture assembles, where set
+	srv        *Server
+	server     protocol.Server // the dispatcher to the server
+	client     *recorder
+	conn       jsonrpc2.Conn
+	status     chan int
+	ended      bool
+	exit       int
 
 	mu   sync.Mutex
 	held map[uint64]*holding // judgements held at the seam, by generation
@@ -60,6 +62,17 @@ type fixture struct {
 // holds, release lets it go on.
 type holding struct {
 	holding, release chan struct{}
+}
+
+// held waits for the judgement to reach the seam, failing the test
+// with what it waited for once the wait is over.
+func (h *holding) held(t *testing.T, what string) {
+	t.Helper()
+	select {
+	case <-h.holding:
+	case <-time.After(waitFor):
+		t.Fatalf("%s was not held", what)
+	}
 }
 
 // waitFor bounds every wait on the server.
@@ -145,6 +158,20 @@ func newFixture(t *testing.T, files map[string]string) *fixture {
 	return fx
 }
 
+// newClient assembles a client over the fixture's source, wired as
+// the fixture asks.
+func (fx *fixture) newClient() *fetch.Client {
+	source := fx.source
+	if source == "" {
+		source = "proxy"
+	}
+	c := assemble.Client(fx.Fixture, source)
+	if fx.wireClient != nil {
+		fx.wireClient(c)
+	}
+	return c
+}
+
 // serveStd serves the std module's archive from the files and keeps
 // its digest, the one a copy of it in the source store is named by.
 func (fx *fixture) serveStd(t *testing.T, files map[string]string) {
@@ -167,7 +194,7 @@ func (fx *fixture) stdStore(t *testing.T, parts ...string) string {
 
 func (fx *fixture) pin(t *testing.T) {
 	t.Helper()
-	s, err := dep.Load(dep.Config{WS: fx.ws, Dir: "ws", Client: assemble.Client(fx.Fixture, "proxy")})
+	s, err := dep.Load(dep.Config{WS: fx.ws, Dir: "ws", Client: fx.newClient()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +239,7 @@ func (fx *fixture) start(t *testing.T) {
 func (fx *fixture) newServer(t *testing.T, logger *slog.Logger) {
 	t.Helper()
 	var err error
-	if fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: assemble.Client(fx.Fixture, "proxy"), Sources: fx.sources, Logger: logger}); err != nil {
+	if fx.srv, err = New(Deps{WS: fx.ws, OSRoot: fx.root, Client: fx.newClient(), Sources: fx.sources, Logger: logger}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -394,11 +421,16 @@ func (fx *fixture) publishUntil(t *testing.T, what func() string, deadline <-cha
 func (fx *fixture) until(t *testing.T, what string, cond func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(waitFor)
-	for {
+	// The condition runs under the server's mutex, released on the
+	// way out however the condition ends: one that fails the test
+	// must not leave the server deadlocked behind the failure.
+	under := func() bool {
 		fx.srv.mu.Lock()
-		ok := cond()
-		fx.srv.mu.Unlock()
-		if ok {
+		defer fx.srv.mu.Unlock()
+		return cond()
+	}
+	for {
+		if under() {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -547,7 +579,7 @@ func (fx *fixture) watched(t *testing.T, tree string, typ protocol.FileChangeTyp
 // read-write session of its own.
 func (fx *fixture) lintOutput(t *testing.T) string {
 	t.Helper()
-	s, err := dep.Load(dep.Config{WS: fx.ws, Dir: "ws", Client: assemble.Client(fx.Fixture, "proxy")})
+	s, err := dep.Load(dep.Config{WS: fx.ws, Dir: "ws", Client: fx.newClient()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -558,17 +590,10 @@ func (fx *fixture) lintOutput(t *testing.T) string {
 	return out.String()
 }
 
-// The server's diagnostics are pb lint's output for the same tree,
-// one to one, each on the file the finding names at the same line
-// and column under conversion, the file-less finding on the build
-// home (REQ-lsp-parity, REQ-lsp-diagnostics).
-func TestParity(t *testing.T) {
-	fx := newFixture(t, checkTree())
-	fx.pin(t)
-	verb := fx.lintOutput(t)
-	fx.start(t)
-	fx.initialize(t, protocol.ClientCapabilities{})
-	got := fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
+// parity fails unless the server's published diagnostics are pb
+// lint's findings for the check tree, one to one.
+func (fx *fixture) parity(t *testing.T, got map[uri.URI]*protocol.PublishDiagnosticsParams, verb string) {
+	t.Helper()
 	modules := map[string]string{"a.proto": "ws/a/a.proto", "b.proto": "ws/b/b.proto"}
 	var server []string
 	for p, tree := range modules {
@@ -589,6 +614,20 @@ func TestParity(t *testing.T) {
 	if len(want) < 3 {
 		t.Fatalf("the fixture judges too little to witness parity: %q", verb)
 	}
+}
+
+// The server's diagnostics are pb lint's output for the same tree,
+// one to one, each on the file the finding names at the same line
+// and column under conversion, the file-less finding on the build
+// home (REQ-lsp-parity, REQ-lsp-diagnostics).
+func TestParity(t *testing.T) {
+	fx := newFixture(t, checkTree())
+	fx.pin(t)
+	verb := fx.lintOutput(t)
+	fx.start(t)
+	fx.initialize(t, protocol.ClientCapabilities{})
+	got := fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
+	fx.parity(t, got, verb)
 	// Every diagnostic is pb's, coded by the rule, ranged over the
 	// token at the finding's position.
 	for _, d := range got[fx.uri("ws/a/a.proto")].Diagnostics {
@@ -691,11 +730,7 @@ func TestSupersession(t *testing.T) {
 	// released, it reaches the publish with a generation that moved.
 	h := fx.holdNext()
 	fx.change(t, "ws/a/a.proto", 2, strings.Replace(text, "BadName", "AlsoBad", 1))
-	select {
-	case <-h.holding:
-	case <-time.After(waitFor):
-		t.Fatal("the judgement of version 2 was not held")
-	}
+	h.held(t, "the judgement of version 2")
 	// A notification carries no acknowledgement: the held judgement is
 	// released once the server has taken version 3's change.
 	next := fx.gen() + 1

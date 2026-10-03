@@ -114,7 +114,7 @@ func TestChangeDuringFirstJudgement(t *testing.T) {
 	text := string(fx.text(t, "ws/a/a.proto"))
 	h := fx.holdNext()
 	fx.open(t, "ws/a/a.proto", 1, text)
-	<-h.holding
+	h.held(t, "the judgement")
 	next := fx.gen() + 1
 	fx.change(t, "ws/a/a.proto", 2, strings.Replace(text, "BadName", "fine", 1))
 	fx.waitGen(t, next)
@@ -143,7 +143,7 @@ func TestReloadSupersededByChange(t *testing.T) {
 	fx.pin(t)
 	h := fx.holdNext()
 	fx.watched(t, "ws/pb.lock", protocol.FileChangeTypeCreated)
-	<-h.holding
+	h.held(t, "the judgement")
 	next := fx.gen() + 1
 	fx.change(t, "ws/a/a.proto", 2, text+"\n")
 	fx.waitGen(t, next)
@@ -168,7 +168,7 @@ func TestShutdownWaitsForTheJudgement(t *testing.T) {
 	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
 	h := fx.holdNext()
 	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
-	<-h.holding
+	h.held(t, "the judgement")
 	answered := make(chan error, 1)
 	go func() { answered <- fx.server.Shutdown(context.Background()) }()
 	select {
@@ -199,7 +199,7 @@ func TestConnectionEndWaitsForTheJudgement(t *testing.T) {
 	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto", "ws/pb.work")
 	h := fx.holdNext()
 	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
-	<-h.holding
+	h.held(t, "the judgement")
 	fx.conn.Close()
 	select {
 	case fx.exit = <-fx.status:
