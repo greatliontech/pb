@@ -570,3 +570,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "c66848679fa7a4d83ce3e53216e6db53953e1c87336423026ba37ca63755b89c"
 }
+
+bindings {
+  requirement_id: "REQ-archive-path-rules"
+  content_hash: "2123a54ab77c9b1ae3079902bd38b515c9f1f8332e02b76aadf2e014fbec4d5c"
+  source_hash: "67dadd92ad36f8c0eb930abe6ebc79386c959b873805a416e69e18f339899817"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/lsp.TestModuleAddressRoundTripsEveryArchivePath"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "21b3eeac8d51038633e5095e953950cd16c3466e2d2884cefb210351156a58a2"
+}

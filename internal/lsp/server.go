@@ -103,6 +103,8 @@ type Server struct {
 	index         *index                   // the last committed judgement that compiled, indexed, which navigation answers from
 	standing      map[uri.URI]bool         // per document, whether the last judgement found it a build file; absent until one has
 	wellKnown     *wellKnownCopy           // the toolchain's set, digested once
+	filledFor     *dep.Session             // the session the source store was last filled for; the judgement goroutine's alone, judgements running one at a time
+	sourcesShown  bool                     // a filling failure shown since the last filling, so a failure standing is shown once
 
 	// hold, when set, is called by a judgement once computed and
 	// before it is published: the tests' seam for a judgement held

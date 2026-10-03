@@ -243,9 +243,13 @@ working tree as a `file://` URI of that file; a dependency's by the
 client's capability: where the client offers `workspace/textDocumentContent`,
 as `pb-module://<module path>@<version>/<file path>`, spelled on the
 wire in the URI's canonical form — the `@` before the version
-percent-encoded as `%40` — a file of the well-known imports
-(`module-resolution.md`) as `pb-module://well-known/<file path>` — a
-module's locator carries the version, the well-known set's none —
+percent-encoded as `%40` where it falls in the path, a file path's
+characters a URI reads as syntax percent-encoded as well — a file of
+the well-known imports (`module-resolution.md`) as
+`pb-module://well-known@<digest>/<file path>`, its `@` literal in the
+authority — a module's locator carries the version, the well-known
+set's the digest the source store names the set by below, so one
+address names one toolchain's bytes as one names one pair's —
 the scheme declared in
 the server's capabilities and served through that request with the
 bytes the build read; otherwise as a `file://` URI into the
@@ -256,8 +260,14 @@ bytes the file is: a pinned replacement's where one applies
 the module graph, so one address names one file's bytes across every
 reload and a replacement that moves moves the address with the
 bytes. The source store is where the server copies a dependency's
-files from the verified content the build read, whole and
-atomically — `<user cache>/pb/sources/<escaped module path>@<escaped
+files from the verified content the build read, whole, atomically
+and read-only — a copy is the bytes its address names, made
+read-only as a module cache's files are, so an editor's save in
+place is refused, a copy forced past the mode replaced at the next
+filling — at the first judgement that reads the build of a session,
+and again at the next where the filling failed, the failure shown to
+the client once until a filling succeeds and logged at every try —
+`<user cache>/pb/sources/<escaped module path>@<escaped
 version>/<file path>`, the same pair, escaped as `module-proxy.md`
 escapes a module path and version, the well-known files under
 `<user cache>/pb/sources/well-known@<digest>/` with `<digest>` the
@@ -265,9 +275,9 @@ hex SHA-256 over the toolchain's well-known imports, each file's
 path then bytes in path order, every field preceded by its length as
 eight big-endian bytes, so a toolchain's copy never serves
 another's — a copy present is compared with the bytes the build
-read at the session's load and replaced where it differs, nothing
-else written there, `pb clean --sources` emptying it (`dep-verbs.md`
-REQ-dep-clean). The content served for an address is the bytes the
+read and replaced where it differs, nothing else written there,
+`pb clean --sources` emptying it, the read-only copies with it
+(`dep-verbs.md` REQ-dep-clean). The content served for an address is the bytes the
 last judgement read for it, else — the module gone from the build
 since — those the last build that compiled read, while navigation
 answers from that build (REQ-lsp-definition's rule), so an address

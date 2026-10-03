@@ -60,14 +60,13 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	// one (initialized) — so a start that loaded none serves with no
 	// build until the next reload, reporting the failure once per try.
 	var loadErr error
-	loaded := false
 	if reload {
 		fresh, err := (*dep.Session)(nil), rootErr
 		if root != nil {
 			fresh, err = s.load(root)
 		}
 		if err == nil {
-			sess, loaded = fresh, true
+			sess = fresh
 		} else {
 			loadErr = err
 			if sess != nil {
@@ -93,13 +92,26 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	if ctx.Err() != nil {
 		return
 	}
-	// The dependency source store is filled at the session's load,
-	// where the client addresses dependency files by file URI
-	// (REQ-lsp-dependency-files).
-	if j != nil && loaded && !content {
+	// The dependency source store is filled from the first judgement
+	// that reads the build of a session — the load reads no module,
+	// the judgement does, and the one at the load may fail to — and
+	// again where the filling failed, where the client addresses
+	// dependency files by file URI (REQ-lsp-dependency-files). The
+	// session filled for is the fact kept: a session loaded by a
+	// judgement that never commits fills for itself alone, and the
+	// committed session is filled at its own first judgement. A
+	// failure is shown once until a filling succeeds — its text
+	// varies try to try, a temporary's name or the file reached first
+	// — and logged at every try.
+	if j != nil && !content && s.filledFor != sess {
 		if err := s.copySources(j.Mods); err != nil {
 			s.deps.Logger.Error("the dependency source store could not be filled", "error", err)
-			s.showMessage("the dependency source store could not be filled: " + err.Error())
+			if !s.sourcesShown {
+				s.sourcesShown = true
+				s.showMessage("the dependency source store could not be filled: " + err.Error())
+			}
+		} else {
+			s.filledFor, s.sourcesShown = sess, false
 		}
 	}
 	var f *buildFiles

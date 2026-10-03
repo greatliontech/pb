@@ -41,7 +41,9 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 			// write left, and strangers: a file, a directory no copy's
 			// name spells, a name whose halves are not escaped.
 			for _, p := range []string{"example.com/m@v1.0.0/m.proto", "example.com/m@v1.0.0/sub/x.proto", "github.com/!org/n@v2.0.0/n.proto", "well-known@" + strings.Repeat("0f", 32) + "/google/protobuf/any.proto", ".pb-sources-123", "notes.txt", "stranger/x.proto", "Bad@v1.0.0/x.proto", "noversion@/x.proto", "photos@2024/img.proto", "example.com/m@latest/m.proto", "well-known@abc/x.proto"} {
-				if err := util.WriteFile(sources, p, []byte("x"), 0o644); err != nil {
+				// A copy's files are read-only (the store's mode); the
+				// emptying removes them all the same.
+				if err := util.WriteFile(sources, p, []byte("x"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			}

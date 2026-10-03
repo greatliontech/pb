@@ -110,6 +110,9 @@ func emptySourcesDir(fsys billy.Filesystem, dir, prefix string) (bool, error) {
 				removed = true
 			}
 		case SourcesCopyName(path.Join(prefix, name)):
+			// A copy's files are read-only (lsp.md
+			// REQ-lsp-dependency-files): the removal clears the
+			// attribute where the platform has one, as os.Root's does.
 			if err := util.RemoveAll(fsys, at); err != nil {
 				return false, fmt.Errorf("sources: %s: %w", at, err)
 			}

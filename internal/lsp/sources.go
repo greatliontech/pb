@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,12 +27,15 @@ import (
 // (REQ-lsp-dependency-files): `pb-module://<module path>@<version>/<file
 // path>`, the pair whose bytes the file is (a pinned replacement's
 // where one applies, modfiles.Module's source), a well-known file
-// `pb-module://well-known/<file path>`.
+// `pb-module://well-known@<digest>/<file path>`, the digest the
+// toolchain's set's, so one address names one set's bytes across
+// toolchains as a module's names one pair's.
 const moduleScheme = "pb-module"
 
-// wellKnownAuthority names the toolchain's well-known set under the
-// scheme and in the source store.
-const wellKnownAuthority = "well-known"
+// wellKnownName names the toolchain's well-known set where a module
+// locator names a module path, and in the source store, its digest
+// where a locator carries the version.
+const wellKnownName = "well-known"
 
 // moduleURI is a dependency file's address: under the module scheme
 // where the client offers the content request, else a file URI into
@@ -41,15 +45,28 @@ const wellKnownAuthority = "well-known"
 // client sends back.
 func (s *Server) moduleURI(modPath, version, file string) uri.URI {
 	if s.content {
-		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, modPath, version, file))
+		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, modPath, version, escapedPath(file)))
 	}
 	return uri.File(filepath.Join(s.copyDir(modPath, version), filepath.FromSlash(file)))
 }
 
-// wellKnownURI is a well-known file's address, as moduleURI.
+// escapedPath spells a file path for a URI, each segment
+// percent-encoded, so a character the archive admits and a URI reads
+// as syntax — `%`, `#`, a space — reaches the address as itself and
+// the canonical form decodes back to the path.
+func escapedPath(file string) string {
+	segs := strings.Split(file, "/")
+	for i, seg := range segs {
+		segs[i] = url.PathEscape(seg)
+	}
+	return strings.Join(segs, "/")
+}
+
+// wellKnownURI is a well-known file's address, as moduleURI: the
+// set's digest where a module's address carries the version.
 func (s *Server) wellKnownURI(file string) uri.URI {
 	if s.content {
-		return uri.MustParse(fmt.Sprintf("%s://%s/%s", moduleScheme, wellKnownAuthority, file))
+		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, wellKnownName, s.wellKnown.digest, escapedPath(file)))
 	}
 	return uri.File(filepath.Join(s.wellKnown.dir, filepath.FromSlash(file)))
 }
@@ -71,13 +88,6 @@ func (s *Server) moduleContent(u uri.URI) ([]byte, error) {
 		return nil, fmt.Errorf("%s: not a %s URI", u, moduleScheme)
 	}
 	locator := u.Authority() + u.Path()
-	if rest, ok := strings.CutPrefix(locator, wellKnownAuthority+"/"); ok {
-		b, ok := s.wellKnown.files[rest]
-		if !ok {
-			return nil, fmt.Errorf("%s: no well-known import is named %s", u, rest)
-		}
-		return b, nil
-	}
 	at := strings.Index(locator, "@")
 	if at < 0 {
 		return nil, fmt.Errorf("%s: a module locator carries @<version>", u)
@@ -86,6 +96,16 @@ func (s *Server) moduleContent(u uri.URI) ([]byte, error) {
 	version, file, ok := strings.Cut(rest, "/")
 	if !ok || file == "" {
 		return nil, fmt.Errorf("%s: a module locator names a file after the version", u)
+	}
+	if modPath == wellKnownName {
+		if version != s.wellKnown.digest {
+			return nil, fmt.Errorf("%s: the well-known set %s is another toolchain's; this server's is %s", u, version, s.wellKnown.digest)
+		}
+		b, ok := s.wellKnown.files[file]
+		if !ok {
+			return nil, fmt.Errorf("%s: no well-known import is named %s", u, file)
+		}
+		return b, nil
 	}
 	s.mu.Lock()
 	tables := []*buildFiles{s.files}
@@ -134,18 +154,39 @@ func (s *Server) copySources(mods []modfiles.Module) error {
 }
 
 // copyFiles puts files under dir, each compared first and written
-// atomically where absent or differing.
+// atomically where absent or differing, read-only as a module cache's
+// files are: a copy is the bytes its address names, an editor's save
+// in place refused by the mode — a copy present and equal made
+// read-only where it is not — and one differing is made writable for
+// the replacement alone, which a filesystem that refuses to move a
+// file over a read-only one needs.
 func copyFiles(dir string, files map[string][]byte) error {
 	fsys := osfs.New(dir)
 	for p, want := range files {
-		have, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(p)))
+		at := filepath.Join(dir, filepath.FromSlash(p))
+		have, err := os.ReadFile(at)
 		if err == nil && bytes.Equal(have, want) {
+			if fi, err := os.Stat(at); err != nil {
+				return fmt.Errorf("%s: %w", p, err)
+			} else if fi.Mode().Perm()&0o222 != 0 {
+				if err := os.Chmod(at, 0o444); err != nil {
+					return fmt.Errorf("%s: %w", p, err)
+				}
+			}
 			continue
+		}
+		// A regular file in the copy's place is made writable for the
+		// replacement; anything else there — a directory, a link — is
+		// left as it is and fails the write as its own.
+		if fi, err := os.Lstat(at); err == nil && fi.Mode().IsRegular() {
+			if err := os.Chmod(at, 0o644); err != nil {
+				return fmt.Errorf("%s: %w", p, err)
+			}
 		}
 		if err := fsys.MkdirAll(filepath.Dir(filepath.FromSlash(p)), 0o755); err != nil {
 			return err
 		}
-		if err := atomicfile.Write(fsys, filepath.FromSlash(p), dep.SourcesTempPrefix, 0o644, want); err != nil {
+		if err := atomicfile.Write(fsys, filepath.FromSlash(p), dep.SourcesTempPrefix, 0o444, want); err != nil {
 			return fmt.Errorf("%s: %w", p, err)
 		}
 	}
@@ -153,12 +194,14 @@ func copyFiles(dir string, files map[string][]byte) error {
 }
 
 // wellKnownCopy is the toolchain's well-known set with its digest:
-// `well-known@<digest>` in the source store, the digest the hex
-// SHA-256 over the set's paths and bytes in path order, each field
-// preceded by its length as eight big-endian bytes.
+// `well-known@<digest>` in the source store and in the set's
+// addresses, the digest the hex SHA-256 over the set's paths and
+// bytes in path order, each field preceded by its length as eight
+// big-endian bytes.
 type wellKnownCopy struct {
-	files map[string][]byte
-	dir   string
+	files  map[string][]byte
+	digest string
+	dir    string
 }
 
 // wellKnownSet enumerates and digests the toolchain's set, its copy
@@ -183,7 +226,8 @@ func wellKnownSet(sources string) (*wellKnownCopy, error) {
 		h.Write(n[:])
 		h.Write(files[p])
 	}
-	return &wellKnownCopy{files: files, dir: filepath.Join(sources, wellKnownAuthority+"@"+hex.EncodeToString(h.Sum(nil)))}, nil
+	digest := hex.EncodeToString(h.Sum(nil))
+	return &wellKnownCopy{files: files, digest: digest, dir: filepath.Join(sources, wellKnownName+"@"+digest)}, nil
 }
 
 // relPath is p relative to dir, or an error where p does not lie

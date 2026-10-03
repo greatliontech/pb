@@ -830,9 +830,15 @@ func TestDependencyAddress(t *testing.T) {
 				if _, err := fx.server.TextDocumentContent(context.Background(), &protocol.TextDocumentContentParams{URI: "pb-module://example.com/std@v1.0.0/none.proto"}); err == nil || !strings.Contains(err.Error(), "none.proto") {
 					t.Fatalf("a path no module provides: %v", err)
 				}
-				wk, err := fx.server.TextDocumentContent(context.Background(), &protocol.TextDocumentContentParams{URI: "pb-module://well-known/google/protobuf/empty.proto"})
+				wk, err := fx.server.TextDocumentContent(context.Background(), &protocol.TextDocumentContentParams{URI: fx.srv.wellKnownURI("google/protobuf/empty.proto")})
 				if err != nil || !strings.Contains(wk.Text, "message Empty") {
 					t.Fatalf("the well-known file served: %v", err)
+				}
+				// The set's address carries its digest: another
+				// toolchain's set is refused, never served as this one.
+				other := uri.MustParse(fmt.Sprintf("pb-module://well-known@%s/google/protobuf/empty.proto", strings.Repeat("ab", 32)))
+				if _, err := fx.server.TextDocumentContent(context.Background(), &protocol.TextDocumentContentParams{URI: other}); err == nil || !strings.Contains(err.Error(), "another toolchain's") {
+					t.Fatalf("another toolchain's well-known set: %v", err)
 				}
 				if _, err := os.Stat(filepath.Join(fx.sources, "example.com")); !os.IsNotExist(err) {
 					t.Fatal("the source store was filled under the content scheme")
@@ -844,6 +850,11 @@ func TestDependencyAddress(t *testing.T) {
 			}
 			if b, err := os.ReadFile(want.FsPath()); err != nil || string(b) != broken["std.proto"] {
 				t.Fatalf("the copy: %q, %v", b, err)
+			}
+			// The copy is read-only: the bytes its address names, which
+			// an editor's save is refused by the mode from changing.
+			if fi, err := os.Stat(want.FsPath()); err != nil || fi.Mode().Perm()&0o222 != 0 {
+				t.Fatalf("the copy's mode: %v, %v", fi.Mode(), err)
 			}
 			// The copy opened as a document is outside the build: a
 			// dependency's file, read as the build read it.
@@ -877,7 +888,11 @@ func TestDependencyAddress(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(fx.sources, wkDir, "google", "protobuf", "any.proto")); err != nil {
 				t.Fatalf("the well-known copy's files: %v", err)
 			}
-			// A copy that differs is replaced at the next load.
+			// A copy that differs — made writable past the mode and
+			// edited — is replaced at the next load.
+			if err := os.Chmod(want.FsPath(), 0o644); err != nil {
+				t.Fatal(err)
+			}
 			if err := os.WriteFile(want.FsPath(), []byte("tampered"), 0o644); err != nil {
 				t.Fatal(err)
 			}

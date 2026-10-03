@@ -131,7 +131,7 @@ func TestDefinition(t *testing.T) {
 			}
 			// A well-known type's declaration, under its own authority.
 			loc = define("ws/a/a.proto", fx.token(t, "ws/a/a.proto", "google.protobuf.MessageOptions", 0))
-			wk := uri.MustParse("pb-module://well-known/google/protobuf/descriptor.proto")
+			wk := fx.srv.wellKnownURI("google/protobuf/descriptor.proto")
 			if !content {
 				wk = uri.File(filepath.Join(fx.srv.wellKnown.dir, "google", "protobuf", "descriptor.proto"))
 			}
@@ -230,7 +230,7 @@ func TestDefinitionOptions(t *testing.T) {
 		case "":
 			wantPos = fx.token(t, "ws/a/c.proto", tc.decl, 0)
 		case "google/protobuf/descriptor.proto":
-			wantURI = uri.MustParse("pb-module://well-known/google/protobuf/descriptor.proto")
+			wantURI = fx.srv.wellKnownURI(tc.file)
 			text := fx.srv.wellKnown.files[tc.file]
 			wantPos = position(text, strings.Index(string(text), tc.decl), utf16)
 		default:
