@@ -143,7 +143,10 @@ formatter and the language server
       cases on darwin and windows) tracked to a machine reporting
       back
 - [ ] 18. Campaign close-outs: the delta campaigns outstanding since
-      the generation work — chunks 5 to 11 — and the campaign over
+      the generation work — chunks 5 to 11 — the language server's
+      (chunk 21, every package its commits touched: internal/lsp,
+      internal/dep, internal/proto/compile, internal/proto/modfiles,
+      internal/source/fetch, cmd/pb) and the campaign over
       the check subsystem with `gitdir`, each run on a clean tree as
       an hours-class background run and its records banked and
       promoted, every open mutant dispositioned; the
@@ -163,7 +166,7 @@ formatter and the language server
       plugin-catalog-growth issue closes
 - [ ] 20. The rust kind: a cargo package cross-compiled per platform;
       connectrpc/rust
-- [ ] 21. The language server: its own spec (the capabilities served,
+- [x] 21. The language server: its own spec (the capabilities served,
       how a file outside the workspace is treated, how findings map
       to diagnostics), `pb lsp` over the compile and the lint engine
       — diagnostics, definition, hover, references over the build's
@@ -173,7 +176,7 @@ formatter and the language server
         as overlays, the diagnostics' content and freshness,
         navigation and hover, dependency files, formatting, the
         lifecycle and transport, the invariants.
-  - [x] 21.3. `pb lsp` over go.lsp.dev's binding: the session loaded
+  - [x] 21.3. `pb lsp` over the binding: the session loaded
         read-only and reloaded as the verbs load theirs, an unpinned
         requirement diagnosed, documents overlaid,
         the compile's errors and the lint's findings published as
@@ -200,7 +203,7 @@ formatter and the language server
         tree.
   - [x] 21.6. Formatting into the canonical form through the
         formatter.
-  - [ ] 21.7. Close-out: consolidation, the spec's statements
+  - [x] 21.7. Close-out: consolidation, the spec's statements
         settled, the campaign.
 - [ ] 23. The runner suite's kernel surfaces declared to gomutant's
       observation bracket where paths name them, a SandboxRunner.Run
