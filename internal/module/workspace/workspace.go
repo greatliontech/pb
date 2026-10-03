@@ -298,13 +298,33 @@ type Source struct {
 	Module  *Module
 }
 
-// String spells the source as download's line names it: a directory
-// as the workspace file spells it.
+// String spells the source: a directory as the workspace file spells
+// it, a pair as `<path>@<version>`.
 func (s Source) String() string {
 	if s.Module != nil {
 		return Replacement{Dir: s.Module.Dir}.String()
 	}
 	return s.Path + "@" + s.Version.String()
+}
+
+// Label renders a replaced module as reports and errors spell it,
+// the one rendering (REQ-work-replace, REQ-work-replace-dir;
+// dep-verbs.md REQ-dep-download): the requirement the module stands
+// for, then its replacement as the workspace file spells it,
+// `<path>@<version> => <replacement>`.
+func (s Source) Label(path, version string) string {
+	return Replaced(path, version, s.String())
+}
+
+// Replaced is the rendering of a replaced module: the requirement,
+// then the replacement, `<path>@<version> => <replacement>`; a
+// requirement naming no version (a working-tree import's) renders
+// its path alone.
+func Replaced(path, version, replacement string) string {
+	if version == "" {
+		return path + " => " + replacement
+	}
+	return path + "@" + version + " => " + replacement
 }
 
 // Find walks up from dir toward the filesystem root and returns the

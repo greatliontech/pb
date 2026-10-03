@@ -131,6 +131,15 @@ func TestReplaceStandsTheForkForTheOriginal(t *testing.T) {
 	if _, ok := s2.Lock.Module("example.com/x", "v1.1.0"); ok {
 		t.Fatal("tidy kept a pin under the replaced path, which is never fetched")
 	}
+	// The export report names the replaced module once, as every
+	// report does (REQ-export-report, REQ-work-replace).
+	out.Reset()
+	if err := Export(ctx, s2, "out", "out", ExportOptions{}, &out); err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	if !strings.Contains(out.String(), "example.com/x@v1.1.0 => example.com/y@v1.0.0: 1 file(s)\n") {
+		t.Fatalf("export report = %q, want the replaced module rendered with its replacement", out.String())
+	}
 }
 
 // Update never consults a replaced path's origin (REQ-dep-update): the
@@ -356,7 +365,7 @@ func TestReplaceByDirectory(t *testing.T) {
 	files := func(mods []modfiles.Module) map[string][]byte {
 		for _, m := range mods {
 			if m.Path == "example.com/x" {
-				if m.Local || m.Synthesized || m.Version != "v1.0.0" || m.Dir != "forks/x" || m.Label() != "example.com/x@v1.0.0 (./forks/x)" {
+				if m.Local || m.Synthesized || m.Version != "v1.0.0" || m.Dir != "forks/x" || m.Label() != "example.com/x@v1.0.0 => ./forks/x" {
 					t.Fatalf("x = %+v: a directory replacement is an external of the build at x's selected version, named with its directory", m)
 				}
 				return m.Files
@@ -393,7 +402,16 @@ func TestReplaceByDirectory(t *testing.T) {
 	}
 	fx.write(t, "forks/x/x.proto", "syntax = \"proto3\";\n// the fork\n")
 
+	// The export report names the module as every report does
+	// (REQ-export-report, REQ-work-replace-dir).
 	var out bytes.Buffer
+	if err := Export(ctx, s, "exported", "exported", ExportOptions{}, &out); err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	if !strings.Contains(out.String(), "example.com/x@v1.0.0 => ./forks/x: 1 file(s)\n") {
+		t.Fatalf("export report = %q, want the directory replacement rendered with its directory", out.String())
+	}
+	out.Reset()
 	if err := Download(ctx, s, &out); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
@@ -449,5 +467,26 @@ func TestReplaceByDirectory(t *testing.T) {
 	}
 	if err := Update(ctx, fx.session(t, "."), io.Discard, nil, "example.com/x"); err == nil || !strings.Contains(err.Error(), "replaced by ./forks/x") {
 		t.Fatalf("named update of a directory-replaced path: err = %v", err)
+	}
+}
+
+// A malformed file of a pinned replacement is named by the replaced
+// module's one rendering, the pair whose bytes the file is beside
+// the requirement it stands for (workspace.md REQ-work-replace): the
+// requirement's pair alone names nothing fetched.
+func TestTidyNamesAReplacementsMalformedFileByItsSource(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - m\nreplace:\n  example.com/x: example.com/y@v1.0.0\n",
+		"m/pb.yaml": ws("example.com/m", "  example.com/x: v1.0.0\n"),
+		"m/m.proto": "syntax = \"proto3\";\nimport \"x.proto\";\n",
+	})
+	fx.serve(t, "example.com/y", "v1.0.0", map[string]string{
+		"pb.yaml": ws("example.com/y", ""),
+		"x.proto": "syntax = \"proto3\";\nmessage {\n",
+	})
+	fx.Endpoint("example.com/y", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	err := Tidy(ctx, fx.session(t, "."), io.Discard)
+	if err == nil || !strings.HasPrefix(err.Error(), "example.com/x@v1.0.0 => example.com/y@v1.0.0: x.proto: ") {
+		t.Fatalf("a malformed replacement file: %v", err)
 	}
 }

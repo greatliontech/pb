@@ -2,11 +2,12 @@
 
 The language server addressed a pinned replacement's files by the
 pair the module file requires while the bytes were the replacement's
-(lsp-replacement-address, slotted at chunk 29): the resolver filed
-the replacement under the name callers look it up by, and a layer
-below derived file addresses and a store layout from that name. One
-instance found by use; the audit looks for the others before use
-finds them.
+(now the pair whose bytes they are: `docs/specs/lsp.md`
+REQ-lsp-dependency-files, `modfiles.Module`'s source beside its
+requirement): the resolver filed the replacement under the name
+callers look it up by, and a layer below derived file addresses and
+a store layout from that name. One instance found by use; the audit
+looks for the others before use finds them.
 
 The rule. Names come in two kinds. A content name names bytes that
 never change under it: a module archive by `path@version`, a

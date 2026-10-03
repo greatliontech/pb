@@ -72,7 +72,15 @@ file does, so a replacement never reaches a consumer of the workspace's
 published modules, and a module required both as X's replacement and
 in its own right is two modules of the build, each providing the
 other's import paths, which the compile refuses as any duplicate
-provider (`generation.md` REQ-gen-compile).
+provider (`generation.md` REQ-gen-compile). Reports and errors name
+a module replaced by a pair as `X@<version> => Y@v`, the requirement
+it stands for and then its replacement as the workspace file spells
+it (REQ-work-emission), the one rendering of a replaced module; a
+name of the module's bytes — a file's address, a store's copy — is
+Y@v's, the pair whose bytes they are, as `lsp.md`
+REQ-lsp-dependency-files and `dep-verbs.md` REQ-dep-download have
+it, and X's name stays in the module graph, where a requirement is
+shown.
 
 **REQ-work-replace-dir** (behavior): A replacement `X: ./dir` MUST
 make the directory stand for X throughout the build as a workspace
@@ -92,7 +100,7 @@ answers for X whatever module path its own module file declares, as
 a pinned replacement does; a lockfile inside it is a clone's own,
 never the workspace's, and is not read. Reports and errors name the
 directory's files by their place in the tree, as a workspace
-module's, and the module as `X@<version> (<directory>)`, the
+module's, and the module as `X@<version> => <directory>`, the
 directory as the workspace file spells it.
 
 **REQ-work-replace-names** (behavior): A workspace file MUST be

@@ -51,6 +51,16 @@ type Module struct {
 	// replacement standing for a build-list pair — and "" for a
 	// fetched module.
 	Dir string
+	// SourcePath and SourceVersion name the pair whose bytes the
+	// module holds, for a module read from an archive: its pinned
+	// replacement's where one applies (workspace.md REQ-work-replace),
+	// its own otherwise. Path and Version name the requirement the
+	// module stands for in the build list; the source names its bytes.
+	// Every name of bytes — a file's address, a store's copy, a
+	// cache's entry — is the source's, every name of a requirement the
+	// other's, so no layer reconstructs which is which. A module read
+	// from the tree names no source: its files are tree files.
+	SourcePath, SourceVersion string
 	// Files holds every protobuf source under the include root as
 	// loaded; a copy of a well-known path among them is no file of the
 	// build (REQ-gen-compile: ignored in favor of the toolchain's), and
@@ -66,17 +76,35 @@ type Module struct {
 }
 
 // Label names the module as reports and errors spell it: a build-list
-// module with its selected version — and, read from a directory
-// replacement, the directory, which the user can find — a workspace
-// module by its path alone, which has no version.
+// module with its selected version — and, replaced, its replacement,
+// as workspace.Source.Label renders a replaced module everywhere — a
+// workspace module by its path alone, which has no version.
 func (m Module) Label() string {
 	if m.Local {
 		return m.Path
 	}
-	if m.Dir != "" {
-		return m.Path + "@" + m.Version + " (" + workspace.Replacement{Dir: m.Dir}.String() + ")"
+	if m.Replaced() {
+		return workspace.Replaced(m.Path, m.Version, m.replacement())
 	}
 	return m.Path + "@" + m.Version
+}
+
+// Replaced reports whether the build-list pair the module stands for
+// is replaced, as workspace.Root.Replaced reports of its path: its
+// bytes a directory's or another pair's. A path never replaces
+// itself (REQ-work-replace-names), so a source that differs differs
+// in path.
+func (m Module) Replaced() bool {
+	return m.Dir != "" && !m.Local || m.SourcePath != "" && m.SourcePath != m.Path
+}
+
+// replacement spells a replaced module's replacement as the
+// workspace file does (workspace.Replacement.String).
+func (m Module) replacement() string {
+	if m.Dir != "" {
+		return workspace.Replacement{Dir: m.Dir}.String()
+	}
+	return m.SourcePath + "@" + m.SourceVersion
 }
 
 // Protos returns the module's files of the build in sorted order: every
@@ -177,7 +205,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		if err != nil {
 			return nil, fmt.Errorf("%s@%s: %w", r.Path, r.Version, err)
 		}
-		out = append(out, Module{Path: r.Path, Version: r.Version.String(), Files: files, Rules: rules, Synthesized: !declared})
+		out = append(out, Module{Path: r.Path, Version: r.Version.String(), SourcePath: src.Path, SourceVersion: src.Version.String(), Files: files, Rules: rules, Synthesized: !declared})
 	}
 	return out, nil
 }

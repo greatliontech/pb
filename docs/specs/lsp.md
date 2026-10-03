@@ -249,11 +249,17 @@ module's locator carries the version, the well-known set's none —
 the scheme declared in
 the server's capabilities and served through that request with the
 bytes the build read; otherwise as a `file://` URI into the
-dependency source store, where the server copies a dependency's
+dependency source store. The pair in a dependency file's address, and
+the pair under which the source store holds it, is the pair whose
+bytes the file is: a pinned replacement's where one applies
+(`workspace.md` REQ-work-replace), the requirement's name kept to
+the module graph, so one address names one file's bytes across every
+reload and a replacement that moves moves the address with the
+bytes. The source store is where the server copies a dependency's
 files from the verified content the build read, whole and
 atomically — `<user cache>/pb/sources/<escaped module path>@<escaped
-version>/<file path>` escaped as `module-proxy.md` escapes a module
-path and version, the well-known files under
+version>/<file path>`, the same pair, escaped as `module-proxy.md`
+escapes a module path and version, the well-known files under
 `<user cache>/pb/sources/well-known@<digest>/` with `<digest>` the
 hex SHA-256 over the toolchain's well-known imports, each file's
 path then bytes in path order, every field preceded by its length as

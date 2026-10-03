@@ -24,7 +24,9 @@ import (
 // moduleScheme is the scheme a dependency's file is addressed under
 // where the client offers workspace/textDocumentContent
 // (REQ-lsp-dependency-files): `pb-module://<module path>@<version>/<file
-// path>`, a well-known file `pb-module://well-known/<file path>`.
+// path>`, the pair whose bytes the file is (a pinned replacement's
+// where one applies, modfiles.Module's source), a well-known file
+// `pb-module://well-known/<file path>`.
 const moduleScheme = "pb-module"
 
 // wellKnownAuthority names the toolchain's well-known set under the
@@ -121,8 +123,8 @@ func (s *Server) copySources(mods []modfiles.Module) error {
 		if m.FromTree() {
 			continue
 		}
-		if err := copyFiles(s.copyDir(m.Path, m.Version), m.Files); err != nil {
-			return fmt.Errorf("%s@%s: %w", m.Path, m.Version, err)
+		if err := copyFiles(s.copyDir(m.SourcePath, m.SourceVersion), m.Files); err != nil {
+			return fmt.Errorf("%s@%s: %w", m.SourcePath, m.SourceVersion, err)
 		}
 	}
 	if err := copyFiles(s.wellKnown.dir, s.wellKnown.files); err != nil {

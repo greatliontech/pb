@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -216,5 +217,60 @@ func TestProtosExcludeWellKnown(t *testing.T) {
 	}
 	if len(m.Files) != 4 {
 		t.Fatalf("Files changed: %d", len(m.Files))
+	}
+}
+
+// A replaced pair's module carries both pairs: the requirement it
+// stands for, as the module graph names it, and the source whose
+// bytes it holds, the replacement's, fetched under the source's name
+// and labelled `<path>@<version> => <replacement>`; a directory
+// replacement holds the directory's bytes under its own name, no
+// source pair, labelled the same way with the directory; an
+// unreplaced pair's source is itself (workspace.md REQ-work-replace,
+// REQ-work-replace-dir).
+func TestLoadReplacedModuleCarriesItsSource(t *testing.T) {
+	fsys := fstest.MapFS{
+		"pb.work":         {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: example.com/y@v2.0.0\n  example.com/z: ./forks/z\n")},
+		"m/pb.yaml":       {Data: []byte(ws("example.com/m", "  example.com/x: v1.0.0\n  example.com/z: v1.0.0\n  example.com/w: v1.0.0\n"))},
+		"forks/z/pb.yaml": {Data: []byte(ws("example.com/z", ""))},
+		"forks/z/z.proto": {Data: []byte("syntax = \"proto3\";\n")},
+	}
+	root, err := workspace.LoadFor(fsys, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var asked []string
+	zips := map[string][]byte{}
+	for _, mod := range []string{"example.com/y", "example.com/w"} {
+		zips[mod], _ = fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws(mod, ""), "a.proto": "syntax = \"proto3\";\n"})
+	}
+	mods, err := Load(ctx, fsys, root, []mvs.Requirement{
+		{Path: "example.com/x", Version: ver(t, "v1.0.0")},
+		{Path: "example.com/z", Version: ver(t, "v1.0.0")},
+		{Path: "example.com/w", Version: ver(t, "v1.0.0")},
+	}, func(_ context.Context, p string, v version.Version) ([]byte, error) {
+		asked = append(asked, p+"@"+v.String())
+		return zips[p], nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(asked, []string{"example.com/y@v2.0.0", "example.com/w@v1.0.0"}) {
+		t.Fatalf("archives fetched: %v, want the replacement's pair and the unreplaced pair, never the replaced", asked)
+	}
+	if mods[0].Replaced() || mods[0].Label() != "example.com/m" {
+		t.Fatalf("the workspace member: replaced %v, label %s", mods[0].Replaced(), mods[0].Label())
+	}
+	got := make([]string, 0, len(mods))
+	for _, m := range mods[1:] {
+		got = append(got, m.Path+"@"+m.Version+"|"+m.SourcePath+"@"+m.SourceVersion+"|"+m.Dir+"|"+m.Label()+"|"+strconv.FormatBool(m.Replaced()))
+	}
+	want := []string{
+		"example.com/x@v1.0.0|example.com/y@v2.0.0||example.com/x@v1.0.0 => example.com/y@v2.0.0|true",
+		"example.com/z@v1.0.0|@|forks/z|example.com/z@v1.0.0 => ./forks/z|true",
+		"example.com/w@v1.0.0|example.com/w@v1.0.0||example.com/w@v1.0.0|false",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("modules:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
 }

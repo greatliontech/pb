@@ -310,7 +310,8 @@ type file struct {
 
 // origin is where a file came from, as REQ-lsp-dependency-files
 // addresses it: a tree path for a file the build read from the
-// working tree, else a module's path and version, else the
+// working tree, else the pair whose bytes the file is — a module's
+// source, its pinned replacement's where one applies — else the
 // well-known set's.
 type origin struct {
 	tree      string
@@ -327,7 +328,7 @@ func newFiles(rootDir string, mods []modfiles.Module, wellKnown map[string][]byt
 	if providers, err := compile.Providers(mods); err == nil {
 		for p, i := range providers {
 			m := mods[i]
-			o := origin{modPath: m.Path, version: m.Version}
+			o := origin{modPath: m.SourcePath, version: m.SourceVersion}
 			if m.FromTree() {
 				o = origin{tree: path.Join(rootDir, m.Dir, p)}
 				f.byTree[o.tree] = p

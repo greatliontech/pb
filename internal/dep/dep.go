@@ -252,7 +252,7 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 			return err
 		}
 		if s.Root.Replaced(r.Path) {
-			fmt.Fprintf(out, "%s@%s => %s\n", r.Path, r.Version, src)
+			fmt.Fprintln(out, src.Label(r.Path, r.Version.String()))
 			continue
 		}
 		fmt.Fprintf(out, "%s@%s\n", r.Path, r.Version)
@@ -281,7 +281,7 @@ func Download(ctx context.Context, s *Session, out io.Writer) error {
 			return err
 		}
 		if s.Root.Replaced(e.Path) {
-			fmt.Fprintf(out, "%s => %s\n", e.To(), src)
+			fmt.Fprintln(out, src.Label(e.Path, e.Version))
 			continue
 		}
 		fmt.Fprintln(out, e.To())
@@ -386,7 +386,10 @@ func Why(ctx context.Context, s *Session, out io.Writer, targets ...string) erro
 			fmt.Fprintln(out, node)
 		}
 		if s.Root.Replaced(target) {
-			fmt.Fprintf(out, "%s => %s\n", chain[len(chain)-1], s.Root.Source(target, version.Version{}))
+			// The chain's last node is the target, at its selected
+			// version where the chain reached a pair.
+			selected := strings.TrimPrefix(strings.TrimPrefix(chain[len(chain)-1], target), "@")
+			fmt.Fprintln(out, s.Root.Source(target, version.Version{}).Label(target, selected))
 		}
 		return true
 	}

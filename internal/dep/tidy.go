@@ -83,13 +83,14 @@ func tidyOnce(ctx context.Context, s *Session, imported map[string]bool) (change
 	}
 	// A malformed file is named by a path the user can find: a file of
 	// the working tree — a workspace module's or a directory
-	// replacement's — by its place in the tree, a fetched one by module
-	// and version.
+	// replacement's — by its place in the tree, a fetched one by its
+	// module's label, a replaced module's naming the pair whose bytes
+	// the file is.
 	views, err := importcheck.Views(mods, func(m modfiles.Module, p string) string {
 		if m.FromTree() {
 			return path.Join(s.Root.Dir, m.Dir, p)
 		}
-		return fmt.Sprintf("%s@%s: %s", m.Path, m.Version, p)
+		return m.Label() + ": " + p
 	})
 	if err != nil {
 		return false, nil, err

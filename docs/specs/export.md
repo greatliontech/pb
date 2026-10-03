@@ -103,10 +103,11 @@ the empty destination absent.
 **REQ-export-report** (behavior): An export MUST report on standard
 output one line per module of the build in build order — workspace
 modules in the order the workspace file uses them, then build-list
-modules sorted by module path — naming the module, a build-list module
-with its selected version, and its count of files in the tree or that
-it was excluded, then one line with the total count and the output
-directory as given.
+modules sorted by module path — naming the module (a build-list
+module with its selected version, a replaced one as `workspace.md`
+REQ-work-replace and REQ-work-replace-dir render it) and its count of
+files in the tree or that it was excluded, then one line with the
+total count and the output directory as given.
 
 **REQ-export-determinism** (invariant): An export tree and its report
 MUST be a pure function of the workspace modules' sources, the pinned

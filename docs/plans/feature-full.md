@@ -371,7 +371,7 @@ formatter and the language server
       platforms.md's windows refusal amended; the
       docker-store-path-windows issue closes, the windows row's
       protocol coverage restored
-- [ ] 29. A replaced pair's files addressed by the pair whose bytes
+- [x] 29. A replaced pair's files addressed by the pair whose bytes
       they are: the `pb-module://` address and the source store's
       copy named by the replacement pair where one applies, as Go's
       module cache and gopls have it, the requirement's name kept to
