@@ -172,7 +172,7 @@ formatter and the language server
         releases; the catalog README's kinds table amended;
         community/chrusty-jsonschema and
         community/roadrunner-server-php-grpc enter.
-  - [ ] 19.3. The release kind's sources: an asset named by a URL
+  - [x] 19.3. The release kind's sources: an asset named by a URL
         beside a release's asset name — Maven Central's executables
         with their sha256 verified, grpc's binary host's archives —
         and discovery through Maven's metadata or the npm registry
