@@ -390,7 +390,7 @@ formatter and the language server
       witness that changes a pinned replacement and sees the address
       move with the bytes while the requirement's name stays; the
       lsp-replacement-address issue closes
-- [ ] 30. The identity audit: every name a layer hands out for bytes
+- [x] 30. The identity audit: every name a layer hands out for bytes
       walked under the identity-audit issue's lenses across the
       resolver, the stores, the lockfile and provenance keys, the
       language server's addresses and the plugin references; each
