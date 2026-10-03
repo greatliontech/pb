@@ -562,10 +562,12 @@ carries, a copy of the names the catalog repository
 - `buf.build/bufbuild/connect-swift-mocks`
 - `buf.build/bufbuild/connect-web`
 - `buf.build/bufbuild/es`
+- `buf.build/bufbuild/grpc-py`
 - `buf.build/bufbuild/knit-ts`
 - `buf.build/bufbuild/protoschema-bigquery`
 - `buf.build/bufbuild/protoschema-jsonschema`
 - `buf.build/bufbuild/protoschema-pubsub`
+- `buf.build/bufbuild/py`
 - `buf.build/bufbuild/validate-cpp`
 - `buf.build/bufbuild/validate-go`
 - `buf.build/bufbuild/validate-java`
@@ -587,6 +589,8 @@ carries, a copy of the names the catalog repository
 - `buf.build/connectrpc/go`
 - `buf.build/connectrpc/gosimple`
 - `buf.build/connectrpc/kotlin`
+- `buf.build/connectrpc/py`
+- `buf.build/connectrpc/python`
 - `buf.build/connectrpc/query-es`
 - `buf.build/connectrpc/rust`
 - `buf.build/connectrpc/swift`

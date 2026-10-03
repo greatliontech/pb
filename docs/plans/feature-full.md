@@ -147,7 +147,7 @@ formatter and the language server
       (chunk 21, every package its commits touched: internal/lsp,
       internal/dep, internal/proto/compile, internal/proto/modfiles,
       internal/source/fetch, cmd/pb), the plugin catalog's (chunks 3,
-      12, 19, 20, 24, 25 and 26, in greatliontech/pb-plugins: internal/catalog,
+      12, 19, 20, 24, 25, 26 and 27, in greatliontech/pb-plugins: internal/catalog,
       internal/recipe, internal/pipeline, internal/registry,
       internal/github, internal/web, internal/endpoints, cmd/catalog;
       pb's internal/migrate, cmd/pb's migrate verb,
@@ -352,10 +352,14 @@ formatter and the language server
   - [x] 26.6. Close-out: pb's catalog names grow by the seven,
         consolidation, the campaign (slotted with chunk 18's where
         not run).
-- [ ] 27. The python kind, the jvm kind's shape over a standalone
-      interpreter: bufbuild/py, bufbuild/grpc-py, connectrpc/py,
-      connectrpc/python; the catalog then holds buf's tiers one and
-      two whole
+- [x] 27. The python kind, the jvm kind's shape over a standalone
+      interpreter (python-build-standalone's build per platform, the
+      package installed per platform by uv under `app/`, the argv
+      `/python/bin/python3 -I app/<entrypoint>.py`): bufbuild/py,
+      bufbuild/grpc-py, connectrpc/py; connectrpc/python, a Go
+      program shipped inside a wheel, by the go kind from the
+      repository's tag, frozen; the catalog then holds buf's tiers
+      one and two whole
 - [ ] 28. The docker runner's stream from the store's verified image:
       the daemon handed the image's own layers and configuration (an
       OCI archive it loads) instead of a tar of the export's tree, on
