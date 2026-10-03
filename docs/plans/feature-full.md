@@ -258,6 +258,23 @@ formatter and the language server
       the platforms served those the toolchain builds; grpc/swift,
       grpc/swift-protobuf, connectrpc/swift, connectrpc/swift-mocks,
       bufbuild/connect-swift, bufbuild/connect-swift-mocks, apple/swift
+  - [x] 24.1. Triage gate.
+  - [x] 24.2. The kind and apple/swift: a SwiftPM product built at
+        the repository's tag on the platform's runner with the
+        toolchain the catalog pins, swiftly installing it on linux
+        and darwin, the Linux trees static through swift.org's
+        static Linux SDK (its checksum swift.org's own, read by
+        `catalog sdk`), resolved to the package's lockfile where it
+        commits one; windows not served (no upstream builds there);
+        the README's kinds table amended.
+  - [x] 24.3. The connect and grpc plugins: connectrpc/swift and
+        swift-mocks, bufbuild/connect-swift and connect-swift-mocks
+        at buf's last version from the moved repository, grpc/swift
+        from the 1.x line, grpc/swift-protobuf from
+        grpc-swift-protobuf.
+  - [ ] 24.4. Close-out: pb's catalog names grow by the seven,
+        consolidation, the campaign (slotted with chunk 18's where
+        not run).
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
 - [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,
