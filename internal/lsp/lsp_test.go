@@ -212,6 +212,25 @@ func (fx *fixture) waitGen(t *testing.T, gen uint64) {
 	}
 }
 
+// waitStanding waits until a judgement has placed the document: its
+// standing is then known.
+func (fx *fixture) waitStanding(t *testing.T, tree string) {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		fx.srv.mu.Lock()
+		_, known := fx.srv.standing[fx.uri(tree)]
+		fx.srv.mu.Unlock()
+		if known {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%s was never placed", tree)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 // wait waits for the server's end, once.
 func (fx *fixture) wait(t *testing.T) int {
 	t.Helper()
@@ -335,7 +354,7 @@ func render(p *protocol.PublishDiagnosticsParams) string {
 // line spells a diagnostic as pb lint would its finding, under
 // utf-16 columns over the text: `line:col: severity code: message`.
 func line(d protocol.Diagnostic, text []byte) string {
-	off := offsetAt(text, d.Range.Start)
+	off := utf16OffsetAt(text, d.Range.Start)
 	l, c := pbPosition(text, off)
 	sev := "warning"
 	if d.Severity == protocol.DiagnosticSeverityError {
@@ -344,11 +363,11 @@ func line(d protocol.Diagnostic, text []byte) string {
 	return fmt.Sprintf("%d:%d: %s %s: %s", l, c, sev, d.Code.(protocol.String), d.Message.(protocol.String))
 }
 
-// offsetAt is the byte offset of a utf-16 protocol position in text,
-// counted here as the protocol counts — lines ending at \n, \r\n or
-// a lone \r, columns in utf-16 units — independently of the server's
-// conversion, so the parity witness checks both directions.
-func offsetAt(text []byte, pos protocol.Position) int {
+// utf16OffsetAt is the byte offset of a utf-16 protocol position in
+// text, counted here as the protocol counts — lines ending at \n,
+// \r\n or a lone \r, columns in utf-16 units — independently of the
+// server's conversion, so the parity witness checks both directions.
+func utf16OffsetAt(text []byte, pos protocol.Position) int {
 	line, units := uint32(0), uint32(0)
 	for i := 0; i < len(text); {
 		if line == pos.Line && units == pos.Character {
@@ -887,8 +906,9 @@ func TestLifecycle(t *testing.T) {
 	if !ok || sync.OpenClose == nil || !*sync.OpenClose || sync.Change == nil || *sync.Change != protocol.TextDocumentSyncKindFull || sync.Save != protocol.Boolean(true) {
 		t.Fatalf("the sync capability: %#v", res.Capabilities.TextDocumentSync)
 	}
-	if res.Capabilities.DefinitionProvider != nil || res.Capabilities.HoverProvider != nil || res.Capabilities.ReferencesProvider != nil || res.Capabilities.DocumentFormattingProvider != nil {
-		t.Fatal("a capability this server does not serve was declared")
+	// The navigation providers are declared, the formatting provider not.
+	if res.Capabilities.DefinitionProvider != protocol.Boolean(true) || res.Capabilities.HoverProvider != protocol.Boolean(true) || res.Capabilities.ReferencesProvider != protocol.Boolean(true) || res.Capabilities.DocumentFormattingProvider != nil {
+		t.Fatalf("the capabilities declared: %#v", res.Capabilities)
 	}
 	if _, err := fx.server.Initialize(context.Background(), &protocol.InitializeParams{}); err == nil {
 		t.Fatal("a second initialize was accepted")

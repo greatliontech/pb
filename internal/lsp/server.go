@@ -82,6 +82,7 @@ type Server struct {
 	reloadPending bool                     // a reload asked for and not yet committed by a judgement
 	sess          *dep.Session             // the last session loaded; nil before the first and after a failed initialize
 	mods          []modfiles.Module        // the last committed judgement's modules, which dependency content is served from
+	index         *index                   // the last committed judgement that compiled, indexed, which navigation answers from
 	standing      map[uri.URI]bool         // per document, whether the last judgement found it a build file; absent until one has
 	wellKnown     *wellKnownCopy           // the toolchain's set, digested once
 
@@ -225,6 +226,9 @@ func (s *Server) Initialize(ctx context.Context, params *protocol.InitializePara
 			Change:    ptr(protocol.TextDocumentSyncKindFull),
 			Save:      protocol.Boolean(true),
 		},
+		DefinitionProvider: protocol.Boolean(true),
+		HoverProvider:      protocol.Boolean(true),
+		ReferencesProvider: protocol.Boolean(true),
 	}
 	if s.content {
 		caps.Workspace = &protocol.WorkspaceOptions{TextDocumentContent: &protocol.TextDocumentContentOptions{Schemes: []string{moduleScheme}}}

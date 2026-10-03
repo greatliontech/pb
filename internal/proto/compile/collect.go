@@ -129,6 +129,9 @@ func CompileAll(ctx context.Context, mods []modfiles.Module) (*Result, error) {
 	c := protocompile.Compiler{
 		Resolver:       wellknownimports.WithStandardImports(byteResolver(sources)),
 		SourceInfoMode: protocompile.SourceInfoStandard,
+		// The syntax trees stay with the results: an editor navigates
+		// them (lsp.md REQ-lsp-definition).
+		RetainASTs: true,
 		Reporter: reporter.NewReporter(func(err reporter.ErrorWithPos) error {
 			collected.List = append(collected.List, located(err))
 			return nil
@@ -240,7 +243,7 @@ func importError(file, imp string, src []byte) Error {
 		}
 		info := node.NodeInfo(in.Name)
 		start, end := info.Start(), info.End()
-		e.Line, e.Column, e.Offset, e.End = start.Line, start.Col, start.Offset, end.Offset
+		e.Line, e.Column, e.Offset, e.End = start.Line, start.Col, start.Offset, end.Offset+1
 		return e
 	}
 	return e
@@ -253,8 +256,9 @@ func located(err reporter.ErrorWithPos) Error {
 	e := Error{Path: pos.Filename, Message: err.Unwrap().Error()}
 	if pos.Line > 0 {
 		e.Line, e.Column, e.Offset, e.End = pos.Line, pos.Col, pos.Offset, pos.Offset
+		// The parser's End names the last byte; the error's is past it.
 		if span, ok := err.(ast.SourceSpan); ok && span.End().Offset > pos.Offset {
-			e.End = span.End().Offset
+			e.End = span.End().Offset + 1
 		}
 	}
 	return e

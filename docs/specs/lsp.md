@@ -204,22 +204,28 @@ the server knows it, else the position alone.
 ## Navigation
 
 **REQ-lsp-definition** (behavior): `textDocument/definition` over a
-name in a build file MUST answer the declaration the resolved build
-binds the name to — a message, enum, enum value, field, oneof,
+name in an open build file MUST answer the declaration the resolved
+build binds the name to — a message, enum, enum value, field, oneof,
 service, method or extension named in a type, an option, an
 extension, an input or output — as the location of that
 declaration's name token in its file, an import's path the imported
 file at its first line; the empty answer where the position names
-nothing bound. Where the build does not compile, the request is
-answered from the last build that compiled if the document's
-contents are those that build read, else the empty answer.
+nothing bound, and for a document not open or outside the build. A
+position is over a name from its first character through the one
+just past its last; a token declaring two names — a group's, which
+names its field and its message — is over the field. Where the build
+does not compile, the request is answered from the last build that
+compiled if the document's contents are those that build read, else
+the empty answer.
 
 **REQ-lsp-hover** (behavior): `textDocument/hover` over a name in a
 build file MUST answer the bound declaration's kind and full name in
 a fenced `protobuf` block, followed by its leading comments as the
 compiler records them, markers stripped, as markdown; the range the
-name's token; the empty answer where nothing is bound, under
-REQ-lsp-definition's rule for a build that does not compile.
+name as written at the position, qualified where it is; the empty
+answer where nothing is bound, under REQ-lsp-definition's rules — the
+document open, the position over a name, the build that does not
+compile.
 
 **REQ-lsp-references** (behavior): `textDocument/references` over a
 name or a declaration in a build file MUST answer every reference to
@@ -227,8 +233,9 @@ the bound declaration across the resolved build's files — the build
 files and the dependencies' — each the location of the referring
 token, the declaration itself included when the request asks for it
 (`context.includeDeclaration`), in URI then position order; the
-empty answer where nothing is bound, under REQ-lsp-definition's rule
-for a build that does not compile.
+empty answer where nothing is bound, under REQ-lsp-definition's
+rules — the document open, the position over a name, the build that
+does not compile.
 
 **REQ-lsp-dependency-files** (wire): A location MUST address its
 file as the file's origin has it: one the build read from the

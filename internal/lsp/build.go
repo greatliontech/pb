@@ -86,6 +86,16 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 		}
 	}
 	placements := s.placements(sess, docs, j, unpinned, judgeErr != nil)
+	// The navigation index, built here on the judgement's goroutine,
+	// never on the read loop, and not for a judgement a newer one has
+	// already superseded: its commit below would be refused.
+	s.mu.Lock()
+	superseded := s.gen != gen
+	s.mu.Unlock()
+	var idx *index
+	if !superseded && j != nil && j.Compiles() {
+		idx = newIndex(j.Files, j.Mods, sess.Root.Dir, s.wellKnown.files)
+	}
 	if s.hold != nil {
 		s.hold(gen)
 	}
@@ -99,6 +109,9 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	s.mods = nil
 	if j != nil {
 		s.mods = j.Mods
+		if idx != nil {
+			s.index = idx
+		}
 	}
 	if reload {
 		s.reloadPending = false

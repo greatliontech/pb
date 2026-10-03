@@ -40,6 +40,22 @@ func TestPositions(t *testing.T) {
 			t.Errorf("position(%d, %v) = %v, want %v", tc.off, tc.enc, got, tc.want)
 		}
 	}
+	// offsetAt clips: a column past the line's end is the line's end,
+	// a line past the text the text's end, a utf-16 column inside a
+	// surrogate pair the pair's end.
+	for _, tc := range []struct {
+		pos  protocol.Position
+		enc  encoding
+		want int
+	}{
+		{protocol.Position{Line: 0, Character: 9}, utf16, 3},
+		{protocol.Position{Line: 9, Character: 0}, utf16, 19},
+		{protocol.Position{Line: 3, Character: 3}, utf16, 17},
+	} {
+		if got := offsetAt(text, tc.pos, tc.enc); got != tc.want {
+			t.Errorf("offsetAt(%v, %v) = %d, want %d", tc.pos, tc.enc, got, tc.want)
+		}
+	}
 	if end := tokenEnd([]byte("a.Thing thing"), 0); end != 7 {
 		t.Errorf("tokenEnd over a name = %d, want 7", end)
 	}

@@ -195,7 +195,7 @@ formatter and the language server
         observer logged; the pb witnesses of those behaviours kept
         and extended (an invalid-request body, a framing error, a
         request method as a notification).
-  - [ ] 21.5. Definition, hover and references over the resolved
+  - [x] 21.5. Definition, hover and references over the resolved
         build's descriptors, the cursor mapped through the parser's
         tree.
   - [ ] 21.6. Formatting into the canonical form through the

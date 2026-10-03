@@ -41,10 +41,12 @@ func TestCompileAllCollects(t *testing.T) {
 	if e := seen["a.proto"]; e.Line != 5 || e.Offset == 0 {
 		t.Fatalf("the syntax error: %+v", e)
 	}
-	if e := seen["b.proto"]; e.Line != 3 || e.Column != 8 || e.End <= e.Offset || !strings.Contains(e.Message, "missing.proto") {
+	// The span is the path's literal, its end one past the closing
+	// quote.
+	if e := seen["b.proto"]; e.Line != 3 || e.Column != 8 || e.End != e.Offset+len(`"missing.proto"`) || !strings.Contains(e.Message, "missing.proto") {
 		t.Fatalf("the unsatisfied import, at its statement with a span: %+v", e)
 	}
-	if e := seen["d.proto"]; e.Line != 4 || e.Column != 3 {
+	if e := seen["d.proto"]; e.Line != 4 || e.Column != 3 || e.End != e.Offset+len("Nope") {
 		t.Fatalf("the dependency's error, reached through the file whose imports are satisfied: %+v", e)
 	}
 	// The same build under the verb's compile stops at its first.

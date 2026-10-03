@@ -161,3 +161,44 @@ func rangeAt(text []byte, start, end int, enc encoding) protocol.Range {
 	}
 	return protocol.Range{Start: position(text, start, enc), End: position(text, end, enc)}
 }
+
+// offsetAt is the byte offset in text of a protocol position: the
+// line counted at `\n`, `\r\n` or a lone `\r`, the column in the
+// encoding's units from the line's start, clipped to the line's end;
+// a line past the text is the text's end (REQ-lsp-positions).
+func offsetAt(text []byte, pos protocol.Position, enc encoding) int {
+	i := 0
+	for line := uint32(0); line < pos.Line && i < len(text); {
+		switch {
+		case text[i] == '\r' && i+1 < len(text) && text[i+1] == '\n':
+			i += 2
+			line++
+		case text[i] == '\n' || text[i] == '\r':
+			i++
+			line++
+		default:
+			i++
+		}
+	}
+	units := uint32(0)
+	for i < len(text) && units < pos.Character {
+		if text[i] == '\n' || text[i] == '\r' {
+			break
+		}
+		r, n := utf8.DecodeRune(text[i:])
+		switch enc {
+		case utf8e:
+			units += uint32(n)
+		case utf32:
+			units++
+		default:
+			if r >= 0x10000 {
+				units += 2
+			} else {
+				units++
+			}
+		}
+		i += n
+	}
+	return i
+}
