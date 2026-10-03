@@ -198,7 +198,7 @@ formatter and the language server
   - [x] 21.5. Definition, hover and references over the resolved
         build's descriptors, the cursor mapped through the parser's
         tree.
-  - [ ] 21.6. Formatting into the canonical form through the
+  - [x] 21.6. Formatting into the canonical form through the
         formatter.
   - [ ] 21.7. Close-out: consolidation, the spec's statements
         settled, the campaign.

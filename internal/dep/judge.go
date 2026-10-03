@@ -3,10 +3,12 @@ package dep
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"path"
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/go-git/go-billy/v6"
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/module"
@@ -42,16 +44,26 @@ func (o Overlay) apply(s *Session, mods []modfiles.Module) {
 	}
 }
 
+// Tree is a session's working tree under its resolution root: what
+// places a tree path in a module, which a session has and which the
+// language server's own-file judgement reads of a root alone.
+type Tree struct {
+	WS   billy.Filesystem
+	Root *workspace.Root
+}
+
 // FileOf is the module of the build that owns a root-relative path,
 // and the path's name within it: the module — a workspace module's
 // or a directory replacement's, read from the tree — whose
 // directory is the path's longest prefix, unless a directory between
 // that one and the file holds a module file, which makes the file a
 // nested module's, no module of the build's (modfiles.WorkspaceFiles
-// skips a nested module's tree). The one answer to which module a
-// tree path falls in: the overlay and the language server's
-// classification both read it.
-func (s *Session) FileOf(mods []modfiles.Module, rel string) (i int, file string, ok bool) {
+// skips a nested module's tree), or is a symbolic link, through
+// which no file is a module's (module-archive.md
+// REQ-archive-links-carried; the walk never descends one). The one
+// answer to which module a tree path falls in: the overlay and the
+// language server's classifications both read it.
+func (s Tree) FileOf(mods []modfiles.Module, rel string) (i int, file string, ok bool) {
 	at := -1
 	for j, m := range mods {
 		if !m.Local && m.Dir == "" {
@@ -72,9 +84,13 @@ func (s *Session) FileOf(mods []modfiles.Module, rel string) (i int, file string
 		file = strings.TrimPrefix(rel, d+"/")
 	}
 	// A module file in a directory below the module's and above the
-	// file makes the file a nested module's.
+	// file makes the file a nested module's; a symbolic link among
+	// those directories makes it no module's.
 	for dir := path.Dir(file); dir != "." && dir != "/"; dir = path.Dir(dir) {
 		if _, err := s.WS.Stat(path.Join(s.Root.Dir, mods[at].Dir, dir, module.ModuleFileName)); err == nil {
+			return -1, "", false
+		}
+		if info, err := s.WS.Lstat(path.Join(s.Root.Dir, mods[at].Dir, dir)); err == nil && info.Mode()&fs.ModeSymlink != 0 {
 			return -1, "", false
 		}
 	}
@@ -216,7 +232,7 @@ func (s *Session) LockPath() string { return path.Join(s.Root.Dir, workspace.Loc
 // the session, else the module file of the module the session's
 // directory lies in — the root's, a single-module root being its
 // module's directory. The path is within the working tree.
-func (s *Session) BuildHome() string {
+func (s Tree) BuildHome() string {
 	if s.Root.File != nil {
 		return path.Join(s.Root.Dir, workspace.FileName)
 	}
@@ -225,13 +241,13 @@ func (s *Session) BuildHome() string {
 
 // ModuleFile is the module file of the workspace module at dir
 // (root-relative), within the working tree.
-func (s *Session) ModuleFile(dir string) string {
+func (s Tree) ModuleFile(dir string) string {
 	return path.Join(s.Root.Dir, dir, module.ModuleFileName)
 }
 
 // RootRel is the root-relative path of a path within the working
 // tree, or false where the path lies outside the resolution root.
-func (s *Session) RootRel(tree string) (string, bool) {
+func (s Tree) RootRel(tree string) (string, bool) {
 	if s.Root.Dir == "" || s.Root.Dir == "." {
 		return tree, true
 	}

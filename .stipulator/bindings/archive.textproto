@@ -560,3 +560,13 @@ bindings {
   role: BINDING_ROLE_TESTS
   shape_hash: "8ef690df7a3197ac31e380b357149163b87a1bc1e1ae5829e5e1e4c83f587ac9"
 }
+
+bindings {
+  requirement_id: "REQ-archive-links-carried"
+  content_hash: "90e08ab7268bce69bb9de178cc8b2c6ba675b439148c1bc5952b973ec29bd23e"
+  source_hash: "904fd97df5164b936938de598063c126b578e6dc9bd0b0f51be4d9af78efe282"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestFileOfNestingAndLinks"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "c66848679fa7a4d83ce3e53216e6db53953e1c87336423026ba37ca63755b89c"
+}

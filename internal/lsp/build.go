@@ -13,17 +13,30 @@ import (
 
 	"github.com/greatliontech/pb/internal/check"
 	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/module/workspace"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 )
 
-// load loads the session of the client root as a check verb loads
-// its own, read-only (REQ-lsp-session).
-func (s *Server) load() (*dep.Session, error) {
+// loadRoot reads the resolution root of the client root, as a check
+// verb finds its own (REQ-lsp-session).
+func (s *Server) loadRoot() (*workspace.Root, error) {
 	if !s.hasRoot {
 		return nil, errors.New("the client names no directory")
 	}
-	return dep.Load(dep.Config{WS: s.deps.WS, Dir: s.clientRoot, Client: s.deps.Client, ReadOnly: true})
+	return dep.LoadRoot(s.config())
+}
+
+// load loads the session of a read root as a check verb loads its
+// own, read-only (REQ-lsp-session).
+func (s *Server) load(root *workspace.Root) (*dep.Session, error) {
+	return dep.LoadFrom(root, s.config())
+}
+
+// config is the session's configuration: the tree at the client root,
+// the fixture's client, the lockfile never written.
+func (s *Server) config() dep.Config {
+	return dep.Config{WS: s.deps.WS, Dir: s.clientRoot, Client: s.deps.Client, ReadOnly: true}
 }
 
 // judge is one judgement for the change gen: the session loaded again
@@ -35,6 +48,7 @@ func (s *Server) load() (*dep.Session, error) {
 func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	s.mu.Lock()
 	sess := s.sess
+	root, rootErr := s.root, s.rootErr
 	docs := make(map[uri.URI]*document, len(s.docs))
 	for u, d := range s.docs {
 		docs[u] = &document{version: d.version, text: d.text, proto: d.proto}
@@ -48,7 +62,10 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	var loadErr error
 	loaded := false
 	if reload {
-		fresh, err := s.load()
+		fresh, err := (*dep.Session)(nil), rootErr
+		if root != nil {
+			fresh, err = s.load(root)
+		}
 		if err == nil {
 			sess, loaded = fresh, true
 		} else {
@@ -328,27 +345,41 @@ func (s *Server) outside(sess *dep.Session, j *dep.Judgement, u uri.URI) (string
 	if u.Scheme() == moduleScheme {
 		return "a dependency's file, read as the build read it", true
 	}
-	if s.deps.Sources != "" && u.IsFile() {
-		if _, err := relPath(s.deps.Sources, u.FsPath()); err == nil {
-			return "a dependency's file, read as the build read it", true
-		}
-	}
-	tree, ok := s.treePath(u)
-	if !ok {
-		return "outside the resolution root " + sess.Root.Dir, true
-	}
-	rel, ok := sess.RootRel(tree)
-	if !ok {
-		return "outside the resolution root " + sess.Root.Dir, true
-	}
-	_, file, ok := sess.FileOf(j.Mods, rel)
-	if !ok {
-		return "in no workspace module and no directory replacement", true
+	_, file, reason := s.treeFile(sess.Tree, j.Mods, u)
+	if reason != "" {
+		return reason, true
 	}
 	if modfiles.WellKnown(file) {
 		return "a workspace copy of a well-known import, which the build reads from the toolchain", true
 	}
 	return "", false
+}
+
+// treeFile places a document's file in a module of the tree — the
+// build's modules, or the root's members alone — as the one
+// membership rule has it (dep.Tree.FileOf): the path from the root
+// and within the module, or the first reason it is no module's — a
+// dependency's file read from the source store, a file outside the
+// resolution root, one in no module.
+func (s *Server) treeFile(tree dep.Tree, mods []modfiles.Module, u uri.URI) (rel, file, reason string) {
+	if s.deps.Sources != "" && u.IsFile() {
+		if _, err := relPath(s.deps.Sources, u.FsPath()); err == nil {
+			return "", "", "a dependency's file, read as the build read it"
+		}
+	}
+	treePath, ok := s.treePath(u)
+	if !ok {
+		return "", "", "outside the resolution root " + tree.Root.Dir
+	}
+	rel, ok = tree.RootRel(treePath)
+	if !ok {
+		return "", "", "outside the resolution root " + tree.Root.Dir
+	}
+	_, file, ok = tree.FileOf(mods, rel)
+	if !ok {
+		return "", "", "in no workspace module and no directory replacement"
+	}
+	return rel, file, ""
 }
 
 // publishSet is the judgement's publishes over the publish set

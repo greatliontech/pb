@@ -124,6 +124,18 @@ func WellKnown(path string) bool {
 	return rerr == nil || rerr == io.EOF
 }
 
+// Members is the root's workspace modules as the build's modules
+// name them — local, at their directories, in the root's order —
+// before their files are read: the module set that places a tree
+// path in a member (dep.Tree.FileOf) with nothing read of the tree.
+func Members(root *workspace.Root) []Module {
+	out := make([]Module, 0, len(root.Modules))
+	for _, m := range root.Modules {
+		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir})
+	}
+	return out
+}
+
 // Load returns the build's file sets in deterministic order: workspace
 // modules in the root's order, then build-list modules in build-list
 // order. fsys is the working tree the root was loaded from. A
@@ -133,13 +145,13 @@ func WellKnown(path string) bool {
 // module's are (REQ-work-replace, REQ-work-replace-dir) — zip is only
 // ever asked for a source pair, never a replaced one.
 func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requirement, zip func(ctx context.Context, modPath string, v version.Version) ([]byte, error)) ([]Module, error) {
-	var out []Module
-	for _, m := range root.Modules {
+	out := Members(root)
+	for i, m := range out {
 		files, rules, err := WorkspaceFiles(fsys, path.Join(root.Dir, m.Dir))
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, Module{Path: m.File.Module, Local: true, Dir: m.Dir, Files: files, Rules: rules})
+		out[i].Files, out[i].Rules = files, rules
 	}
 	for _, r := range list {
 		src := root.Source(r.Path, r.Version)

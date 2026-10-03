@@ -906,8 +906,8 @@ func TestLifecycle(t *testing.T) {
 	if !ok || sync.OpenClose == nil || !*sync.OpenClose || sync.Change == nil || *sync.Change != protocol.TextDocumentSyncKindFull || sync.Save != protocol.Boolean(true) {
 		t.Fatalf("the sync capability: %#v", res.Capabilities.TextDocumentSync)
 	}
-	// The navigation providers are declared, the formatting provider not.
-	if res.Capabilities.DefinitionProvider != protocol.Boolean(true) || res.Capabilities.HoverProvider != protocol.Boolean(true) || res.Capabilities.ReferencesProvider != protocol.Boolean(true) || res.Capabilities.DocumentFormattingProvider != nil {
+	// The navigation and formatting providers are declared.
+	if res.Capabilities.DefinitionProvider != protocol.Boolean(true) || res.Capabilities.HoverProvider != protocol.Boolean(true) || res.Capabilities.ReferencesProvider != protocol.Boolean(true) || res.Capabilities.DocumentFormattingProvider != protocol.Boolean(true) {
 		t.Fatalf("the capabilities declared: %#v", res.Capabilities)
 	}
 	if _, err := fx.server.Initialize(context.Background(), &protocol.InitializeParams{}); err == nil {
@@ -978,6 +978,45 @@ func errorsAs(err error, target **jsonrpc2.Error) bool {
 	return false
 }
 
+// writeFrame writes one Content-Length framed body to the server.
+func writeFrame(t *testing.T, w io.Writer, body string) {
+	t.Helper()
+	if _, err := fmt.Fprintf(w, "Content-Length: %d\r\n\r\n%s", len(body), body); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// readFrame reads one Content-Length framed body from the server.
+func readFrame(t *testing.T, r io.Reader) string {
+	t.Helper()
+	var length int
+	for {
+		var l []byte
+		b := make([]byte, 1)
+		for {
+			if _, err := r.Read(b); err != nil {
+				t.Fatal(err)
+			}
+			l = append(l, b[0])
+			if strings.HasSuffix(string(l), "\r\n") {
+				break
+			}
+		}
+		h := strings.TrimSuffix(string(l), "\r\n")
+		if h == "" {
+			break
+		}
+		if v, ok := strings.CutPrefix(h, "Content-Length: "); ok {
+			length, _ = strconv.Atoi(v)
+		}
+	}
+	body := make([]byte, length)
+	if _, err := io.ReadFull(r, body); err != nil {
+		t.Fatal(err)
+	}
+	return string(body)
+}
+
 // A frame whose body is no JSON-RPC message is answered with the
 // protocol's error and the connection goes on; the stream's end
 // ends the server, status 1 without a shutdown (REQ-lsp-transport).
@@ -991,39 +1030,8 @@ func TestTransportMalformedFrame(t *testing.T) {
 	toClient, fromServer := io.Pipe()
 	status := make(chan int, 1)
 	go func() { status <- Serve(context.Background(), fx.srv, toServer, fromServer) }()
-	write := func(body string) {
-		if _, err := fmt.Fprintf(fromClient, "Content-Length: %d\r\n\r\n%s", len(body), body); err != nil {
-			t.Fatal(err)
-		}
-	}
-	read := func() string {
-		var length int
-		for {
-			var l []byte
-			b := make([]byte, 1)
-			for {
-				if _, err := toClient.Read(b); err != nil {
-					t.Fatal(err)
-				}
-				l = append(l, b[0])
-				if strings.HasSuffix(string(l), "\r\n") {
-					break
-				}
-			}
-			h := strings.TrimSuffix(string(l), "\r\n")
-			if h == "" {
-				break
-			}
-			if v, ok := strings.CutPrefix(h, "Content-Length: "); ok {
-				length, _ = strconv.Atoi(v)
-			}
-		}
-		body := make([]byte, length)
-		if _, err := io.ReadFull(toClient, body); err != nil {
-			t.Fatal(err)
-		}
-		return string(body)
-	}
+	write := func(body string) { writeFrame(t, fromClient, body) }
+	read := func() string { return readFrame(t, toClient) }
 	write("{not json")
 	if r := read(); !strings.Contains(r, `"code":-32700`) {
 		t.Fatalf("the parse error's answer: %s", r)

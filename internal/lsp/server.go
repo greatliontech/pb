@@ -72,6 +72,8 @@ type Server struct {
 	watch      bool   // the client registers watched files dynamically
 	clientRoot string // the client root as a tree path; "" for none
 	hasRoot    bool
+	root       *workspace.Root // the resolution root as last read, nil where none reads (REQ-lsp-formatting's own files)
+	rootErr    error           // why none reads
 
 	docs          map[uri.URI]*document
 	published     map[uri.URI]publishState // the client's state per file
@@ -226,9 +228,10 @@ func (s *Server) Initialize(ctx context.Context, params *protocol.InitializePara
 			Change:    ptr(protocol.TextDocumentSyncKindFull),
 			Save:      protocol.Boolean(true),
 		},
-		DefinitionProvider: protocol.Boolean(true),
-		HoverProvider:      protocol.Boolean(true),
-		ReferencesProvider: protocol.Boolean(true),
+		DefinitionProvider:         protocol.Boolean(true),
+		HoverProvider:              protocol.Boolean(true),
+		ReferencesProvider:         protocol.Boolean(true),
+		DocumentFormattingProvider: protocol.Boolean(true),
 	}
 	if s.content {
 		caps.Workspace = &protocol.WorkspaceOptions{TextDocumentContent: &protocol.TextDocumentContentOptions{Schemes: []string{moduleScheme}}}
@@ -450,8 +453,20 @@ func (s *Server) TextDocumentContent(ctx context.Context, params *protocol.TextD
 // and a reload a later change supersedes is carried to the judgement
 // that commits (REQ-lsp-diagnostics, REQ-lsp-reload).
 func (s *Server) change(reload bool) {
+	var root *workspace.Root
+	var rootErr error
+	if reload {
+		// The root is read here, on the read loop, so that the own
+		// files are judged by the tree as it is from this change on,
+		// a build loaded or not (REQ-lsp-formatting); the judgement
+		// loads the session from it.
+		root, rootErr = s.loadRoot()
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if reload {
+		s.root, s.rootErr = root, rootErr
+	}
 	// The guard keeps a notification after shutdown from its handler
 	// (REQ-lsp-lifecycle), and with nothing released no handler can be
 	// running when shutdown takes the state; this check is the backstop

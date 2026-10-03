@@ -68,7 +68,7 @@ version has not moved is not published again.
 
 **empty answer** (term): What a request over a position nothing is
 known of returns: `null` for a definition or hover, the empty list
-for references.
+for references and formatting.
 
 **position encoding** (term): The unit a column is counted in on the
 wire, selected from what the client offers
@@ -276,12 +276,11 @@ answer the edits that take the document to its canonical form
 differs, no edit where it does not — and an error naming the parse
 failure where the document does not parse, as `pb format` refuses
 it; the request's options (tab size, spaces) are ignored, the form
-having no options. A document that is no own file is answered
-`null`, and so is one whose standing cannot be judged: no resolution
-root; the root's workspace file unreadable as `workspace.md` reads
-it, which leaves every file's standing unjudged; a member module's
-file unreadable, which leaves that module's files' standing alone
-unjudged.
+having no options. A document that is no own file is answered the
+empty answer, and so is one whose standing cannot be judged: no
+resolution root, or the root unreadable as `workspace.md` reads it —
+its workspace file, or a member's module file — which leaves every
+file's standing unjudged.
 
 ## Lifecycle and transport
 

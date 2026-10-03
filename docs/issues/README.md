@@ -6,6 +6,7 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
+| [dep-pairreads-go-types-race](dep-pairreads-go-types-race.md) | the pair-reads guard, loading the packages with types through go/packages, trips a data race inside go/types on go1.27.1 under the race detector, some runs | `go test -race -count=5 -run TestPairReadsGoThroughTheDriver ./internal/dep/` passes on the project's toolchain |
 | [mutation-record-ledger-names-old-packages](mutation-record-ledger-names-old-packages.md) | the mutation record's ledger and candidate positions keep the pre-move package names, which no retarget rewrites; the relation between a historic record and its re-measurement under the new name is lost to a reader | the feature-full plan, chunk 18: closed at the campaign close-outs, the re-measurement under the new names (gomutant's retarget rewrites identity alone, by design) |
 | [runner-oracle-sandbox-bound](runner-oracle-sandbox-bound.md) | runner mutation evidence machine-local: kernel-sandbox oracles disqualify attribution | the feature-full plan, chunk 23 (the kernel surfaces declared to the bracket) |
 | [mutation-campaign-freshness-cost](mutation-campaign-freshness-cost.md) | delta mutation campaigns stall in gomutant's freshness-proof preparation at ~8 GiB and never measure; the generation work's campaign record is outstanding | the feature-full plan, chunk 18 (the campaign close-outs; the stall resolved upstream) |

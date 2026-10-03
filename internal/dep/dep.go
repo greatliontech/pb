@@ -54,8 +54,7 @@ type Config struct {
 // Session is one loaded resolution root: the workspace, its pin store
 // and policy wired into the client, and the driver over both.
 type Session struct {
-	WS     billy.Filesystem
-	Root   *workspace.Root
+	Tree
 	Lock   *lockfile.File
 	Client *fetch.Client
 	Driver *resolve.Driver
@@ -67,14 +66,29 @@ type Session struct {
 
 // Load locates the resolution root governing cfg.Dir (workspace.LoadFor,
 // membership enforced), reads its lockfile and trust policy, and wires
-// them into the client (dep-verbs.md, the dep verb term).
+// them into the client (dep-verbs.md, the dep verb term): LoadRoot,
+// then LoadFrom.
 func Load(cfg Config) (*Session, error) {
-	fsys := iofs.New(cfg.WS)
-	root, err := workspace.LoadFor(fsys, cfg.Dir)
+	root, err := LoadRoot(cfg)
 	if err != nil {
 		return nil, err
 	}
-	s := &Session{WS: cfg.WS, Root: root, Client: cfg.Client, readOnly: cfg.ReadOnly}
+	return LoadFrom(root, cfg)
+}
+
+// LoadRoot locates and loads the resolution root governing cfg.Dir,
+// as workspace.md reads it, membership enforced: the tree's part of a
+// session, which a reader of the tree alone — the language server's
+// own-file judgement — takes without the rest.
+func LoadRoot(cfg Config) (*workspace.Root, error) {
+	return workspace.LoadFor(iofs.New(cfg.WS), cfg.Dir)
+}
+
+// LoadFrom is the session of a loaded root: its lockfile and trust
+// policy read and wired into the client.
+func LoadFrom(root *workspace.Root, cfg Config) (*Session, error) {
+	fsys := iofs.New(cfg.WS)
+	s := &Session{Tree: Tree{WS: cfg.WS, Root: root}, Client: cfg.Client, readOnly: cfg.ReadOnly}
 
 	lockPath := path.Join(root.Dir, workspace.LockFileName)
 	if b, err := fs.ReadFile(fsys, lockPath); err == nil {
