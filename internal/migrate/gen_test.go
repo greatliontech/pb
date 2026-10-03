@@ -104,8 +104,9 @@ func TestHighestVersionTag(t *testing.T) {
 }
 
 // catalogCommit pins the catalog repository's commit the copy is
-// held to; it moves with an entry's addition.
-const catalogCommit = "a7356a49843932a9d97db33726d722c544ab1b40"
+// held to; it moves when the copy changes, to the catalog commit the
+// copy then equals.
+const catalogCommit = "5c6d9fe7dd4ac51eae0e2a0cfb76e129e982b0e3"
 
 // The catalog's identity: the publish workflow's, as migrate.md
 // states it for the trust policy rule.
@@ -120,12 +121,20 @@ const (
 // only where PB_LIVE_IMAGES is set — at an entry's addition — with
 // GITHUB_TOKEN, where set, raising the API's rate limit, the
 // registry's credentials in the ambient store, and PBTRUSTEDROOT naming the
-// trusted root the signatures are verified against.
+// trusted root the signatures are verified against; its budget is
+// the binary's `-timeout`, sized to the list or lifted.
 func TestPluginCatalog(t *testing.T) {
 	if os.Getenv("PB_LIVE_IMAGES") == "" {
 		t.Skip("PB_LIVE_IMAGES unset: the registry is not reached")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// The budget is the test binary's own (`-timeout`), which the run
+	// sizes to the list — each name's listing and signature take
+	// seconds — or lifts (`-timeout 0`, no deadline at all).
+	ctx, cancel := context.WithCancel(context.Background())
+	if deadline, ok := t.Deadline(); ok {
+		cancel()
+		ctx, cancel = context.WithDeadline(context.Background(), deadline.Add(-10*time.Second))
+	}
 	defer cancel()
 	root, err := gitprov.LoadTrustedRoot(os.Getenv("PBTRUSTEDROOT"))
 	if err != nil {

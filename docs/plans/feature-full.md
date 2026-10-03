@@ -146,7 +146,12 @@ formatter and the language server
       the generation work — chunks 5 to 11 — the language server's
       (chunk 21, every package its commits touched: internal/lsp,
       internal/dep, internal/proto/compile, internal/proto/modfiles,
-      internal/source/fetch, cmd/pb) and the campaign over
+      internal/source/fetch, cmd/pb), the plugin catalog's (chunks 3,
+      12 and 19, in greatliontech/pb-plugins: internal/catalog,
+      internal/recipe, internal/pipeline, internal/registry,
+      internal/github, internal/web, cmd/catalog; pb's
+      internal/migrate, cmd/pb's migrate verb, internal/plugin/oci)
+      and the campaign over
       the check subsystem with `gitdir`, each run on a clean tree as
       an hours-class background run and its records banked and
       promoted, every open mutant dispositioned; the
@@ -155,7 +160,7 @@ formatter and the language server
       mutation-record-ledger-names-old-packages closes with them, the
       re-measurement under the new names the relation it missed,
       gomutant's retarget rewriting identity alone by design
-- [ ] 19. The release kind reads beyond GitHub releases: Maven Central
+- [x] 19. The release kind reads beyond GitHub releases: Maven Central
       for grpc/java's per-platform executables, grpc's binary host for
       grpc/node (grpc-tools' executable, numbered by grpc-tools, not
       by grpc); community/scalapb-scala from the native executables
@@ -184,7 +189,7 @@ formatter and the language server
         the 1.0 line's releases carry the executables again and
         enter with the bump once one is stable; the README's ScalaPB
         sentence says so.
-  - [ ] 19.5. Close-out: pb's catalog names grow by the five
+  - [x] 19.5. Close-out: pb's catalog names grow by the five
         entrants (grpc/java, grpc/node, community/scalapb-scala,
         community/chrusty-jsonschema,
         community/roadrunner-server-php-grpc), the

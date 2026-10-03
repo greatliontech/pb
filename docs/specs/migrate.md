@@ -563,12 +563,15 @@ carries, a copy of the names the catalog repository
 - `buf.build/bufbuild/protoschema-pubsub`
 - `buf.build/bufbuild/validate-cpp`
 - `buf.build/bufbuild/validate-go`
+- `buf.build/community/chrusty-jsonschema`
 - `buf.build/community/google-gnostic-openapi`
 - `buf.build/community/mercari-grpc-federation`
 - `buf.build/community/mfridman-go-json`
 - `buf.build/community/mitchellh-go-json`
 - `buf.build/community/planetscale-vtprotobuf`
 - `buf.build/community/pseudomuto-doc`
+- `buf.build/community/roadrunner-server-php-grpc`
+- `buf.build/community/scalapb-scala`
 - `buf.build/community/sudorandom-connect-openapi`
 - `buf.build/community/timostamm-protobuf-ts`
 - `buf.build/connectrpc/es`
@@ -581,6 +584,8 @@ carries, a copy of the names the catalog repository
 - `buf.build/grpc/cpp`
 - `buf.build/grpc/csharp`
 - `buf.build/grpc/go`
+- `buf.build/grpc/java`
+- `buf.build/grpc/node`
 - `buf.build/grpc/objc`
 - `buf.build/grpc/php`
 - `buf.build/grpc/python`
