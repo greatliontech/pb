@@ -22,8 +22,9 @@ and schemas never leave the machine.
   tier from pb's critical path — if it ever lands in `sandbox` it's a bonus,
   not a dependency.
 - **The docker runner is the same seam over a daemon.** The verified
-  export reaches the daemon as a rootfs tar through `docker import`
-  (the daemon fetches nothing), the container is created with the
+  image reaches the daemon as an archive its image store loads, held
+  to the identity the daemon reports (the daemon fetches nothing),
+  the container is created with the
   boundary and the bounds, and the tier and accounting are derived
   from the daemon's own record of the container, read back before it
   starts; a record that does not show the boundary refuses the run.

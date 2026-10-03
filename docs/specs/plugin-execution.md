@@ -152,8 +152,16 @@ Docker daemon pulling by digest — because content addressing makes the
 byte path irrelevant to identity: the digest verified by the core is
 the digest the substrate enforces. The byte path is the `plugin-pull`
 setting (`PBPLUGINPULL`, or the user configuration file's
-`plugin-pull` key; `user-config.md`): `store` (the default) exports
-the verified image from pb's store into the runner; `docker` has the
+`plugin-pull` key; `user-config.md`): `store` (the default) hands
+the verified image from pb's store to the runner — the native runner
+its export, the `docker` runner the image itself, its configuration
+and layers as the registry served them, loaded into the daemon as
+the image it is and held to the identity the daemon reports — the
+image's configuration's digest under the daemon's classic image
+store, its manifest's under the containerd store, the archive in
+the form that store loads — the run holding it by a reference of
+its own that goes with the run, the image with it where nothing
+else in the daemon holds it; `docker` has the
 daemon pull the verified digest itself — pb resolves and verifies
 without materializing, pins as ever, and the runner pulls the
 repository at that digest with the daemon's own credentials, runs the
@@ -165,9 +173,10 @@ entry the seam admitted (`REQ-plugin-platform-strict`), its variant
 included, so the daemon pulls and runs that child of the verified
 index and no other — its own default and its own variant matching
 (under which a bare `linux/arm` is `v7`, and a `v6`-only image would
-be refused) never choosing; on the store path the import stamps the
-daemon's platform, which the create names back. A daemon-local
-override, which pb selects nothing of, is created as it is. A runner
+be refused) never choosing; on the store path the loaded image is
+created under the same entry, the daemon's own platform where an
+export names none. A daemon-local override, which pb selects
+nothing of, is created as it is. A runner
 that runs no daemon images (`native`) refuses `docker` before
 anything runs, and a value naming neither byte path is refused —
 each naming the layer the value came from.
@@ -241,8 +250,9 @@ SELinux, the container type the policy's container contexts name, with
 the per-container categories the daemon allocates; under a daemon
 naming neither, no confinement, the kernel reporting none or
 `unconfined` — and a daemon image — a daemon-local override, or the
-docker byte path (`REQ-plugin-core-verifies`) — runs under the image's
-whole configuration as the daemon applies it, since running an image
+`docker` runner, under either byte path (`REQ-plugin-core-verifies`) —
+runs under the image's whole configuration as the daemon applies it,
+since running an image
 other than as it declares is not what a daemon image means: a declared
 `VOLUME` is a writable anonymous volume over the read-only root,
 released with the container; `USER` sets the process's uid; a

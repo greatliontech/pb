@@ -10,12 +10,11 @@ import (
 	"strings"
 )
 
-// writeTar streams dir as a tar archive: directories, regular files
-// and symlinks in the walk's lexical order, modes kept, owner root,
-// no timestamps — the same export always yields the same bytes, a
-// reproducible byte path (the daemon names each import as it likes).
-// Anything else in the
-// tree (a device, a socket) is refused: an image export holds none.
+// writeTar streams dir as a tar archive, for the tests that lay a
+// daemon-local image down by `docker import`: directories, regular
+// files and symlinks in the walk's lexical order, modes kept, owner
+// root, no timestamps — the same tree always yields the same bytes.
+// Anything else in the tree (a device, a socket) is refused.
 func writeTar(w io.Writer, dir string) error {
 	var paths []string
 	if err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {

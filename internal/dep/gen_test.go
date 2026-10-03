@@ -5,14 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/random"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/greatliontech/pb/internal/testing/imagetest"
-	"github.com/greatliontech/pb/internal/userconfig"
 	iofs "io/fs"
 	"net/http/httptest"
 	"os"
@@ -21,6 +13,15 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/greatliontech/pb/internal/testing/imagetest"
+	"github.com/greatliontech/pb/internal/userconfig"
 
 	"github.com/go-git/go-billy/v6"
 	"github.com/go-git/go-billy/v6/memfs"
@@ -1161,9 +1162,7 @@ func TestGenOverrides(t *testing.T) {
 	// runs, naming the way to select the docker runner.
 	diag.Reset()
 	runs := &daemonStubRunner{stubRunner{res: run.res}}
-	// The daemon's runner under the daemon byte path: on a platform
-	// whose export streams to no daemon it is withheld under the store
-	// byte path (TestSubstratesWithholdTheStream).
+	// The daemon's runner under the daemon byte path.
 	deps = GenDeps{Acquirer: acq, Runner: one(runs), DaemonPull: true, Overrides: map[string]string{"ghcr.io/o/q:v1": "docker://plugins/q:dev"}, Diagnostics: &diag}
 	if err := Gen(ctx, s, deps, &strings.Builder{}); err != nil {
 		t.Fatal(err)
@@ -1302,13 +1301,7 @@ func TestGenRunnerPerEntry(t *testing.T) {
 			t.Fatalf("%s was offered %+v, want %+v", ref, got, offered)
 		}
 	}
-	// Without the daemon byte path no candidate pulls from the daemon
-	// — where the export streams; where it does not, the docker
-	// runner is withheld under that byte path, which
-	// TestSubstratesWithholdTheStream pins.
-	if !runner.ExportStreams {
-		return
-	}
+	// Without the daemon byte path no candidate pulls from the daemon.
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: sel}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
 	}
@@ -1447,38 +1440,10 @@ func TestGenSelectsAcrossSeams(t *testing.T) {
 	}
 }
 
-// Under the store byte path on a platform whose export cannot be
-// streamed to a daemon, the docker runner is no substrate for an
-// exported entry: withheld with the reason, the native runner
-// offered alone; under the daemon byte path, or where the export
-// streams, it stands (platforms.md REQ-plat-oci-substrate,
-// REQ-plugin-core-verifies).
-func TestSubstratesWithholdTheStream(t *testing.T) {
-	native := &stubRunner{}
-	docker := &daemonStubRunner{}
-	cands := []runner.Candidate{{Name: runner.RunnerNative, Runner: native}, {Name: runner.RunnerDocker, Runner: docker}}
-	subs, offered, withheld := Substrates(cands, false, false)
-	if len(subs) != 1 || len(offered) != 1 || offered[0].Name != runner.RunnerNative || !strings.Contains(withheld, "the docker runner streams no export on this platform under the store byte path") {
-		t.Fatalf("the store byte path with no stream: %+v %+v %q", subs, offered, withheld)
-	}
-	subs, offered, withheld = Substrates(cands, true, false)
-	if len(subs) != 2 || !subs[1].Daemon || withheld != "" {
-		t.Fatalf("the daemon byte path with no stream: %+v %+v %q", subs, offered, withheld)
-	}
-	subs, offered, withheld = Substrates(cands, false, true)
-	if len(subs) != 2 || subs[1].Daemon || withheld != "" {
-		t.Fatalf("the store byte path with a stream: %+v %+v %q", subs, offered, withheld)
-	}
-}
-
-// A daemon-local override runs on the docker runner even where the
-// store byte path withholds that runner for exported entries: the
-// daemon holds the image already, nothing streams
+// A daemon-local override runs on the docker runner under the store
+// byte path: the daemon holds the image already, nothing streams
 // (REQ-plugin-override, platforms.md REQ-plat-oci-substrate).
-func TestGenDaemonLocalOverrideWhileWithheld(t *testing.T) {
-	prev := exportStreams
-	exportStreams = false
-	t.Cleanup(func() { exportStreams = prev })
+func TestGenDaemonLocalOverrideUnderTheStorePath(t *testing.T) {
 	_, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/q:v1\n    out: gen\n")
 	native := &stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}
 	docker := &daemonStubRunner{stubRunner{res: &runner.Result{Stdout: respBytes(t, nil), Tier: plugin.TierStrong, Bounds: runner.BoundsCgroups}}}

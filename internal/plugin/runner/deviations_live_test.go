@@ -36,7 +36,8 @@ func world(t *testing.T, r Runner) worldReport {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: request(t, behavior.World), Limits: limits(nil), MinTier: plugin.TierStrong})
+	process := plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}
+	res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: exportOf(rootfsDir, process, r.Platform()), Process: process, Stdin: request(t, behavior.World), Limits: limits(nil), MinTier: plugin.TierStrong})
 	if err != nil {
 		t.Fatal(err)
 	}

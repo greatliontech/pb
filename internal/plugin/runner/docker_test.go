@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
@@ -23,24 +22,20 @@ import (
 
 func dockerSpec(t *testing.T, rootfs string, l trust.Limits) Spec {
 	t.Helper()
+	process := plugin.Process{Argv: []string{"/plugin", "--flag"}, Env: []string{"A=1", "B=two"}, WorkDir: "/w"}
 	return Spec{
 		Scheme:  plugin.SchemeOCI,
-		Image:   &plugin.Export{Rootfs: rootfs},
-		Process: plugin.Process{Argv: []string{"/plugin", "--flag"}, Env: []string{"A=1", "B=two"}, WorkDir: "/w"},
+		Image:   exportOf(rootfs, process, plugin.Platform{OS: "linux", Arch: "fakearch"}),
+		Process: process,
 		Stdin:   request(t, ""),
 		Limits:  l,
 		MinTier: plugin.TierStrong,
 	}
 }
 
-// exportFixture is a small tree shaped like an image export; a test
-// over the store byte path skips where that path is no byte path
-// (windows: an export there carries no file modes).
+// exportFixture is a small tree shaped like an image export.
 func exportFixture(t *testing.T) string {
 	t.Helper()
-	if !ExportStreams {
-		t.Skip("the docker runner streams no export on this platform")
-	}
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "bin"), 0o755); err != nil {
 		t.Fatal(err)
@@ -57,12 +52,15 @@ func exportFixture(t *testing.T) string {
 	return dir
 }
 
-// The protocol against the daemon, in order: the export imported as a
-// tar, the container created with exactly the boundary and the
-// bounds, its record read before it starts, the request on stdin,
-// the record read after, the container and the image released; the
-// result carries the derived tier and accounting and the plugin's
-// bytes (REQ-plugin-sandboxed, REQ-plugin-resource-bounds,
+// The protocol against the daemon, in order: the daemon's platform,
+// security options and image store asked, the verified image's
+// archive loaded and named for the run, the container created with
+// exactly the boundary and the bounds under the image's own
+// configuration, its record read before it starts, the request on
+// stdin, the record read after, the container and the run's
+// reference released; the result carries the derived tier and
+// accounting and the plugin's bytes (REQ-plugin-core-verifies,
+// REQ-plugin-sandboxed, REQ-plugin-resource-bounds,
 // REQ-plugin-reported-tier).
 func TestDockerProtocol(t *testing.T) {
 	dir := fakeDaemon(t)
@@ -83,10 +81,10 @@ func TestDockerProtocol(t *testing.T) {
 		t.Fatalf("stdout = %q", got)
 	}
 	verbs, argv := fakeLog(t, dir)
-	if want := []string{"version", "info", "import", "create", "inspect", "start", "inspect", "rm", "rmi"}; !reflect.DeepEqual(verbs, want) {
+	if want := []string{"version", "info", "info", "load", "tag", "create", "inspect", "start", "inspect", "rm", "rmi"}; !reflect.DeepEqual(verbs, want) {
 		t.Fatalf("invocations = %v, want %v", verbs, want)
 	}
-	create := argv[3]
+	create := argv[5]
 	flag := func(name string) []string {
 		var vals []string
 		for i := 0; i+1 < len(create); i++ {
@@ -96,7 +94,7 @@ func TestDockerProtocol(t *testing.T) {
 		}
 		return vals
 	}
-	for name, want := range map[string][]string{"--network": {"none"}, "--hostname": {"pb-plugin"}, "--memory": {"67108864"}, "--memory-swap": {"67108864"}, "--pids-limit": {"7"}, "--ulimit": {"cpu=181"}, "--cap-drop": {"ALL"}, "--security-opt": {"no-new-privileges"}, "--workdir": {"/w"}, "--env": {"A=1", "B=two"}, "--entrypoint": {"/plugin"}, "--platform": {"linux/fakearch"}} {
+	for name, want := range map[string][]string{"--network": {"none"}, "--hostname": {"pb-plugin"}, "--memory": {"67108864"}, "--memory-swap": {"67108864"}, "--pids-limit": {"7"}, "--ulimit": {"cpu=181"}, "--cap-drop": {"ALL"}, "--security-opt": {"no-new-privileges"}, "--workdir": {"/w"}, "--env": {"A=1", "B=two"}, "--platform": {"linux/fakearch"}, "--pull": {"never"}} {
 		if got := flag(name); !reflect.DeepEqual(got, want) {
 			t.Errorf("create %s = %q, want %q", name, got, want)
 		}
@@ -109,12 +107,23 @@ func TestDockerProtocol(t *testing.T) {
 	if slices.Contains(create, "--env-file") {
 		t.Error("create reads an env file, whose grammar imports the client's environment")
 	}
-	image := create[len(create)-2]
-	if !strings.HasPrefix(image, "sha256:") || create[len(create)-1] != "--flag" || create[len(create)-3] != "/plugin" {
+	// The loaded image runs under its own configuration, as a daemon
+	// image does: the create names the image last and no entrypoint
+	// or argument of its own.
+	image := create[len(create)-1]
+	if !strings.HasPrefix(image, "sha256:") || slices.Contains(create, "--entrypoint") || slices.Contains(create, "--flag") {
 		t.Fatalf("create tail = %q", create[len(create)-4:])
 	}
-	if argv[4][3] != "fakecontainer" || argv[5][3] != "fakecontainer" || argv[7][3] != "fakecontainer" || argv[8][1] != image {
-		t.Fatalf("container and image not carried through: %q %q %q", argv[5], argv[7], argv[8])
+	// The run names the loaded image by a reference of its own —
+	// pb's repository under a random tag — and releases that
+	// reference, never the image's ID, which anything else holding
+	// the image shares.
+	tag := argv[4]
+	if len(tag) != 3 || tag[1] != image || !strings.HasPrefix(tag[2], "pb-plugin-run:") || len(tag[2]) != len("pb-plugin-run:")+16 {
+		t.Fatalf("the run's reference: %q", tag)
+	}
+	if argv[6][3] != "fakecontainer" || argv[7][3] != "fakecontainer" || argv[9][3] != "fakecontainer" || argv[10][1] != tag[2] {
+		t.Fatalf("container and reference not carried through: %q %q %q", argv[7], argv[9], argv[10])
 	}
 	if stdin, _ := os.ReadFile(filepath.Join(dir, "stdin")); !bytes.Equal(stdin, request(t, "")) {
 		t.Fatal("the request did not reach the container's stdin")
@@ -122,30 +131,124 @@ func TestDockerProtocol(t *testing.T) {
 	if p := r.Platform(); p.OS != "linux" || p.Arch != "fakearch" {
 		t.Fatalf("platform = %s: the daemon's, not the host's", p)
 	}
-	tarBytes, err := os.ReadFile(filepath.Join(dir, "import.tar"))
+	// The daemon was handed the export's archive in the classic
+	// store's form, byte for byte, and the image it reported loading
+	// is the archive's identity, which the create names.
+	loaded, err := os.ReadFile(filepath.Join(dir, "load.tar"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	var names []string
-	tr := tar.NewReader(bytes.NewReader(tarBytes))
-	for {
-		h, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-		names = append(names, h.Name)
-		if h.Name == "bin/plugin" && (h.Mode != 0o755 || h.Size != 5) {
-			t.Fatalf("bin/plugin header = %+v", h)
-		}
-		if h.Name == "plugin" && (h.Typeflag != tar.TypeSymlink || h.Linkname != "bin/plugin") {
-			t.Fatalf("symlink header = %+v", h)
-		}
+	var want bytes.Buffer
+	id, err := dockerSpec(t, rootfs, l).Image.(*plugin.Export).Archive(context.Background(), &want, plugin.DockerArchive)
+	if err != nil || !bytes.Equal(loaded, want.Bytes()) || image != id {
+		t.Fatalf("the archive handed to the daemon: %v, equal %v, image %s, identity %s", err, bytes.Equal(loaded, want.Bytes()), image, id)
 	}
-	if want := []string{"bin/", "bin/plugin", "note", "plugin"}; !reflect.DeepEqual(names, want) {
-		t.Fatalf("tar entries = %v, want %v", names, want)
+	if argv[2][2] != "{{json .DriverStatus}}" {
+		t.Fatalf("the image store asked for: %q", argv[2])
+	}
+	// Two runs never share a reference.
+	if _, err := r.Run(context.Background(), dockerSpec(t, rootfs, l)); err != nil {
+		t.Fatal(err)
+	}
+	_, argv = fakeLog(t, dir)
+	if argv[4][2] == argv[15][2] {
+		t.Fatalf("two runs named the loaded image alike: %q", argv[4][2])
+	}
+}
+
+// The daemon's report of what it loaded is held to the archive's
+// identity: another image loaded is refused before any container
+// exists; an export offering no archive is refused before the daemon
+// is touched.
+func TestDockerHoldsLoadedIdentity(t *testing.T) {
+	dir := fakeDaemon(t)
+	rootfs := exportFixture(t)
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
+	if err := os.WriteFile(filepath.Join(dir, "load-reports"), []byte("sha256:"+strings.Repeat("ab", 32)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), dockerSpec(t, rootfs, l))
+	if err == nil || !strings.Contains(err.Error(), "the daemon loaded sha256:"+strings.Repeat("ab", 32)+" where the verified image is sha256:") {
+		t.Fatalf("another image loaded: %v", err)
+	}
+	// What the daemon loaded is named for the run and released by
+	// that name, the wrong image left to whatever else holds it; no
+	// container is created over it.
+	verbs, argv := fakeLog(t, dir)
+	if want := []string{"version", "info", "info", "load", "tag", "rmi"}; !reflect.DeepEqual(verbs, want) || argv[4][1] != "sha256:"+strings.Repeat("ab", 32) || argv[5][1] != argv[4][2] {
+		t.Fatalf("the wrong image's release: %v %q %q", verbs, argv[4], argv[5])
+	}
+	// A tag that fails refuses the run before any container, and
+	// releases no reference the run never held.
+	os.Remove(filepath.Join(dir, "load-reports"))
+	if err := os.WriteFile(filepath.Join(dir, "tag-fails"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.Run(context.Background(), dockerSpec(t, rootfs, l))
+	if err == nil || !strings.Contains(err.Error(), "naming the loaded image for the run") {
+		t.Fatalf("a tag that fails: %v", err)
+	}
+	if after, _ := fakeLog(t, dir); strings.Join(after[len(verbs):], " ") != "load tag" {
+		t.Fatalf("after a failed tag: %v", after[len(verbs):])
+	}
+	os.Remove(filepath.Join(dir, "tag-fails"))
+	spec := dockerSpec(t, rootfs, l)
+	spec.Image = &plugin.Export{Rootfs: rootfs}
+	_, err = r.Run(context.Background(), spec)
+	if err == nil || !strings.Contains(err.Error(), "offers no archive for the daemon") {
+		t.Fatalf("an export without an archive: %v", err)
+	}
+	if after, _ := fakeLog(t, dir); len(after) != len(verbs)+2 {
+		t.Fatalf("the daemon touched for an export without an archive: %v", after)
+	}
+	// An archive whose writer fails, even after the stream, ends the
+	// pipe with its failure, which the load reports as its own: the
+	// run is refused naming the archive's failure.
+	whole := archiveOf(rootfs, spec.Process, plugin.Platform{OS: "linux", Arch: "fakearch"})
+	spec.Image = &plugin.Export{Rootfs: rootfs, Archive: func(ctx context.Context, w io.Writer, form plugin.ArchiveForm) (string, error) {
+		if _, err := whole(ctx, w, form); err != nil {
+			return "", err
+		}
+		return "", errors.New("the store's blob is gone")
+	}}
+	_, err = r.Run(context.Background(), spec)
+	if err == nil || !strings.Contains(err.Error(), "archive") || !strings.Contains(err.Error(), "the store's blob is gone") {
+		t.Fatalf("an archive that fails: %v", err)
+	}
+}
+
+// A daemon on the containerd image store is handed the OCI layout,
+// whose identity is the manifest's digest, which it reports.
+func TestDockerLoadsOCILayoutForContainerdStore(t *testing.T) {
+	dir := fakeDaemon(t)
+	rootfs := exportFixture(t)
+	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
+	if err := os.WriteFile(filepath.Join(dir, "containerd-store"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewDockerRunner("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Run(context.Background(), dockerSpec(t, rootfs, l)); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := os.ReadFile(filepath.Join(dir, "load.tar"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var want bytes.Buffer
+	id, err := dockerSpec(t, rootfs, l).Image.(*plugin.Export).Archive(context.Background(), &want, plugin.OCILayout)
+	if err != nil || !bytes.Equal(loaded, want.Bytes()) {
+		t.Fatalf("the OCI layout handed to the daemon: %v, equal %v", err, bytes.Equal(loaded, want.Bytes()))
+	}
+	_, argv := fakeLog(t, dir)
+	if create := argv[5]; create[len(create)-1] != id || argv[4][1] != id {
+		t.Fatalf("the create names %s, the layout's identity %s", create[len(create)-1], id)
 	}
 }
 
@@ -457,7 +560,7 @@ func TestDockerRefusesBareEnv(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), `"PB_SECRET" is not KEY=VALUE`) {
 		t.Fatalf("bare env: %v", err)
 	}
-	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "create") || slices.Contains(verbs, "import") {
+	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "create") || slices.Contains(verbs, "load") {
 		t.Fatalf("the daemon was reached: %v", verbs)
 	}
 }
@@ -474,7 +577,7 @@ func TestDockerRefusesLocal(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "runs images only") {
 		t.Fatalf("local on docker: %v", err)
 	}
-	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "import") {
+	if verbs, _ := fakeLog(t, dir); slices.Contains(verbs, "load") {
 		t.Fatalf("the daemon was reached: %v", verbs)
 	}
 }
@@ -496,10 +599,10 @@ func TestDockerDaemonLocalImage(t *testing.T) {
 		t.Fatalf("result = %+v", res)
 	}
 	verbs, argv := fakeLog(t, dir)
-	if want := []string{"version", "info", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
+	if want := []string{"version", "info", "info", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
 		t.Fatalf("invocations = %v, want %v", verbs, want)
 	}
-	create := argv[2]
+	create := argv[3]
 	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != "plugins/q:dev" || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" {
 		t.Fatalf("create = %q", create)
 	}
@@ -614,16 +717,16 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 		t.Fatalf("result = %+v", res)
 	}
 	verbs, argv := fakeLog(t, dir)
-	if want := []string{"version", "info", "pull", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
+	if want := []string{"version", "info", "info", "pull", "create", "inspect", "start", "inspect", "rm"}; !reflect.DeepEqual(verbs, want) {
 		t.Fatalf("invocations = %v, want %v", verbs, want)
 	}
 	// The platform pb checked is named on the pull and the create,
 	// so the daemon's own default never picks another child of the
 	// verified index.
-	if !reflect.DeepEqual(argv[2], []string{"pull", "--platform", "linux/arm/v6", image}) {
-		t.Fatalf("pull = %q", argv[2])
+	if !reflect.DeepEqual(argv[3], []string{"pull", "--platform", "linux/arm/v6", image}) {
+		t.Fatalf("pull = %q", argv[3])
 	}
-	create := argv[3]
+	create := argv[4]
 	if slices.Contains(create, "--entrypoint") || create[len(create)-1] != image || create[len(create)-3] != "--pull" || create[len(create)-2] != "never" || create[len(create)-5] != "--platform" || create[len(create)-4] != "linux/arm/v6" {
 		t.Fatalf("create = %q", create)
 	}
@@ -643,8 +746,8 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	}
 	// The container goes with the anonymous volumes an image
 	// declares; the pulled image stays.
-	if !reflect.DeepEqual(argv[7], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
-		t.Fatalf("rm = %q", argv[7])
+	if !reflect.DeepEqual(argv[8], []string{"rm", "--force", "--volumes", "fakecontainer"}) {
+		t.Fatalf("rm = %q", argv[8])
 	}
 	if _, err := r.Run(context.Background(), Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Pulled{Repository: "ghcr.io/o/p", Entry: "linux/fakearch"}, Limits: l, MinTier: plugin.TierStrong}); err == nil || !strings.Contains(err.Error(), "digest, and none is named") {
 		t.Fatalf("a repository with no digest to pull: %v", err)
@@ -662,10 +765,10 @@ func TestDockerPullsVerifiedDigest(t *testing.T) {
 	}
 }
 
-// An export's admitted entry, which the world carries whole, is not
-// the daemon's to be told: the import is created for the daemon's
-// own platform, the one that stamped the image.
-func TestDockerImportIgnoresExportEntry(t *testing.T) {
+// An export's admitted entry, variant included, is named to the
+// create of the loaded image, as a pulled image's is: the daemon's
+// own default never refuses it as another platform's.
+func TestDockerLoadNamesExportEntry(t *testing.T) {
 	dir := fakeDaemon(t)
 	rootfs := exportFixture(t)
 	l := trust.Limits{Memory: 64 << 20, CPU: 2, Pids: 7, Timeout: 90 * time.Second}
@@ -674,18 +777,25 @@ func TestDockerImportIgnoresExportEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 	spec := dockerSpec(t, rootfs, l)
-	spec.Image = &plugin.Export{Rootfs: rootfs, Entry: "linux/arm/v6"}
+	spec.Image = &plugin.Export{Rootfs: rootfs, Archive: archiveOf(rootfs, spec.Process, plugin.Platform{OS: "linux", Arch: "arm"}), Entry: "linux/arm/v6"}
 	if _, err := r.Run(context.Background(), spec); err != nil {
 		t.Fatal(err)
 	}
+	// The loaded image is created under the entry the seam admitted,
+	// variant included, as a pulled one is: the daemon's own default
+	// never refuses it as another platform's.
 	_, argv := fakeLog(t, dir)
-	create := argv[3]
+	create := argv[5]
+	named := false
 	for i := 0; i+1 < len(create); i++ {
-		if create[i] == "--platform" && create[i+1] != "linux/fakearch" {
-			t.Fatalf("the import created for %q, not the daemon's platform", create[i+1])
+		if create[i] == "--platform" {
+			named = true
+			if create[i+1] != "linux/arm/v6" {
+				t.Fatalf("the loaded image created for %q, not the admitted entry", create[i+1])
+			}
 		}
 	}
-	if slices.Contains(create, "linux/arm/v6") {
-		t.Fatalf("the export's entry reached the daemon: %q", create)
+	if !named {
+		t.Fatalf("the create names no platform: %q", create)
 	}
 }

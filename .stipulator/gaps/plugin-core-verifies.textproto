@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-plugin-core-verifies"
 reason: "the seam performs pin, platform, and trust checks with executed example witnesses; the invariant-class witness that no acquisition path bypasses the seam is outstanding"
-content_hash: "7b925d944f77e13e156735a5b7dae196f375f351f60a1b39364c7cd8467c7e80"
-source_hash: "f95b524a17d0aaff4fcb09d5208f298494830fc937dc3ed836477bc683530b0c"
+content_hash: "27baee0e6032d779f9078c9bfe150aef27b7408a04d1183b8cf827d829d19b49"
+source_hash: "ed85ec19ec2ceb346bed0c308d24d218d770439b422747efe31de2aad65cd407"
 lands { manual { condition: "an analyzer or property witness that every store acquisition runs the seam exists" } }

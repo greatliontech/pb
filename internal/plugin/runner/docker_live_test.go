@@ -67,7 +67,7 @@ func liveRunProcess(t *testing.T, r Runner, process plugin.Process, param string
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: process, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
+	return r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: exportOf(rootfsDir, process, r.Platform()), Process: process, Stdin: request(t, param), Limits: l, MinTier: plugin.TierStrong})
 }
 
 // The docker runner against a real daemon: the request reaches the
@@ -392,7 +392,8 @@ func TestPropertyRunnerIndependence(t *testing.T) {
 		run := func(r Runner) *Result {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-			res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: &plugin.Export{Rootfs: rootfsDir}, Process: plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}, Stdin: req, Limits: limits(nil), MinTier: plugin.TierStrong})
+			process := plugin.Process{Argv: []string{"/plugin"}, Env: []string{"PB_PLUGIN_TEST_ENV=from-the-image"}}
+			res, err := r.Run(ctx, Spec{Scheme: plugin.SchemeOCI, Image: exportOf(rootfsDir, process, r.Platform()), Process: process, Stdin: req, Limits: limits(nil), MinTier: plugin.TierStrong})
 			if err != nil {
 				rt.Fatalf("%T: %v", r, err)
 			}

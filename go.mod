@@ -12,7 +12,7 @@ require (
 	github.com/greatliontech/gitprov v0.0.0-20261002085106-62ab00b70019
 	github.com/greatliontech/glob v0.2.0
 	github.com/greatliontech/lsp v0.1.2
-	github.com/greatliontech/ocifs v0.12.2
+	github.com/greatliontech/ocifs v0.13.0
 	github.com/greatliontech/sandbox v0.9.1
 	github.com/greatliontech/stipulator/stipulate/structural v0.3.0
 	github.com/spf13/cobra v1.10.2

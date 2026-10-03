@@ -3,6 +3,8 @@ package runner
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,11 +24,16 @@ import (
 // DockerRunner runs an oci plugin in a container of a Docker daemon
 // (plugin-execution.md, the runner term). pb's verified content
 // reaches the daemon by one of two trust-neutral byte paths
-// (REQ-plugin-core-verifies): the image export as a rootfs tar
-// through `docker import`, the daemon fetching nothing, or — under
-// the docker byte path — a pull of the repository at the digest the
-// seam admitted, naming the manifest-list entry it admitted, the
-// daemon holding the image as its own afterwards. The container is
+// (REQ-plugin-core-verifies): the verified image as an archive its
+// image store loads, the daemon fetching nothing, held to the
+// identity the daemon reports and released with the run where the
+// run introduced it, or — under the docker byte path — a pull of
+// the repository at the digest the seam admitted, naming the
+// manifest-list entry it admitted, the daemon holding the image as
+// its own afterwards. A run killed outright — the process gone,
+// not cancelled — leaves its container and, on the store path, its
+// `pb-plugin-run:*` reference to the loaded image behind, as the
+// daemon lists them. The container is
 // created with no network, a read-only root, every capability
 // dropped, no_new_privs, and the policy's bounds. The tier and the
 // accounting are derived
@@ -52,13 +59,14 @@ type DockerRunner struct {
 	// empty.
 	CLI string
 
-	platform plugin.Platform // the daemon's
-	seccomp  string          // the seccomp profile the daemon runs containers under, as it names it
+	platform plugin.Platform    // the daemon's
+	seccomp  string             // the seccomp profile the daemon runs containers under, as it names it
+	form     plugin.ArchiveForm // the form of archive the daemon's image store loads
 }
 
 // NewDockerRunner returns the runner for the daemon cli reaches, or
-// why none does: the daemon's version, platform and security options
-// are asked for, and a refusal is the reason.
+// why none does: the daemon's version, platform, security options
+// and image store are asked for, and a refusal is the reason.
 func NewDockerRunner(cli string) (*DockerRunner, error) {
 	r := &DockerRunner{CLI: cli}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -86,6 +94,23 @@ func NewDockerRunner(cli string) (*DockerRunner, error) {
 	for _, o := range opts {
 		if rest, ok := strings.CutPrefix(o, "name=seccomp,profile="); ok {
 			r.seccomp = rest
+		}
+	}
+	// The daemon's image store decides the form of an archive it
+	// loads: the containerd store names itself in the driver's
+	// status; any other is the classic store.
+	out, err = r.docker(ctx, nil, "info", "--format", "{{json .DriverStatus}}")
+	if err != nil {
+		return nil, err
+	}
+	var status [][]string
+	if err := json.Unmarshal(out, &status); err != nil {
+		return nil, fmt.Errorf("%s info: driver status unreadable: %v", r.cli(), err)
+	}
+	r.form = plugin.DockerArchive
+	for _, row := range status {
+		if len(row) == 2 && row[0] == "driver-type" && strings.HasPrefix(row[1], "io.containerd.snapshotter.") {
+			r.form = plugin.OCILayout
 		}
 	}
 	return r, nil
@@ -169,8 +194,8 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 	if err := CheckSpec(spec); err != nil {
 		return nil, err
 	}
-	if _, export := spec.Image.(*plugin.Export); export && !ExportStreams {
-		return nil, errors.New("runner: an export carries no file modes on this platform, so the docker runner cannot hand it to the daemon as a stream; select the daemon byte path (plugin-pull docker), which pulls the verified digest (platforms.md REQ-plat-oci-substrate)")
+	if export, ok := spec.Image.(*plugin.Export); ok && export.Archive == nil {
+		return nil, errors.New("runner: the export offers no archive for the daemon; the docker runner hands the daemon the verified image itself (REQ-plugin-core-verifies)")
 	}
 	if spec.Scheme == plugin.SchemeLocal {
 		return nil, errors.New("runner: a local plugin is a host binary; the docker runner runs images only")
@@ -202,8 +227,8 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 				result, err = nil, fmt.Errorf("runner: releasing the run's container: %w", rerr)
 			}
 		}
-		if p.imported != "" {
-			if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rmi", p.imported); rerr != nil && err == nil {
+		if p.reference != "" {
+			if _, rerr := r.docker(context.WithoutCancel(ctx), nil, "rmi", p.reference); rerr != nil && err == nil {
 				result, err = nil, fmt.Errorf("runner: releasing the run's image: %w", rerr)
 			}
 		}
@@ -278,26 +303,30 @@ func (r *DockerRunner) Run(ctx context.Context, spec Spec) (result *Result, err 
 }
 
 // prepared is what the daemon steps before the start leave behind:
-// the image this run imported (none for a daemon-local image, which
-// is the daemon's and stays), the container created, and its record.
+// the run's own reference to the image it loaded (none for a daemon
+// image, which is the daemon's and stays), the container created,
+// and its record.
 type prepared struct {
-	imported, container string
-	record              dockerRecord
+	reference, container string
+	record               dockerRecord
 }
 
-// prepare runs the daemon steps before the start — the import, the
+// prepare runs the daemon steps before the start — the load, the
 // create, the record — so one failure path reports them and the run
 // releases whatever they left. What the record says is judged by the
 // caller: a verdict is no daemon step.
 func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limits) (p prepared, err error) {
 	image, daemon := daemonImage(spec.Image)
-	// The platform named to the daemon: for a pulled image the very
-	// manifest-list entry the seam admitted, variant included, so
-	// the daemon pulls and runs that child and no other of the
-	// verified index — its own default (DOCKER_DEFAULT_PLATFORM)
-	// and its own variant matching aside; for an import the daemon's
-	// platform, which stamped the image.
+	// The platform named to the daemon: for a pulled or a loaded
+	// image the very manifest-list entry the seam admitted, variant
+	// included, so the daemon pulls and runs that child and no other
+	// of the verified index — its own default
+	// (DOCKER_DEFAULT_PLATFORM) and its own variant matching aside;
+	// the daemon's own platform where an export names no entry.
 	platform := r.platform.String()
+	if _, local := spec.Image.(*plugin.DaemonLocal); local {
+		platform = "" // created as it is: pb selects nothing of an override
+	}
 	pulled, pull := spec.Image.(*plugin.Pulled)
 	if pull {
 		platform = pulled.Entry
@@ -309,21 +338,64 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 		}
 	}
 	if export, ok := spec.Image.(*plugin.Export); ok {
-		// The export streams into the daemon; a write failure ends
-		// the import with the daemon's own report. A daemon-local
-		// image (an override) is the daemon's already and stays so.
+		// The verified image streams into the daemon as an archive
+		// its image store loads — the image's own configuration and
+		// layers, so the daemon runs it as it declares itself, the
+		// modes and ownership it declares reaching the daemon byte
+		// for byte on every platform — and the daemon's report of
+		// what it loaded is held to the identity the archive names:
+		// the image is then the daemon's, as a pulled one is, and
+		// the create names it. A write failure ends the load with
+		// the daemon's own report.
+		if export.Entry != "" {
+			platform = export.Entry
+		}
 		pr, pw := io.Pipe()
-		go func() { pw.CloseWithError(writeTar(pw, export.Rootfs)) }()
-		imported, err := r.docker(ctx, pr, "import", "-")
+		type written struct {
+			id  string
+			err error
+		}
+		archived := make(chan written, 1)
+		go func() {
+			id, err := export.Archive(ctx, pw, r.form)
+			archived <- written{id, err}
+			pw.CloseWithError(err)
+		}()
+		// The archive's own failure ends the pipe with it, which the
+		// load's stdin copy reports as the load's failure: no archive
+		// fails with the load succeeding.
+		loaded, err := r.docker(ctx, pr, "load", "--quiet")
 		pr.Close()
+		a := <-archived
 		if err != nil {
-			return p, fmt.Errorf("runner: importing the image export into the daemon: %w", err)
+			if a.err != nil {
+				return p, fmt.Errorf("runner: loading the verified image into the daemon: %w (the archive: %v)", err, a.err)
+			}
+			return p, fmt.Errorf("runner: loading the verified image into the daemon: %w", err)
 		}
-		image = strings.TrimSpace(string(imported))
+		image = loadedID(string(loaded))
 		if image == "" {
-			return p, errors.New("runner: the daemon reported no image for the import")
+			return p, fmt.Errorf("runner: the daemon reported no image for the load (%q)", strings.TrimSpace(string(loaded)))
 		}
-		p.imported = image
+		// A loaded image's ID is its content's, the same whoever
+		// loaded or pulled it before, so the run owns a reference of
+		// its own to it, not the image: releasing that reference
+		// leaves an image anything else holds, and takes one nothing
+		// did. The reference is taken before the identity is judged,
+		// so what the daemon loaded is released either way; a tag
+		// that fails — another run's release taking the very image
+		// between this load and this tag, which refuses here rather
+		// than running anything — leaves the loaded image held by
+		// nothing, which the next release of it takes.
+		reference := runReference()
+		if _, err := r.docker(ctx, nil, "tag", image, reference); err != nil {
+			return p, fmt.Errorf("runner: naming the loaded image for the run: %w", err)
+		}
+		p.reference = reference
+		if image != a.id {
+			return p, fmt.Errorf("runner: the daemon loaded %s where the verified image is %s", image, a.id)
+		}
+		daemon = true
 	}
 
 	memory := strconv.FormatUint(limits.Memory, 10)
@@ -344,24 +416,20 @@ func (r *DockerRunner) prepare(ctx context.Context, spec Spec, limits trust.Limi
 		// applies its entrypoint, command, environment and working
 		// directory — and is the daemon's by now: a daemon-local image
 		// it does not hold is never fetched (REQ-plugin-override; pb
-		// verifies nothing a daemon pulls unasked), and a pulled one
-		// was fetched above at the verified digest. A client older
-		// than 20.10 knows no --pull and refuses in its own words.
-		if pull {
+		// verifies nothing a daemon pulls unasked), a pulled one was
+		// fetched above at the verified digest, a loaded one was
+		// handed to it whole. A pulled or loaded image is created
+		// under the platform named, so the daemon's own default
+		// (DOCKER_DEFAULT_PLATFORM) never refuses the image as
+		// another platform's; a daemon-local override alone is
+		// created as it is: pb selects nothing there
+		// (REQ-plugin-override). A client older than 20.10 knows no
+		// --pull and no --platform on create and refuses in its own
+		// words.
+		if platform != "" {
 			args = append(args, "--platform", platform)
 		}
 		args = append(args, "--pull", "never", image)
-	} else {
-		// The import stamped the image with the daemon's platform —
-		// the one pb checked — and the create names it, so the
-		// daemon's own default (DOCKER_DEFAULT_PLATFORM) never
-		// refuses the image as another platform's. A daemon-local
-		// override alone is created as it is: pb selects nothing
-		// there (REQ-plugin-override). A client older than 20.10
-		// knows no --platform on create and refuses in its own
-		// words, on this path as on the image branch's.
-		args = append(args, "--platform", platform, "--entrypoint", spec.Process.Argv[0], image)
-		args = append(args, spec.Process.Argv[1:]...)
 	}
 	out, err := r.docker(ctx, nil, args...)
 	if err != nil {
@@ -599,4 +667,25 @@ func dockerOutcome(rec dockerRecord, l trust.Limits, clock, parent error, memory
 		return fmt.Errorf("runner: plugin ended with status 137: the CPU-time bound (%s over %g cores, enforced by rlimits), an external kill, or the plugin's own exit 137 — the daemon's record cannot tell them apart", l.Timeout, l.CPU)
 	}
 	return nil
+}
+
+// loadedID reads the daemon's report of a load: the image's ID,
+// `Loaded image ID: sha256:...`, as the daemon prints it for an
+// archive naming no tag.
+func loadedID(report string) string {
+	for _, line := range strings.Split(report, "\n") {
+		if id, ok := strings.CutPrefix(strings.TrimSpace(line), "Loaded image ID: "); ok {
+			return strings.TrimSpace(id)
+		}
+	}
+	return ""
+}
+
+// runReference is the reference a run gives the image it loaded:
+// a repository of pb's own under a random tag, so two runs never
+// share one and a user's own references are never touched.
+func runReference() string {
+	var b [8]byte
+	rand.Read(b[:])
+	return "pb-plugin-run:" + hex.EncodeToString(b[:])
 }

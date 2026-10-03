@@ -13,12 +13,16 @@ witnessed (REQ-plat-scope's reading: what only hardware or a daemon
 can witness is tracked to its witness).
 
 Resolution: run the runner suite with the docker arms demanded on a
-darwin host and on a windows host with Docker Desktop — on windows
-the daemon byte path's arms, the stream refused there
-(docker-store-path-windows.md) — and bank each run's log beside this
-issue; a failure there is a finding against the runner,
+darwin host and on a windows host with Docker Desktop — both byte
+paths' arms on each, the store byte path's load, tag and release
+under the containerd image store Docker Desktop defaults to, whose
+form of archive (the OCI layout) and reported identity (the
+manifest's digest) no daemon has witnessed yet — and bank each
+run's log beside this issue; a failure there is a finding against
+the runner,
 dispositioned like any.
 
 Lands: a log of `PB_TEST_REQUIRE_DOCKER=1 go test
 ./internal/plugin/runner/` green on a darwin host and on a windows
-host with Docker Desktop, banked beside this issue.
+host with Docker Desktop, its daemon on the containerd image store,
+banked beside this issue.

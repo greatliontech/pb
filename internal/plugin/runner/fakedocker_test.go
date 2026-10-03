@@ -1,7 +1,8 @@
 package runner
 
 import (
-	"crypto/sha256"
+	"archive/tar"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -51,6 +52,14 @@ func fakeDocker(args []string) int {
 		}
 		fmt.Println("linux fakearch")
 	case "info":
+		if slices.Contains(args, "{{json .DriverStatus}}") {
+			if _, err := os.Stat(filepath.Join(dir, "containerd-store")); err == nil {
+				fmt.Println(`[["driver-type","io.containerd.snapshotter.v1"]]`)
+			} else {
+				fmt.Println(`[["Backing Filesystem","extfs"]]`)
+			}
+			return 0
+		}
 		if slices.Contains(args, "{{.SystemTime}}") {
 			// The daemon's clock: past the fake's finish stamp by a
 			// planted offset (daemon-now), a second by default, so a
@@ -69,10 +78,24 @@ func fakeDocker(args []string) int {
 		} else {
 			fmt.Println(`["name=seccomp,profile=builtin","name=cgroupns"]`)
 		}
-	case "import":
-		tar, _ := io.ReadAll(os.Stdin)
-		os.WriteFile(filepath.Join(dir, "import.tar"), tar, 0o644)
-		fmt.Printf("sha256:%x\n", sha256.Sum256(tar))
+	case "load":
+		// The archive is kept for the test to read; the ID reported
+		// is the configuration the archive's manifest names, as the
+		// classic store reports it, or whatever load-reports says.
+		archive, _ := io.ReadAll(os.Stdin)
+		os.WriteFile(filepath.Join(dir, "load.tar"), archive, 0o644)
+		if b, err := os.ReadFile(filepath.Join(dir, "load-reports")); err == nil {
+			fmt.Printf("Loaded image ID: %s\n", strings.TrimSpace(string(b)))
+			return 0
+		}
+		fmt.Printf("Loaded image ID: sha256:%s\n", archiveIdentityHex(archive))
+	case "tag":
+		// The run's reference to the loaded image: taken, as the log
+		// records, unless tag-fails says the image went meanwhile.
+		if _, err := os.Stat(filepath.Join(dir, "tag-fails")); err == nil {
+			fmt.Fprintln(os.Stderr, "Error response from daemon: No such image")
+			return 1
+		}
 	case "pull":
 		if _, err := os.Stat(filepath.Join(dir, "pull-fails")); err == nil {
 			fmt.Fprintln(os.Stderr, "Error response from daemon: manifest unknown")
@@ -283,4 +306,34 @@ func fakeLog(t *testing.T, dir string) (verbs []string, argv [][]string) {
 		argv = append(argv, args)
 	}
 	return verbs, argv
+}
+
+// archiveIdentityHex reads an archive for the identity its store
+// reports: a docker-archive's manifest.json names the configuration,
+// whose digest the classic store reports; an OCI layout's index.json
+// names the manifest, whose digest the containerd store reports.
+func archiveIdentityHex(archive []byte) string {
+	tr := tar.NewReader(bytes.NewReader(archive))
+	for {
+		h, err := tr.Next()
+		if err != nil {
+			return ""
+		}
+		switch h.Name {
+		case "manifest.json":
+			var manifest []struct{ Config string }
+			if err := json.NewDecoder(tr).Decode(&manifest); err != nil || len(manifest) != 1 {
+				return ""
+			}
+			return strings.TrimSuffix(manifest[0].Config, ".json")
+		case "index.json":
+			var index struct {
+				Manifests []struct{ Digest string }
+			}
+			if err := json.NewDecoder(tr).Decode(&index); err != nil || len(index.Manifests) != 1 {
+				return ""
+			}
+			return strings.TrimPrefix(index.Manifests[0].Digest, "sha256:")
+		}
+	}
 }

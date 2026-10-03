@@ -49,12 +49,12 @@ func TestAcquirerConfig(t *testing.T) {
 		t.Fatalf("config = %+v, want %+v", cfg, want)
 	}
 	docker, _ := runner.Only(runner.RunnerDocker, daemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
-	if got, _, withheld := dep.Substrates(docker, true, true); withheld != "" || !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Daemon: true}}) {
-		t.Fatalf("the docker runner's substrate under the daemon byte path: %+v (%q)", got, withheld)
+	if got := dep.Substrates(docker, true); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}, Daemon: true}}) {
+		t.Fatalf("the docker runner's substrate under the daemon byte path: %+v", got)
 	}
 	native, _ := runner.Only(runner.RunnerNative, noDaemonRunner{}).Candidates(context.Background(), plugin.TierStrong)
-	if got, _, withheld := dep.Substrates(native, false, true); withheld != "" || !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}) {
-		t.Fatalf("the native runner's substrate: %+v (%q)", got, withheld)
+	if got := dep.Substrates(native, false); !reflect.DeepEqual(got, []oci.Candidate{{Platform: plugin.Platform{OS: "linux", Arch: "fake"}}}) {
+		t.Fatalf("the native runner's substrate: %+v", got)
 	}
 }
 

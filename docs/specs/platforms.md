@@ -64,12 +64,13 @@ and nothing else; the Linux `OS` row's static-entrypoint rule is that
 platform's alone. A daemon in a virtual machine leaves the host's
 cgroup tree unreadable to pb: a memory kill there is attributed as the
 daemon's record affords it and the record says which source spoke
-(REQ-plugin-resource-bounds); pb hands the daemon the export as a
-stream and binds no host directory, so the daemon's file sharing is
-never consulted — on windows, where an export carries no file modes,
-the stream is refused naming the daemon byte path
-(`plugin-execution.md` REQ-plugin-core-verifies), the daemon's pull of
-the verified digest the one byte path there.
+(REQ-plugin-resource-bounds); pb hands the daemon the verified image
+itself — its configuration and layers, loaded as the image it is
+(`plugin-execution.md` REQ-plugin-core-verifies) — and binds no host
+directory, so the daemon's file sharing is never consulted and the
+host's filesystem, which on windows carries no file modes, never
+stands between the image and the daemon: the store byte path serves
+every platform the same way.
 
 **REQ-plat-local-runner** (behavior): A `local` plugin, a host command,
 MUST run on the native runner on every platform, under the sandbox

@@ -5,15 +5,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -1695,5 +1698,69 @@ func TestProcessOf(t *testing.T) {
 	}
 	if _, err := processOf(&v1.ConfigFile{}); err == nil || !strings.Contains(err.Error(), "no process") {
 		t.Fatalf("an image declaring no process: %v", err)
+	}
+}
+
+// An acquisition's export offers the verified image's archive in
+// either form a daemon's image store loads, the identity returned
+// the one that form's store reports: the configuration's digest
+// under the docker-archive's manifest.json, the manifest's under
+// the OCI layout's index (ocifs api.md REQ-api-archive).
+func TestAcquireExportArchive(t *testing.T) {
+	fx := newFixture(t)
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	got, err := a.Acquire(ctx, fx.host+"/org/plugin:v1", Host())
+	if err != nil {
+		t.Fatal(err)
+	}
+	export, ok := got.Image.(*plugin.Export)
+	if !ok || export.Archive == nil {
+		t.Fatalf("acquired %+v, want an export offering its archive", got.Image)
+	}
+	var docker bytes.Buffer
+	id, err := export.Archive(ctx, &docker, plugin.DockerArchive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries := tarEntries(t, docker.Bytes())
+	var manifest []struct{ Config string }
+	if err := json.Unmarshal(entries["manifest.json"], &manifest); err != nil || len(manifest) != 1 || "sha256:"+strings.TrimSuffix(manifest[0].Config, ".json") != id {
+		t.Fatalf("the docker-archive's manifest names %s, the identity returned %s (%v)", entries["manifest.json"], id, err)
+	}
+	var oci bytes.Buffer
+	id, err = export.Archive(ctx, &oci, plugin.OCILayout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries = tarEntries(t, oci.Bytes())
+	var index struct {
+		Manifests []struct{ Digest string }
+	}
+	if err := json.Unmarshal(entries["index.json"], &index); err != nil || len(index.Manifests) != 1 || index.Manifests[0].Digest != id {
+		t.Fatalf("the OCI layout's index names %s, the identity returned %s (%v)", entries["index.json"], id, err)
+	}
+	if _, ok := entries["blobs/"+strings.Replace(id, ":", "/", 1)]; !ok {
+		t.Fatalf("the OCI layout carries no manifest blob %s: %v", id, slices.Sorted(maps.Keys(entries)))
+	}
+}
+
+// tarEntries reads a tar's regular files by name.
+func tarEntries(t *testing.T, b []byte) map[string][]byte {
+	t.Helper()
+	entries := map[string][]byte{}
+	tr := tar.NewReader(bytes.NewReader(b))
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			return entries
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(tr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entries[h.Name] = body
 	}
 }

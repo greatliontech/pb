@@ -360,9 +360,11 @@ formatter and the language server
       program shipped inside a wheel, by the go kind from the
       repository's tag, frozen; the catalog then holds buf's tiers
       one and two whole
-- [ ] 28. The docker runner's stream from the store's verified image:
+- [x] 28. The docker runner's stream from the store's verified image:
       the daemon handed the image's own layers and configuration (an
-      OCI archive it loads) instead of a tar of the export's tree, on
+      archive it loads, the docker-archive form under the daemon's
+      classic image store, the OCI layout under its containerd
+      store) instead of a tar of the export's tree, on
       every platform, so the modes and ownership the image declares
       reach the daemon byte for byte and the export tree leaves the
       daemon's path; plugin-execution.md's store byte path and

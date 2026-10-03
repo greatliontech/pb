@@ -46,7 +46,7 @@ func acquirerConfig(s *dep.Session) (oci.Config, error) {
 // REQ-dep-update); the floor and the byte path govern a run, at
 // generate.
 func updateSubstrates(cands []runner.Candidate) []oci.Candidate {
-	substrates, _, _ := dep.Substrates(cands, false, true)
+	substrates := dep.Substrates(cands, false)
 	return substrates
 }
 

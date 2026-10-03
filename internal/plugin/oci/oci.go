@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 
@@ -314,7 +315,19 @@ func (a *Acquirer) pull(ctx context.Context, target string, acq *acquisition) (*
 	if err != nil {
 		return nil, fmt.Errorf("oci: %s: %v", acq.declaredRef, err)
 	}
-	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs, Entry: acq.entry}, Candidate: acq.chosen}, nil
+	// The archive is the held image's, written when a runner asks
+	// (ocifs api.md REQ-api-archive): the hold keeps its blobs until
+	// the acquirer closes, so an archive after an emptying elsewhere
+	// is whole or fails loudly as the export does.
+	archive := func(ctx context.Context, w io.Writer, form plugin.ArchiveForm) (string, error) {
+		forms := map[plugin.ArchiveForm]ocifs.ArchiveForm{plugin.DockerArchive: ocifs.DockerArchive, plugin.OCILayout: ocifs.OCILayout}
+		h, err := img.Archive(ctx, w, forms[form])
+		if err != nil {
+			return "", err
+		}
+		return h.String(), nil
+	}
+	return &plugin.Acquired{Process: process, Image: &plugin.Export{Rootfs: rootfs, Archive: archive, Entry: acq.entry}, Candidate: acq.chosen}, nil
 }
 
 // UpdatePlugin re-resolves ref and rewrites its pin: the tag to the

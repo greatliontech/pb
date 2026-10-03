@@ -12,7 +12,9 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"runtime"
 	"strings"
 )
@@ -121,17 +123,40 @@ type Image interface {
 	world()
 }
 
-// Export is an exported root filesystem — the store's shared
-// export-cache entry; treat it as read-only — and the manifest-list
-// entry the seam admitted for the platform, the one child of the
-// verified index the export is.
+// Export is the verified image as pb's store holds it, for a runner:
+// an exported root filesystem — the store's shared export-cache
+// entry; treat it as read-only — which the native runner runs from,
+// an archive of the image as a daemon's image store loads it, which
+// the docker runner hands the daemon, and the manifest-list entry
+// the seam admitted for the platform, the one child of the verified
+// index the export is.
 type Export struct {
 	Rootfs string
+	// Archive writes the image as a daemon's image store loads it, in
+	// the form, and returns the identity the daemon reports for the
+	// loaded image (`sha256:...`), which the docker runner holds the
+	// daemon to; nil where the acquisition offers none, which the
+	// docker runner refuses.
+	Archive func(ctx context.Context, w io.Writer, form ArchiveForm) (string, error)
 	// Entry is the admitted entry — os/arch, with its variant where
 	// the entry states one — not the platform itself: the entry the
 	// seam admitted for it.
 	Entry string
 }
+
+// ArchiveForm is the form of an archive a daemon's image store loads.
+type ArchiveForm int
+
+const (
+	// DockerArchive is the form the daemon's classic image store
+	// loads; the loaded image's identity there is its configuration's
+	// digest.
+	DockerArchive ArchiveForm = iota
+	// OCILayout is the form the daemon's containerd image store
+	// loads; the loaded image's identity there is its manifest's
+	// digest, the verified child's own.
+	OCILayout
+)
 
 // Pulled is an image the daemon pulls itself: the repository at the
 // digest pb verified, and the manifest-list entry the seam admitted,
