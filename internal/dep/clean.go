@@ -141,9 +141,13 @@ const SourcesTempPrefix = ".pb-sources-"
 
 // SourcesCopyName reports whether name — a copy directory's path
 // from the store's root — is a copy of the source store: `<escaped
-// path>@<escaped version>` where the halves unescape to a module
-// path and a version as pb spells them, or `well-known@<digest>`
-// with a hex digest; a directory spelled otherwise is a stranger's.
+// path>@<escaped version>.<digest>`, the digest the archive's spelled
+// as the module cache spells it (`pb1-<hex>`), where the halves
+// unescape to a module path and a version as pb spells them — or the
+// bare `<escaped path>@<escaped version>` of the layout before the
+// digest, read by nothing and removed by the emptying — or
+// `well-known@<digest>` with a hex digest; a directory spelled
+// otherwise is a stranger's.
 func SourcesCopyName(name string) bool {
 	at := strings.LastIndexByte(name, '@')
 	if at <= 0 || at == len(name)-1 {
@@ -151,17 +155,15 @@ func SourcesCopyName(name string) bool {
 	}
 	head, tail := name[:at], name[at+1:]
 	if head == "well-known" {
-		for _, c := range tail {
-			if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
-				return false
-			}
-		}
-		return len(tail) == 64
+		return fetch.IsDigestHex(tail)
 	}
 	modPath, err := proxy.Unescape(head)
 	if err != nil || module.ValidatePath(modPath) != nil {
 		return false
 	}
+	// A well-formed digest name at the end is the copy's key; a tail
+	// without one is the earlier layout's, the version whole.
+	tail, _, _ = fetch.SplitDigest(tail)
 	v, err := proxy.Unescape(tail)
 	if err != nil {
 		return false

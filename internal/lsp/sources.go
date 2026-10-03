@@ -19,6 +19,7 @@ import (
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/dep"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
+	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/source/proxy"
 )
 
@@ -43,11 +44,11 @@ const wellKnownName = "well-known"
 // canonical form the binding decodes to — the version's `@` percent
 // encoded in the path — so the address compares equal to what a
 // client sends back.
-func (s *Server) moduleURI(modPath, version, file string) uri.URI {
+func (s *Server) moduleURI(modPath, version, digest, file string) uri.URI {
 	if s.content {
 		return uri.MustParse(fmt.Sprintf("%s://%s@%s/%s", moduleScheme, modPath, version, escapedPath(file)))
 	}
-	return uri.File(filepath.Join(s.copyDir(modPath, version), filepath.FromSlash(file)))
+	return uri.File(filepath.Join(s.copyDir(modPath, version, digest), filepath.FromSlash(file)))
 }
 
 // escapedPath spells a file path for a URI, each segment
@@ -72,10 +73,12 @@ func (s *Server) wellKnownURI(file string) uri.URI {
 }
 
 // copyDir is a module's copy directory in the source store:
-// `<escaped module path>@<escaped version>`, the path's segments
-// directories as the module cache lays them.
-func (s *Server) copyDir(modPath, version string) string {
-	return filepath.Join(s.deps.Sources, filepath.FromSlash(proxy.Escape(modPath))+"@"+proxy.Escape(version))
+// `<escaped module path>@<escaped version>.<digest>`, the path's
+// segments directories as the module cache lays them and the digest
+// spelled as it spells one, so two roots' pins of one pair are two
+// copies, each the content its name fixes.
+func (s *Server) copyDir(modPath, version, digest string) string {
+	return filepath.Join(s.deps.Sources, filepath.FromSlash(proxy.Escape(modPath))+"@"+proxy.Escape(version)+"."+fetch.DigestName(digest))
 }
 
 // moduleContent is the bytes the build read for a module-scheme URI:
@@ -135,7 +138,7 @@ func (s *Server) moduleContent(u uri.URI) ([]byte, error) {
 // (REQ-lsp-dependency-files): a copy present is compared with the
 // bytes the build read and replaced where it differs, each file
 // written whole and atomically.
-func (s *Server) copySources(mods []modfiles.Module) error {
+func (s *Server) copySources(mods []modfiles.Module, digestOf func(modPath, version string) string) error {
 	if s.deps.Sources == "" {
 		return errors.New("no dependency source store is configured")
 	}
@@ -143,7 +146,11 @@ func (s *Server) copySources(mods []modfiles.Module) error {
 		if m.FromTree() {
 			continue
 		}
-		if err := copyFiles(s.copyDir(m.SourcePath, m.SourceVersion), m.Files); err != nil {
+		digest := digestOf(m.SourcePath, m.SourceVersion)
+		if digest == "" {
+			return fmt.Errorf("%s@%s: no pin names its digest", m.SourcePath, m.SourceVersion)
+		}
+		if err := copyFiles(s.copyDir(m.SourcePath, m.SourceVersion, digest), m.Files); err != nil {
 			return fmt.Errorf("%s@%s: %w", m.SourcePath, m.SourceVersion, err)
 		}
 	}

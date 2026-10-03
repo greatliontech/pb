@@ -29,17 +29,24 @@ func TestReplacementAddressFollowsTheBytes(t *testing.T) {
 		if m.Label() != "example.com/x@v0.1.0 => example.com/y@"+replacement {
 			t.Fatalf("the requirement's name: %s", m.Label())
 		}
-		table := newFiles("ws", []modfiles.Module{m}, nil)
+		digest := "pb1:" + strings.Repeat("ab", 32)
+		digestOf := func(p, v string) string {
+			if p == "example.com/y" && v == replacement {
+				return digest
+			}
+			return ""
+		}
+		table := newFiles("ws", []modfiles.Module{m}, nil, digestOf)
 		u := s.address(table.byPath["x.proto"].origin, "x.proto")
 		if want := "pb-module://example.com/y%40" + replacement + "/x.proto"; string(u) != want {
 			t.Fatalf("the address: %s, want %s", u, want)
 		}
 		addresses = append(addresses, string(u))
 		// The source store's copy lands under the same pair.
-		if err := s.copySources([]modfiles.Module{m}); err != nil {
+		if err := s.copySources([]modfiles.Module{m}, digestOf); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := os.ReadFile(filepath.Join(s.deps.Sources, "example.com", "y@"+replacement, "x.proto")); err != nil {
+		if _, err := os.ReadFile(filepath.Join(s.deps.Sources, "example.com", "y@"+replacement+".pb1-"+strings.Repeat("ab", 32), "x.proto")); err != nil {
 			t.Fatalf("the copy under the source pair: %v", err)
 		}
 		if _, err := os.Stat(filepath.Join(s.deps.Sources, "example.com", "x@v0.1.0")); !errors.Is(err, fs.ErrNotExist) {

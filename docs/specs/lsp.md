@@ -268,15 +268,21 @@ filling — at the first judgement that reads the build of a session,
 and again at the next where the filling failed, the failure shown to
 the client once until a filling succeeds and logged at every try —
 `<user cache>/pb/sources/<escaped module path>@<escaped
-version>/<file path>`, the same pair, escaped as `module-proxy.md`
-escapes a module path and version, the well-known files under
+version>.<digest>/<file path>`, the same pair, escaped as
+`module-proxy.md` escapes a module path and version, the digest the
+pair's archive digest spelled as the module cache spells it
+(`dep-verbs.md` REQ-dep-cache-layout), so two roots' pins of one
+pair are two copies, each the content its name fixes, the well-known
+files under
 `<user cache>/pb/sources/well-known@<digest>/` with `<digest>` the
 hex SHA-256 over the toolchain's well-known imports, each file's
 path then bytes in path order, every field preceded by its length as
 eight big-endian bytes, so a toolchain's copy never serves
 another's — a copy present is compared with the bytes the build
 read and replaced where it differs, nothing else written there,
-`pb clean --sources` emptying it, the read-only copies with it
+`pb clean --sources` emptying it, the read-only copies and the
+copies of the layout before the digest, `<escaped module
+path>@<escaped version>`, which no server reads, with it
 (`dep-verbs.md` REQ-dep-clean). The content served for an address is the bytes the
 last judgement read for it, else — the module gone from the build
 since — those the last build that compiled read, while navigation

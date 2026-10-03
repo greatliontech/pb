@@ -90,7 +90,7 @@ func archiveModfile(modPath string, v version.Version, pin lockfile.ModulePin, z
 // with no source serving one, the digest-verified archive copy — the
 // same bytes by that consistency — fills the cache entry.
 func (c *Client) downloadModfile(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, zip []byte) error {
-	if b, ok, err := c.Cache.Get(modPath, v, KindMod); err != nil {
+	if b, ok, err := c.Cache.Get(modPath, v, KindMod, pin.Digest); err != nil {
 		return err
 	} else if ok && ModfileHash(b) == pin.Modfile {
 		return nil
@@ -105,9 +105,9 @@ func (c *Client) downloadModfile(ctx context.Context, modPath string, v version.
 		if err := lockfile.CheckModfileConsistency(pin.Modfile, standalone, archiveCopy); err != nil {
 			return fmt.Errorf("%s@%s: %w", modPath, v, err)
 		}
-		return c.Cache.Put(modPath, v, KindMod, standalone)
+		return c.Cache.Put(modPath, v, KindMod, pin.Digest, standalone)
 	case errors.Is(err, proxy.ErrNotHere):
-		return c.Cache.Put(modPath, v, KindMod, archiveCopy)
+		return c.Cache.Put(modPath, v, KindMod, pin.Digest, archiveCopy)
 	default:
 		return err
 	}
@@ -119,7 +119,7 @@ func (c *Client) downloadModfile(ctx context.Context, modPath string, v version.
 // variant. A cached entry failing the same check is discarded as
 // absent and refetched (REQ-dep-cache-transparent).
 func (c *Client) downloadInfo(ctx context.Context, modPath string, v version.Version) error {
-	if b, ok, err := c.Cache.Get(modPath, v, KindInfo); err != nil {
+	if b, ok, err := c.Cache.Get(modPath, v, KindInfo, ""); err != nil {
 		return err
 	} else if ok && checkInfo(b, v) == nil {
 		return nil
@@ -131,7 +131,7 @@ func (c *Client) downloadInfo(ctx context.Context, modPath string, v version.Ver
 	if err := checkInfo(b, v); err != nil {
 		return fmt.Errorf("fetch: info object for %s@%s: %w", modPath, v, err)
 	}
-	return c.Cache.Put(modPath, v, KindInfo, b)
+	return c.Cache.Put(modPath, v, KindInfo, "", b)
 }
 
 func checkInfo(b []byte, v version.Version) error {
@@ -156,7 +156,7 @@ func checkInfo(b []byte, v version.Version) error {
 // reproduce the record fails rather than rewriting anything
 // (REQ-lock-no-silent-downgrade).
 func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip []byte) error {
-	if b, ok, err := c.Cache.Get(modPath, v, KindProv); err != nil {
+	if b, ok, err := c.Cache.Get(modPath, v, KindProv, pin.Digest); err != nil {
 		return err
 	} else if ok && c.reverifyProv(ctx, modPath, v, pin, key, zip, b) == nil {
 		return nil
@@ -171,7 +171,7 @@ func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Ver
 	if err := c.reverifyProv(ctx, modPath, v, pin, key, zip, provBytes); err != nil {
 		return err
 	}
-	return c.Cache.Put(modPath, v, KindProv, provBytes)
+	return c.Cache.Put(modPath, v, KindProv, pin.Digest, provBytes)
 }
 
 // reverifyProv checks that an envelope reproduces the pinned record:

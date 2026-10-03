@@ -104,7 +104,7 @@ func TestPinnedKeyEvidenceAcceptedAndRecorded(t *testing.T) {
 			if rec.SAN != "" || rec.Issuer != "" {
 				t.Fatalf("record names an identity: %+v", rec)
 			}
-			if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv); err != nil || !ok {
+			if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv, pinDigest(t, c, "example.com/m", "v1.0.0")); err != nil || !ok {
 				t.Fatalf("prov not cached: ok=%v err=%v", ok, err)
 			}
 		})

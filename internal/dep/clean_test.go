@@ -40,7 +40,7 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 			// The source store's copies, a temporary an interrupted
 			// write left, and strangers: a file, a directory no copy's
 			// name spells, a name whose halves are not escaped.
-			for _, p := range []string{"example.com/m@v1.0.0/m.proto", "example.com/m@v1.0.0/sub/x.proto", "github.com/!org/n@v2.0.0/n.proto", "well-known@" + strings.Repeat("0f", 32) + "/google/protobuf/any.proto", ".pb-sources-123", "notes.txt", "stranger/x.proto", "Bad@v1.0.0/x.proto", "noversion@/x.proto", "photos@2024/img.proto", "example.com/m@latest/m.proto", "well-known@abc/x.proto"} {
+			for _, p := range []string{"example.com/m@v1.0.0.pb1-" + strings.Repeat("ab", 32) + "/m.proto", "example.com/m@v1.0.0.pb1-" + strings.Repeat("ab", 32) + "/sub/x.proto", "example.com/m@v1.0.0/m.proto", "github.com/!org/n@v2.0.0/n.proto", "example.com/m@v1.0.0.pb1-abc/x.proto", "example.com/m@v1.0.0-rc.pb1-abc/x.proto", "well-known@" + strings.Repeat("0f", 32) + "/google/protobuf/any.proto", ".pb-sources-123", "notes.txt", "stranger/x.proto", "Bad@v1.0.0/x.proto", "noversion@/x.proto", "photos@2024/img.proto", "example.com/m@latest/m.proto", "well-known@abc/x.proto"} {
 				// A copy's files are read-only (the store's mode); the
 				// emptying removes them all the same.
 				if err := util.WriteFile(sources, p, []byte("x"), 0o444); err != nil {
@@ -53,7 +53,7 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 			// directory — the cache setting can name any directory,
 			// and what the layout does not recognize is not the
 			// cache's.
-			for _, p := range []string{"example.com/m/@v/v1.0.0.zip", "example.com/m/@v/v1.0.0.mod", "example.com/m/@v/.put-tmp", "example.com/n/@v/v2.0.0.info", "example.com/n/@v/notes.txt", "example.com/o/README", "config.yaml", "vcs/" + origin + "/snapshots/HEAD", "vcs/" + origin + "/lock", "vcs/notes/snapshots/x", "go/pkg/mod/cache/download/other.org/x/@v/v1.0.0.zip"} {
+			for _, p := range []string{"example.com/m/@v/v1.0.0.pb1-" + strings.Repeat("ab", 32) + ".zip", "example.com/m/@v/v1.0.0.pb1-" + strings.Repeat("ab", 32) + ".mod", "example.com/m/@v/v1.0.0.zip", "example.com/m/@v/v1.0.0.mod", "example.com/m/@v/.put-tmp", "example.com/n/@v/v2.0.0.info", "example.com/n/@v/notes.txt", "example.com/o/README", "config.yaml", "vcs/" + origin + "/snapshots/HEAD", "vcs/" + origin + "/lock", "vcs/notes/snapshots/x", "go/pkg/mod/cache/download/other.org/x/@v/v1.0.0.zip"} {
 				if err := util.WriteFile(cache, p, []byte("x"), 0o644); err != nil {
 					t.Fatal(err)
 				}
@@ -90,8 +90,8 @@ func TestCleanEmptiesTheSelectedStores(t *testing.T) {
 			}
 			slices.Sort(sourceNames)
 			if tc.wantSources {
-				if left, err := sources.ReadDir("example.com"); err != nil || len(left) != 1 || left[0].Name() != "m@latest" {
-					t.Fatalf("under example.com after the emptying: %v, %v; want the stranger m@latest alone", left, err)
+				if left, err := sources.ReadDir("example.com"); err != nil || len(left) != 2 || left[0].Name() != "m@latest" || left[1].Name() != "m@v1.0.0.pb1-abc" {
+					t.Fatalf("under example.com after the emptying: %v, %v; want the strangers m@latest and m@v1.0.0.pb1-abc alone", left, err)
 				}
 				if strings.Join(sourceNames, ",") != "Bad@v1.0.0,example.com,notes.txt,noversion@,photos@2024,stranger,well-known@abc" || !strings.Contains(out.String(), "sources: emptied\n") {
 					t.Fatalf("the source store after the emptying: %v, report %q; want the strangers alone", sourceNames, out.String())

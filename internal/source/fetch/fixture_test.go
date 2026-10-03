@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-billy/v6/memfs"
@@ -12,6 +14,7 @@ import (
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/source/origin"
+	"github.com/greatliontech/pb/internal/source/proxy"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
 )
 
@@ -133,4 +136,31 @@ func servedTag(t *testing.T, env []byte) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// pinDigest is the archive digest the client's lockfile pins a pair
+// at, the key the cache names the pair's entries by.
+func pinDigest(t *testing.T, c *Client, modPath, v string) string {
+	t.Helper()
+	pin, ok := c.Lock.Module(modPath, v)
+	if !ok {
+		t.Fatalf("no pin for %s@%s", modPath, v)
+	}
+	return pin.Digest
+}
+
+// anyEntry reports whether the cache holds an entry of the kind for
+// the pair under any digest: what "nothing cached" assertions ask.
+func anyEntry(t *testing.T, c *Client, modPath string, v version.Version, kind string) bool {
+	t.Helper()
+	entries, err := c.Cache.FS.ReadDir(path.Join(proxy.Escape(modPath), VersionDir))
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), proxy.Escape(v.String())+".") && strings.HasSuffix(e.Name(), "."+kind) {
+			return true
+		}
+	}
+	return false
 }

@@ -69,12 +69,12 @@ func TestFirstUseRecordsCompletePin(t *testing.T) {
 		t.Fatalf("pin provenance = %+v, want none", pin.Provenance)
 	}
 	for _, kind := range []string{KindZip, KindMod} {
-		if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), kind); err != nil || !ok {
+		if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), kind, digest); err != nil || !ok {
 			t.Fatalf("cache %s: ok=%v err=%v", kind, ok, err)
 		}
 	}
 	// No provenance was served, so nothing may sit at its cache entry.
-	if _, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv); ok {
+	if anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), KindProv) {
 		t.Fatal("an absent provenance envelope was cached")
 	}
 
@@ -110,7 +110,7 @@ func TestFirstUseSynthesizesModule(t *testing.T) {
 	}
 	// A synthesized module writes no module-file or provenance entry.
 	for _, kind := range []string{KindMod, KindProv} {
-		if _, ok, _ := c.Cache.Get("example.com/syn", ver(t, "v2.1.0"), kind); ok {
+		if anyEntry(t, c, "example.com/syn", ver(t, "v2.1.0"), kind) {
 			t.Fatalf("synthesized module cached a %s entry", kind)
 		}
 	}
@@ -379,7 +379,7 @@ func TestFirstUseIdentityMismatchLeavesNoState(t *testing.T) {
 	if _, ok := c.Lock.Module("example.com/m", "v1.0.0"); ok {
 		t.Fatal("a failed verification recorded a pin")
 	}
-	if _, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); ok {
+	if anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), KindZip) {
 		t.Fatal("a failed verification cached the artifact")
 	}
 }
@@ -419,7 +419,7 @@ func TestPinnedArchiveTamperRejectedProperty(t *testing.T) {
 			}
 			return
 		}
-		if _, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); ok {
+		if anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), KindZip) {
 			rt.Fatal("rejected archive cached")
 		}
 	})
@@ -442,6 +442,7 @@ func TestCacheTransparencyProperty(t *testing.T) {
 		t.Fatalf("seed Module: %v", err)
 	}
 	poisonZip, _ := moduleZip(t, map[string]string{"pb.yaml": "module: example.com/m\n"})
+	seeded := pinDigest(t, seed, "example.com/m", "v1.0.0")
 	rapid.Check(t, func(rt *rapid.T) {
 		c := fx.Client("proxy")
 		c.Lock = seed.Lock
@@ -453,12 +454,12 @@ func TestCacheTransparencyProperty(t *testing.T) {
 				if kind == KindMod {
 					b = []byte(files["pb.yaml"])
 				}
-				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, b); err != nil {
+				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, seeded, b); err != nil {
 					rt.Fatal(err)
 				}
 			case 2: // corrupt
 				junk := rapid.SliceOfN(rapid.Byte(), 0, 64).Draw(rt, kind+"-junk")
-				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, junk); err != nil {
+				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, seeded, junk); err != nil {
 					rt.Fatal(err)
 				}
 			case 3: // well-formed, wrong content — the hostile-cache shape
@@ -466,7 +467,7 @@ func TestCacheTransparencyProperty(t *testing.T) {
 				if kind == KindMod {
 					b = []byte("module: example.com/m\n# not the pinned bytes\n")
 				}
-				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, b); err != nil {
+				if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), kind, seeded, b); err != nil {
 					rt.Fatal(err)
 				}
 			}
@@ -482,9 +483,11 @@ func TestCacheTransparencyProperty(t *testing.T) {
 }
 
 // An unpinned resolution never reads the cache: a pin is what makes
-// cache bytes verifiable, so first use pins what the sources serve,
-// and the poisoned entry is overwritten by the verified fetch
-// (REQ-dep-cache-transparent).
+// cache bytes verifiable, so first use pins what the sources serve.
+// An entry under the source's own digest holding other bytes is
+// corruption — the name fixes the content — replaced by the verified
+// fetch; an entry under another digest is another pin's, untouched
+// (REQ-dep-cache-transparent, REQ-dep-cache-layout).
 func TestFirstUseIgnoresCache(t *testing.T) {
 	fx := newFixture(t)
 	sourceZip, sourceDigest := moduleZip(t, declaredFiles())
@@ -495,7 +498,12 @@ func TestFirstUseIgnoresCache(t *testing.T) {
 	poisonZip, poisonDigest := moduleZip(t, map[string]string{
 		"pb.yaml": "module: example.com/m\n", // valid, differing content
 	})
-	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, poisonZip); err != nil {
+	// The poison under the source's name, and under its own: another
+	// root's pin's entry.
+	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, sourceDigest, poisonZip); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, poisonDigest, poisonZip); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
@@ -508,14 +516,11 @@ func TestFirstUseIgnoresCache(t *testing.T) {
 	if pin.Digest != sourceDigest {
 		t.Fatalf("pin digest = %s, want the source's %s", pin.Digest, sourceDigest)
 	}
-	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); !ok || !bytes.Equal(b, poisonZip) {
-		t.Fatal("first use rewrote the entry present")
+	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip, sourceDigest); !ok || !bytes.Equal(b, sourceZip) {
+		t.Fatal("first use left corruption under the source's name")
 	}
-	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
-		t.Fatalf("the pinned read: %v", err)
-	}
-	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); !ok || !bytes.Equal(b, sourceZip) {
-		t.Fatal("the pinned read did not discard and refetch the entry failing its pin")
+	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip, poisonDigest); !ok || !bytes.Equal(b, poisonZip) {
+		t.Fatal("first use touched another pin's entry")
 	}
 }
 
@@ -681,8 +686,8 @@ func TestDirectSourceDownload(t *testing.T) {
 		t.Fatalf("Download: %v", err)
 	}
 	for _, kind := range []string{KindZip, KindMod, KindInfo} {
-		if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), kind); err != nil || !ok {
-			t.Fatalf("cache %s: ok=%v err=%v", kind, ok, err)
+		if !anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), kind) {
+			t.Fatalf("cache %s: absent", kind)
 		}
 	}
 	// The lightweight tag carries no signature: provenance is absent,
@@ -691,12 +696,12 @@ func TestDirectSourceDownload(t *testing.T) {
 	if pin.Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("provenance = %+v, want none", pin.Provenance)
 	}
-	if _, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv); ok {
+	if anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), KindProv) {
 		t.Fatal("absent provenance cached")
 	}
 	// The cached info is the canonical direct construction: it names
 	// the version and the commit's time.
-	b, _, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindInfo)
+	b, _, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindInfo, "")
 	info, err := proxy.ParseInfo(b)
 	if err != nil || info.Version.String() != "v1.0.0" || !info.Time.Equal(gitWhen) {
 		t.Fatalf("direct info = %+v, %v", info, err)

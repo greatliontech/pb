@@ -27,7 +27,7 @@ func TestSourceStoreFilledAtTheFirstJudgementThatReads(t *testing.T) {
 	fx.start(t)
 	fx.initialize(t, protocol.ClientCapabilities{})
 	fx.message(t, "the build could not be judged")
-	copy := filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto")
+	copy := fx.stdStore(t, "std.proto")
 	if _, err := os.Stat(copy); !os.IsNotExist(err) {
 		t.Fatalf("a copy before any judgement read the dependency: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestSourceStoreFilledAtTheFirstJudgementThatReads(t *testing.T) {
 func TestSourceStoreFilledAgainAfterAFailedFilling(t *testing.T) {
 	fx := newFixture(t, checkTree())
 	fx.pin(t)
-	dir := filepath.Join(fx.sources, "example.com", "std@v1.0.0")
+	dir := fx.stdStore(t)
 	if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestSourceStoreFilledAgainAfterAFailedFilling(t *testing.T) {
 func TestSourceStoreMakesAnEqualCopyReadOnly(t *testing.T) {
 	fx := newFixture(t, checkTree())
 	fx.pin(t)
-	copy := filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto")
+	copy := fx.stdStore(t, "std.proto")
 	if err := os.MkdirAll(filepath.Dir(copy), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestSourceStoreMakesAnEqualCopyReadOnly(t *testing.T) {
 func TestSourceStoreLeavesAStrayDirectoryAlone(t *testing.T) {
 	fx := newFixture(t, checkTree())
 	fx.pin(t)
-	stray := filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto")
+	stray := fx.stdStore(t, "std.proto")
 	if err := os.MkdirAll(stray, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestSourceStoreLeavesAStrayDirectoryAlone(t *testing.T) {
 func TestSourceStoreReplacesADifferingReadOnlyCopy(t *testing.T) {
 	fx := newFixture(t, checkTree())
 	fx.pin(t)
-	copy := filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto")
+	copy := fx.stdStore(t, "std.proto")
 	if err := os.MkdirAll(filepath.Dir(copy), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestModuleAddressRoundTripsEveryArchivePath(t *testing.T) {
 		segs := rapid.SliceOfN(segment, 1, 3).Draw(t, "segments")
 		p := strings.Join(segs, "/") + ".proto"
 		s.files = &buildFiles{byPath: map[string]file{p: {origin: origin{modPath: "example.com/m", version: "v1.0.0"}, text: []byte(p)}}}
-		u := s.moduleURI("example.com/m", "v1.0.0", p)
+		u := s.moduleURI("example.com/m", "v1.0.0", "pb1:"+strings.Repeat("ab", 32), p)
 		if back := uri.MustParse(u.String()); back != u {
 			t.Fatalf("the address %s is not canonical: the client would send back %s", u, back)
 		}

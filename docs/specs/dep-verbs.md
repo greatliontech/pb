@@ -40,12 +40,19 @@ uses.
 ## Module cache
 
 **REQ-dep-cache-layout** (wire): A version-addressed artifact MUST be
-stored at `<cache>/<escaped module path>/@v/<escaped version>.<kind>`
-with `<kind>` one of `info`, `mod`, `zip`, `prov` and escaping per
-`module-proxy.md` — the cache shares proxy storage's case-insensitivity
-constraint. Entries are written atomically and whole; apart from the
-transient temporary files atomic writes leave on interruption — never
-read as entries — no other content lives under the cache root.
+stored at `<cache>/<escaped module path>/@v/<escaped
+version>.<digest>.<kind>` with `<kind>` one of `mod`, `zip`, `prov`
+and `<digest>` the archive's module digest (`module-archive.md`
+REQ-archive-digest) spelled with its `:` as `-`, so the name fixes
+the content and two roots pinning one pair at two digests hold two
+entries, each its own pin's — the info object, which no digest fixes,
+at `<escaped version>.info` — and escaping per `module-proxy.md` —
+the cache shares proxy storage's case-insensitivity constraint.
+Entries are written atomically and whole; apart from the transient
+temporary files atomic writes leave on interruption — never read as
+entries — and the entries of the layout before the digest,
+`<escaped version>.<kind>`, which no operation reads and the emptying
+removes (REQ-dep-clean), no other content lives under the cache root.
 
 **REQ-dep-cache-transparent** (invariant): The cache MUST carry no
 authority: an artifact read from the cache verifies against digests,
@@ -57,9 +64,11 @@ origin rewrite, and the refetched bytes still verify against the pin —
 so cache state can change what is fetched, never what is accepted.
 Version-addressed entries are otherwise never rewritten: the immutable
 artifacts of `REQ-proxy-immutable` are cached without revalidation,
-and a first use writes an entry where the cache holds none and
-rewrites none present — the root whose pin a present entry fails
-reads past it on that discard-refetch path.
+and an entry is named by the digest that fixes its content
+(REQ-dep-cache-layout), so a write — a first use's, a refetch's —
+rewrites no bytes another root's pin names: an entry present under
+the name holds the content the name fixes or is corruption, replaced
+by the verified bytes.
 
 ## Verbs
 
@@ -229,7 +238,10 @@ artifact: the module-file hash is recomputed from its in-archive copy
 `REQ-lock-modfile-consistency`), and a pair whose archive is not
 cached is outside `verify`'s scope even when other artifact kinds are
 — there are no attestable module bytes, and `download` followed by
-`verify` covers the full pin set. This is the one sanctioned
+`verify` covers the full pin set; the entry checked is the one under
+the pin's digest (REQ-dep-cache-layout), another digest's entry for
+the pair being another pin's, and a pin recording no digest names no
+entry and is outside the scope the same way. This is the one sanctioned
 exception to `REQ-dep-cache-transparent`'s outcome-identity: `verify`'s
 subject IS the cache state, so its report legitimately depends on what
 is cached — never on cached content evading verification.
@@ -242,9 +254,10 @@ from the lockfiles' pins, and the trusted root, the user
 configuration, the lint files, the lockfiles and every resolution
 root's files are never touched: `--modules` empties the module cache
 — every artifact and every temporary under an `@v` directory whose
-parent spells an escaped module path removed, and the directories
-that emptying left empty with them, recognized by name and layout
-alone (REQ-dep-cache-layout: another tool's cache of the same shape
+parent spells an escaped module path removed, the entries of the
+layout before the digest among them, and the directories that
+emptying left empty with them, recognized by name and layout alone
+(REQ-dep-cache-layout: another tool's cache of the same shape
 under the named directory is not this one's, a directory empty
 already is not touched), and each origin under `vcs` emptied of its
 repositories and probes under the origin's own lock, the directory

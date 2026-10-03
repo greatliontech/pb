@@ -30,6 +30,7 @@ import (
 	"github.com/greatliontech/lsp/uri"
 
 	"github.com/greatliontech/pb/internal/dep"
+	"github.com/greatliontech/pb/internal/source/fetch"
 	"github.com/greatliontech/pb/internal/testing/fetchtest"
 	"github.com/greatliontech/pb/internal/testing/fetchtest/assemble"
 	"github.com/greatliontech/pb/internal/testing/scratchtest"
@@ -39,16 +40,17 @@ import (
 // recording client over a channel stream pair.
 type fixture struct {
 	*fetchtest.Fixture
-	ws      billy.Filesystem
-	root    string // the host root the tree is rooted at
-	sources string
-	srv     *Server
-	server  protocol.Server // the dispatcher to the server
-	client  *recorder
-	conn    jsonrpc2.Conn
-	status  chan int
-	ended   bool
-	exit    int
+	ws        billy.Filesystem
+	root      string // the host root the tree is rooted at
+	sources   string
+	stdDigest string // the served std archive's digest, the store's key beside the pair
+	srv       *Server
+	server    protocol.Server // the dispatcher to the server
+	client    *recorder
+	conn      jsonrpc2.Conn
+	status    chan int
+	ended     bool
+	exit      int
 
 	mu   sync.Mutex
 	held map[uint64]*holding // judgements held at the seam, by generation
@@ -137,15 +139,32 @@ func newFixture(t *testing.T, files map[string]string) *fixture {
 			t.Fatal(err)
 		}
 	}
-	zip, _ := fetchtest.ModuleZip(t, stdModule())
-	fx.Endpoint("example.com/std", "v1.0.0", "zip", string(zip))
+	fx.serveStd(t, stdModule())
 	fx.root = filepath.VolumeName(os.TempDir()) + string(filepath.Separator) + "pbtest"
 	fx.sources = scratchtest.Dir(t)
 	return fx
 }
 
+// serveStd serves the std module's archive from the files and keeps
+// its digest, the one a copy of it in the source store is named by.
+func (fx *fixture) serveStd(t *testing.T, files map[string]string) {
+	t.Helper()
+	zip, digest := fetchtest.ModuleZip(t, files)
+	fx.Endpoint("example.com/std", "v1.0.0", "zip", string(zip))
+	fx.stdDigest = digest
+}
+
+// stdStore is a path under the std module's copy in the source
+// store: `example.com/std@v1.0.0.<digest>`, the digest the served
+// archive's, as the store names a copy (REQ-lsp-dependency-files).
+func (fx *fixture) stdStore(t *testing.T, parts ...string) string {
+	t.Helper()
+	return filepath.Join(append([]string{fx.sources, "example.com", "std@v1.0.0." + fetch.DigestName(fx.stdDigest)}, parts...)...)
+}
+
 // pin pins the tree's requirements as a verb would: the lint verb run
 // over a read-write session, the lockfile then written.
+
 func (fx *fixture) pin(t *testing.T) {
 	t.Helper()
 	s, err := dep.Load(dep.Config{WS: fx.ws, Dir: "ws", Client: assemble.Client(fx.Fixture, "proxy")})
@@ -802,8 +821,7 @@ func TestDependencyAddress(t *testing.T) {
 	for _, content := range []bool{true, false} {
 		t.Run(fmt.Sprintf("content=%v", content), func(t *testing.T) {
 			fx := newFixture(t, checkTree())
-			zip, _ := fetchtest.ModuleZip(t, broken)
-			fx.Endpoint("example.com/std", "v1.0.0", "zip", string(zip))
+			fx.serveStd(t, broken)
 			fx.pin(t)
 			fx.start(t)
 			caps := protocol.ClientCapabilities{}
@@ -813,7 +831,7 @@ func TestDependencyAddress(t *testing.T) {
 			res := fx.initialize(t, caps)
 			want := uri.MustParse("pb-module://example.com/std@v1.0.0/std.proto")
 			if !content {
-				want = uri.File(filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto"))
+				want = uri.File(fx.stdStore(t, "std.proto"))
 			}
 			p := fx.publishFor(t, string(want), func(p *protocol.PublishDiagnosticsParams) bool { return p.URI == want })
 			if len(p.Diagnostics) != 1 || p.Diagnostics[0].Range.Start.Line != 2 || !strings.Contains(string(p.Diagnostics[0].Message.(protocol.String)), "nowhere.proto") {

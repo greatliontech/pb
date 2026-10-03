@@ -26,13 +26,13 @@ func TestDownloadHealsCorruptCachedInfo(t *testing.T) {
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindInfo, []byte("not json at all")); err != nil {
+	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindInfo, "", []byte("not json at all")); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatalf("Download over corrupt cached info: %v", err)
 	}
-	b, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindInfo)
+	b, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindInfo, "")
 	if err != nil || !ok || string(b) != `{"version":"v1.0.0"}` {
 		t.Fatalf("cached info after heal = %q, %v, %v", b, ok, err)
 	}
@@ -54,13 +54,13 @@ func TestDownloadReverifiesEvidence(t *testing.T) {
 	}
 
 	t.Run("corrupt cached envelope heals from sources", func(t *testing.T) {
-		if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindProv, []byte("junk")); err != nil {
+		if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindProv, pinDigest(t, c, "example.com/m", "v1.0.0"), []byte("junk")); err != nil {
 			t.Fatal(err)
 		}
 		if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 			t.Fatalf("Download over corrupt cached prov: %v", err)
 		}
-		b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv)
+		b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv, pinDigest(t, c, "example.com/m", "v1.0.0"))
 		if !ok || string(b) == "junk" {
 			t.Fatal("corrupt cached envelope survived Download")
 		}
@@ -98,7 +98,7 @@ func TestDownloadConvictsBogusModfilePin(t *testing.T) {
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); !errors.Is(err, lockfile.ErrPinMismatch) {
 		t.Fatalf("err = %v, want ErrPinMismatch", err)
 	}
-	if _, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindMod); ok {
+	if anyEntry(t, c, "example.com/m", ver(t, "v1.0.0"), KindMod) {
 		t.Fatal("a failed conviction cached a module-file entry")
 	}
 }

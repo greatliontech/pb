@@ -935,9 +935,18 @@ func TestVerifyVerb(t *testing.T) {
 		t.Fatalf("output = %q", out.String())
 	}
 
+	// A pin recording no digest names no cache entry: outside verify's
+	// scope, neither verified nor convicted.
+	if err := s.Lock.AddModule(lockfile.ModulePin{Path: "example.com/nodigest", Version: "v1.0.0", Modfile: "sha256:" + strings.Repeat("ab", 32)}); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err != nil || !strings.Contains(out.String(), "verified 1 cached module(s)") {
+		t.Fatalf("Verify beside a digestless pin: %v %q", err, out.String())
+	}
 	// A tampered cache entry is a reported mismatch and a failure.
 	wrong, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/m1", "  example.com/x: v1.0.0\n")})
-	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
+	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, s.PinnedDigest("example.com/m1", "v1.0.0"), wrong); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
@@ -963,7 +972,8 @@ func TestVerifyVerb(t *testing.T) {
 		t.Fatalf("with a ruleset pin: %v %q", err, out.String())
 	}
 	wrongRules, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/rules", ""), "r.rules.yaml": "celEnv: 1\nrules: []\n# tampered\n"})
-	if err := s.Client.Cache.Put("example.com/rules", mustVer(t, "v1.0.0"), fetch.KindZip, wrongRules); err != nil {
+	rulesPin, _ := s.Lock.RulesetPins().Module("example.com/rules", "v1.0.0")
+	if err := s.Client.Cache.Put("example.com/rules", mustVer(t, "v1.0.0"), fetch.KindZip, rulesPin.Digest, wrongRules); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
@@ -972,7 +982,7 @@ func TestVerifyVerb(t *testing.T) {
 	}
 	// The modules' pins are reported before the rulesets', whatever
 	// the paths' order.
-	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
+	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindZip, s.PinnedDigest("example.com/m1", "v1.0.0"), wrong); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
@@ -1558,7 +1568,7 @@ func TestUpdateAndVerifyArms(t *testing.T) {
 		}
 		wrong, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/x", "")})
 		for _, m := range []string{"example.com/m2", "example.com/m1"} {
-			if err := s.Client.Cache.Put(m, mustVer(t, "v1.0.0"), fetch.KindZip, wrong); err != nil {
+			if err := s.Client.Cache.Put(m, mustVer(t, "v1.0.0"), fetch.KindZip, s.PinnedDigest(m, "v1.0.0"), wrong); err != nil {
 				t.Fatal(err)
 			}
 		}

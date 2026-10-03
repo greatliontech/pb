@@ -180,9 +180,24 @@ func savePins(s *Session, stepErr error) error {
 	return stepErr
 }
 
+// PinnedDigest is the archive digest the lockfile pins a build-list
+// pair at, "" where no module pin names it: the key beside the pair
+// under which the module cache and the language server's source
+// store hold the pair's bytes (dep-verbs.md REQ-dep-cache-layout,
+// lsp.md REQ-lsp-dependency-files). A build's modules are module
+// pins; a ruleset's files ride on them and are no module of the
+// build.
+func (s *Session) PinnedDigest(modPath, v string) string {
+	if pin, ok := s.Lock.ModulePins().Module(modPath, v); ok {
+		return pin.Digest
+	}
+	return ""
+}
+
 // SaveLock writes the lockfile canonically at the resolution root when
 // its recorded facts changed (REQ-lock-canonical-emission): unchanged
 // pins rewrite nothing.
+
 func (s *Session) SaveLock() error {
 	// A read-only session records no pin and rewrites nothing, not even
 	// a lockfile whose spelling is not canonical (REQ-lsp-tree-untouched).

@@ -339,7 +339,7 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("pin %s@%s%s: %w", pin.Path, pin.Version, pin.mark, err)
 		}
-		b, ok, err := s.Client.Cache.Get(pin.Path, v, fetch.KindZip)
+		b, ok, err := s.Client.Cache.Get(pin.Path, v, fetch.KindZip, pin.Digest)
 		if err != nil {
 			return err
 		}

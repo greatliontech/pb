@@ -104,7 +104,7 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	// varies try to try, a temporary's name or the file reached first
 	// — and logged at every try.
 	if j != nil && !content && s.filledFor != sess {
-		if err := s.copySources(j.Mods); err != nil {
+		if err := s.copySources(j.Mods, sess.PinnedDigest); err != nil {
 			s.deps.Logger.Error("the dependency source store could not be filled", "error", err)
 			if !s.sourcesShown {
 				s.sourcesShown = true
@@ -116,7 +116,7 @@ func (s *Server) judge(ctx context.Context, gen uint64, reload bool) {
 	}
 	var f *buildFiles
 	if j != nil {
-		f = newFiles(sess.Root.Dir, j.Mods, s.wellKnown.files)
+		f = newFiles(sess.Root.Dir, j.Mods, s.wellKnown.files, sess.PinnedDigest)
 	}
 	placements := s.placements(sess, docs, j, f, unpinned, judgeErr != nil)
 	// The navigation index, built here on the judgement's goroutine,
@@ -329,18 +329,25 @@ type origin struct {
 	tree      string
 	modPath   string
 	version   string
+	digest    string // the pair's archive digest, the source store's key beside the pair
 	wellKnown bool
 }
 
 // newFiles tabulates a judgement's modules and the well-known set;
 // rootDir is the resolution root's directory within the working
 // tree, from which a tree file's path is spelled.
-func newFiles(rootDir string, mods []modfiles.Module, wellKnown map[string][]byte) *buildFiles {
+func newFiles(rootDir string, mods []modfiles.Module, wellKnown map[string][]byte, digestOf func(modPath, version string) string) *buildFiles {
 	f := &buildFiles{byPath: map[string]file{}, byTree: map[string]string{}}
 	if providers, err := compile.Providers(mods); err == nil {
+		digests := make([]string, len(mods))
+		for i, m := range mods {
+			if !m.FromTree() {
+				digests[i] = digestOf(m.SourcePath, m.SourceVersion)
+			}
+		}
 		for p, i := range providers {
 			m := mods[i]
-			o := origin{modPath: m.SourcePath, version: m.SourceVersion}
+			o := origin{modPath: m.SourcePath, version: m.SourceVersion, digest: digests[i]}
 			if m.FromTree() {
 				o = origin{tree: path.Join(rootDir, m.Dir, p)}
 				f.byTree[o.tree] = p
@@ -366,7 +373,7 @@ func (s *Server) address(o origin, p string) uri.URI {
 	case o.tree != "":
 		return s.fileURI(o.tree)
 	}
-	return s.moduleURI(o.modPath, o.version, p)
+	return s.moduleURI(o.modPath, o.version, o.digest, p)
 }
 
 // at is a build path's address and bytes from the table; a path no

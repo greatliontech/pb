@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/greatliontech/pb/internal/module/version"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,7 +136,11 @@ func TestDownloadMaterializesArtifacts(t *testing.T) {
 		t.Fatalf("Download: %v", err)
 	}
 	for _, kind := range []string{KindZip, KindMod, KindInfo} {
-		if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), kind); err != nil || !ok {
+		digest := pinDigest(t, c, "example.com/m", "v1.0.0")
+		if kind == KindInfo {
+			digest = ""
+		}
+		if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), kind, digest); err != nil || !ok {
 			t.Fatalf("cache %s: ok=%v err=%v", kind, ok, err)
 		}
 	}
@@ -208,14 +213,24 @@ func TestDownloadVanishedEvidenceFailsClosed(t *testing.T) {
 }
 
 // Golden layout (REQ-dep-cache-layout): version-addressed entries live
-// at <escaped path>/@v/<escaped version>.<kind> with proxy escaping —
-// uppercase in a prerelease is storage-safe.
+// at <escaped path>/@v/<escaped version>.<digest>.<kind> with proxy
+// escaping — uppercase in a prerelease is storage-safe — the digest
+// spelled with its colon as a dash, the info object at <escaped
+// version>.info; an entry of a kind the digest fixes is unnamed
+// without one.
 func TestCacheLayoutGolden(t *testing.T) {
-	if got := entryPath("example.com/m", ver(t, "v1.0.0-RC1"), KindZip); got != "example.com/m/@v/v1.0.0-!r!c1.zip" {
-		t.Fatalf("entryPath = %q", got)
+	digest := "pb1:" + strings.Repeat("ab", 32)
+	if got, err := entryPath("example.com/m", ver(t, "v1.0.0-RC1"), KindZip, digest); err != nil || got != "example.com/m/@v/v1.0.0-!r!c1.pb1-"+strings.Repeat("ab", 32)+".zip" {
+		t.Fatalf("entryPath = %q, %v", got, err)
 	}
-	if got := entryPath("example.com/m", ver(t, "v1.0.0"), KindProv); got != "example.com/m/@v/v1.0.0.prov" {
-		t.Fatalf("entryPath = %q", got)
+	if got, err := entryPath("example.com/m", ver(t, "v1.0.0"), KindProv, digest); err != nil || got != "example.com/m/@v/v1.0.0.pb1-"+strings.Repeat("ab", 32)+".prov" {
+		t.Fatalf("entryPath = %q, %v", got, err)
+	}
+	if got, err := entryPath("example.com/m", ver(t, "v1.0.0"), KindInfo, ""); err != nil || got != "example.com/m/@v/v1.0.0.info" {
+		t.Fatalf("entryPath = %q, %v", got, err)
+	}
+	if _, err := entryPath("example.com/m", ver(t, "v1.0.0"), KindZip, ""); err == nil {
+		t.Fatal("an archive entry named without a digest")
 	}
 }
 
@@ -225,13 +240,14 @@ func TestCachePutGet(t *testing.T) {
 	fx := newFixture(t)
 	c := fx.Client("proxy")
 	v := ver(t, "v1.0.0")
-	if _, ok, err := c.Cache.Get("example.com/m", v, KindZip); ok || err != nil {
+	digest := "pb1:" + strings.Repeat("cd", 32)
+	if _, ok, err := c.Cache.Get("example.com/m", v, KindZip, digest); ok || err != nil {
 		t.Fatalf("Get on empty cache: ok=%v err=%v", ok, err)
 	}
-	if err := c.Cache.Put("example.com/m", v, KindZip, []byte("abc")); err != nil {
+	if err := c.Cache.Put("example.com/m", v, KindZip, digest, []byte("abc")); err != nil {
 		t.Fatal(err)
 	}
-	b, ok, err := c.Cache.Get("example.com/m", v, KindZip)
+	b, ok, err := c.Cache.Get("example.com/m", v, KindZip, digest)
 	if err != nil || !ok || string(b) != "abc" {
 		t.Fatalf("Get = %q, %v, %v", b, ok, err)
 	}

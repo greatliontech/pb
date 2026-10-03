@@ -68,7 +68,7 @@ func TestAcceptedEvidenceRecorded(t *testing.T) {
 	if len(rec.Object) != 40 {
 		t.Fatalf("recorded object = %q, want a sha1 hex hash", rec.Object)
 	}
-	if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv); err != nil || !ok {
+	if _, ok, err := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindProv, pinDigest(t, c, "example.com/m", "v1.0.0")); err != nil || !ok {
 		t.Fatalf("prov not cached: ok=%v err=%v", ok, err)
 	}
 }

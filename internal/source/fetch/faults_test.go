@@ -364,6 +364,22 @@ func TestHandCraftedPinCorners(t *testing.T) {
 		}
 	}
 
+	t.Run("digestless pin serves the module file, never the archive", func(t *testing.T) {
+		// A pin recording the module-file hash and no digest reads
+		// the standalone module file from the sources — no cache entry
+		// is named without a digest — and the archive not at all.
+		fx, _, _ := fxFor(t)
+		fx.Endpoint("example.com/m", "v1.0.0", "mod", files["pb.yaml"])
+		c := fx.Client("proxy")
+		pin(t, c, lockfile.ModulePin{Path: "example.com/m", Version: "v1.0.0", Modfile: ModfileHash([]byte(files["pb.yaml"]))})
+		if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
+			t.Fatalf("Module over a digestless pin with a module-file hash: %v", err)
+		}
+		if _, err := c.Zip(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil || !strings.Contains(err.Error(), "no digest") {
+			t.Fatalf("Zip over a digestless pin: %v", err)
+		}
+	})
+
 	t.Run("digestless pin cannot serve the archive", func(t *testing.T) {
 		fx, _, _ := fxFor(t)
 		c := fx.Client("proxy")
@@ -624,7 +640,7 @@ func TestDownloadArms(t *testing.T) {
 			t.Fatalf("Download: %v", err)
 		}
 		for _, kind := range []string{KindMod, KindProv} {
-			if _, ok, _ := c.Cache.Get("example.com/syn", ver(t, "v2.1.0"), kind); ok {
+			if anyEntry(t, c, "example.com/syn", ver(t, "v2.1.0"), kind) {
 				t.Fatalf("synthesized download cached a %s entry", kind)
 			}
 		}
@@ -698,7 +714,7 @@ func TestDownloadArms(t *testing.T) {
 		c.Cache = &Cache{FS: fs}
 		// Seed an entry so the read is attempted.
 		fs.FailReadBody = false
-		if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, zip); err != nil {
+		if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindZip, pinDigest(t, c, "example.com/m", "v1.0.0"), zip); err != nil {
 			t.Fatal(err)
 		}
 		fs.FailReadBody = true
@@ -954,13 +970,13 @@ func TestDownloadRepairsPoisonedModEntry(t *testing.T) {
 	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindMod, []byte("module: example.com/m\n# poison\n")); err != nil {
+	if err := c.Cache.Put("example.com/m", ver(t, "v1.0.0"), KindMod, pinDigest(t, c, "example.com/m", "v1.0.0"), []byte("module: example.com/m\n# poison\n")); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
-	b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindMod)
+	b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindMod, pinDigest(t, c, "example.com/m", "v1.0.0"))
 	if !ok || string(b) != files["pb.yaml"] {
 		t.Fatalf("cached mod after Download = %q, want the pinned bytes", b)
 	}

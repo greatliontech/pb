@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-billy/v6"
 	"github.com/greatliontech/pb/internal/atomicfile"
 	"github.com/greatliontech/pb/internal/module"
+	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/version"
 	"github.com/greatliontech/pb/internal/source/proxy"
 )
@@ -43,10 +44,47 @@ const (
 )
 
 // entryPath is the REQ-dep-cache-layout location of one artifact:
-// <escaped module path>/@v/<escaped version>.<kind>, sharing the proxy
-// protocol's escaping and its case-insensitivity rationale.
-func entryPath(modPath string, v version.Version, kind string) string {
-	return path.Join(proxy.Escape(modPath), VersionDir, proxy.Escape(v.String())+"."+kind)
+// <escaped module path>/@v/<escaped version>.<digest>.<kind> for the
+// archive, the module file and the evidence — the digest the
+// archive's, spelled with its `:` as `-` — and <escaped
+// version>.info for the info object, which no digest fixes; the
+// escaping the proxy protocol's, with its case-insensitivity
+// rationale. Two roots pinning one pair at two digests hold two
+// entries, each the content its name fixes.
+func entryPath(modPath string, v version.Version, kind, digest string) (string, error) {
+	name := proxy.Escape(v.String())
+	if kind != KindInfo {
+		if digest == "" {
+			return "", fmt.Errorf("fetch: a %s entry for %s@%s is named by its digest, none given", kind, modPath, v)
+		}
+		name += "." + DigestName(digest)
+	}
+	return path.Join(proxy.Escape(modPath), VersionDir, name+"."+kind), nil
+}
+
+// digestNameSep spells the module digest's `:` in a file name, which
+// no file name on every platform admits.
+const digestNameSep = "-"
+
+// DigestName spells a digest as a file name's part: `pb1:<hex>` as
+// `pb1-<hex>`.
+func DigestName(digest string) string { return strings.Replace(digest, ":", digestNameSep, 1) }
+
+// SplitDigest reads a digest name off the end of a name spelled
+// `<base>.<digest name>`: the base and the digest where the name ends
+// in one as DigestName spells a module digest — DigestName inverted,
+// the tail after the last dot read back to a digest and held to the
+// digest's own form — else the name whole and no digest.
+func SplitDigest(name string) (base, digest string, ok bool) {
+	i := strings.LastIndex(name, ".")
+	if i <= 0 {
+		return name, "", false
+	}
+	digest = strings.Replace(name[i+1:], digestNameSep, ":", 1)
+	if !strings.HasPrefix(digest, archive.DigestPrefix) || !isHex(strings.TrimPrefix(digest, archive.DigestPrefix), 64) || DigestName(digest) != name[i+1:] {
+		return name, "", false
+	}
+	return name[:i], digest, true
 }
 
 // IsModuleDir reports whether a cache-relative directory path is an
@@ -63,23 +101,59 @@ func IsModuleDir(escaped string) bool {
 }
 
 // IsArtifactName reports whether a name under an `@v` directory is
-// the cache's: an artifact of one of the kinds, or a temporary of an
-// atomic write (REQ-dep-cache-layout). Anything else under the cache
-// is not the cache's, whatever directory the setting named.
+// the cache's: an artifact of one of the kinds — `<version>.info`,
+// `<version>.<digest>.<kind>` for the others, and `<version>.<kind>`
+// as the layout before the digest spelled every kind, read by nothing
+// and removed by the emptying — or a temporary of an atomic write
+// (REQ-dep-cache-layout). Anything else under the cache is not the
+// cache's, whatever directory the setting named. A stem with no
+// well-formed digest name at its end is the earlier layout's, a
+// version spelled however it was.
 func IsArtifactName(name string) bool {
 	if strings.HasPrefix(name, putPrefix) {
 		return true
 	}
+	stem := strings.TrimSuffix(name, path.Ext(name))
 	switch path.Ext(name) {
 	case "." + KindInfo, "." + KindMod, "." + KindZip, "." + KindProv:
-		return strings.TrimSuffix(name, path.Ext(name)) != ""
+		return stem != ""
 	}
 	return false
 }
 
-// Get reads a cached artifact, reporting absence without error.
-func (c *Cache) Get(modPath string, v version.Version, kind string) ([]byte, bool, error) {
-	f, err := c.FS.Open(entryPath(modPath, v, kind))
+// IsDigestHex reports whether s is a module digest's hex alone:
+// sixty-four lowercase hex digits, as the well-known set's copy in
+// the dependency source store is named (lsp.md
+// REQ-lsp-dependency-files).
+func IsDigestHex(s string) bool { return isHex(s, 64) }
+
+// isHex reports whether s is exactly n lowercase hex digits.
+func isHex(s string, n int) bool {
+	if len(s) != n {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// Get reads a cached artifact — the pair's at the digest, the info
+// object by the pair alone — reporting absence without error; a
+// digest-named kind asked for with no digest, a pin recording none,
+// names no entry and is absent.
+func (c *Cache) Get(modPath string, v version.Version, kind, digest string) ([]byte, bool, error) {
+	if kind != KindInfo && digest == "" {
+		return nil, false, nil
+	}
+	p, err := entryPath(modPath, v, kind, digest)
+	if err != nil {
+		return nil, false, err
+	}
+	f, err := c.FS.Open(p)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, false, nil
 	}
@@ -94,31 +168,19 @@ func (c *Cache) Get(modPath string, v version.Version, kind string) ([]byte, boo
 	return b, true, nil
 }
 
-// Keep writes a cached artifact where the cache holds none for the
-// pair and kind, and leaves an entry present as it is: a first use
-// writes through it, so a root's first use never rewrites bytes
-// another root's pin names (REQ-dep-cache-transparent); the root
-// whose pin the kept entry fails reads past it on the discard-refetch
-// path. Present or absent is read once: two first uses of one pair
-// racing here are the shared discipline's to order, each writing
-// whole.
-func (c *Cache) Keep(modPath string, v version.Version, kind string, data []byte) error {
-	if _, err := c.FS.Stat(entryPath(modPath, v, kind)); err == nil {
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("fetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
-	}
-	return c.Put(modPath, v, kind, data)
-}
-
 // Put writes a cached artifact atomically and whole through the shared
 // discipline, so no reader ever observes a partial entry
-// (REQ-dep-cache-layout). Callers write only verified bytes; a
-// replacement of an existing entry happens only on the discard-refetch
-// path, where the replacing bytes verified against the same pin the
-// discarded ones failed — a first use writes through Keep.
-func (c *Cache) Put(modPath string, v version.Version, kind string, data []byte) error {
-	p := entryPath(modPath, v, kind)
+// (REQ-dep-cache-layout). Callers write only verified bytes under the
+// digest that fixes them, so a write never rewrites bytes another
+// root's pin names: an entry present under the name holds the same
+// content; a replacement of one happens only on the discard-refetch
+// path, where the replacing bytes verified against the same digest
+// the discarded ones failed.
+func (c *Cache) Put(modPath string, v version.Version, kind, digest string, data []byte) error {
+	p, err := entryPath(modPath, v, kind, digest)
+	if err != nil {
+		return err
+	}
 	if err := c.FS.MkdirAll(path.Dir(p), 0o755); err != nil {
 		return fmt.Errorf("fetch: writing cache entry for %s@%s.%s: %w", modPath, v, kind, err)
 	}

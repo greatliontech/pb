@@ -120,7 +120,7 @@ func TestDefinition(t *testing.T) {
 			loc = define("ws/a/a.proto", fx.token(t, "ws/a/a.proto", "std.S s", 0))
 			dep := uri.MustParse("pb-module://example.com/std@v1.0.0/std.proto")
 			if !content {
-				dep = uri.File(filepath.Join(fx.sources, "example.com", "std@v1.0.0", "std.proto"))
+				dep = uri.File(fx.stdStore(t, "std.proto"))
 			}
 			if loc == nil || loc.URI != dep || loc.Range.Start != (protocol.Position{Line: 2, Character: 8}) {
 				t.Fatalf("the dependency's definition: %+v, want %s 2:8", loc, dep)

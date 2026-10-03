@@ -419,7 +419,7 @@ formatter and the language server
       first-use pinning, one worked migrate/tidy/generate/lint/
       build/verify run with its expected output — and command
       help naming the guide; the consumer-bootstrap issue closes
-- [ ] 32. The module cache's entry named by its digest
+- [x] 32. The module cache's entry named by its digest
       (module-cache-pair-keyed): `<escaped version>.<digest>.<kind>`
       under `@v/`, two roots' pins of one pair two entries, `info`
       version-addressed, the language server's source store keyed

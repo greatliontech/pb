@@ -98,7 +98,7 @@ func (c *Client) pinnedModule(ctx context.Context, modPath string, v version.Ver
 		}
 		return modfile.FromFileSet(modPath, nil)
 	}
-	if b, ok, err := c.Cache.Get(modPath, v, KindMod); err != nil {
+	if b, ok, err := c.Cache.Get(modPath, v, KindMod, pin.Digest); err != nil {
 		return nil, err
 	} else if ok && ModfileHash(b) == pin.Modfile {
 		return parseModfile(modPath, b)
@@ -108,8 +108,13 @@ func (c *Client) pinnedModule(ctx context.Context, modPath string, v version.Ver
 		if got := ModfileHash(b); got != pin.Modfile {
 			return nil, fmt.Errorf("%w: %s@%s modfile: expected %s, computed %s", lockfile.ErrPinMismatch, modPath, v, pin.Modfile, got)
 		}
-		if err := c.Cache.Put(modPath, v, KindMod, b); err != nil {
-			return nil, err
+		// A pin recording no digest names no entry: the module file
+		// is read from the sources at every resolution and cached by
+		// nothing.
+		if pin.Digest != "" {
+			if err := c.Cache.Put(modPath, v, KindMod, pin.Digest, b); err != nil {
+				return nil, err
+			}
 		}
 		return parseModfile(modPath, b)
 	}
@@ -182,7 +187,7 @@ func (c *Client) pinnedZip(ctx context.Context, modPath string, v version.Versio
 		// digestless pins, and serving unverifiable bytes is not an option.
 		return nil, fmt.Errorf("fetch: pin for %s@%s has no digest to verify the archive against", modPath, v)
 	}
-	if b, ok, err := c.Cache.Get(modPath, v, KindZip); err != nil {
+	if b, ok, err := c.Cache.Get(modPath, v, KindZip, pin.Digest); err != nil {
 		return nil, err
 	} else if ok {
 		if _, err := archive.VerifyZip(bytes.NewReader(b), int64(len(b)), pin.Digest); err == nil {
@@ -196,7 +201,7 @@ func (c *Client) pinnedZip(ctx context.Context, modPath string, v version.Versio
 	if _, err := archive.VerifyZip(bytes.NewReader(b), int64(len(b)), pin.Digest); err != nil {
 		return nil, fmt.Errorf("%s@%s: %w", modPath, v, err)
 	}
-	if err := c.Cache.Put(modPath, v, KindZip, b); err != nil {
+	if err := c.Cache.Put(modPath, v, KindZip, pin.Digest, b); err != nil {
 		return nil, err
 	}
 	return b, nil
@@ -250,16 +255,16 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	if err := pins.Add(pin); err != nil {
 		return nil, err
 	}
-	if err := c.Cache.Keep(modPath, v, KindZip, zip); err != nil {
+	if err := c.Cache.Put(modPath, v, KindZip, digest, zip); err != nil {
 		return nil, err
 	}
 	if hasMod {
-		if err := c.Cache.Keep(modPath, v, KindMod, mb); err != nil {
+		if err := c.Cache.Put(modPath, v, KindMod, digest, mb); err != nil {
 			return nil, err
 		}
 	}
 	if provBytes != nil {
-		if err := c.Cache.Keep(modPath, v, KindProv, provBytes); err != nil {
+		if err := c.Cache.Put(modPath, v, KindProv, digest, provBytes); err != nil {
 			return nil, err
 		}
 	}
