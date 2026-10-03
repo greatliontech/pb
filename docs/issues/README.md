@@ -6,6 +6,7 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
+| [consumer-bootstrap-and-migration-recovery](consumer-bootstrap-and-migration-recovery.md) | first Weaver adoption required spec-level discovery of private-origin authentication, repair of a retained versionless ruleset, and explicit local-plugin trust; needs an end-to-end adopter guide and partial-failure recovery guidance | when adopter setup documentation replaces the README's `wip` placeholder, or migrate's partial-output recovery guidance is next changed |
 | [lsp-replacement-address](lsp-replacement-address.md) | a pinned replacement's files are addressed by the pair the module file requires while the bytes are the replacement's; resolved: the address and the store name the pair whose bytes they are, `modfiles.Module` carrying both pairs | 29 |
 | [identity-audit](identity-audit.md) | an audit of every name a layer hands out for bytes it does not own (addresses, store paths, cache keys, lockfile and provenance keys) against the one-name-one-content rule, with the lenses to apply; the replacement address was the first instance | 30 |
 | [grpc-node-darwin-arm64](grpc-node-darwin-arm64.md) | the catalog's grpc/node serves no darwin/arm64: upstream ships an x86_64 executable alone there; the fork is a plugin absent for darwin/arm64 or one present that needs Rosetta | user decision |
