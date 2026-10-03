@@ -158,12 +158,37 @@ formatter and the language server
 - [ ] 19. The release kind reads beyond GitHub releases: Maven Central
       for grpc/java's per-platform executables, grpc's binary host for
       grpc/node (grpc-tools' executable, numbered by grpc-tools, not
-      by grpc); community/scalapb-scala and community/scalapb-zio-grpc
-      from the native executables upstream ships; the go kind building
-      from a repository tag the module proxy lacks
-      (community/chrusty-jsonschema's unprefixed tags,
+      by grpc); community/scalapb-scala from the native executables
+      upstream ships (linux and darwin on amd64, the two it ships);
+      the go kind building from a repository tag the module proxy
+      lacks (community/chrusty-jsonschema's unprefixed tags,
       community/roadrunner-server-php-grpc's nested module); the
       plugin-catalog-growth issue closes
+  - [ ] 19.1. Triage gate.
+  - [ ] 19.2. The go kind from a repository tag: the version's tag
+        resolved to its commit through the repository, the module
+        fetched at that commit, a nested module's path carrying the
+        version's major; discovery through the repository's
+        releases; the catalog README's kinds table amended;
+        community/chrusty-jsonschema and
+        community/roadrunner-server-php-grpc enter.
+  - [ ] 19.3. The release kind's sources: an asset named by a URL
+        beside a release's asset name — Maven Central's executables
+        with their sha256 verified, grpc's binary host's archives —
+        and discovery through Maven's metadata or the npm registry
+        as the recipe says; the README's kinds table amended;
+        grpc/java and grpc/node enter.
+  - [ ] 19.4. community/scalapb-scala enters from upstream's native
+        executables at v0.11.17, the last release carrying them,
+        frozen there — its later versions ship as the jar alone and
+        come with the jvm kind at chunk 26, which re-kinds the
+        recipe; the README's ScalaPB sentence says so.
+  - [ ] 19.5. Close-out: pb's catalog names grow by the five
+        entrants (grpc/java, grpc/node, community/scalapb-scala,
+        community/chrusty-jsonschema,
+        community/roadrunner-server-php-grpc), the
+        plugin-catalog-growth issue closes, consolidation, the
+        campaign (slotted with chunk 18's where not run).
 - [ ] 20. The rust kind: a cargo package cross-compiled per platform;
       connectrpc/rust
 - [x] 21. The language server: its own spec (the capabilities served,
@@ -216,7 +241,11 @@ formatter and the language server
       bufbuild/connect-swift, bufbuild/connect-swift-mocks, apple/swift
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
-- [ ] 26. The jvm kind: a jlink'd runtime bundled in the image behind a
+- [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,
+      upstream shipping no native executable, only the jar, and
+      community/scalapb-scala re-kinded for the versions past
+      v0.11.17, which ship as the jar alone): a jlink'd
+      runtime bundled in the image behind a
       native launcher as the entrypoint, plugin-execution.md's rows
       read first for an entrypoint executing a sibling of the image's
       tree, the linux row amended where it forbids it; grpc/kotlin,
