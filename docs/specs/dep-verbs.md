@@ -162,7 +162,13 @@ module requires, on a name whose discovery finds no release, and on a
 name whose highest discovered release is lower than a declaration — an
 origin that regressed is surfaced, never papered over. Without
 arguments it updates every direct requirement with a discoverable
-release higher than its declaration, skipping the rest. A requirement
+release higher than its declaration, skipping the rest. An import of
+the lint file written without a version — a migration whose
+discovery found none writes one (`migrate.md` REQ-migrate-rules) —
+is a requirement with no release at all, below every release: the
+sweep moves it to the highest discovered and naming the path moves
+it, the sweep reporting one it finds no release for as left. A
+requirement
 on a replaced path (`workspace.md` REQ-work-replace,
 REQ-work-replace-dir) is never discovered — the workspace consults
 the replacement, never the replaced path's origin, and what the

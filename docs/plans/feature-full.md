@@ -397,7 +397,7 @@ formatter and the language server
       finding a defect fixed here or an issue slotted; the Go
       parallels note extended with what the walk finds; the
       identity-audit issue closes
-- [ ] 31. Adopter bootstrap, from the first adoption's report
+- [x] 31. Adopter bootstrap, from the first adoption's report
       (consumer-bootstrap-and-migration-recovery): migrate.md's
       second-run promise made reachable — REQ-migrate-report has a
       second run with replacements finish a migration whose

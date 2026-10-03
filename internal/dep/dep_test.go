@@ -612,6 +612,75 @@ func TestUpdateVerb(t *testing.T) {
 		}
 	})
 
+	t.Run("an import written without a version moves to the highest release", func(t *testing.T) {
+		// A migration whose discovery found no release writes the
+		// import versionless; the sweep and the name alike move it to
+		// the highest release, a requirement with no release at all
+		// (REQ-dep-update, migrate.md REQ-migrate-rules).
+		versionless := map[string]string{
+			"pb.work":      "use:\n  - a\n",
+			"pb.lint.yaml": "rulesets:\n  - path: example.com/m1\n    alias: one\n",
+			"a/pb.yaml":    ws("example.com/a", ""),
+		}
+		for _, targets := range [][]string{nil, {"example.com/m1"}} {
+			fx := newDep(t, versionless)
+			serve(fx)
+			var out bytes.Buffer
+			if err := Update(ctx, fx.session(t, "."), &out, nil, targets...); err != nil {
+				t.Fatalf("Update %v: %v", targets, err)
+			}
+			if got := fx.read(t, "pb.lint.yaml"); got != "rulesets:\n  - path: example.com/m1\n    version: v1.2.0\n    alias: one\n" {
+				t.Fatalf("the lint file after update %v: %q", targets, got)
+			}
+			if out.String() != "pb.lint.yaml: example.com/m1 (no version) -> v1.2.0\n" || !strings.Contains(fx.read(t, "pb.lock"), "rulesets:\n  - path: example.com/m1\n    version: v1.2.0\n") {
+				t.Fatalf("update %v: out = %q lock = %q", targets, out.String(), fx.read(t, "pb.lock"))
+			}
+		}
+		// The sweep finding no release for a versionless import says
+		// so and leaves it, a file no check run reads.
+		fx := newDep(t, versionless)
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
+		var out bytes.Buffer
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "pb.lint.yaml: example.com/m1 (no version) left: no release discovered\n" {
+			t.Fatalf("a versionless import with no release: %v %q", err, out.String())
+		}
+		// A versioned import the sweep finds no release for is skipped
+		// in silence, as a declaration is: it reads at its version.
+		fx = newDep(t, map[string]string{
+			"pb.work":      "use:\n  - a\n",
+			"pb.lint.yaml": "rulesets:\n  - path: example.com/m1\n    version: v1.0.0\n    alias: one\n",
+			"a/pb.yaml":    ws("example.com/a", ""),
+		})
+		fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
+		fx.Endpoints[fetchtest.ProxyHost+"/example.com/m1/@v/list"] = []byte("")
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "" {
+			t.Fatalf("a versioned import with no release: %v %q", err, out.String())
+		}
+		// A versionless import beside one at the highest release is
+		// left as a second alias of one release is: said, the file
+		// unchanged.
+		fx = newDep(t, versionless)
+		serve(fx)
+		fx.write(t, "pb.lint.yaml", "rulesets:\n  - path: example.com/m1\n    alias: one\n  - path: example.com/m1\n    version: v1.2.0\n    alias: two\n")
+		out.Reset()
+		if err := Update(ctx, fx.session(t, "."), &out, nil); err != nil || out.String() != "pb.lint.yaml: example.com/m1 (no version) left: v1.2.0 is read as two already\n" || strings.Contains(fx.read(t, "pb.lint.yaml"), "version: v1.2.0\n    alias: one") {
+			t.Fatalf("a versionless import beside the release: %v %q", err, out.String())
+		}
+		// The leniency is a fetched import's alone: every other refusal
+		// of the check run's reading stands, a working-tree import
+		// with a version among them.
+		fx = newDep(t, map[string]string{
+			"pb.work":      "use:\n  - a\n  - r\n",
+			"pb.lint.yaml": "rulesets:\n  - path: example.com/r\n    version: v1.0.0\n    alias: r\n",
+			"a/pb.yaml":    ws("example.com/a", ""),
+			"r/pb.yaml":    ws("example.com/r", ""),
+		})
+		if err := Update(ctx, fx.session(t, "."), &bytes.Buffer{}, nil); err == nil || !strings.Contains(err.Error(), "write no version") {
+			t.Fatalf("a working-tree import with a version: %v", err)
+		}
+	})
+
 	t.Run("imports move with the sweep and by name", func(t *testing.T) {
 		withLint := map[string]string{
 			"pb.work":      "use:\n  - a\n",

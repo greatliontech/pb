@@ -52,6 +52,12 @@ func depCmd() *cobra.Command {
 	})
 	cmd.AddCommand(&cobra.Command{
 		Use: "update [module path or oci plugin reference...]", Short: "move requirements to the highest discovered release, or re-resolve a plugin",
+		Long: `move requirements to the highest discovered release, or re-resolve a plugin
+
+A ruleset import the lint file holds without a version — a migration
+whose discovery found no release writes one — is moved to the highest
+release, by the sweep and by its name alike, the migration's files
+finished in place.`,
 		RunE: func(c *cobra.Command, args []string) error {
 			settings, s, err := openSession()
 			if err != nil {

@@ -323,12 +323,11 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 	// The ruleset the lint file imports (REQ-migrate-rules), at the
 	// version a replacement pins or the highest discovered, declared
 	// in no module file: a ruleset is no protobuf dependency.
-	rulesetSource := "the lint file's rulesets " + Ruleset
 	v, ok := versions[Ruleset]
 	if !ok {
 		latest, err := d.Latest(ctx, Ruleset)
 		if err != nil {
-			facts = append(facts, unmapped(rulesetSource, "no version discovered ("+oneLine(err.Error())+"): pass --dep "+Ruleset+"="+Ruleset+"@<version>"))
+			facts = append(facts, unmapped(rulesetFact, "no version discovered ("+oneLine(err.Error())+"): the import is written without a version; run `pb dep update "+Ruleset+"` over the written files once the ruleset can be reached, or pass --dep "+Ruleset+"="+Ruleset+"@<version> to a fresh migration"))
 		} else {
 			v, ok = latest.String(), true
 		}
@@ -339,7 +338,7 @@ func Deps(ctx context.Context, d Discovery, src *Source, lock *bufconfig.Lock, r
 		if pinned[Ruleset] != "" {
 			from = "--dep"
 		}
-		facts = append(facts, mapped(rulesetSource, "rulesets: path "+Ruleset+" version "+v+" alias "+RulesetAlias+" ("+from+")"))
+		facts = append(facts, mapped(rulesetFact, "rulesets: path "+Ruleset+" version "+v+" alias "+RulesetAlias+" ("+from+")"))
 	}
 	return append(facts, lockFacts...), nil
 }

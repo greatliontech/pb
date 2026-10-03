@@ -37,8 +37,14 @@ func failure(err error) string {
 
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "pb",
-		Short:         "protobuf module manager",
+		Use:   "pb",
+		Short: "protobuf module manager",
+		Long: `protobuf module manager
+
+Adopting pb — migrating a buf project, reaching private origins over
+a credential file or SSH, generating with a host binary — is walked
+through in the README's adopter guide:
+https://github.com/greatliontech/pb#readme`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}

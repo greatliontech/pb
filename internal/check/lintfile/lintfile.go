@@ -53,6 +53,11 @@ var ErrSelection = errors.New("invalid rule selection")
 // (REQ-lint-rulesets-imported, REQ-rules-file-discovery).
 var ErrRuleset = errors.New("ruleset")
 
+// ErrNoVersion marks an import of a fetched path written without a
+// version: the check run refuses it naming the verb that moves it to
+// a release (dep-verbs.md REQ-dep-update).
+var ErrNoVersion = errors.New("write the version to read, or move it to a release with `pb dep update`")
+
 // File is a parsed lint file, every part optional.
 type File struct {
 	Rulesets []rules.Import
@@ -364,7 +369,7 @@ func Resolve(root *workspace.Root, imp rules.Import) (Resolved, error) {
 		return Resolved{Local: true, Dir: dir}, nil
 	}
 	if imp.Version == "" {
-		return Resolved{}, fmt.Errorf("%s: no workspace module: write the version to read", imp.Path)
+		return Resolved{}, fmt.Errorf("%s: no workspace module: %w", imp.Path, ErrNoVersion)
 	}
 	v, err := version.Parse(imp.Version)
 	if err != nil {

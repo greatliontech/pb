@@ -98,8 +98,13 @@ the order of the steps (modules, dependencies, rules, generation, the
 keys no step models, the files written, the comments rewritten); and
 exit 0 when every fact mapped,
 1 when any fact went unmapped, the files written in either case, so a
-script can tell a complete migration from one needing a hand and a
-second run with replacements can finish it.
+script can tell a complete migration from one needing a hand; the
+written files are finished in place — a ruleset version undiscovered
+by `pb dep update`, a tidy that failed by `pb dep tidy` once its
+cause is fixed, the failure naming the tidy and, where the ruleset's
+version went undiscovered, the update before it — a second migration
+being refused by the files the first wrote (REQ-migrate-verb), and a
+fresh one over a clean tree taking the replacements.
 
 ## Modules and the workspace
 
@@ -270,8 +275,12 @@ ruleset's own path gives (`--dep github.com/greatliontech/buf-rules=github.com/g
 a replacement naming another path refused), under the alias `buf`,
 declared in no module file (`check-rules.md`
 REQ-lint-rulesets-imported); no version discovered and none given
-is an unmapped fact naming the flag, the import written without a
-version — spelling the selection buf
+is an unmapped fact, the import written without a version and the
+fact naming what finishes it: `pb dep update
+github.com/greatliontech/buf-rules` over the written files, which
+moves the import to the highest release once the ruleset can be
+reached (`dep-verbs.md` REQ-dep-update), or the flag to a fresh
+migration — spelling the selection buf
 applies to each module: `use` of either section joined into
 `enable`, each entry a buf category or rule id spelled as the
 ruleset's qualified tag or rule name, `DEFAULT` read as `STANDARD`,

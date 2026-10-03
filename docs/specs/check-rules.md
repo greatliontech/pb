@@ -562,7 +562,10 @@ files import lend their functions and contribute no rule. An import
 whose version does not resolve, that writes no version for a path
 read from no working tree, whose alias another import already uses,
 or whose path is read from the working tree while writing a version
-fails the check run naming it. A ruleset is never declared in a
+fails the check run naming it — an import written without a version
+for a fetched path naming the update that moves it to a release,
+`pb dep update` (`dep-verbs.md` REQ-dep-update). A ruleset is never
+declared in a
 module file: it is no protobuf dependency and joins no build list.
 
 ## Verbs

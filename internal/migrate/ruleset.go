@@ -16,6 +16,11 @@ const Ruleset = "github.com/greatliontech/buf-rules"
 // (REQ-migrate-rules).
 const RulesetAlias = "buf"
 
+// rulesetFact is the source of the report's fact for the ruleset the
+// lint file imports: mapped at the version discovered or given,
+// unmapped where none was.
+const rulesetFact = "the lint file's rulesets " + Ruleset
+
 // rulesetRule is what the migration knows of one rule of the ruleset:
 // its kind, its target and the categories it carries as tags.
 type rulesetRule struct {

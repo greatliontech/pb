@@ -88,13 +88,15 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		}
 	}
 
-	imports, err := s.imports()
+	imports, err := s.importsToMove()
 	if err != nil {
 		return err
 	}
 	// The lint file's fetched imports move as declarations do
 	// (REQ-dep-ruleset-declarations); a working-tree import has
-	// nothing to move, a replaced one is left as a declaration is.
+	// nothing to move, a replaced one is left as a declaration is,
+	// and one written without a version is moved to the highest
+	// release, a requirement with no release at all.
 	imported := map[string][]int{} // path -> indexes of importing entries
 	workingTree := map[string]bool{}
 	for i, ri := range imports {
@@ -193,6 +195,13 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 			if named {
 				return fmt.Errorf("dep update: %s has no discoverable release", target)
 			}
+			// A versionless import stays versionless, which no check
+			// run reads: said, never silent.
+			for _, i := range importers {
+				if imports[i].versionless {
+					report = append(report, fmt.Sprintf("%s: %s (no version) left: no release discovered", lintfile.FileName, target))
+				}
+			}
 			continue
 		}
 		highest := versions[len(versions)-1]
@@ -208,8 +217,12 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		firstAtHighest := len(importers) > 0 && version.Compare(highest, imports[importers[0]].Version) >= 0
 		for n, i := range importers {
 			cur := imports[i].Version
-			moved, err := move(cur, highest, "imported")
-			if err != nil {
+			curText := cur.String()
+			moved := true
+			if imports[i].versionless {
+				// No release at all: every release is above it.
+				curText = "(no version)"
+			} else if moved, err = move(cur, highest, "imported"); err != nil {
 				return fmt.Errorf("%w (%s, imported as %s)", err, target, imports[i].imp.Alias)
 			}
 			if n > 0 && moved && firstAtHighest {
@@ -217,13 +230,13 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 				if named {
 					return fmt.Errorf("dep update: %s is imported as %s and as %s; the highest discovered release %s would be read under both", target, first, imports[i].imp.Alias, highest)
 				}
-				report = append(report, fmt.Sprintf("%s: %s %s left: %s is read as %s already", lintfile.FileName, target, cur, highest, first))
+				report = append(report, fmt.Sprintf("%s: %s %s left: %s is read as %s already", lintfile.FileName, target, curText, highest, first))
 				continue
 			}
 			if moved {
 				lf.Rulesets[i].Version = highest.String()
 				movedImports = append(movedImports, i)
-				report = append(report, fmt.Sprintf("%s: %s %s -> %s", lintfile.FileName, target, cur, highest))
+				report = append(report, fmt.Sprintf("%s: %s %s -> %s", lintfile.FileName, target, curText, highest))
 			}
 		}
 		for _, i := range declarers {

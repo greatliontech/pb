@@ -532,7 +532,7 @@ func TestRulesets(t *testing.T) {
 		want string
 	}{
 		"workspace with a version": {rules.Import{Path: "example.com/lib", Version: "v1.0.0", Alias: "lib"}, "example.com/lib: a workspace module, read from the working tree: write no version (v1.0.0 written)"},
-		"external without":         {rules.Import{Path: "example.com/std", Alias: "std"}, "example.com/std: no workspace module: write the version to read"},
+		"external without":         {rules.Import{Path: "example.com/std", Alias: "std"}, "example.com/std: no workspace module: write the version to read, or move it to a release with `pb dep update`"},
 		"unresolved":               {rules.Import{Path: "example.com/nowhere", Version: "v1.0.0", Alias: "no"}, "example.com/nowhere@v1.0.0: no origin serves example.com/nowhere@v1.0.0"},
 		"bad rule file":            {rules.Import{Path: "example.com/bad", Version: "v1.0.0", Alias: "bad"}, "example.com/bad: bad.rules.yaml"},
 	} {

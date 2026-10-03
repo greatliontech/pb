@@ -305,8 +305,27 @@ func TestRun(t *testing.T) {
 	out.Reset()
 	failing := Invocation{WS: ws, Dir: "repo", ModulePath: "github.com/acme/x", Discovery: &fakeDiscovery{latest: map[string]string{Ruleset: "v0.1.0"}}, Tidy: func(context.Context) error { return errors.New("no origin for the ruleset") }, Out: &out}
 	err = Run(context.Background(), failing)
-	if err == nil || !strings.Contains(err.Error(), "the files are written; the tidy ending the migration failed: no origin for the ruleset") {
+	if err == nil || !strings.Contains(err.Error(), "the files are written; the tidy ending the migration failed: no origin for the ruleset; finish with `pb dep tidy` once the cause is fixed") || strings.Contains(err.Error(), "pb dep update") {
 		t.Fatalf("a failing tidy: %v", err)
+	}
+	// The ruleset's version undiscovered: the import is versionless,
+	// and the failure names the update before the tidy.
+	undiscovered := failing
+	undiscovered.WS = tree(t, map[string]string{"repo/buf.yaml": "version: v2\n"})
+	undiscovered.Discovery = &fakeDiscovery{}
+	out.Reset()
+	err = Run(context.Background(), undiscovered)
+	if err == nil || !strings.Contains(err.Error(), "finish with `pb dep update "+Ruleset+"` once the ruleset can be reached, then `pb dep tidy`") {
+		t.Fatalf("a failing tidy after an undiscovered ruleset version: %v", err)
+	}
+	// An unmapped fact other than the ruleset's — a dependency no
+	// table names — leaves the repair the tidy's alone.
+	other := failing
+	other.WS = tree(t, map[string]string{"repo/buf.yaml": "version: v2\ndeps:\n  - buf.build/nobody/knows\n"})
+	out.Reset()
+	err = Run(context.Background(), other)
+	if err == nil || !strings.Contains(err.Error(), "finish with `pb dep tidy` once the cause is fixed") || strings.Contains(err.Error(), "pb dep update") || !strings.Contains(out.String(), "buf.build/nobody/knows !!") {
+		t.Fatalf("a failing tidy beside another unmapped fact: %v\n%s", err, out.String())
 	}
 	if _, err := ws.Stat("repo/pb.lint.yaml"); err != nil || !strings.Contains(out.String(), "pb.lint.yaml -> written") {
 		t.Fatalf("the files kept and reported before the tidy: %v\n%s", err, out.String())

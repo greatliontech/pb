@@ -327,7 +327,17 @@ func Run(ctx context.Context, d Invocation) (err error) {
 		return report(fmt.Errorf("the comments' rewriting failed: %w", err))
 	}
 	if err := d.Tidy(ctx); err != nil {
-		return report(fmt.Errorf("the tidy ending the migration failed: %w", err))
+		// The repair named is the one the written files need: the
+		// tidy again once its cause is fixed, the update first where
+		// the ruleset's version went undiscovered and the lint file's
+		// import is versionless.
+		repair := "finish with `pb dep tidy` once the cause is fixed"
+		for _, f := range facts {
+			if f.Source == rulesetFact && !f.Mapped {
+				repair = "finish with `pb dep update " + Ruleset + "` once the ruleset can be reached, then `pb dep tidy`"
+			}
+		}
+		return report(fmt.Errorf("the tidy ending the migration failed: %w; %s", err, repair))
 	}
 	if _, err := d.WS.Stat(path.Join(d.Dir, workspace.LockFileName)); err == nil {
 		facts = append(facts, mapped(workspace.LockFileName, "written by the tidy"))

@@ -357,7 +357,7 @@ func TestDeps(t *testing.T) {
 	// The ruleset's discovery failing is an unmapped fact naming the
 	// flag that pins it, the buf dependencies unaffected.
 	dA := &fakeDiscovery{}
-	if facts, err := Deps(context.Background(), dA, srcA, nil, many, lA); err != nil || strings.Join(dA.asked, ",") != Ruleset || len(facts) != 11 || lA.Modules["."].Deps[otelPath] != "v9.0.0" || facts[10].Mapped || !strings.Contains(facts[10].Text, "pass --dep "+Ruleset+"="+Ruleset+"@<version>") {
+	if facts, err := Deps(context.Background(), dA, srcA, nil, many, lA); err != nil || strings.Join(dA.asked, ",") != Ruleset || len(facts) != 11 || lA.Modules["."].Deps[otelPath] != "v9.0.0" || facts[10].Mapped || !strings.Contains(facts[10].Text, "run `pb dep update "+Ruleset+"` over the written files") || !strings.Contains(facts[10].Text, "pass --dep "+Ruleset+"="+Ruleset+"@<version>") {
 		t.Fatalf("ten pins agreeing: %v asked %v facts %d", err, dA.asked, len(facts))
 	}
 	dA.asked = nil

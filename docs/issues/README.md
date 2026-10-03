@@ -6,7 +6,6 @@ doc is deleted (git holds history).
 
 | slug | summary | Lands |
 |------|---------|-------|
-| [consumer-bootstrap-and-migration-recovery](consumer-bootstrap-and-migration-recovery.md) | first Weaver adoption required spec-level discovery of private-origin authentication, repair of a retained versionless ruleset, and explicit local-plugin trust; needs an end-to-end adopter guide and partial-failure recovery guidance | when adopter setup documentation replaces the README's `wip` placeholder, or migrate's partial-output recovery guidance is next changed |
 | [grpc-node-darwin-arm64](grpc-node-darwin-arm64.md) | the catalog's grpc/node serves no darwin/arm64: upstream ships an x86_64 executable alone there; the fork is a plugin absent for darwin/arm64 or one present that needs Rosetta | user decision |
 | [connectrpc-rust-buffa](connectrpc-rust-buffa.md) | connectrpc/rust's output depends on buffa, an owner the catalog does not mirror, so a migration maps one and not the other; the fork is whether the membership widens to it | user decision |
 | [connectrpc-rust-v0.9.0-glibc](connectrpc-rust-v0.9.0-glibc.md) | connectrpc/rust v0.9.0 was published glibc-linked before the rust kind's Linux trees went static, and a published tag is never rebuilt; the fork is whether the tag stands until upstream's next version or is deleted and built again | user decision |

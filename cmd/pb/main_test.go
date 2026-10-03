@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/greatliontech/pb/internal/dep"
@@ -69,5 +70,14 @@ func TestFailure(t *testing.T) {
 	}
 	if got := failure(fmt.Errorf("lint: %w", dep.ErrFindings)); got != "" {
 		t.Errorf("findings = %q", got)
+	}
+}
+
+// The command's help names the adopter guide, the README's, where
+// the path from a buf project through private origins and host
+// binaries is walked.
+func TestHelpNamesTheAdopterGuide(t *testing.T) {
+	if long := rootCmd().Long; !strings.Contains(long, "https://github.com/greatliontech/pb#readme") || !strings.Contains(long, "adopter guide") {
+		t.Fatalf("the root help: %q", long)
 	}
 }

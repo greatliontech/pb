@@ -213,8 +213,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-rulesets-imported"
-  content_hash: "c704a00c4419f8183ca4929058a4c29f0701edbb14731efad6e2aad547e02309"
-  source_hash: "84706f24d8c7cbe740124ec65941410b455972e3da76c06754ab2007e9218523"
+  content_hash: "a0b87a00395642312492de0b48e43d5d4e977f5ba402c94dd47f67a59b705384"
+  source_hash: "c78cbc723f4a80c9ad54acad51649e0fcbb5caa9e5eb44b865db80aeeab64cff"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.Rulesets"
   role: BINDING_ROLE_IMPLEMENTS
@@ -223,8 +223,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-rulesets-imported"
-  content_hash: "c704a00c4419f8183ca4929058a4c29f0701edbb14731efad6e2aad547e02309"
-  source_hash: "84706f24d8c7cbe740124ec65941410b455972e3da76c06754ab2007e9218523"
+  content_hash: "a0b87a00395642312492de0b48e43d5d4e977f5ba402c94dd47f67a59b705384"
+  source_hash: "c78cbc723f4a80c9ad54acad51649e0fcbb5caa9e5eb44b865db80aeeab64cff"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/check/lintfile.TestRulesets"
   role: BINDING_ROLE_TESTS
@@ -233,10 +233,20 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lint-rulesets-imported"
-  content_hash: "c704a00c4419f8183ca4929058a4c29f0701edbb14731efad6e2aad547e02309"
-  source_hash: "84706f24d8c7cbe740124ec65941410b455972e3da76c06754ab2007e9218523"
+  content_hash: "a0b87a00395642312492de0b48e43d5d4e977f5ba402c94dd47f67a59b705384"
+  source_hash: "c78cbc723f4a80c9ad54acad51649e0fcbb5caa9e5eb44b865db80aeeab64cff"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestLint"
   role: BINDING_ROLE_TESTS
   shape_hash: "33302a0e79b4ed85c2f747cd483ed208fb77a6ebcf629eb25cbf6ed5dc786972"
+}
+
+bindings {
+  requirement_id: "REQ-lint-rulesets-imported"
+  content_hash: "a0b87a00395642312492de0b48e43d5d4e977f5ba402c94dd47f67a59b705384"
+  source_hash: "c78cbc723f4a80c9ad54acad51649e0fcbb5caa9e5eb44b865db80aeeab64cff"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/check/lintfile.ErrNoVersion"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "482c7cecad394bd55c20b0b01919266b3fc56e3c9a1fcf82f0dbbbd9c4e010b0"
 }
