@@ -277,6 +277,18 @@ formatter and the language server
         not run).
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;
       protocolbuffers/dart, connectrpc/dart
+  - [x] 25.1. Triage gate.
+  - [x] 25.2. The kind and the two plugins: a package's script
+        compiled to an executable at the repository's tag on the
+        platform's runner with the Dart SDK the catalog pins, the
+        runner installing it from Google's archive at the checksum
+        published beside it, the Linux trees over the base (the
+        runtime links the C library), every platform served; CI's
+        live tests on the windows row too; the README's kinds table
+        amended.
+  - [ ] 25.3. Close-out: pb's catalog names grow by the two,
+        consolidation, the campaign (slotted with chunk 18's where
+        not run).
 - [ ] 26. The jvm kind (community/scalapb-zio-grpc among its plugins,
       upstream shipping no native executable, only the jar; and
       community/scalapb-scala's v0.11.18 to v0.11.20, the jar alone
