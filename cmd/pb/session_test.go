@@ -97,7 +97,7 @@ func TestClientSettingsNameTheirLayer(t *testing.T) {
 	// environment's sources and the file's exclusions.
 	want := proxy.Config{Sources: []proxy.Source{{URL: "https://p.example"}}, NoProxy: []string{"corp.example.com"}}
 	if !reflect.DeepEqual(client.Sources, want) {
-		t.Fatalf("Sources = %+v, want %+v", client.Sources, want)
+		t.Fatalf("Sources = %#v, want %#v", client.Sources, want)
 	}
 }
 
@@ -153,11 +153,12 @@ func TestClientPrivateOriginSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, err := client.ResolveOrigin(context.Background(), "corp.example.com/r.git/sub")
-	if err != nil || o.Repo != "ssh://git@corp.example.com/r.git" || o.Subtree != "sub" {
-		t.Fatalf("an ssh-routed module's origin: %+v, %v", o, err)
+	remote, rerr := o.Remote()
+	if err != nil || rerr != nil || o.Repo != "https://corp.example.com/r.git" || remote != "ssh://git@corp.example.com/r.git" || o.Subtree != "sub" {
+		t.Fatalf("an ssh-routed module's origin: %#v (remote %s), %v %v", o, remote, err, rerr)
 	}
 	o, err = client.ResolveOrigin(context.Background(), "other.example.com/r.git")
-	if err != nil || o.Repo != "https://other.example.com/r.git" {
-		t.Fatalf("an unmatched module's origin: %+v, %v", o, err)
+	if err != nil || o.Repo != "https://other.example.com/r.git" || o.SSH {
+		t.Fatalf("an unmatched module's origin: %#v, %v", o, err)
 	}
 }

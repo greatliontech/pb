@@ -316,6 +316,15 @@ func (s Source) Label(path, version string) string {
 	return Replaced(path, version, s.String())
 }
 
+// Label names a build-list pair as reports and errors spell it: the
+// pair, or, replaced, the pair and its replacement (REQ-work-replace).
+func (r *Root) Label(path string, v version.Version) string {
+	if r.Replaced(path) {
+		return r.Source(path, v).Label(path, v.String())
+	}
+	return path + "@" + v.String()
+}
+
 // Replaced is the rendering of a replaced module: the requirement,
 // then the replacement, `<path>@<version> => <replacement>`; a
 // requirement naming no version (a working-tree import's) renders

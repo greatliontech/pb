@@ -66,6 +66,12 @@ func (c *Client) verifyEvidence(ctx context.Context, subtree string, v version.V
 		}
 		sub := provenance.Subject{Version: v, Namespace: namespace, Subtree: subtree}
 		rec, err := c.verifyOne(ctx, ev, sub, tree, id, keys)
+		if err == nil {
+			// The record names the subtree the binding was verified
+			// under, so it is re-verified there whatever the module
+			// resolves to later (REQ-lock-provenance-record).
+			rec.Subtree = subtree
+		}
 		switch {
 		case err == nil:
 			if !accept(rec) {

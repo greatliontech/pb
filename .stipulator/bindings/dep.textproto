@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
-  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
-  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
+  content_hash: "4ec5b44d84b1209a672f9c2d35e2bd7971dc0b1c8c727cea8aa1e6e06362cdc6"
+  source_hash: "3f07457a83bd4c7313a8be3b51bb28ef5431fd3a8ad0f5e29428b4f0cb27c11f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
-  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
-  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
+  content_hash: "4ec5b44d84b1209a672f9c2d35e2bd7971dc0b1c8c727cea8aa1e6e06362cdc6"
+  source_hash: "3f07457a83bd4c7313a8be3b51bb28ef5431fd3a8ad0f5e29428b4f0cb27c11f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.firstUse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
-  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
-  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
+  content_hash: "4ec5b44d84b1209a672f9c2d35e2bd7971dc0b1c8c727cea8aa1e6e06362cdc6"
+  source_hash: "3f07457a83bd4c7313a8be3b51bb28ef5431fd3a8ad0f5e29428b4f0cb27c11f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestCacheTransparencyProperty"
   role: BINDING_ROLE_TESTS
@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-cache-transparent"
-  content_hash: "977b80fca57b459a2cc94896f8ba267706cc12d19770bd3c222685fe6f753d4e"
-  source_hash: "e1ea1b7159c5047a49ffcb66a79512cae655d04813376f450f9671b111478b4d"
+  content_hash: "4ec5b44d84b1209a672f9c2d35e2bd7971dc0b1c8c727cea8aa1e6e06362cdc6"
+  source_hash: "3f07457a83bd4c7313a8be3b51bb28ef5431fd3a8ad0f5e29428b4f0cb27c11f"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestFirstUseIgnoresCache"
   role: BINDING_ROLE_TESTS
@@ -709,4 +709,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.emptySources"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "a493e6c755f1a10eccb15461d70e688d58564d7e8318089245cd143cabc7afde"
+}
+
+bindings {
+  requirement_id: "REQ-dep-cache-transparent"
+  content_hash: "4ec5b44d84b1209a672f9c2d35e2bd7971dc0b1c8c727cea8aa1e6e06362cdc6"
+  source_hash: "3f07457a83bd4c7313a8be3b51bb28ef5431fd3a8ad0f5e29428b4f0cb27c11f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.Cache.Keep"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "bc0fedca40904c0f718a9f670a571141f79c979a3bba080b0dc429cef54d89a2"
 }

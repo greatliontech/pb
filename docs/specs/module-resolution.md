@@ -101,8 +101,12 @@ goes to the host it names over a channel that hides it, or nowhere.
 comma-separated glob patterns in the `noproxy` grammar
 (`module-proxy.md` REQ-proxy-config), one matching the module path or
 any leading segment prefix of it — MUST be reached over SSH: its
-origin, however resolved, is the HTTPS repository's host name and
-path spelled `ssh://git@<host name>/<path>`, the HTTPS port dropped —
+origin, however resolved, is reached at the HTTPS repository's host
+name and path spelled `ssh://git@<host name>/<path>`, the HTTPS port
+dropped, while the origin's identity — the repository URL the
+module's provenance is held to (`provenance.md`
+REQ-prov-origin-consistency) and every record and report name — stays
+the HTTPS one, the setting routing transport alone —
 reference listings, probing and fetching alike, authenticated through
 the running SSH agent alone —
 no key file read, no password asked — as the user `git`, the host's

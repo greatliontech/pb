@@ -489,6 +489,7 @@ func TestFirstUseIgnoresCache(t *testing.T) {
 	fx := newFixture(t)
 	sourceZip, sourceDigest := moduleZip(t, declaredFiles())
 	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(sourceZip))
+	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.Client("proxy")
 
 	poisonZip, poisonDigest := moduleZip(t, map[string]string{
@@ -507,8 +508,14 @@ func TestFirstUseIgnoresCache(t *testing.T) {
 	if pin.Digest != sourceDigest {
 		t.Fatalf("pin digest = %s, want the source's %s", pin.Digest, sourceDigest)
 	}
+	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); !ok || !bytes.Equal(b, poisonZip) {
+		t.Fatal("first use rewrote the entry present")
+	}
+	if err := c.Download(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
+		t.Fatalf("the pinned read: %v", err)
+	}
 	if b, ok, _ := c.Cache.Get("example.com/m", ver(t, "v1.0.0"), KindZip); !ok || !bytes.Equal(b, sourceZip) {
-		t.Fatal("cache not replaced by the verified fetch")
+		t.Fatal("the pinned read did not discard and refetch the entry failing its pin")
 	}
 }
 

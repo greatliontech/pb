@@ -116,7 +116,11 @@ func (c *Client) directTags(ctx context.Context, modPath string) (*direct.Repo, 
 	if err != nil {
 		return nil, atHead{}, nil, err
 	}
-	repo, err := c.repo(ctx, o.Repo)
+	remote, err := o.Remote()
+	if err != nil {
+		return nil, atHead{}, nil, err
+	}
+	repo, err := c.repo(ctx, remote)
 	if err != nil {
 		return nil, atHead{}, nil, err
 	}

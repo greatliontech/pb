@@ -893,8 +893,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.Resolve"
   role: BINDING_ROLE_IMPLEMENTS
@@ -903,8 +903,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.SSHRepo"
   role: BINDING_ROLE_IMPLEMENTS
@@ -913,8 +913,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.SSHTransport"
   role: BINDING_ROLE_IMPLEMENTS
@@ -923,8 +923,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveSSHRoutesEveryArm"
   role: BINDING_ROLE_TESTS
@@ -933,8 +933,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/direct.TestFetchPrivateOriginOverSSH"
   role: BINDING_ROLE_TESTS
@@ -943,8 +943,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/cmd/pb.TestClientPrivateOriginSettings"
   role: BINDING_ROLE_TESTS
@@ -963,8 +963,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.TestResolveProbingFailsOnTheRunsOwnFault"
   role: BINDING_ROLE_TESTS
@@ -973,8 +973,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-resolve-ssh"
-  content_hash: "36c73ca666fa048677f6a7fd65fd40748835ae110272f4ee119497dea3783128"
-  source_hash: "bd5fc32e1c71ea9c542984a903601e596fd1b1d5c551d5792faa95e66478c0ac"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/origin.probeFailed"
   role: BINDING_ROLE_IMPLEMENTS
@@ -1109,4 +1109,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceBySynthesizedModule"
   role: BINDING_ROLE_TESTS
   shape_hash: "01aa6a0efa44d626947c01872c48dcda27988ea00db18249571cbde31432cef0"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/fetch.TestDefaultIdentityUnchangedBySSHRouting"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "562358b34dc0d5b76a308c7041415e1fcaae130014f5adc75464390257a9a52c"
+}
+
+bindings {
+  requirement_id: "REQ-resolve-ssh"
+  content_hash: "9e493a2dce0c4ce656cd07a4b4511ebc16b7f5cca8b79876e5c00393ba7d7cf3"
+  source_hash: "6893026a22384f81c935e165e6a79bd2ea1a3966be9ad3a306453caef615dc35"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/source/origin.Origin.Remote"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "78c58bd5545bf160a161637fa85e11d8b78b1b846e52ecb268050010597acbca"
 }

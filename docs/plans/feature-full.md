@@ -397,3 +397,40 @@ formatter and the language server
       finding a defect fixed here or an issue slotted; the Go
       parallels note extended with what the walk finds; the
       identity-audit issue closes
+- [ ] 31. Adopter bootstrap, from the first adoption's report
+      (consumer-bootstrap-and-migration-recovery): migrate.md's
+      second-run promise made reachable — REQ-migrate-report has a
+      second run with replacements finish a migration whose
+      ruleset version went undiscovered, REQ-migrate-rules refuses
+      the second run because the first run's files exist; the
+      repair is the dep verb that owns versions, `pb dep update
+      <ruleset path>` admitting a versionless ruleset import and
+      resolving it to the highest release as `go get` does a
+      versionless requirement, migrate's unmapped-fact line and
+      its tidy failure naming that verb, the report's promise
+      retargeted to it (dep-verbs.md, migrate.md, check-rules.md
+      amended; spec-first at the chunk: whether tidy, not update,
+      is the verb, derived there); the README's `wip` replaced by
+      an adopter guide — pb's own authentication beside git's
+      credential helpers (netrc under `PBNETRC`, SSH routing by
+      the `ssh` setting, no credentials in project files), the
+      files a partial migration leaves and how each is finished,
+      the local-plugin scheme's explicit trust opt-in and
+      first-use pinning, one worked migrate/tidy/generate/lint/
+      build/verify run with its expected output — and command
+      help naming the guide; the consumer-bootstrap issue closes
+- [ ] 32. The module cache's entry named by its digest
+      (module-cache-pair-keyed): `<escaped version>.<digest>.<kind>`
+      under `@v/`, two roots' pins of one pair two entries, `info`
+      version-addressed, the language server's source store keyed
+      the same, clean and the layout recognition reading the new
+      names, an old entry cleaned and refetched; REQ-dep-cache-layout
+      and REQ-dep-cache-transparent amended; the issue closes
+- [ ] 33. A scope for what a server holds of an origin
+      (server-holds-origin-lock): the direct store's lock and the
+      fetch client's memoized repositories, listings and origins held
+      for a scope the holder names — a verb's run, a server's
+      judgement — and released at its end, module-proxy.md's lock
+      clause and lsp.md REQ-lsp-session stating it; a verb opening
+      the origin after a server's judgement without waiting, a
+      redirect changed between reloads followed; the issue closes

@@ -42,6 +42,21 @@ func IsRuleFile(name string) bool { return strings.HasSuffix(name, RuleFileSuffi
 // ErrInvalidPath is wrapped by every module-path rejection.
 var ErrInvalidPath = errors.New("invalid module path")
 
+// ValidateSubtree checks a module's subtree within its repository as
+// an origin names it: a clean relative path of module path segments,
+// "" for the repository root.
+func ValidateSubtree(subtree string) error {
+	if subtree == "" {
+		return nil
+	}
+	for _, seg := range strings.Split(subtree, "/") {
+		if err := validateSegment(seg); err != nil {
+			return fmt.Errorf("subtree %q: %w", subtree, err)
+		}
+	}
+	return nil
+}
+
 // ValidatePath checks path against the module-path syntax: a hostname
 // (lowercase ASCII letters, digits, hyphens, dots, at least one interior
 // dot) followed by one or more segments of ASCII letters, digits, and

@@ -1140,3 +1140,13 @@ bindings {
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "4270521fa15acdc8853bfc5149fa67dcf17b1481fdac25f2b2e1ec8572a18b96"
 }
+
+bindings {
+  requirement_id: "REQ-lsp-unpinned"
+  content_hash: "c7584d62e956dfa188a0b42ac30187900d41d88978c6a91c3d122e17dca35fd2"
+  source_hash: "829fdbc597885759cf7d76159ff503e06172db53461aa9492e19bf62b434632c"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestUnpinnedNamesAReplacedRulesetBySource"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "1f56fb1df4ad45d90f978ec2f357737d9b1c0c63fa30e5b3bbc21545e35dfb29"
+}

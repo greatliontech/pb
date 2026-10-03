@@ -47,7 +47,12 @@ version is the one `module-resolution.md` REQ-resolve-release-tags
 names — the subtree's own for a module declared at the tagged commit,
 the repository's for one synthesized there — which the archive itself
 shows by a module file at its root or none, and the module root is
-the subtree whichever tag named the version. Evidence binds to the
+the subtree whichever tag named the version. A pinned module's
+record is re-verified under the subtree the record names
+(`module-lockfile.md` REQ-lock-provenance-record), never the
+subtree its path resolves to today: the binding is a fact about the
+tag, the commit and the archive, and a redirect that moves the
+module changes none of them. Evidence binds to the
 one tag it carries and attests no uniqueness: that a version has one
 naming tag is resolution's check at the origin. Evidence failing any
 binding step is rejected, not ignored.

@@ -250,16 +250,16 @@ func (c *Client) firstUse(ctx context.Context, modPath string, v version.Version
 	if err := pins.Add(pin); err != nil {
 		return nil, err
 	}
-	if err := c.Cache.Put(modPath, v, KindZip, zip); err != nil {
+	if err := c.Cache.Keep(modPath, v, KindZip, zip); err != nil {
 		return nil, err
 	}
 	if hasMod {
-		if err := c.Cache.Put(modPath, v, KindMod, mb); err != nil {
+		if err := c.Cache.Keep(modPath, v, KindMod, mb); err != nil {
 			return nil, err
 		}
 	}
 	if provBytes != nil {
-		if err := c.Cache.Put(modPath, v, KindProv, provBytes); err != nil {
+		if err := c.Cache.Keep(modPath, v, KindProv, provBytes); err != nil {
 			return nil, err
 		}
 	}

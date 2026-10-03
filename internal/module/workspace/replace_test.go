@@ -212,3 +212,31 @@ func TestReplaceDirectoryLoads(t *testing.T) {
 		t.Fatalf("workspace modules = %v: the replacement directory joined the workspace", root.Modules)
 	}
 }
+
+// The root labels a build-list pair as every report and error spells
+// it: a replaced pair with its replacement, pinned or directory, and
+// an unreplaced pair by itself (REQ-work-replace, REQ-work-replace-dir).
+func TestRootLabelsAPairOnce(t *testing.T) {
+	mod := func(path string) *fstest.MapFile { return &fstest.MapFile{Data: []byte("module: " + path + "\n")} }
+	root, err := LoadFor(fstest.MapFS{
+		"pb.work":         {Data: []byte("use:\n  - m\nreplace:\n  example.com/x: example.com/y@v2.0.0\n  example.com/z: ./forks/z\n")},
+		"m/pb.yaml":       mod("example.com/m"),
+		"forks/z/pb.yaml": mod("example.com/z"),
+	}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v1, err := version.Parse("v1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path, want := range map[string]string{
+		"example.com/x": "example.com/x@v1.0.0 => example.com/y@v2.0.0",
+		"example.com/z": "example.com/z@v1.0.0 => ./forks/z",
+		"example.com/w": "example.com/w@v1.0.0",
+	} {
+		if got := root.Label(path, v1); got != want {
+			t.Errorf("Label(%s) = %q, want %q", path, got, want)
+		}
+	}
+}

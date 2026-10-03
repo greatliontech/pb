@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/module/modfile"
 	"github.com/greatliontech/pb/internal/proto/compile"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/provenance/trust"
@@ -488,5 +489,94 @@ func TestTidyNamesAReplacementsMalformedFileByItsSource(t *testing.T) {
 	err := Tidy(ctx, fx.session(t, "."), io.Discard)
 	if err == nil || !strings.HasPrefix(err.Error(), "example.com/x@v1.0.0 => example.com/y@v1.0.0: x.proto: ") {
 		t.Fatalf("a malformed replacement file: %v", err)
+	}
+}
+
+// A ruleset import a pair replacement stands for is pinned under the
+// replacement's pair, and the read-only session's unpinned list names
+// that pair — never the import's, which no pin ever carries — so the
+// language server reports the pair the download verb pins and
+// judges once it is pinned (lsp.md REQ-lsp-unpinned, workspace.md
+// REQ-work-replace).
+func TestUnpinnedNamesAReplacedRulesetBySource(t *testing.T) {
+	rules := "celEnv: 1\nrules:\n  - id: PACKAGE_DEFINED\n    kind: lint\n    target: file\n    severity: error\n    cel: file.package != ''\n    message: files declare a package\n"
+	fx := newDep(t, map[string]string{
+		"pb.work":      "use:\n  - m\nreplace:\n  example.com/std: example.com/fork@v2.0.0\n",
+		"pb.lint.yaml": "rulesets:\n  - path: example.com/std\n    version: v1.0.0\n    alias: std\nenable: [std:PACKAGE_DEFINED]\n",
+		"m/pb.yaml":    ws("example.com/m", ""),
+		"m/m.proto":    "syntax = \"proto3\";\npackage m;\n",
+	})
+	fx.serve(t, "example.com/fork", "v2.0.0", map[string]string{"pb.yaml": ws("example.com/fork", ""), "std.rules.yaml": rules})
+	fx.Endpoint("example.com/fork", "v2.0.0", "info", `{"version":"v2.0.0"}`)
+	s, err := Load(Config{WS: fx.ws, Dir: ".", Client: fx.client("proxy"), ReadOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pairs, err := s.Unpinned()
+	if err != nil || len(pairs) != 1 || pairs[0].String() != "example.com/fork@v2.0.0" {
+		t.Fatalf("the unpinned pairs before the download: %v, %v", pairs, err)
+	}
+	if err := Download(ctx, fx.session(t, "."), io.Discard); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	s, err = Load(Config{WS: fx.ws, Dir: ".", Client: fx.client("proxy"), ReadOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pairs, err := s.Unpinned(); err != nil || len(pairs) != 0 {
+		t.Fatalf("the unpinned pairs after the download: %v, %v", pairs, err)
+	}
+	if j, err := Judge(ctx, s, nil); err != nil || !j.Compiles() {
+		t.Fatalf("the read-only judgement over the replaced ruleset: %v, %v", j, err)
+	}
+}
+
+// A replaced module whose replacement cannot be fetched is named in
+// the failure by the one rendering: the requirement and the
+// replacement, so the user sees what the fetched pair stands for
+// (workspace.md REQ-work-replace).
+func TestDownloadNamesAReplacedModuleInItsFailure(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - m\nreplace:\n  example.com/x: example.com/y@v9.9.9\n",
+		"m/pb.yaml": ws("example.com/m", "  example.com/x: v1.0.0\n"),
+		"m/m.proto": "syntax = \"proto3\";\nimport \"x.proto\";\n",
+	})
+	// The replacement's module file unreachable: the requirement
+	// loader's failure.
+	err := Download(ctx, fx.session(t, "."), io.Discard)
+	if err == nil || !strings.Contains(err.Error(), ": example.com/x@v1.0.0 => example.com/y@v9.9.9: ") {
+		t.Fatalf("Download over an unreachable module file: %v", err)
+	}
+	// Pinned, then the archive withdrawn from the source and the
+	// cache fresh: the download's own failure, named the same way.
+	fx.serve(t, "example.com/y", "v9.9.9", map[string]string{"pb.yaml": ws("example.com/y", ""), "x.proto": "syntax = \"proto3\";\n"})
+	fx.Endpoint("example.com/y", "v9.9.9", "info", `{"version":"v9.9.9"}`)
+	fx.Endpoint("example.com/y", "v9.9.9", "mod", ws("example.com/y", ""))
+	if err := Download(ctx, fx.session(t, "."), io.Discard); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	delete(fx.Endpoints, fx.Endpoint("example.com/y", "v9.9.9", "zip", ""))
+	err = Download(ctx, fx.session(t, "."), io.Discard)
+	if err == nil || !strings.HasPrefix(err.Error(), "example.com/x@v1.0.0 => example.com/y@v9.9.9: ") || !strings.Contains(err.Error(), "v9.9.9.zip") {
+		t.Fatalf("Download over a withdrawn archive: %v", err)
+	}
+}
+
+// A pair replacement's archive declares the replacement's own path,
+// the name it is fetched, verified and pinned under: a fork whose
+// module file still declares the replaced path is refused at the
+// download, naming the mismatch (workspace.md REQ-work-replace,
+// module-file.md REQ-modfile-identity).
+func TestReplacementDeclaringTheReplacedPathIsRefused(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - m\nreplace:\n  example.com/x: example.com/y@v1.0.0\n",
+		"m/pb.yaml": ws("example.com/m", "  example.com/x: v1.0.0\n"),
+		"m/m.proto": "syntax = \"proto3\";\nimport \"x.proto\";\n",
+	})
+	fx.serve(t, "example.com/y", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/x", ""), "x.proto": "syntax = \"proto3\";\n"})
+	fx.Endpoint("example.com/y", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	err := Download(ctx, fx.session(t, "."), io.Discard)
+	if !errors.Is(err, modfile.ErrIdentityMismatch) || !strings.Contains(err.Error(), "example.com/x@v1.0.0 => example.com/y@v1.0.0") || !strings.Contains(err.Error(), `declares "example.com/x", required as "example.com/y"`) {
+		t.Fatalf("Download over a fork declaring the replaced path: %v", err)
 	}
 }

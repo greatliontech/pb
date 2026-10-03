@@ -56,7 +56,10 @@ discarded as if absent and refetched — local corruption is not an
 origin rewrite, and the refetched bytes still verify against the pin —
 so cache state can change what is fetched, never what is accepted.
 Version-addressed entries are otherwise never rewritten: the immutable
-artifacts of `REQ-proxy-immutable` are cached without revalidation.
+artifacts of `REQ-proxy-immutable` are cached without revalidation,
+and a first use writes an entry where the cache holds none and
+rewrites none present — the root whose pin a present entry fails
+reads past it on that discard-refetch path.
 
 ## Verbs
 

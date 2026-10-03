@@ -34,12 +34,12 @@ func TestSplitVCSGolden(t *testing.T) {
 		got, ok := SplitVCS(path)
 		if want == nil {
 			if ok {
-				t.Errorf("SplitVCS(%q) = %+v, want no split", path, got)
+				t.Errorf("SplitVCS(%q) = %#v, want no split", path, got)
 			}
 			continue
 		}
 		if !ok || got != *want {
-			t.Errorf("SplitVCS(%q) = %+v ok=%v, want %+v", path, got, ok, want)
+			t.Errorf("SplitVCS(%q) = %#v ok=%v, want %#v", path, got, ok, want)
 		}
 	}
 }
@@ -135,23 +135,23 @@ func TestReleaseTagsGolden(t *testing.T) {
 	root := ReleaseTags(rs, "")
 	if len(root) != 3 || root[0].Version.String() != "v0.5.0" ||
 		root[1].Version.String() != "v1.0.0" || root[2].Version.String() != "v2.0.0" {
-		t.Fatalf("root tags = %+v", root)
+		t.Fatalf("root tags = %#v", root)
 	}
 	if root[0].Hash != "t7" || root[1].Hash != "t1" || root[1].Peeled != "c1" || root[2].Peeled != "" {
-		t.Fatalf("root tag hashes = %+v", root)
+		t.Fatalf("root tag hashes = %#v", root)
 	}
 	// Subtree named protos: segment-exact — protosx and protos/v1 tags are
 	// other modules' releases.
 	sub := ReleaseTags(rs, "protos")
 	if len(sub) != 1 || sub[0].Version.String() != "v0.9.0" || sub[0].Hash != "t5" {
-		t.Fatalf("protos tags = %+v", sub)
+		t.Fatalf("protos tags = %#v", sub)
 	}
 	// A subtree whose own name is a version segment works verbatim: the
 	// module path carries schema-idiom version directories, never module
 	// identity (REQ-resolve-no-import-versioning).
 	v1 := ReleaseTags(rs, "protos/v1")
 	if len(v1) != 1 || v1[0].Version.String() != "v1.5.0" || v1[0].Hash != "t4" {
-		t.Fatalf("protos/v1 tags = %+v", v1)
+		t.Fatalf("protos/v1 tags = %#v", v1)
 	}
 }
 
@@ -170,12 +170,12 @@ func TestReleaseTagsDeterminismProperty(t *testing.T) {
 			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 		}
 		a, b := ReleaseTags(rs, ""), ReleaseTags(shuffled, "")
-		if fmt.Sprintf("%+v", a) != fmt.Sprintf("%+v", b) {
-			t.Fatalf("listing order leaked:\n%+v\n%+v", a, b)
+		if fmt.Sprintf("%#v", a) != fmt.Sprintf("%#v", b) {
+			t.Fatalf("listing order leaked:\n%#v\n%#v", a, b)
 		}
 		for i := 1; i < len(a); i++ {
 			if version.Compare(a[i-1].Version, a[i].Version) >= 0 {
-				t.Fatalf("not strictly ascending: %+v", a)
+				t.Fatalf("not strictly ascending: %#v", a)
 			}
 		}
 	})
@@ -295,7 +295,7 @@ func TestResolveVCSSuffixPrecedence(t *testing.T) {
 	f := &fakeProber{}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/r.git/sub")
 	if err != nil || o.Repo != "https://example.com/r.git" || o.Subtree != "sub" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	if len(f.calls) != 0 {
 		t.Fatalf("vcs-suffix path probed: %v", f.calls)
@@ -309,7 +309,7 @@ func TestResolveVanityPrecedence(t *testing.T) {
 	f := &fakeProber{}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	// Vanity precedence: probing never consulted.
 	if len(f.calls) != 0 {
@@ -328,7 +328,7 @@ func TestResolveVanityLongestPrefixWins(t *testing.T) {
 			pages := map[string]string{"example.com/protos/api": `<html><head>` + body + `</head></html>`}
 			o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: vanityClient(t, pages)}, "example.com/protos/api")
 			if err != nil || o.Repo != "https://git.example.com/protos" || o.Subtree != "api" {
-				t.Fatalf("o=%+v err=%v", o, err)
+				t.Fatalf("o=%#v err=%v", o, err)
 			}
 		})
 	}
@@ -342,7 +342,7 @@ func TestResolveVanityDuplicatePrefixFirstWins(t *testing.T) {
 	pages := map[string]string{"example.com/protos/api": page}
 	o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/first" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -366,7 +366,7 @@ func TestResolveVanityIgnoresForeignPrefixes(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -378,7 +378,7 @@ func TestResolveVanityMatchAfterForeignPrefix(t *testing.T) {
 	pages := map[string]string{"example.com/protos/api": page}
 	o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -397,7 +397,7 @@ func TestResolveVanityIgnoresNonPBDeclarations(t *testing.T) {
 	pages := map[string]string{"example.com/protos/api": page}
 	o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -412,7 +412,7 @@ func TestResolveVanityRedirectCapAtTen(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: &http.Client{Transport: rt}}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	if len(rt.requested) != 10 {
 		t.Fatalf("issued %d discovery requests, want exactly 10 (initial + 9 follows)", len(rt.requested))
@@ -467,7 +467,7 @@ func TestResolveVanityIgnoresCookieJar(t *testing.T) {
 	client := &http.Client{Transport: rt, Jar: jar}
 	o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: client}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/protos" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	if got := rt.cookies; len(got) != 0 {
 		t.Fatalf("discovery presented caller cookies: %v", got)
@@ -486,7 +486,7 @@ func TestResolveVanityTransportErrorFallsThrough(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: &http.Client{Transport: rt}}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -497,7 +497,7 @@ func TestResolveProbingOrderAndFirstAnswer(t *testing.T) {
 	}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b/c/d")
 	if err != nil || o.Repo != "https://example.com/a/b" || o.Subtree != "c/d" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	want := []string{"https://example.com/a", "https://example.com/a/b"}
 	if fmt.Sprint(f.calls) != fmt.Sprint(want) {
@@ -546,7 +546,7 @@ func TestResolveVanityRedirectToCleartextFallsThrough(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: &http.Client{Transport: rt}}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	for _, u := range rt.requested {
 		if !strings.HasPrefix(u, "https://") {
@@ -564,7 +564,7 @@ func TestResolveVanityFollowsHTTPSRedirect(t *testing.T) {
 	}
 	o, err := Resolve(context.Background(), Deps{Prober: &fakeProber{}, Client: &http.Client{Transport: rt}}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://git.example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -622,7 +622,7 @@ func TestResolveVanityBodyBeyondLimitIgnored(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -636,7 +636,7 @@ func TestResolveVanityIgnoresBodyDeclarations(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/protos": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, pages)}, "example.com/protos/api")
 	if err != nil || o.Repo != "https://example.com/protos" || o.Subtree != "api" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 }
 
@@ -668,7 +668,7 @@ func TestDiscoverVanityDirectContracts(t *testing.T) {
 	t.Run("unbuildable request URL", func(t *testing.T) {
 		red, ok, err := discoverVanity(context.Background(), vanityClient(t, nil), "bad path")
 		if err == nil || ok {
-			t.Fatalf("red=%+v ok=%v err=%v, want error and no redirect", red, ok, err)
+			t.Fatalf("red=%#v ok=%v err=%v, want error and no redirect", red, ok, err)
 		}
 	})
 	t.Run("canceled context", func(t *testing.T) {
@@ -676,7 +676,7 @@ func TestDiscoverVanityDirectContracts(t *testing.T) {
 		cancel()
 		red, ok, err := discoverVanity(ctx, vanityClient(t, nil), "example.com/a")
 		if !errors.Is(err, context.Canceled) || ok {
-			t.Fatalf("red=%+v ok=%v err=%v, want context.Canceled and no redirect", red, ok, err)
+			t.Fatalf("red=%#v ok=%v err=%v, want context.Canceled and no redirect", red, ok, err)
 		}
 	})
 	for name, repo := range map[string]string{
@@ -688,7 +688,7 @@ func TestDiscoverVanityDirectContracts(t *testing.T) {
 			pages := map[string]string{"example.com/a": meta("example.com/a", repo)}
 			red, ok, err := discoverVanity(context.Background(), vanityClient(t, pages), "example.com/a")
 			if err == nil || ok {
-				t.Fatalf("red=%+v ok=%v err=%v, want error and no redirect", red, ok, err)
+				t.Fatalf("red=%#v ok=%v err=%v, want error and no redirect", red, ok, err)
 			}
 		})
 	}
@@ -714,7 +714,7 @@ func (r *errAfterReader) Read(p []byte) (int, error) {
 func TestParsePBImportReaderErrorFailsClosed(t *testing.T) {
 	r := &errAfterReader{data: `<html><head>` + metaTag("example.com/a", "https://git.example.com/a")}
 	if decls := parsePBImport(r); len(decls) != 0 {
-		t.Fatalf("errored read yielded declarations: %+v", decls)
+		t.Fatalf("errored read yielded declarations: %#v", decls)
 	}
 }
 
@@ -726,10 +726,10 @@ func TestVersionSegmentsFlowVerbatim(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"https://example.com/r": nil}}
 	o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/r/foo/v2")
 	if err != nil || o.Subtree != "foo/v2" {
-		t.Fatalf("o=%+v err=%v", o, err)
+		t.Fatalf("o=%#v err=%v", o, err)
 	}
 	if o2, ok := SplitVCS("example.com/r.git/foo/v2"); !ok || o2.Subtree != "foo/v2" {
-		t.Fatalf("SplitVCS dropped a version segment: %+v", o2)
+		t.Fatalf("SplitVCS dropped a version segment: %#v", o2)
 	}
 }
 
@@ -744,15 +744,19 @@ func TestResolveSSHRoutesEveryArm(t *testing.T) {
 	f := &fakeProber{answer: map[string][]Ref{"ssh://git@example.com/private/a": nil, "https://example.com/pub/a": nil}}
 	pages := map[string]string{"example.com/private/v/x": meta("example.com/private/v", "https://forge.example/v.git")}
 	deps := Deps{Prober: f, Client: vanityClient(t, pages), SSH: ssh}
-	for _, tc := range []struct{ path, repo, subtree string }{
-		{"corp.example.com/r.git/sub", "ssh://git@corp.example.com/r.git", "sub"},
-		{"example.com/private/v/x", "ssh://git@forge.example/v.git", "x"},
-		{"example.com/private/a/b", "ssh://git@example.com/private/a", "b"},
-		{"example.com/pub/a/b", "https://example.com/pub/a", "b"},
+	// The identity stays the HTTPS repository under every arm: the
+	// setting routes transport alone, so provenance and every record
+	// name the same repository whichever route reaches it.
+	for _, tc := range []struct{ path, repo, remote, subtree string }{
+		{"corp.example.com/r.git/sub", "https://corp.example.com/r.git", "ssh://git@corp.example.com/r.git", "sub"},
+		{"example.com/private/v/x", "https://forge.example/v.git", "ssh://git@forge.example/v.git", "x"},
+		{"example.com/private/a/b", "https://example.com/private/a", "ssh://git@example.com/private/a", "b"},
+		{"example.com/pub/a/b", "https://example.com/pub/a", "https://example.com/pub/a", "b"},
 	} {
 		o, err := Resolve(context.Background(), deps, tc.path)
-		if err != nil || o.Repo != tc.repo || o.Subtree != tc.subtree {
-			t.Errorf("Resolve(%s) = %+v, %v; want %s %s", tc.path, o, err, tc.repo, tc.subtree)
+		remote, rerr := o.Remote()
+		if err != nil || rerr != nil || o.Repo != tc.repo || remote != tc.remote || o.Subtree != tc.subtree {
+			t.Errorf("Resolve(%s) = %#v (remote %s), %v %v; want %s %s %s", tc.path, o, remote, err, rerr, tc.repo, tc.remote, tc.subtree)
 		}
 	}
 	want := []string{"ssh://git@example.com/private", "ssh://git@example.com/private/a", "https://example.com/pub", "https://example.com/pub/a"}
@@ -810,7 +814,7 @@ func TestResolveProbingFailsOnTheRunsOwnFault(t *testing.T) {
 	} {
 		f := &fakeProber{errs: map[string]error{"https://example.com/a": cause}, answer: map[string][]Ref{"https://example.com/a/b": nil}}
 		if o, err := Resolve(context.Background(), Deps{Prober: f, Client: vanityClient(t, nil)}, "example.com/a/b/c"); err != nil || o.Repo != "https://example.com/a/b" {
-			t.Fatalf("%s at a shallower prefix: %+v, %v", name, o, err)
+			t.Fatalf("%s at a shallower prefix: %#v, %v", name, o, err)
 		}
 	}
 	// No prefix answering and one refusing: no origin, the refusal named.

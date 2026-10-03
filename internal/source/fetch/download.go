@@ -196,11 +196,10 @@ func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Ver
 		}
 		id = &gitprov.Identity{Subject: pin.Provenance.SAN, Issuer: pin.Provenance.Issuer}
 	}
-	o, err := c.origin(ctx, modPath)
-	if err != nil {
-		return err
-	}
-	_, accepted, skipped, err := c.verifyEvidence(ctx, o.Subtree, v, zip, evidence, id, keys, func(rec lockfile.Provenance) bool {
+	// The binding is re-verified where the record says it was made:
+	// the subtree the pin names, never the origin resolved today — a
+	// vanity redirect moving the module moves no attested fact.
+	_, accepted, skipped, err := c.verifyEvidence(ctx, pin.Provenance.Subtree, v, zip, evidence, id, keys, func(rec lockfile.Provenance) bool {
 		return lockfile.CheckProvenanceTransition(pin.Provenance, rec) == nil
 	})
 	if err != nil {

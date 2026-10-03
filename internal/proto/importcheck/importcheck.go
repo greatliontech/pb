@@ -56,7 +56,7 @@ func Views(mods []modfiles.Module, label func(m modfiles.Module, file string) st
 			}
 			files[p] = imports
 		}
-		views = append(views, Module{Path: m.Path, Files: files})
+		views = append(views, Module{Path: m.Path, Label: m.Label(), Files: files})
 	}
 	return views, nil
 }
@@ -65,7 +65,8 @@ func Views(mods []modfiles.Module, label func(m modfiles.Module, file string) st
 // path and its file set's include-root-relative protobuf files, each
 // with the imports it declares.
 type Module struct {
-	Path  string
+	Path  string // the module path, as declarations name the module
+	Label string // the module as reports and errors name it (modfiles.Module.Label)
 	Files map[string][]string
 }
 
@@ -121,7 +122,7 @@ func CheckRequirers(modules, requirers []Module) error {
 				if modfiles.WellKnown(imp) || provided[imp] {
 					continue
 				}
-				missing = append(missing, Unsatisfied{Module: m.Path, File: f, Import: imp})
+				missing = append(missing, Unsatisfied{Module: m.Label, File: f, Import: imp})
 			}
 		}
 	}

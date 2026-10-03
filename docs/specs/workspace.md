@@ -66,7 +66,11 @@ REQ-resolve-synthesis), and X's selected version's file set is Y@v's.
 Selection over X's versions runs unchanged, so X keeps its place and
 its path in the build list, and every version of X is replaced alike.
 Y@v is fetched, verified and pinned, and its provenance judged, under
-Y's own path — never X's — and X itself is never fetched. Module files
+Y's own path — never X's — and X itself is never fetched; Y@v's module
+file declares Y, as any fetched module's declares the path it is
+fetched under (`module-file.md` REQ-modfile-identity): a fork whose module file
+still declares X is refused, an archive making one claim to its name.
+Module files
 never carry a replacement: only the resolution root's own workspace
 file does, so a replacement never reaches a consumer of the workspace's
 published modules, and a module required both as X's replacement and

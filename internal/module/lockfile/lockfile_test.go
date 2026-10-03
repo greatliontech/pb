@@ -609,6 +609,7 @@ func TestPinsOnlyStructural(t *testing.T) {
 		structural.FieldOf[string]("Type"),
 		structural.FieldOf[string]("ObjectFormat"),
 		structural.FieldOf[string]("Object"),
+		structural.FieldOf[string]("Subtree"),
 		structural.FieldOf[string]("SAN"),
 		structural.FieldOf[string]("Issuer"),
 		structural.FieldOf[string]("KeyKind"),
@@ -1366,5 +1367,61 @@ func TestRulesetPins(t *testing.T) {
 	// No ruleset pin, no rulesets key.
 	if out, err := Encode(&File{Modules: f.Modules}); err != nil || strings.Contains(string(out), "rulesets") {
 		t.Fatalf("a file without ruleset pins spelled the key: %v\n%s", err, out)
+	}
+}
+
+// A git record names the subtree its binding was verified under,
+// written after the object and omitted at the repository root; an
+// image record, signing no object, never carries one, and a subtree
+// that is no clean relative directory is refused
+// (REQ-lock-provenance-record, REQ-lock-pinned-key-record).
+func TestRecordSubtreeRoundTrips(t *testing.T) {
+	rec := goldenProv
+	rec.Subtree = "proto/api"
+	f := &File{Modules: []ModulePin{{Path: "example.com/a/proto/api", Version: "v1.2.3", Digest: "pb1:" + strings.Repeat("11", 32), Modfile: "sha256:" + strings.Repeat("33", 32), Provenance: rec}}}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "version: 1\nmodules:\n  - path: example.com/a/proto/api\n    version: v1.2.3\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    modfile: sha256:" + strings.Repeat("33", 32) +
+		"\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + rec.Object + "\n      subtree: proto/api\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
+	if string(out) != want {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
+	}
+	back, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pin, ok := back.Module("example.com/a/proto/api", "v1.2.3"); !ok || pin.Provenance != rec {
+		t.Fatalf("parsed back %+v %v", pin, ok)
+	}
+	pinned := goldenPinned
+	pinned.Subtree = "sub"
+	if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil || !strings.Contains(string(out), "      object: "+pinned.Object+"\n      subtree: sub\n      key:\n") {
+		t.Fatalf("a pinned-key record's subtree: %v\n%s", err, out)
+	}
+	// A subtree is spelled as a module path's segments are: a leading
+	// underscore, dash or tilde is a segment's.
+	for _, sub := range []string{"_api", "-x/y", "~v2", "-", "~", "null", "NULL"} {
+		pinned.Subtree = sub
+		if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil {
+			t.Fatalf("subtree %q: %v", sub, err)
+		} else if back, err := Parse(out); err != nil {
+			t.Fatalf("subtree %q parsed back: %v", sub, err)
+		} else if pin, _ := back.Module("example.com/c/sub", "v2.0.0"); pin.Provenance.Subtree != sub {
+			t.Fatalf("subtree %q read back as %q", sub, pin.Provenance.Subtree)
+		}
+	}
+	for name, bad := range map[string]string{
+		"written empty":         strings.Replace(string(out), "subtree: proto/api", "subtree: \"\"", 1),
+		"written bare":          strings.Replace(string(out), "subtree: proto/api", "subtree:", 1),
+		"written null":          strings.Replace(string(out), "subtree: proto/api", "subtree: null", 1),
+		"under an image record": "version: 1\nmodules:\nplugins:\n  - ref: ghcr.io/acme/plugin:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("55", 32) + "\n    provenance:\n      type: image-signature\n      subtree: sub\n      identity:\n        san: x\n        issuer: y\n",
+		"not clean":             strings.Replace(string(out), "subtree: proto/api", "subtree: proto/../api", 1),
+		"absolute":              strings.Replace(string(out), "subtree: proto/api", "subtree: /proto", 1),
+	} {
+		if _, err := Parse([]byte(bad)); !errors.Is(err, ErrInvalid) {
+			t.Fatalf("%s parsed: %v", name, err)
+		}
 	}
 }

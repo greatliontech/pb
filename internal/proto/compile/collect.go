@@ -78,7 +78,7 @@ func CompileAll(ctx context.Context, mods []modfiles.Module) (*Result, error) {
 	views := make([]importcheck.Module, 0, len(mods))
 	broken := map[string]bool{}
 	for _, m := range mods {
-		v := importcheck.Module{Path: m.Label(), Files: map[string][]string{}}
+		v := importcheck.Module{Path: m.Path, Label: m.Label(), Files: map[string][]string{}}
 		for _, p := range m.Protos() {
 			imps, err := importcheck.Imports(p, m.Files[p])
 			if err != nil {

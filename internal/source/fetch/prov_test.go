@@ -301,3 +301,69 @@ func TestSynthesizedSubtreeEvidenceThroughTheOrigin(t *testing.T) {
 		t.Fatalf("the pin's provenance: %+v", pin.Provenance)
 	}
 }
+
+// The ssh setting routes transport alone: an ssh-routed module's
+// default identity is its HTTPS repository's, so its provenance
+// verdict and its record are the same whichever route reached it
+// (REQ-resolve-ssh, REQ-prov-origin-consistency).
+func TestDefaultIdentityUnchangedBySSHRouting(t *testing.T) {
+	const (
+		repoURL  = "https://github.com/example/m"
+		ciSAN    = repoURL + "/.github/workflows/release.yml@refs/tags/v1.0.0"
+		ciIssuer = "https://token.actions.githubusercontent.com"
+	)
+	signer := provtest.NewWithIdentity(t, ciSAN, ciIssuer)
+	fx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
+	fx.ResolveOverride = func(_ context.Context, modPath string) (origin.Origin, error) {
+		return origin.Origin{Repo: repoURL, SSH: true, Subtree: fx.Subtrees[modPath]}, nil
+	}
+	c := fx.clientWithPolicy(&trust.Policy{Default: trust.RequireProvenance})
+	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err != nil {
+		t.Fatalf("Module over an ssh-routed origin: %v", err)
+	}
+	pin, _ := c.Lock.Module("example.com/m", "v1.0.0")
+	if pin.Provenance.SAN != ciSAN || pin.Provenance.Issuer != ciIssuer {
+		t.Fatalf("recorded identity = %q/%q", pin.Provenance.SAN, pin.Provenance.Issuer)
+	}
+}
+
+// A pinned subtree module's record names the subtree the binding was
+// verified under, and re-verification binds there: a redirect that
+// moves the module's path elsewhere in the repository later changes
+// no attested fact, so the unchanged archive and evidence still
+// reproduce the record (REQ-lock-provenance-record,
+// REQ-prov-tag-binding).
+func TestReverificationBindsUnderTheRecordedSubtree(t *testing.T) {
+	signer := provtest.New(t)
+	fx := newFixture(t)
+	files := map[string]string{"pb.yaml": "module: example.com/m\n", "sub/pb.yaml": "module: example.com/m/sub\n", "sub/s.proto": "syntax = \"proto3\";\n"}
+	tree := fx.TreeFor(fx.Repo, files)
+	commit := fx.Repo.CommitTree(tree, "release", gitWhen)
+	zip, _ := moduleZip(t, map[string]string{"pb.yaml": "module: example.com/m/sub\n", "s.proto": "syntax = \"proto3\";\n"})
+	fx.Endpoint("example.com/m/sub", "v1.0.0", "zip", string(zip))
+	fx.Endpoint("example.com/m/sub", "v1.0.0", "mod", "module: example.com/m/sub\n")
+	fx.Endpoint("example.com/m/sub", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	tag := signer.SignedTag(t, tagPayload(commit, "sub/v1.0.0"), sigstoretest.TagOptions{})
+	env := envelope(t, "sha1", tag, fx.Repo.Raw(plumbing.CommitObject, commit), [][]byte{fx.Repo.Raw(plumbing.TreeObject, tree)})
+	fx.Endpoint("example.com/m/sub", "v1.0.0", "prov", string(env))
+	fx.Subtrees["example.com/m/sub"] = "sub"
+	policy := &trust.Policy{Modules: []trust.Rule{{Prefix: "example.com/m", Require: trust.RequireProvenance, Identity: &trust.IdentityRule{SAN: provtest.Subject, Issuer: provtest.Issuer}}}}
+	c := fx.Client("proxy")
+	c.Policy, c.TrustedRoot = policy, signer.TrustedRoot()
+	if _, err := c.Module(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil {
+		t.Fatalf("first use: %v", err)
+	}
+	pin, _ := c.Lock.Module("example.com/m/sub", "v1.0.0")
+	if pin.Provenance.Subtree != "sub" {
+		t.Fatalf("the record's subtree: %+v", pin.Provenance)
+	}
+	// The module's path now resolves elsewhere; the pinned record is
+	// re-verified from the served evidence (a fresh cache holds no
+	// envelope) where it was bound.
+	fx.Subtrees["example.com/m/sub"] = "moved"
+	again := fx.Client("proxy")
+	again.Policy, again.TrustedRoot, again.Lock = policy, signer.TrustedRoot(), c.Lock
+	if err := again.Download(ctx, "example.com/m/sub", ver(t, "v1.0.0")); err != nil {
+		t.Fatalf("re-verification after the redirect moved: %v", err)
+	}
+}

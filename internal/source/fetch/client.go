@@ -192,7 +192,7 @@ func (c *Client) resolveAt(ctx context.Context, repo *direct.Repo, o origin.Orig
 			return origin.Commit{}, "", err
 		}
 		if !at.rooted {
-			return origin.Commit{}, "", fmt.Errorf("%w: origin %s: %s names commit %s, where %s is absent", proxy.ErrNotHere, o.Repo, v, bound.Hash, o.Subtree)
+			return origin.Commit{}, "", fmt.Errorf("%w: origin %s: %s names commit %s, where %s is absent", proxy.ErrNotHere, o, v, bound.Hash, o.Subtree)
 		}
 		commit, err := repo.ResolveVersion(ctx, v, at.namespace)
 		return commit, at.namespace, err
@@ -240,7 +240,11 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 	if err != nil {
 		return nil, err
 	}
-	repo, err := c.repo(ctx, o.Repo)
+	remote, err := o.Remote()
+	if err != nil {
+		return nil, err
+	}
+	repo, err := c.repo(ctx, remote)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +258,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		// failures resolution must fail on rather than route around
 		// (REQ-resolve-pseudo-commit, REQ-resolve-pseudo-base), so they
 		// abort below like any non-not-here failure.
-		return nil, fmt.Errorf("%w: origin %s: %v", proxy.ErrNotHere, o.Repo, err)
+		return nil, fmt.Errorf("%w: origin %s: %v", proxy.ErrNotHere, o, err)
 	case err != nil:
 		return nil, err
 	}
@@ -269,7 +273,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 		if !ok {
 			// A synthesized module has no standalone module file
 			// (REQ-proxy-not-found: .mod answers not-here).
-			return nil, fmt.Errorf("%w: origin %s has no module file for %s@%s", proxy.ErrNotHere, o.Repo, modPath, v)
+			return nil, fmt.Errorf("%w: origin %s has no module file for %s@%s", proxy.ErrNotHere, o, modPath, v)
 		}
 		return b, nil
 	case KindZip:
@@ -284,7 +288,7 @@ func (c *Client) directArtifact(ctx context.Context, modPath string, v version.V
 			return nil, err
 		}
 		if !ok {
-			return nil, fmt.Errorf("%w: origin %s has no provenance evidence for %s@%s", proxy.ErrNotHere, o.Repo, modPath, v)
+			return nil, fmt.Errorf("%w: origin %s has no provenance evidence for %s@%s", proxy.ErrNotHere, o, modPath, v)
 		}
 		return b, nil
 	}

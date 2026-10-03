@@ -70,6 +70,7 @@ type Provenance struct {
 	Type           string // ProvenanceGitSignedTag, ProvenanceGitPinnedKey or ProvenanceImageSignature
 	ObjectFormat   string // git-signed-tag, git-pinned-key: "sha1" or "sha256"
 	Object         string // git-signed-tag, git-pinned-key: hex git hash of the signed object
+	Subtree        string // git-signed-tag, git-pinned-key: the module's directory in the repository the tag bound it under, "" at the root
 	SAN            string // git-signed-tag, image-signature
 	Issuer         string // git-signed-tag, image-signature
 	KeyKind        string // git-pinned-key: "openpgp" or "ssh"
@@ -327,7 +328,10 @@ func checkProvenance(p Provenance, admitted ...string) error {
 		if !hexOK(p.Object, hexLen) {
 			return fmt.Errorf("object %q is not %d lowercase hex digits", p.Object, hexLen)
 		}
-	} else if p.ObjectFormat != "" || p.Object != "" {
+		if err := module.ValidateSubtree(p.Subtree); err != nil {
+			return err
+		}
+	} else if p.ObjectFormat != "" || p.Object != "" || p.Subtree != "" {
 		return fmt.Errorf("%s %s record names no signed object", shape.article, p.Type)
 	}
 	if shape.namesKey {
@@ -605,6 +609,13 @@ func writeProvenance(w *contractfile.Writer, p Provenance) {
 		if shape.signsObject {
 			w.Literal("objectFormat", p.ObjectFormat)
 			w.Literal("object", p.Object)
+			if p.Subtree != "" {
+				// A subtree is a module path's segments, which YAML may
+				// read otherwise unquoted (`-`, `~`, `null`): spelled as
+				// Spell spells a scalar, quoted where plain would not
+				// read back as itself.
+				w.Scalar("subtree", p.Subtree)
+			}
 		}
 		if shape.namesKey {
 			w.Mapping("key", func() {
@@ -661,6 +672,7 @@ type rawProvenance struct {
 	Type         rawScalar    `yaml:"type"`
 	ObjectFormat *rawScalar   `yaml:"objectFormat"`
 	Object       *rawScalar   `yaml:"object"`
+	Subtree      *rawScalar   `yaml:"subtree"`
 	Identity     *rawIdentity `yaml:"identity"`
 	Key          *rawKey      `yaml:"key"`
 }
@@ -720,7 +732,7 @@ func (p *provNode) record() (Provenance, error) {
 	r := p.rec
 	rec := Provenance{Type: string(r.Type)}
 	if shape, known := recordShapes[rec.Type]; known {
-		if !shape.signsObject && (p.present["objectFormat"] || p.present["object"]) {
+		if !shape.signsObject && (p.present["objectFormat"] || p.present["object"] || p.present["subtree"]) {
 			return Provenance{}, fmt.Errorf("%s %s record names no signed object", shape.article, rec.Type)
 		}
 		if shape.namesKey && p.present["identity"] {
@@ -735,6 +747,12 @@ func (p *provNode) record() (Provenance, error) {
 	}
 	if r.Object != nil {
 		rec.Object = string(*r.Object)
+	}
+	if p.present["subtree"] {
+		if r.Subtree == nil || *r.Subtree == "" {
+			return Provenance{}, errors.New("a subtree written is never empty: the root writes none")
+		}
+		rec.Subtree = string(*r.Subtree)
 	}
 	if r.Identity != nil {
 		rec.SAN, rec.Issuer = string(r.Identity.SAN), string(r.Identity.Issuer)

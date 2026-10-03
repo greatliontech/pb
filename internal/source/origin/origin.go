@@ -37,13 +37,38 @@ import (
 // for a module path.
 var ErrNoOrigin = errors.New("no origin found")
 
-// Origin is a resolved repository split: the repository URL — HTTPS,
-// or SSH where the ssh setting routes the module (REQ-resolve-ssh) —
-// and the module's subtree within it ("" for a module rooted at the
-// repository root).
+// Origin is a resolved repository split: the HTTPS repository URL,
+// the repository's identity — what the module's provenance is held
+// to (REQ-prov-origin-consistency) and the name every record keeps —
+// whether the ssh setting routes the module (REQ-resolve-ssh: the
+// setting routes transport alone, so the identity is the same URL
+// either way), and the module's subtree within the repository (""
+// for a module rooted at the repository root). The URL the
+// repository is reached at is Remote.
 type Origin struct {
 	Repo    string
+	SSH     bool
 	Subtree string
+}
+
+// Remote is the URL the repository is reached at: the HTTPS
+// repository URL, or its SSH spelling where the ssh setting routes
+// the module.
+func (o Origin) Remote() (string, error) {
+	if !o.SSH {
+		return o.Repo, nil
+	}
+	return SSHRepo(o.Repo)
+}
+
+// String names the origin as a failure reports it: the remote it was
+// reached at, the one the user routed.
+func (o Origin) String() string {
+	remote, err := o.Remote()
+	if err != nil {
+		return o.Repo
+	}
+	return remote
 }
 
 // SplitVCS resolves a path carrying a `.git` segment
@@ -218,25 +243,20 @@ type Prober interface {
 // vanity redirect decides (REQ-resolve-vanity's precedence clause). A
 // module the ssh setting matches is reached over SSH whichever arm
 // decides: the HTTPS repository each arm names — the `.git` prefix,
-// the vanity redirect's declaration, a probed prefix — is spelled as
-// the SSH one, and probing lists over it (REQ-resolve-ssh).
+// the vanity redirect's declaration, a probed prefix — stays the
+// origin's identity, its SSH spelling the remote, and probing lists
+// over that remote (REQ-resolve-ssh).
 func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
 	if err := module.ValidatePath(path); err != nil {
 		return Origin{}, err
 	}
 	ssh := source.MatchAny(deps.SSH, path)
-	transport := func(httpsRepo string) (string, error) {
-		if !ssh {
-			return httpsRepo, nil
-		}
-		return SSHRepo(httpsRepo)
-	}
 	if o, ok := SplitVCS(path); ok {
-		repo, err := transport(o.Repo)
-		if err != nil {
+		o.SSH = ssh
+		if _, err := o.Remote(); err != nil {
 			return Origin{}, err
 		}
-		return Origin{Repo: repo, Subtree: o.Subtree}, nil
+		return o, nil
 	}
 	if red, ok, err := discoverVanity(ctx, deps.Client, path); err != nil {
 		return Origin{}, err
@@ -247,16 +267,17 @@ func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
 			// segment-exact matching prefixes; fail closed regardless.
 			return Origin{}, fmt.Errorf("vanity prefix %q does not prefix %q", red.Prefix, path)
 		}
-		repo, err := transport(red.Repo)
-		if err != nil {
+		o := Origin{Repo: red.Repo, SSH: ssh, Subtree: sub}
+		if _, err := o.Remote(); err != nil {
 			return Origin{}, err
 		}
-		return Origin{Repo: repo, Subtree: sub}, nil
+		return o, nil
 	}
 	var attempts []string
 	anyRefused := false
 	for _, p := range prefixes(path) {
-		repo, err := transport("https://" + p)
+		o := Origin{Repo: "https://" + p, SSH: ssh}
+		repo, err := o.Remote()
 		if err != nil {
 			return Origin{}, err
 		}
@@ -275,8 +296,8 @@ func Resolve(ctx context.Context, deps Deps, path string) (Origin, error) {
 			attempts = append(attempts, fmt.Sprintf("%s: %v", repo, err))
 			continue
 		}
-		sub, _ := subtreeOf(path, p)
-		return Origin{Repo: repo, Subtree: sub}, nil
+		o.Subtree, _ = subtreeOf(path, p)
+		return o, nil
 	}
 	if anyRefused {
 		return Origin{}, fmt.Errorf("%w for %s: no vanity redirect and no prefix answered a reference listing, one refusing authentication — a private repository needs a credential file entry or an ssh route (%s)",

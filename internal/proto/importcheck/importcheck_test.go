@@ -45,7 +45,7 @@ func TestImportsMalformedSource(t *testing.T) {
 
 func TestCheckGolden(t *testing.T) {
 	modules := []Module{
-		{Path: "example.com/app", Files: map[string][]string{
+		{Path: "example.com/app", Label: "example.com/app", Files: map[string][]string{
 			"app/main.proto": {
 				"app/helper.proto",                // own module
 				"lib/lib.proto",                   // other module
@@ -53,7 +53,7 @@ func TestCheckGolden(t *testing.T) {
 			},
 			"app/helper.proto": nil,
 		}},
-		{Path: "example.com/lib", Files: map[string][]string{
+		{Path: "example.com/lib", Label: "example.com/lib", Files: map[string][]string{
 			"lib/lib.proto": {"google/protobuf/any.proto"},
 		}},
 	}
@@ -64,7 +64,7 @@ func TestCheckGolden(t *testing.T) {
 
 func TestCheckUnsatisfied(t *testing.T) {
 	modules := []Module{
-		{Path: "example.com/app", Files: map[string][]string{
+		{Path: "example.com/app", Label: "example.com/app", Files: map[string][]string{
 			"app/main.proto": {
 				"missing/gone.proto",
 				"google/protobuf/go_features.proto", // not well-known, not provided
@@ -89,10 +89,10 @@ func TestCheckUnsatisfied(t *testing.T) {
 // the module route is the sanctioned one for it.
 func TestCheckGoFeaturesViaModule(t *testing.T) {
 	modules := []Module{
-		{Path: "example.com/app", Files: map[string][]string{
+		{Path: "example.com/app", Label: "example.com/app", Files: map[string][]string{
 			"app/main.proto": {"google/protobuf/go_features.proto"},
 		}},
-		{Path: "example.com/gofeatures", Files: map[string][]string{
+		{Path: "example.com/gofeatures", Label: "example.com/gofeatures", Files: map[string][]string{
 			"google/protobuf/go_features.proto": nil,
 		}},
 	}
@@ -110,11 +110,11 @@ func TestCheckReportOrderDeterminism(t *testing.T) {
 		// file sorts last; module b's files sort first) and import order
 		// conflicts with file order, so each sort clause is load-bearing.
 		mods := []Module{
-			{Path: "example.com/b", Files: map[string][]string{
+			{Path: "example.com/b", Label: "example.com/b", Files: map[string][]string{
 				"aa/x.proto": {"gone/9.proto", "gone/2.proto", "gone/9.proto"},
 				"ab/y.proto": {"gone/1.proto"},
 			}},
-			{Path: "example.com/a", Files: map[string][]string{
+			{Path: "example.com/a", Label: "example.com/a", Files: map[string][]string{
 				"zz/z.proto": {"gone/3.proto"},
 			}},
 		}
@@ -166,7 +166,7 @@ func TestCheckCompletenessProperty(t *testing.T) {
 				}
 				files[name] = imps
 			}
-			mods = append(mods, Module{Path: fmt.Sprint("example.com/m", i), Files: files})
+			mods = append(mods, Module{Path: fmt.Sprint("example.com/m", i), Label: fmt.Sprint("example.com/m", i), Files: files})
 		}
 
 		provided := map[string]bool{}
@@ -189,7 +189,7 @@ func TestCheckCompletenessProperty(t *testing.T) {
 			for f, imps := range m.Files {
 				for _, imp := range imps {
 					satisfied := modfiles.WellKnown(imp) || provided[imp]
-					if satisfied == reported[Unsatisfied{Module: m.Path, File: f, Import: imp}] {
+					if satisfied == reported[Unsatisfied{Module: m.Label, File: f, Import: imp}] {
 						t.Fatalf("import %q of %s %s: satisfied=%v reported=%v",
 							imp, m.Path, f, satisfied, !satisfied)
 					}

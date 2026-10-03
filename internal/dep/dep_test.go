@@ -440,7 +440,7 @@ func TestTidyCarriesSynthesizedNeeds(t *testing.T) {
 		"s.proto": "syntax = \"proto3\";\nimport \"t.proto\";\n",
 	})
 	var ue *importcheck.UnsatisfiedError
-	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/s" {
+	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/s@v1.0.0" {
 		t.Fatalf("err = %v, want s's import of t unsatisfied", err)
 	}
 }
@@ -540,7 +540,7 @@ func TestTidyCarriesAnUnderDeclaringExternal(t *testing.T) {
 		"d.proto": "syntax = \"proto3\";\nimport \"e.proto\";\n",
 	})
 	var ue *importcheck.UnsatisfiedError
-	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/d" {
+	if err := Tidy(ctx, fx2.session(t, "."), io.Discard); !errors.As(err, &ue) || len(ue.Unsatisfied) != 1 || ue.Unsatisfied[0].Module != "example.com/d@v1.0.0" {
 		t.Fatalf("err = %v, want d's import of e unsatisfied", err)
 	}
 }

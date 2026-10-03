@@ -203,7 +203,7 @@ func Load(ctx context.Context, fsys fs.FS, root *workspace.Root, list []mvs.Requ
 		}
 		files, rules, declared, err := UnpackArchive(b)
 		if err != nil {
-			return nil, fmt.Errorf("%s@%s: %w", r.Path, r.Version, err)
+			return nil, fmt.Errorf("%s: %w", root.Label(r.Path, r.Version), err)
 		}
 		out = append(out, Module{Path: r.Path, Version: r.Version.String(), SourcePath: src.Path, SourceVersion: src.Version.String(), Files: files, Rules: rules, Synthesized: !declared})
 	}

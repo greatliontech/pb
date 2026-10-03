@@ -35,8 +35,10 @@ entries. No other top-level keys exist.
 **REQ-lock-ruleset-entry** (wire): Each ruleset entry MUST carry
 exactly what a module entry carries, in the same order and under the
 same rules (REQ-lock-entry, REQ-lock-provenance-record,
-REQ-lock-pinned-key-record), for a (module path, version) pair a
-ruleset import names (`check-rules.md`); the pair is pinned there and
+REQ-lock-pinned-key-record), for the (module path, version) pair a
+ruleset import reads — its replacement's where one applies
+(`check-rules.md`, `workspace.md` REQ-work-replace), never the
+import's own; the pair is pinned there and
 never among the module entries, a ruleset being no member of the
 build list, and a pair both an import and a module declaration name
 is pinned in both lists, each by its own reader, under one digest: a first use in either list is held to the other's
@@ -55,7 +57,13 @@ and `provenance` (the provenance record). No other keys exist.
 fields, then `identity`, with `san` and `issuer` strings naming the
 verified Fulcio identity — a pinned-key record `key` in its place. A `git-signed-tag` record carries
 `objectFormat` (`sha1` or `sha256`) and `object`, the hex git hash of
-the signed object. An `image-signature` record — a sigstore signature
+the signed object, then `subtree` where the module is a subtree of
+its repository: the directory the tag's tree binding was verified
+under (`provenance.md` REQ-prov-tag-binding) — a clean relative path
+of module path segments (`module-resolution.md`
+REQ-resolve-path-syntax), never written empty — absent for a module at
+the repository root, so the record is re-verified where it was bound
+whatever the module's path resolves to later. An `image-signature` record — a sigstore signature
 over the plugin entry's digest (`provenance.md`) — carries no field of
 its own: the entry's `digest` is what was signed. A `git-signed-tag`
 record belongs to a module entry and an `image-signature` record to a
@@ -67,8 +75,8 @@ of REQ-lock-pinned-key-record.
 **REQ-lock-pinned-key-record** (wire): A `git-pinned-key` record — a
 module entry's evidence accepted under a trust-policy rule naming
 pinned keys (`provenance.md`, REQ-prov-pinned-key-eval) — MUST carry
-`objectFormat` and `object` as a `git-signed-tag` record does, then
-`key`, with `kind` (`openpgp` or `ssh`) and `fingerprint` naming the
+`objectFormat`, `object` and `subtree` as a `git-signed-tag` record
+does, then `key`, with `kind` (`openpgp` or `ssh`) and `fingerprint` naming the
 pinned key that verified the signature, in place of `identity` —
 the fingerprint spelled as the kind spells it (`provenance.md`,
 REQ-prov-pinned-keys-schema: an OpenPGP key's uppercase hex, forty

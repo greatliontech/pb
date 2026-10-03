@@ -58,7 +58,7 @@ func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
 		} else {
 			mf, err := d.Client.Module(ctx, src.Path, src.Version)
 			if err != nil {
-				return nil, err
+				return nil, named(d.Root, path, v, err)
 			}
 			deps = mf.Deps
 		}
@@ -66,7 +66,7 @@ func (d *Driver) load(ctx context.Context) mvs.LoadFunc {
 		for p, ver := range deps {
 			parsed, err := version.Parse(ver)
 			if err != nil {
-				return nil, fmt.Errorf("requirement %s@%s of %s@%s: %w", p, ver, path, v, err)
+				return nil, fmt.Errorf("requirement %s@%s of %s: %w", p, ver, d.Root.Label(path, v), err)
 			}
 			reqs = append(reqs, mvs.Requirement{Path: p, Version: parsed})
 		}
@@ -84,7 +84,17 @@ func (d *Driver) Download(ctx context.Context, r mvs.Requirement) (workspace.Sou
 	if src.Module != nil {
 		return src, nil
 	}
-	return src, d.Client.Download(ctx, src.Path, src.Version)
+	return src, named(d.Root, r.Path, r.Version, d.Client.Download(ctx, src.Path, src.Version))
+}
+
+// named prefixes a fetch failure with the build-list pair it was for
+// where that pair is replaced: the failure names the source fetched,
+// and the prefix says what it stands for.
+func named(root *workspace.Root, path string, v version.Version, err error) error {
+	if err == nil || !root.Replaced(path) {
+		return err
+	}
+	return fmt.Errorf("%s: %w", root.Label(path, v), err)
 }
 
 // BuildList selects one version per reachable non-local module path

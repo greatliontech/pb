@@ -118,7 +118,10 @@ applied exactly as declared to the descriptors of matching files —
 workspace and dependency files alike, never a well-known import (the
 toolchain's, its options its own), matched by include-root-relative
 path and, where the entry names a module or excepts some, by the
-module providing the file — before plugin invocation: entries apply in declaration order,
+module providing the file, named by its path as the build list has
+it — the replaced path under a replacement (`workspace.md`
+REQ-work-replace), the requirement's name, never its replacement's —
+before plugin invocation: entries apply in declaration order,
 later entries winning on overlap; a built-in option resolves by field
 name on the file options, a custom option through the compiled set's
 extension declarations; scalar-kind values parse by the field's kind

@@ -3,6 +3,7 @@ package dep
 import (
 	"context"
 	"errors"
+	"github.com/greatliontech/pb/internal/check/lintfile"
 	"io/fs"
 	"path"
 	"strings"
@@ -168,7 +169,8 @@ func Judge(ctx context.Context, s *Session, overlay Overlay) (*Judgement, error)
 	return j, nil
 }
 
-// Pair is a module path at a version, as a requirement names it.
+// Pair is a module path at a version: the pair a pin is keyed by,
+// the replacement's where one applies.
 type Pair struct {
 	Path, Version string
 }
@@ -214,7 +216,17 @@ func (s *Session) Unpinned() ([]Pair, error) {
 		if imp.Version == "" {
 			continue
 		}
-		p := Pair{Path: imp.Path, Version: imp.Version}
+		// The pin is under the pair the import reads — its
+		// replacement's where one applies — as the resolution pins
+		// it (check-rules.md REQ-lint-rulesets-imported).
+		res, err := lintfile.Resolve(s.Root, imp)
+		if err != nil {
+			return nil, err
+		}
+		if res.Local {
+			continue
+		}
+		p := Pair{Path: res.Source.Path, Version: res.Source.Version.String()}
 		if _, ok := s.Lock.RulesetPins().Module(p.Path, p.Version); ok || seen[p] {
 			continue
 		}

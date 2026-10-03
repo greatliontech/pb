@@ -94,12 +94,29 @@ func (c *Cache) Get(modPath string, v version.Version, kind string) ([]byte, boo
 	return b, true, nil
 }
 
+// Keep writes a cached artifact where the cache holds none for the
+// pair and kind, and leaves an entry present as it is: a first use
+// writes through it, so a root's first use never rewrites bytes
+// another root's pin names (REQ-dep-cache-transparent); the root
+// whose pin the kept entry fails reads past it on the discard-refetch
+// path. Present or absent is read once: two first uses of one pair
+// racing here are the shared discipline's to order, each writing
+// whole.
+func (c *Cache) Keep(modPath string, v version.Version, kind string, data []byte) error {
+	if _, err := c.FS.Stat(entryPath(modPath, v, kind)); err == nil {
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("fetch: reading cache entry for %s@%s.%s: %w", modPath, v, kind, err)
+	}
+	return c.Put(modPath, v, kind, data)
+}
+
 // Put writes a cached artifact atomically and whole through the shared
 // discipline, so no reader ever observes a partial entry
 // (REQ-dep-cache-layout). Callers write only verified bytes; a
 // replacement of an existing entry happens only on the discard-refetch
 // path, where the replacing bytes verified against the same pin the
-// discarded ones failed.
+// discarded ones failed — a first use writes through Keep.
 func (c *Cache) Put(modPath string, v version.Version, kind string, data []byte) error {
 	p := entryPath(modPath, v, kind)
 	if err := c.FS.MkdirAll(path.Dir(p), 0o755); err != nil {

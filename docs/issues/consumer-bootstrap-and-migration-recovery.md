@@ -1,7 +1,6 @@
 # Consumer bootstrap and partial migration recovery guidance
 
-Lands: when adopter setup documentation replaces the README's `wip` placeholder,
-or migrate's partial-output recovery guidance is next changed.
+Lands: 31.
 
 ## Observed consumer path
 
