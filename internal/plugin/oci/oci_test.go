@@ -1764,3 +1764,38 @@ func tarEntries(t *testing.T, b []byte) map[string][]byte {
 		entries[h.Name] = body
 	}
 }
+
+// A first use asks the registry what the tag names today and pins
+// that, never the store's memory of the tag from an earlier
+// resolution: a tag moved since another root's first use is pinned
+// where it points now (REQ-plugin-digest-pin, REQ-lock-first-use).
+func TestAcquireFirstUseAsksTheRegistry(t *testing.T) {
+	fx := newFixture(t)
+	ref := fx.host + "/org/plugin:v1"
+	a := newAcquirer(t, fx, &lockfile.File{}, &trust.Policy{}, nil)
+	if _, err := a.Acquire(ctx, ref, Host()); err != nil {
+		t.Fatal(err)
+	}
+	// The store holding the tag's row — a pull by the tag, as an
+	// acquisition never makes one — the row is what a store's own
+	// policy would answer the next first use from.
+	if err := a.enter(ref, &acquisition{declaredRef: ref, candidates: Host()}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.fs.Pull(ctx, ref); err != nil {
+		t.Fatal(err)
+	}
+	a.leave(ref)
+	moved := pushIndex(t, ref, hostPlatform())
+	if moved == fx.digest {
+		t.Fatal("fixture: tag did not move")
+	}
+	// Another root's first use over the same warm store.
+	a.lock = &lockfile.File{}
+	if _, err := a.Acquire(ctx, ref, Host()); err != nil {
+		t.Fatal(err)
+	}
+	if got := pinOf(t, a, ref).Digest; got != moved {
+		t.Fatalf("the second root's first use pinned %s, want the registry's %s", got, moved)
+	}
+}

@@ -93,8 +93,10 @@ serve only optional convenience.
 **REQ-plugin-no-privileged-source** (structural): Plugin references MUST
 be full OCI references: no default registry, no privileged namespace, no
 short-name expansion — a reference is fetched at the repository path
-exactly as written (`docker.io/ubuntu` is `/v2/ubuntu`, never rewritten
-to `library/ubuntu`).
+exactly as written: `docker.io/library/ubuntu` is `/v2/library/ubuntu`,
+and `docker.io/ubuntu`, which every registry client rewrites to
+`library/ubuntu`, is refused as naming no repository fetched as
+written, the repository named whole instead.
 
 **REQ-plugin-registry-credentials** (behavior): Acquisition MUST read a
 registry under the ambient credential store — the container tooling's

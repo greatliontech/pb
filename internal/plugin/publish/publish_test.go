@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -536,4 +537,59 @@ func TestPropertyDigestsAreAFunctionOfTheInputs(t *testing.T) {
 			rt.Fatalf("a changed content kept the digests %v", first)
 		}
 	})
+}
+
+// A base digest naming an index yields the index's one entry for the
+// platform; two entries for it, or none, refuse the base — the choice
+// is the publisher's, never a library's pick (REQ-publish-verb,
+// REQ-publish-determinism).
+func TestBuildOverAnIndexBase(t *testing.T) {
+	host, transport := testRegistry(t)
+	// entries are platform spellings, `os/arch[/variant]`, each child
+	// marked by its index so two of one platform differ in content.
+	child := func(i int, pl v1.Platform) v1.Image {
+		img, err := mutate.ConfigFile(empty.Image, &v1.ConfigFile{OS: pl.OS, Architecture: pl.Architecture, Variant: pl.Variant, Config: v1.Config{Entrypoint: []string{"/runtime"}, Env: []string{fmt.Sprintf("CHILD=%d", i)}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return img
+	}
+	push := func(repo string, entries ...string) string {
+		idx := v1.ImageIndex(empty.Index)
+		for i, e := range entries {
+			parts := strings.SplitN(e, "/", 3)
+			pl := v1.Platform{OS: parts[0], Architecture: parts[1]}
+			if len(parts) == 3 {
+				pl.Variant = parts[2]
+			}
+			idx = mutate.AppendManifests(idx, mutate.IndexAddendum{Add: child(i, pl), Descriptor: v1.Descriptor{Platform: &pl}})
+		}
+		tag, _ := name.NewTag(host+"/acme/"+repo+":1", name.StrictValidation)
+		if err := remote.WriteIndex(tag, idx, remote.WithTransport(transport)); err != nil {
+			t.Fatal(err)
+		}
+		d, _ := idx.Digest()
+		return host + "/acme/" + repo + "@" + d.String()
+	}
+	request := func(base string) Request {
+		return Request{Reference: host + "/acme/z:v1", Entrypoint: []string{"/plugin"}, Platforms: map[string]Tree{"linux/amd64": {Dir: tree(t, map[string]string{"plugin": "bin"}), Base: base}}, Transport: transport}
+	}
+	if _, err := Build(ctx, request(push("one", "linux/amd64", "linux/arm64"))); err != nil {
+		t.Fatalf("an index with one entry for the platform: %v", err)
+	}
+	// The variant is not consulted: an entry under one is the
+	// platform's entry where it is the only one, and two under
+	// different variants are two.
+	if _, err := Build(ctx, request(push("variant", "linux/amd64/v9", "linux/arm64"))); err != nil {
+		t.Fatalf("an index whose one entry for the platform carries a variant: %v", err)
+	}
+	if _, err := Build(ctx, request(push("two", "linux/amd64", "linux/amd64"))); err == nil || !strings.Contains(err.Error(), "2 entries for linux/amd64") {
+		t.Fatalf("an index with two entries for the platform: %v", err)
+	}
+	if _, err := Build(ctx, request(push("variants", "linux/amd64/v8", "linux/amd64/v9"))); err == nil || !strings.Contains(err.Error(), "2 entries for linux/amd64") {
+		t.Fatalf("an index with two entries for the platform under variants: %v", err)
+	}
+	if _, err := Build(ctx, request(push("none", "linux/arm64"))); err == nil || !strings.Contains(err.Error(), "0 entries for linux/amd64") {
+		t.Fatalf("an index with no entry for the platform: %v", err)
+	}
 }

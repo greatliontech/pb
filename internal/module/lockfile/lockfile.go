@@ -132,7 +132,7 @@ const (
 // provenance at all: a host binary has no evidence to record, and its
 // absence is not spelled `none`.
 type PluginPin struct {
-	Ref        string // plugin identity as written in generation configuration, without a digest
+	Ref        string // the reference as written in generation configuration, without a digest: the pin's key, the digest its identity
 	Scheme     string // SchemeOCI or SchemeLocal — stated, never inferred from fields
 	Digest     string // oci: "sha256:" + 64 hex manifest-list digest
 	Provenance Provenance

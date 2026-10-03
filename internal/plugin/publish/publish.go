@@ -254,7 +254,7 @@ func imageOf(layer v1.Layer, base string, pl *v1.Platform, entrypoint []string, 
 		if err != nil {
 			return nil, fmt.Errorf("base %q is not a reference with a digest: %w", base, err)
 		}
-		fetched, err := remote.Image(ref, append(slices.Clone(opts), remote.WithPlatform(*pl))...)
+		fetched, err := baseImage(ref, pl, opts)
 		if err != nil {
 			return nil, fmt.Errorf("base %s: %w", base, err)
 		}
@@ -290,6 +290,42 @@ func imageOf(layer v1.Layer, base string, pl *v1.Platform, entrypoint []string, 
 		return nil, err
 	}
 	return mutate.MediaType(mutate.ConfigMediaType(img, types.OCIConfigJSON), types.OCIManifestSchema1), nil
+}
+
+// baseImage fetches a base at its digest: the image the digest names,
+// or, where it names an index, the index's one entry for the
+// platform — matched on OS and architecture, the variant not
+// consulted, as the run matches an image's entries
+// (plugin-execution.md REQ-plugin-platform-strict) — two or none
+// refused, so the base is the publisher's choice and never a
+// library's pick among entries, and the output's digest is
+// independent of the build of pb (REQ-publish-determinism).
+func baseImage(ref name.Digest, pl *v1.Platform, opts []remote.Option) (v1.Image, error) {
+	desc, err := remote.Get(ref, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if !desc.MediaType.IsIndex() {
+		return desc.Image()
+	}
+	idx, err := desc.ImageIndex()
+	if err != nil {
+		return nil, err
+	}
+	man, err := idx.IndexManifest()
+	if err != nil {
+		return nil, err
+	}
+	var matches []v1.Hash
+	for _, m := range man.Manifests {
+		if m.Platform != nil && m.Platform.OS == pl.OS && m.Platform.Architecture == pl.Architecture {
+			matches = append(matches, m.Digest)
+		}
+	}
+	if len(matches) != 1 {
+		return nil, fmt.Errorf("names an index with %d entries for %s, not one", len(matches), pl.String())
+	}
+	return idx.Image(matches[0])
 }
 
 // layerOf writes the platform tree as one canonical tar, uncompressed

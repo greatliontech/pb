@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestBuildPublishesTheListOverTheTrees"
   role: BINDING_ROLE_TESTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestBuildRefusals"
   role: BINDING_ROLE_TESTS
@@ -23,8 +23,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/cmd/pb.TestPluginBuildCommand"
   role: BINDING_ROLE_TESTS
@@ -33,8 +33,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.Build"
   role: BINDING_ROLE_IMPLEMENTS
@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestParseRequest"
   role: BINDING_ROLE_TESTS
@@ -153,8 +153,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-publish-verb"
-  content_hash: "508a6a618026f7c7f5f3bf7590d51a60e7142752aa2bad3a716ba88d8870e2fc"
-  source_hash: "ee206addaeea5305beb5b0cc09efd5e3f5a7c42762c9905b6df00f6b6032c1bb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.ParseRequest"
   role: BINDING_ROLE_IMPLEMENTS
@@ -179,4 +179,34 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestPropertyDigestsAreAFunctionOfTheInputs"
   role: BINDING_ROLE_TESTS
   shape_hash: "b0442d9a1cf8e0ebe59b1ab0b71a25077e4ef71593897a576e0dbdbec88daebe"
+}
+
+bindings {
+  requirement_id: "REQ-publish-verb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestBuildOverAnIndexBase"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d021eb9e5116e6146d02d623fcd2050ae9edae7623d998b6b0646c9034ef7e81"
+}
+
+bindings {
+  requirement_id: "REQ-publish-determinism"
+  content_hash: "684c3950a5615d495a119734b68b731de21b41ec71079b0a77a1505d2834d2af"
+  source_hash: "604f158b8570afbe29e1eacb28bb5144300038a8c5fecd714f103b7860ebe96f"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/publish.TestBuildOverAnIndexBase"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "d021eb9e5116e6146d02d623fcd2050ae9edae7623d998b6b0646c9034ef7e81"
+}
+
+bindings {
+  requirement_id: "REQ-publish-verb"
+  content_hash: "22e960dc9f3cc43ffa200a9271d27f6408fbe23aff828f0ed158363bad52bb05"
+  source_hash: "3112baaad8d09f29e42ed5929e80e641b8b6cab88c8ce58a54c4c45cf9eab976"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/publish.baseImage"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "e37f2a37d0ff67cdac08bf1a58de4dcbf88ec7074f28fd7e177c2e98fe68d18b"
 }

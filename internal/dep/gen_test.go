@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	iofs "io/fs"
 	"net/http/httptest"
 	"os"
 	pathpkg "path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -1461,5 +1463,46 @@ func TestGenDaemonLocalOverrideUnderTheStorePath(t *testing.T) {
 	}
 	if len(acq.offered) != 0 {
 		t.Fatalf("an override of a daemon-local image was acquired: %+v", acq.offered)
+	}
+}
+
+// Tidy prunes plugin pins no generation entry names, by reference and
+// scheme as written, and every plugin pin where the root has no
+// generation file, so a pin outlives no declaration (REQ-dep-tidy).
+func TestTidyPrunesUndeclaredPluginPins(t *testing.T) {
+	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - local: tools/gen\n    out: gen\n")
+	digest := "sha256:" + strings.Repeat("55", 32)
+	for _, pin := range []lockfile.PluginPin{
+		{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: digest},
+		{Ref: "ghcr.io/o/q:v1", Scheme: lockfile.SchemeOCI, Digest: digest},
+		{Ref: "tools/gen", Scheme: lockfile.SchemeLocal, Binary: map[string]string{"linux/amd64": digest}},
+		{Ref: "tools/old", Scheme: lockfile.SchemeLocal, Binary: map[string]string{"linux/amd64": digest}},
+	} {
+		if err := s.Lock.AddPlugin(pin); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := Tidy(ctx, s, io.Discard); err != nil {
+		t.Fatalf("Tidy: %v", err)
+	}
+	refs := func() []string {
+		var out []string
+		for _, p := range s.Lock.Plugins {
+			out = append(out, p.Scheme+" "+p.Ref)
+		}
+		return out
+	}
+	if got := refs(); !slices.Equal(got, []string{"oci ghcr.io/o/p:v1", "local tools/gen"}) {
+		t.Fatalf("plugin pins after tidy = %v, want the declared two", got)
+	}
+	if err := fx.ws.Remove("pb.gen.yaml"); err != nil {
+		t.Fatal(err)
+	}
+	s = fx.session(t, ".")
+	if err := Tidy(ctx, s, io.Discard); err != nil {
+		t.Fatalf("Tidy without a generation file: %v", err)
+	}
+	if n := len(s.Lock.Plugins); n != 0 {
+		t.Fatalf("%d plugin pins after tidy without a generation file, want none", n)
 	}
 }

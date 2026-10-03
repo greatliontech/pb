@@ -92,7 +92,12 @@ satisfied by a workspace-local module keeps that module's existing
 declared version — the local working copy has none to record — and fails
 tidy when no declared version exists to keep. Tidy removes lockfile pins
 for (module path, version) pairs outside the tidied requirement graph,
-and is idempotent: a second run changes nothing. Tidy reads the graph
+and plugin pins no entry of the root's generation file names by
+reference and scheme as written — every plugin pin where the root
+has no generation file — so a pin outlives no declaration and a
+reference declared again is a first use again (`module-lockfile.md`
+REQ-lock-first-use), as `go mod tidy` prunes `go.sum`; and is
+idempotent: a second run changes nothing. Tidy reads the graph
 through the resolution root's replacements (`workspace.md`
 REQ-work-replace, REQ-work-replace-dir): a replaced module's files
 and declarations are its replacement's, a declaration stays on the

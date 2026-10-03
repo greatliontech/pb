@@ -433,8 +433,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.evidence"
   role: BINDING_ROLE_IMPLEMENTS
@@ -443,8 +443,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireKeepsEvidence"
   role: BINDING_ROLE_TESTS
@@ -453,8 +453,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireKeptEvidenceReplaced"
   role: BINDING_ROLE_TESTS
@@ -463,8 +463,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image/evidence.TestStoreUnreadableIsAbsent"
   role: BINDING_ROLE_TESTS
@@ -503,8 +503,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image.TestRecorderKeepsWhatWasTaken"
   role: BINDING_ROLE_TESTS
@@ -523,8 +523,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-prov-plugin-evidence-kept"
-  content_hash: "50720857c3182edbc733a1db27525f4c1de3427a03baf3d8885ca5effec406f5"
-  source_hash: "db81ca8141fc82ec970584ab1bc33f9bc8f8c64878ceb5549fa0f021ddd88dd3"
+  content_hash: "dc3901298a5e2cadbbe1188bc0a5e5fdc82fe5721517ffea95266aa20d82ca09"
+  source_hash: "06d3604e3c95a9df50581e37bd579609359d2e8cdc101f3ad7b120d30988cd0b"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS

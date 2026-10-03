@@ -240,6 +240,8 @@ func TestParseRejections(t *testing.T) {
 		{"ref digest", "plugins:\n  - ref: ghcr.io/o/p@sha256:abc\n    out: gen\n", "carries a digest"},
 		{"ref no registry", "plugins:\n  - ref: protoc-gen-go:v1\n    out: gen\n", "has no registry"},
 		{"ref short registry", "plugins:\n  - ref: library/p:v1\n    out: gen\n", "does not name itself unambiguously"},
+		{"ref docker hub shorthand", "plugins:\n  - ref: docker.io/p:v1\n    out: gen\n", "fetched as library/p, never as written"},
+		{"ref docker hub index shorthand", "plugins:\n  - ref: index.docker.io/p:v1\n    out: gen\n", "fetched as library/p, never as written"},
 		{"ref no tag", "plugins:\n  - ref: ghcr.io/o/p\n    out: gen\n", "has no tag"},
 		{"ref port no tag", "plugins:\n  - ref: localhost:5000/p\n    out: gen\n", "has no tag"},
 		{"ref uppercase repo", "plugins:\n  - ref: ghcr.io/oRg/p:v1\n    out: gen\n", `contains 'R'`},
@@ -336,6 +338,8 @@ func TestReferenceAccepts(t *testing.T) {
 		"my-reg.example.com:65535/p:v1",
 		"1.2.3.4/p:_v",
 		"host.tld/p:" + strings.Repeat("a", 128),
+		"docker.io/library/p:v1",
+		"index.docker.io/o/p:v1",
 	} {
 		if err := CheckReference(ref); err != nil {
 			t.Errorf("%s: %v", ref, err)

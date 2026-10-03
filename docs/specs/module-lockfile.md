@@ -85,9 +85,10 @@ SSH key's `SHA256:` and forty-three base64 digits). It belongs to a
 module entry alone.
 
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
-`ref` (the plugin identity as written in generation configuration, without
-a digest — a `local` entry's the command alone, its arguments no part
-of the identity), `scheme` (its identity scheme, `oci` or `local` —
+`ref` (the reference as written in generation configuration, without
+a digest — the pin's key, a place name the pin's `digest` turns into
+content (`plugin-execution.md`); a `local` entry's the command alone,
+its arguments no part of the key), `scheme` (its identity scheme, `oci` or `local` —
 `plugin-execution.md`), then the scheme's own facts and no others. An
 `oci` entry carries `digest` (the manifest-list digest the reference
 resolved to) and `provenance` (a provenance record for the image

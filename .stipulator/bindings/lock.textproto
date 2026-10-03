@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "c46bc7afe4841e975b8bc69925f5637356e25be4b5f3d2e873a569df6e8312b0"
-  source_hash: "211b26f45a5f15e4011ba91f6432d6daf754a50cf1d57cf409ccf5bdaf9599d5"
+  content_hash: "eaa875c756348c65a245d0349b6dd0ec14834a02f36dcc95497ec55dd6372ffd"
+  source_hash: "1d5d4901eba452e760ee11e8af8a0aca49df6dcafd1bb889cbe80dfbd0a29673"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "c46bc7afe4841e975b8bc69925f5637356e25be4b5f3d2e873a569df6e8312b0"
-  source_hash: "211b26f45a5f15e4011ba91f6432d6daf754a50cf1d57cf409ccf5bdaf9599d5"
+  content_hash: "eaa875c756348c65a245d0349b6dd0ec14834a02f36dcc95497ec55dd6372ffd"
+  source_hash: "1d5d4901eba452e760ee11e8af8a0aca49df6dcafd1bb889cbe80dfbd0a29673"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS
@@ -649,4 +649,14 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestReverificationBindsUnderTheRecordedSubtree"
   role: BINDING_ROLE_TESTS
   shape_hash: "07e3c3050a39b15a6d54eaf1640e8876b4b027a339d0065d4292cf80aae81e72"
+}
+
+bindings {
+  requirement_id: "REQ-lock-first-use"
+  content_hash: "7037ac227023d085a504723c55071ca74cebc82b22853d8c37f192f256787929"
+  source_hash: "9c0c19859d74c2e466361f47ef235a2e0e5c499618355fd8019661bb47157fdb"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireFirstUseAsksTheRegistry"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "b80fcd115e6ed2faf46852df00a2f5ba560afa53a1db102354044c050bc49f84"
 }

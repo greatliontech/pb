@@ -197,7 +197,9 @@ func (a *Acquirer) Close() error {
 // for the first candidate its image serves (REQ-plugin-platform-strict,
 // REQ-plugin-runner-selection): a pinned reference is materialized at
 // its pinned digest — the tag is never re-resolved — and a first use
-// resolves the tag once through the seam, records the pin, and
+// resolves the tag once through the seam, acquires the digest it
+// named — the seam judging the platform again over the same artifact
+// and the evidence no second time — records the pin, and
 // materializes. A candidate the daemon serves yields the repository
 // at the verified digest for the daemon to pull, nothing
 // materializing (REQ-plugin-core-verifies); another yields the
@@ -205,12 +207,24 @@ func (a *Acquirer) Close() error {
 // refusal names what the image serves.
 func (a *Acquirer) Acquire(ctx context.Context, ref string, candidates []Candidate) (*plugin.Acquired, error) {
 	pin, pinned := a.lock.Plugin(ref, lockfile.SchemeOCI)
-	target := ref
 	acq := &acquisition{declaredRef: ref, candidates: candidates}
+	var target string
 	if pinned {
 		target = genfile.ReferenceRepository(ref) + "@" + pin.Digest
 		acq.pinnedDigest = pin.Digest
 		acq.pinnedProvenance = pin.Provenance
+	} else {
+		// A first use asks the registry what the tag names today
+		// (REQ-plugin-digest-pin: the pin is the resolution of the
+		// moment, never the store's memory of the tag from another
+		// root's first use) and acquires that digest, so the tag
+		// never keys the store and a retarget re-pulls the same
+		// artifact.
+		digest, err := a.resolveTag(ctx, ref, acq)
+		if err != nil {
+			return nil, err
+		}
+		target = genfile.ReferenceRepository(ref) + "@" + digest
 	}
 	if err := a.enter(target, acq); err != nil {
 		return nil, err
@@ -262,11 +276,11 @@ func (a *Acquirer) acquire(ctx context.Context, target string, acq *acquisition)
 		var retarget errRetarget
 		if errors.As(err, &retarget) {
 			// One retarget: the seam's verdict over the one artifact.
-			// A second is an artifact that changed between the two
-			// askings — a tag moved under the acquisition — which no
-			// pass is going to settle.
+			// A second cannot be: every target is a digest, the one
+			// artifact under both askings, and the seam's verdict over
+			// it is a function of its entries.
 			if retargeted {
-				return nil, fmt.Errorf("oci: %s: the image changed under the acquisition (the seam admitted candidate %d, then %d)", acq.declaredRef, acq.asked, retarget.chosen)
+				return nil, fmt.Errorf("oci: %s: the seam admitted candidate %d, then %d, over one artifact", acq.declaredRef, acq.asked, retarget.chosen)
 			}
 			retargeted = true
 			acq.asked = retarget.chosen
@@ -343,13 +357,7 @@ func (a *Acquirer) UpdatePlugin(ctx context.Context, ref string, candidates []Ca
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, fmt.Errorf("oci: %s: no pin to update", ref)
 	}
 	acq := &acquisition{declaredRef: ref, fresh: true, candidates: candidates}
-	if err := a.enter(ref, acq); err != nil {
-		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
-	}
-	defer a.leave(ref)
-	// The tag is asked of the registry for this call alone: the
-	// store's own policy would answer a cached tag from the cache.
-	if _, err := a.fs.Resolve(ctx, ref, ocifs.ResolveUnder(ocifs.PullAlways)); err != nil {
+	if _, err := a.resolveTag(ctx, ref, acq); err != nil {
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 	}
 	after, err = acq.pin()
@@ -360,6 +368,23 @@ func (a *Acquirer) UpdatePlugin(ctx context.Context, ref string, candidates []Ca
 		return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 	}
 	return before, after, nil
+}
+
+// resolveTag asks the registry what ref names now, under the seam —
+// the tag entered for the resolution alone — and yields the digest:
+// the store's own policy would answer a tag row from the cache, which
+// is another resolution's moment, not this one's
+// (REQ-plugin-digest-pin, dep-verbs.md REQ-dep-update).
+func (a *Acquirer) resolveTag(ctx context.Context, ref string, acq *acquisition) (string, error) {
+	if err := a.enter(ref, acq); err != nil {
+		return "", err
+	}
+	defer a.leave(ref)
+	res, err := a.fs.Resolve(ctx, ref, ocifs.ResolveUnder(ocifs.PullAlways))
+	if err != nil {
+		return "", err
+	}
+	return res.Digest.String(), nil
 }
 
 // pin is the pin the seam's verdict makes for the declared reference:
@@ -389,10 +414,12 @@ func processOf(cfg *v1.ConfigFile) (plugin.Process, error) {
 }
 
 // enter admits one acquisition of target at a time; an acquisition is
-// keyed by what it resolves — a pinned one by its digest form, a
-// first use and an update by the tag — so the guard is against two
-// resolutions of one target, not against every pairing of one
-// plugin, and the lockfile is the verb's to serialize.
+// keyed by what it resolves — a tag's resolution by the tag, the
+// acquisition that follows it and a pinned one by the digest form —
+// so the guard is against two resolutions of one target, not against
+// every pairing of one plugin (two of one digest at once would
+// collide, which the generation's one-at-a-time acquisition never
+// asks), and the lockfile is the verb's to serialize.
 func (a *Acquirer) enter(target string, acq *acquisition) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -439,6 +466,14 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 	acq.entry, acq.chosen = entry, chosen
 	if acq.retargets && chosen != acq.asked {
 		return errRetarget{chosen: chosen}
+	}
+	// The acquisition that follows a tag's resolution asks the seam
+	// over the digest the resolution verified: the platform judged
+	// again above, the evidence once — its judgement is a function of
+	// the digest, the policy and the acquisition's freshness, all
+	// unchanged.
+	if acq.resolved == digest {
+		return nil
 	}
 	// Evidence is always judged — the module pipeline's semantics:
 	// what verifies is recorded even under allow-unsigned, and none

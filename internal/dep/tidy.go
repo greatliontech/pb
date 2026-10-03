@@ -2,9 +2,12 @@ package dep
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
+	"os"
 	"path"
 	"slices"
 
@@ -12,6 +15,7 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/lockfile"
 	"github.com/greatliontech/pb/internal/module/modfile"
+	"github.com/greatliontech/pb/internal/plugin/genfile"
 	"github.com/greatliontech/pb/internal/proto/importcheck"
 	"github.com/greatliontech/pb/internal/proto/modfiles"
 	"github.com/greatliontech/pb/internal/resolve"
@@ -267,7 +271,40 @@ func tidyOnce(ctx context.Context, s *Session, imported map[string]bool) (change
 	if len(keptRulesets) != len(s.Lock.Rulesets) {
 		s.Lock.Rulesets = keptRulesets
 	}
+	// A plugin pin stays while a generation entry names it, the
+	// reference and scheme as written; a root with no generation file
+	// declares none.
+	pluginsDeclared, err := s.declaredPlugins()
+	if err != nil {
+		return false, nil, err
+	}
+	keptPlugins := slices.DeleteFunc(slices.Clone(s.Lock.Plugins), func(p lockfile.PluginPin) bool {
+		return !pluginsDeclared[p.Scheme+" "+p.Ref]
+	})
+	if len(keptPlugins) != len(s.Lock.Plugins) {
+		s.Lock.Plugins = keptPlugins
+	}
 	return false, carried, nil
+}
+
+// declaredPlugins is the set of plugins the root's generation file
+// declares, keyed by scheme and reference as written — the lockfile
+// pin's key — empty where the root has no generation file.
+func (s *Session) declaredPlugins() (map[string]bool, error) {
+	declared := map[string]bool{}
+	if _, err := s.WS.Stat(path.Join(s.Root.Dir, genfile.FileName)); errors.Is(err, fs.ErrNotExist) || errors.Is(err, os.ErrNotExist) {
+		return declared, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("dep tidy: %w", err)
+	}
+	gf, err := s.GenFile()
+	if err != nil {
+		return nil, fmt.Errorf("dep tidy: %w", err)
+	}
+	for _, p := range gf.Plugins {
+		declared[p.Scheme+" "+p.Ref] = true
+	}
+	return declared, nil
 }
 
 // importedRulesets is the pairs the imports pin, the lint file's

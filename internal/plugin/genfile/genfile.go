@@ -637,6 +637,14 @@ func CheckReference(ref string) error {
 	if err := checkRepository(repo); err != nil {
 		return fmt.Errorf("ref %q: %v", ref, err)
 	}
+	// Docker Hub's one-component repository is a client shorthand:
+	// every client fetches `docker.io/p` as `library/p`, never as
+	// written, so the shorthand names no repository pb could fetch as
+	// written (REQ-plugin-no-privileged-source) and is refused; the
+	// repository is named whole, `docker.io/library/p`.
+	if (registry == "docker.io" || registry == "index.docker.io") && !strings.Contains(repo, "/") {
+		return fmt.Errorf("ref %q names a Docker Hub shorthand, fetched as library/%s, never as written: name the repository whole", ref, repo)
+	}
 	if err := checkTag(tag); err != nil {
 		return fmt.Errorf("ref %q: %v", ref, err)
 	}

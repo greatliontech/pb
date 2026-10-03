@@ -226,7 +226,10 @@ identity rule governing the reference, or no trusted root configured,
 no evidence is judged and the image is unsigned as above.
 
 **REQ-prov-plugin-evidence-kept** (behavior): Evidence fetched for an
-image MUST be kept with pb's plugin content, keyed by the digest, as
+image MUST be kept with pb's plugin content, keyed by the digest
+alone, whatever repository served it — a carrier is a signature over
+the digest, which no repository changes, its `docker-reference`
+annotation no claim pb reads (REQ-prov-plugin-identity) — as
 the carriers taken in discovery order; a later acquisition judges the
 kept evidence first and fetches only when it holds none the judgement
 accepts — under the identity rule and, for a pinned image, the

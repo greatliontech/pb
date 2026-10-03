@@ -434,3 +434,12 @@ formatter and the language server
       clause and lsp.md REQ-lsp-session stating it; a verb opening
       the origin after a server's judgement without waiting, a
       redirect changed between reloads followed; the issue closes
+- [ ] 34. A local plugin executed as pinned
+      (local-binary-executed-as-pinned): the acquirer copying the
+      resolved binary into a directory the generation run owns,
+      hashing, pinning and running the copy, the directory created
+      with the run and removed with it, a crash's residue by the
+      next; plugin-execution.md's local scheme stating the run's
+      directory beside REQ-plugin-local-pin; a binary replaced
+      between the acquisition and the run executing the acquired
+      bytes; the issue closes

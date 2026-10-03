@@ -3,6 +3,6 @@
 
 requirement_id: "REQ-plugin-no-privileged-source"
 reason: "Acquisition consumes only standard image content and fetches references at the repository path exactly as written, pinned by executed example and property witnesses; the structural-kind analyzer proof (no annotation read, no reference rewriting) is outstanding"
-content_hash: "8b621bc0757aa7d83f5afaefcfab271231193e128e406313f2731d692fb122d5"
-source_hash: "483db0761e0c33977c3c10040b3c2d2bb43c0f76357b5fe2950e50b50a15e387"
+content_hash: "68ba6f5a668a51429e7dd38a428e398976fbe4bcfc93d6d20436d27b45f859c5"
+source_hash: "84258e2e854b1d049f68f50b67d67f0ced3433c937e2c67dc87c482b6449c7b4"
 lands { manual { condition: "a structural analyzer witness over plugin acquisition exists" } }

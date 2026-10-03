@@ -29,7 +29,11 @@ carries less than buf did, what is lost. Two tables exist: the
 dependency table, from a BSR module name to a module path, and the
 plugin catalog, the BSR plugin names pb's catalog publishes, each
 mapping to its repository under the catalog's registry by one rename
-rule. A table grows by pb's own releases, never at run time.
+rule. A table grows by pb's own releases, never at run time; a
+catalog repository renamed or removed later leaves a migrated
+project's pinned acquisition serving the pinned bytes or failing,
+the pin naming the repository and the digest (`module-lockfile.md`
+REQ-lock-plugin-entry), never another image.
 
 **migration report** (term): What the verb prints: every buf fact
 mapped, the pb form it took; every fact it could not map, with its

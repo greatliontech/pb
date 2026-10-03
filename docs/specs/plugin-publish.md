@@ -44,7 +44,13 @@ symbolic link (an image pb runs carries none, `module-archive.md`'s
 reading of links for what pb materializes), or a base cannot be
 fetched at its digest or is not the platform's — a digest naming one
 image is that image whatever platform is asked for, so its
-configuration must name the platform; then build one image per
+configuration must name the platform, and one naming an index is the
+index's one entry for the platform — matched on OS and architecture
+as the run matches entries (`plugin-execution.md`
+REQ-plugin-platform-strict), the variant not consulted — two or none
+refusing it, the choice the publisher's and never a client library's
+pick among entries (REQ-publish-determinism); then build one image
+per
 platform
 (REQ-publish-image), the manifest list over exactly those platforms
 (REQ-publish-list), publish the list and its images to the reference
