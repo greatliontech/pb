@@ -27,9 +27,12 @@ const CatalogRegistry = "ghcr.io/greatliontech/pb-plugins"
 // TestPluginCatalogMatchesSpec; the repository's catalog and the
 // registry are held to it by TestPluginCatalog, live.
 var Catalog = []string{
+	"buf.build/apple/swift",
 	"buf.build/bufbuild/connect-es",
 	"buf.build/bufbuild/connect-go",
 	"buf.build/bufbuild/connect-query",
+	"buf.build/bufbuild/connect-swift",
+	"buf.build/bufbuild/connect-swift-mocks",
 	"buf.build/bufbuild/connect-web",
 	"buf.build/bufbuild/es",
 	"buf.build/bufbuild/protoschema-bigquery",
@@ -53,6 +56,8 @@ var Catalog = []string{
 	"buf.build/connectrpc/gosimple",
 	"buf.build/connectrpc/query-es",
 	"buf.build/connectrpc/rust",
+	"buf.build/connectrpc/swift",
+	"buf.build/connectrpc/swift-mocks",
 	"buf.build/grpc-ecosystem/gateway",
 	"buf.build/grpc-ecosystem/openapiv2",
 	"buf.build/grpc-ecosystem/openapiv3",
@@ -65,6 +70,8 @@ var Catalog = []string{
 	"buf.build/grpc/php",
 	"buf.build/grpc/python",
 	"buf.build/grpc/ruby",
+	"buf.build/grpc/swift",
+	"buf.build/grpc/swift-protobuf",
 	"buf.build/grpc/web",
 	"buf.build/pluginrpc/go",
 	"buf.build/protocolbuffers/cpp",

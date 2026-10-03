@@ -147,7 +147,7 @@ formatter and the language server
       (chunk 21, every package its commits touched: internal/lsp,
       internal/dep, internal/proto/compile, internal/proto/modfiles,
       internal/source/fetch, cmd/pb), the plugin catalog's (chunks 3,
-      12, 19 and 20, in greatliontech/pb-plugins: internal/catalog,
+      12, 19, 20 and 24, in greatliontech/pb-plugins: internal/catalog,
       internal/recipe, internal/pipeline, internal/registry,
       internal/github, internal/web, internal/endpoints, cmd/catalog;
       pb's internal/migrate, cmd/pb's migrate verb,
@@ -254,7 +254,7 @@ formatter and the language server
       mutant then classified by its oracle; what the bracket cannot
       name filed against gomutant with the residue chunk 18 measured;
       the runner-oracle-sandbox-bound issue closes
-- [ ] 24. The swift kind: `swift build` on a runner of the platform,
+- [x] 24. The swift kind: `swift build` on a runner of the platform,
       the platforms served those the toolchain builds; grpc/swift,
       grpc/swift-protobuf, connectrpc/swift, connectrpc/swift-mocks,
       bufbuild/connect-swift, bufbuild/connect-swift-mocks, apple/swift
@@ -272,7 +272,7 @@ formatter and the language server
         at buf's last version from the moved repository, grpc/swift
         from the 1.x line, grpc/swift-protobuf from
         grpc-swift-protobuf.
-  - [ ] 24.4. Close-out: pb's catalog names grow by the seven,
+  - [x] 24.4. Close-out: pb's catalog names grow by the seven,
         consolidation, the campaign (slotted with chunk 18's where
         not run).
 - [ ] 25. The dart kind: `dart compile exe` on a runner of the platform;

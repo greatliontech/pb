@@ -553,9 +553,12 @@ carries, a copy of the names the catalog repository
 (greatliontech/pb-plugins, its `catalog.yaml`) publishes under
 `ghcr.io/greatliontech/pb-plugins`:
 
+- `buf.build/apple/swift`
 - `buf.build/bufbuild/connect-es`
 - `buf.build/bufbuild/connect-go`
 - `buf.build/bufbuild/connect-query`
+- `buf.build/bufbuild/connect-swift`
+- `buf.build/bufbuild/connect-swift-mocks`
 - `buf.build/bufbuild/connect-web`
 - `buf.build/bufbuild/es`
 - `buf.build/bufbuild/protoschema-bigquery`
@@ -579,6 +582,8 @@ carries, a copy of the names the catalog repository
 - `buf.build/connectrpc/gosimple`
 - `buf.build/connectrpc/query-es`
 - `buf.build/connectrpc/rust`
+- `buf.build/connectrpc/swift`
+- `buf.build/connectrpc/swift-mocks`
 - `buf.build/grpc-ecosystem/gateway`
 - `buf.build/grpc-ecosystem/openapiv2`
 - `buf.build/grpc-ecosystem/openapiv3`
@@ -591,6 +596,8 @@ carries, a copy of the names the catalog repository
 - `buf.build/grpc/php`
 - `buf.build/grpc/python`
 - `buf.build/grpc/ruby`
+- `buf.build/grpc/swift`
+- `buf.build/grpc/swift-protobuf`
 - `buf.build/grpc/web`
 - `buf.build/pluginrpc/go`
 - `buf.build/protocolbuffers/cpp`
