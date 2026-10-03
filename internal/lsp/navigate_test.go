@@ -78,8 +78,9 @@ func TestDefinition(t *testing.T) {
 			fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto")
 			fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
 			fx.open(t, "ws/b/b.proto", 1, string(fx.text(t, "ws/b/b.proto")))
-			fx.publishes(t, "ws/a/a.proto")
-			fx.publishes(t, "ws/b/b.proto")
+			// One wait for both: a judgement publishes its set in no
+			// fixed order, and a wait for one swallows the other.
+			fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto")
 			define := func(tree string, pos protocol.Position) *protocol.Location {
 				t.Helper()
 				got, err := fx.server.Definition(context.Background(), &protocol.DefinitionParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: protocol.TextDocumentIdentifier{URI: fx.uri(tree)}, Position: pos}})
@@ -402,8 +403,7 @@ func TestNavigationWhileBroken(t *testing.T) {
 	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto")
 	fx.open(t, "ws/a/a.proto", 1, string(fx.text(t, "ws/a/a.proto")))
 	fx.open(t, "ws/b/b.proto", 1, string(fx.text(t, "ws/b/b.proto")))
-	fx.publishes(t, "ws/a/a.proto")
-	fx.publishes(t, "ws/b/b.proto")
+	fx.publishes(t, "ws/a/a.proto", "ws/b/b.proto")
 	define := func(tree string, pos protocol.Position) protocol.DefinitionResult {
 		t.Helper()
 		got, err := fx.server.Definition(context.Background(), &protocol.DefinitionParams{TextDocumentPositionParams: protocol.TextDocumentPositionParams{TextDocument: protocol.TextDocumentIdentifier{URI: fx.uri(tree)}, Position: pos}})
