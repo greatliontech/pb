@@ -678,22 +678,15 @@ func (s *stubAcquirer) AcquireOverride(_ context.Context, ref, source string, _ 
 }
 
 type stubLocal struct {
-	value      string
-	args       []string
-	acq        *plugin.Acquired
-	err        error
-	released   int
-	releaseErr error
+	value string
+	args  []string
+	acq   *plugin.Acquired
+	err   error
 }
 
-func (s *stubLocal) Acquire(_ context.Context, value string, args []string) (*plugin.Acquired, error) {
+func (s *stubLocal) Acquire(value string, args []string) (*plugin.Acquired, error) {
 	s.value, s.args = value, args
 	return s.acq, s.err
-}
-
-func (s *stubLocal) Release() error {
-	s.released++
-	return s.releaseErr
 }
 
 // A local entry resolves through the local acquirer, runs on the
@@ -711,19 +704,6 @@ func TestGenLocalEntry(t *testing.T) {
 	var out strings.Builder
 	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(ociRun), Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err != nil {
 		t.Fatal(err)
-	}
-	if loc.released != 1 {
-		t.Fatalf("the local acquirer released %d times by the run, want once at its end", loc.released)
-	}
-	// The release's failure is the run's; a run that failed releases
-	// all the same, the release's failure joined to its own.
-	loc.releaseErr = errors.New("the run's directory stands")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(ociRun), Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err == nil || !strings.Contains(err.Error(), "the run's directory stands") {
-		t.Fatalf("a release that failed: %v", err)
-	}
-	loc.err = errors.New("no such binary")
-	if err := Gen(ctx, s, GenDeps{Acquirer: acq, Runner: one(ociRun), Local: &LocalDeps{Acquirer: loc, Runner: localRun}}, &out); err == nil || !strings.Contains(err.Error(), "no such binary") || !strings.Contains(err.Error(), "directory stands") || loc.released != 3 {
-		t.Fatalf("a run that failed: %v, released %d times", err, loc.released)
 	}
 	if loc.value != "tools/gen" || strings.Join(loc.args, "|") != "--a|b c" {
 		t.Fatalf("local acquirer got %q %q", loc.value, loc.args)
@@ -1488,15 +1468,14 @@ func TestGenDaemonLocalOverrideUnderTheStorePath(t *testing.T) {
 
 // Tidy prunes plugin pins no generation entry names, by reference and
 // scheme as written, and every plugin pin where the root has no
-// generation file, so a pin outlives no declaration (REQ-dep-tidy).
+// generation file, so a pin outlives no declaration (REQ-dep-tidy); a
+// local entry, which no pin records, declares none.
 func TestTidyPrunesUndeclaredPluginPins(t *testing.T) {
 	fx, s := genFixture(t, "plugins:\n  - ref: ghcr.io/o/p:v1\n    out: gen\n  - local: tools/gen\n    out: gen\n")
 	digest := "sha256:" + strings.Repeat("55", 32)
 	for _, pin := range []lockfile.PluginPin{
 		{Ref: "ghcr.io/o/p:v1", Scheme: lockfile.SchemeOCI, Digest: digest},
 		{Ref: "ghcr.io/o/q:v1", Scheme: lockfile.SchemeOCI, Digest: digest},
-		{Ref: "tools/gen", Scheme: lockfile.SchemeLocal, Binary: map[string]string{"linux/amd64": digest}},
-		{Ref: "tools/old", Scheme: lockfile.SchemeLocal, Binary: map[string]string{"linux/amd64": digest}},
 	} {
 		if err := s.Lock.AddPlugin(pin); err != nil {
 			t.Fatal(err)
@@ -1512,8 +1491,8 @@ func TestTidyPrunesUndeclaredPluginPins(t *testing.T) {
 		}
 		return out
 	}
-	if got := refs(); !slices.Equal(got, []string{"oci ghcr.io/o/p:v1", "local tools/gen"}) {
-		t.Fatalf("plugin pins after tidy = %v, want the declared two", got)
+	if got := refs(); !slices.Equal(got, []string{"oci ghcr.io/o/p:v1"}) {
+		t.Fatalf("plugin pins after tidy = %v, want the declared one", got)
 	}
 	if err := fx.ws.Remove("pb.gen.yaml"); err != nil {
 		t.Fatal(err)

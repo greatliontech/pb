@@ -135,22 +135,14 @@ pb: generate: the trust policy does not permit local-scheme plugins (plugin prot
 ```
 
 With it, the binary — found on `PATH` exactly as written, or
-relative to the root where the command holds a path separator — is
-hashed on first use and pinned per platform in `pb.lock`; a later run
-with other bytes under the same command fails naming both hashes
-(`local-pin: false` under `execution` turns the pin off):
+relative to the root where the command holds a path separator — runs
+as the plugin process. Nothing of it is recorded in `pb.lock`: a host
+binary has no identity pb could resolve, so none is claimed, and what
+runs is what the command resolves to on each machine:
 
 ```
 $ pb generate
 protoc-gen-go: 1 file(s) into gen (runner native, tier Strong, bounds rlimits)
-```
-
-```yaml
-plugins:
-  - ref: protoc-gen-go
-    scheme: local
-    binary:
-      linux/amd64: sha256:15ba49bd966de3cc099c50a18bd1d06663ae0ba8411e0d5e003027827e0fbcd5
 ```
 
 ## The verbs

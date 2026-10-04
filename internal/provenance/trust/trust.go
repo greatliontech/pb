@@ -110,7 +110,6 @@ const (
 type Execution struct {
 	MinTier         string   // "" = Strong
 	Schemes         []string // nil = [oci]
-	LocalPin        *bool    // nil = true
 	PluginOverrides *bool    // nil = true
 	Limits          Limits
 }
@@ -149,12 +148,6 @@ func (e *Execution) SchemeAllowed(scheme string) bool {
 		return scheme == SchemeOCI
 	}
 	return slices.Contains(e.Schemes, scheme)
-}
-
-// LocalPinEnabled reports whether local binaries are content-hash
-// pinned.
-func (e *Execution) LocalPinEnabled() bool {
-	return e.LocalPin == nil || *e.LocalPin
 }
 
 // OverridesAllowed reports whether invocation-scoped plugin overrides
@@ -413,7 +406,6 @@ func parseExecution(n ast.Node) (*Execution, error) {
 			e.Schemes = schemes
 			return err
 		}},
-		boolean("local-pin", &e.LocalPin),
 		boolean("plugin-overrides", &e.PluginOverrides),
 		contractfile.Field{Name: "limits", Read: func(n ast.Node) error {
 			limits, err := parseLimits(n)

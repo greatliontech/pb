@@ -40,12 +40,9 @@ func TestAcquirerConfig(t *testing.T) {
 	// The trusted root plugin signatures verify against is the one
 	// module evidence verifies against (REQ-prov-plugin-signature).
 	s := &dep.Session{Lock: &lockfile.File{}, Client: &fetch.Client{Policy: &trust.Policy{}, TrustedRoot: sigstoretest.New(t).TrustedRoot()}}
-	cfg, runsDir, err := acquirerConfig(s)
+	cfg, err := acquirerConfig(s)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if runsDir != filepath.Join(cacheHome, "pb", "plugin-runs") {
-		t.Fatalf("the local runs' directory: %s", runsDir)
 	}
 	want := oci.Config{WorkDir: filepath.Join(cacheHome, "pb", "plugins"), EvidenceDir: filepath.Join(cacheHome, "pb", "plugin-evidence"), Lock: s.Lock, Policy: s.Client.Policy, TrustedRoot: s.Client.TrustedRoot}
 	if !reflect.DeepEqual(cfg, want) {

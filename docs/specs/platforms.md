@@ -89,15 +89,13 @@ nothing else — the platform's executable suffix, never `PATHEXT`'s
 scripts, which the sandbox would not run as one process, and never
 a file found by any other spelling (a trailing dot the platform
 drops, a search of the working directory or of a relative `PATH`
-entry, which the pinned hash and the run would read differently)
+entry, which would resolve by where pb was invoked)
 — case being the filesystem's, a case-insensitive one answering for
 a case variant with its one file as it does for every open — the one
 extension REQ-plugin-local-resolution's no-expansion rule admits; a
 value holding a backslash is neither a name nor a path on any
 platform and is refused naming it, paths being spelled with forward
-slashes; the content pin is keyed by host platform
-as REQ-plugin-local-pin has it, so one lockfile pins a plugin's
-binary per platform.
+slashes.
 
 ## Files pb reads and writes
 

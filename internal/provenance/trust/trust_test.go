@@ -288,7 +288,6 @@ func TestParseExecution(t *testing.T) {
 execution:
   min-tier: Minimal
   schemes: [oci, local]
-  local-pin: false
   plugin-overrides: false
   limits:
     memory: 512Mi
@@ -307,7 +306,7 @@ execution:
 	if !e.SchemeAllowed(SchemeLocal) || !e.SchemeAllowed(SchemeOCI) {
 		t.Error("listed schemes not allowed")
 	}
-	if e.LocalPinEnabled() || e.OverridesAllowed() {
+	if e.OverridesAllowed() {
 		t.Error("explicit false read as true")
 	}
 	if e.Limits.Memory != 512<<20 || e.Limits.CPU != 1.5 || e.Limits.Pids != 64 || e.Limits.Timeout != 30*time.Second {
@@ -316,7 +315,7 @@ execution:
 }
 
 // The zero posture is the default posture: Strong floor, oci only,
-// pinning and overrides on, no limit overrides.
+// overrides on, no limit overrides.
 func TestExecutionDefaults(t *testing.T) {
 	for _, in := range []string{"", "execution: {}\n", "execution:\n  schemes: [oci]\n"} {
 		p, err := Parse([]byte(in))
@@ -330,7 +329,7 @@ func TestExecutionDefaults(t *testing.T) {
 		if !e.SchemeAllowed(SchemeOCI) || e.SchemeAllowed(SchemeLocal) || e.SchemeAllowed("remote") {
 			t.Errorf("%q: scheme defaults wrong", in)
 		}
-		if !e.LocalPinEnabled() || !e.OverridesAllowed() {
+		if !e.OverridesAllowed() {
 			t.Errorf("%q: boolean defaults wrong", in)
 		}
 		if e.Limits != (Limits{}) {
@@ -346,8 +345,9 @@ func TestParseExecutionRejections(t *testing.T) {
 		{"bad tier", "execution:\n  min-tier: strong\n", "one of Strong"},
 		{"reserved scheme", "execution:\n  schemes: [remote]\n", "oci or local"},
 		{"duplicate scheme", "execution:\n  schemes: [oci, oci]\n", `lists "oci" twice`},
-		{"non-bool pin", "execution:\n  local-pin: yes\n", "must be true or false"},
-		{"capitalized bool", "execution:\n  local-pin: True\n", "must be true or false"},
+		{"yes for a bool", "execution:\n  plugin-overrides: yes\n", "must be true or false"},
+		{"capitalized bool", "execution:\n  plugin-overrides: True\n", "must be true or false"},
+		{"the pin knob gone", "execution:\n  local-pin: false\n", `unknown key "local-pin"`},
 		{"non-bool overrides", "execution:\n  plugin-overrides: 1\n", "must be true or false"},
 		{"unknown limit", "execution:\n  limits:\n    disk: 1Gi\n", `unknown key "disk"`},
 		{"zero memory", "execution:\n  limits:\n    memory: 0\n", "not positive"},
@@ -404,8 +404,8 @@ func TestExecutionValidSpellings(t *testing.T) {
 			t.Errorf("tier %s: %v", tier, err)
 		}
 	}
-	p, err := Parse([]byte("execution:\n  local-pin: true\n  plugin-overrides: true\n"))
-	if err != nil || !p.Execution.LocalPinEnabled() || !p.Execution.OverridesAllowed() {
+	p, err := Parse([]byte("execution:\n  plugin-overrides: true\n"))
+	if err != nil || !p.Execution.OverridesAllowed() {
 		t.Fatalf("explicit true read as false (%v)", err)
 	}
 	for in, want := range map[string]uint64{

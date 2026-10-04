@@ -16,7 +16,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -119,24 +118,20 @@ type ModulePin struct {
 	Provenance Provenance
 }
 
-// Plugin identity schemes (REQ-lock-plugin-entry), named from their one
-// home for callers already reaching them through this package.
-const (
-	SchemeOCI   = plugin.SchemeOCI
-	SchemeLocal = plugin.SchemeLocal
-)
+// SchemeOCI is the one plugin identity scheme the lockfile records
+// (REQ-lock-plugin-entry), named from its home for callers already
+// reaching it through this package; a local plugin, a host binary,
+// has no entry (plugin-execution.md, "Local binaries").
+const SchemeOCI = plugin.SchemeOCI
 
 // PluginPin is one plugin entry (REQ-lock-plugin-entry): identity facts
-// for the (ref, scheme) pair. An oci pin carries Digest and Provenance;
-// a local pin carries Binary — platform-keyed content hashes — and no
-// provenance at all: a host binary has no evidence to record, and its
-// absence is not spelled `none`.
+// for the (ref, scheme) pair — the manifest-list digest the reference
+// resolved to and the image signature's provenance record.
 type PluginPin struct {
 	Ref        string // the reference as written in generation configuration, without a digest: the pin's key, the digest its identity
-	Scheme     string // SchemeOCI or SchemeLocal — stated, never inferred from fields
-	Digest     string // oci: "sha256:" + 64 hex manifest-list digest
+	Scheme     string // SchemeOCI — stated, never inferred from fields
+	Digest     string // "sha256:" + 64 hex manifest-list digest
 	Provenance Provenance
-	Binary     map[string]string // local: "<os>/<arch>" -> "sha256:" + 64 hex
 }
 
 // File is a parsed lockfile: pins only. Rulesets are module pins of
@@ -268,23 +263,13 @@ func checkPlainScalar(kind, s string) error {
 	bad := s == "" || s[len(s)-1] == ':' || s == "null" || s == "Null" || s == "NULL"
 	if !bad {
 		c := s[0]
-		// A ref is a local plugin's path as written where it names
-		// one, so it may start with "/" or "./" — neither a YAML
-		// indicator, both re-parsing as themselves; "." alone leads
-		// the float spellings (.inf, .nan) and stays out. No other
-		// fact has a reason to start so.
-		pathStart := kind == "ref" && (c == '/' || strings.HasPrefix(s, "./"))
-		bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || pathStart)
+		bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
 	}
 	for i := 0; !bad && i < len(s); i++ {
 		bad = s[i] < '!' || s[i] > '~'
 	}
 	if bad {
-		starts := "alphanumeric"
-		if kind == "ref" {
-			starts = `alphanumeric, with "/" or with "./"`
-		}
-		return fmt.Errorf("%s %q is not plain-scalar safe: values start %s, use printable non-space ASCII, are not a null spelling, and do not end with %q", kind, s, starts, ":")
+		return fmt.Errorf("%s %q is not plain-scalar safe: values start alphanumeric, use printable non-space ASCII, are not a null spelling, and do not end with %q", kind, s, ":")
 	}
 	return nil
 }
@@ -394,24 +379,12 @@ func checkModulePin(m ModulePin) error {
 	return nil
 }
 
-// checkPlatform bounds a Binary key to "<os>/<arch>": two non-empty
-// lowercase-alphanumeric segments.
-func checkPlatform(s string) error {
-	osPart, arch, ok := strings.Cut(s, "/")
-	bad := !ok || osPart == "" || arch == ""
-	for _, part := range []string{osPart, arch} {
-		for i := 0; !bad && i < len(part); i++ {
-			c := part[i]
-			bad = !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z')
-		}
-	}
-	if bad {
-		return fmt.Errorf("platform %q is not <os>/<arch> in lowercase alphanumerics", s)
-	}
-	return nil
-}
-
 func checkPluginPin(p PluginPin) error {
+	if p.Scheme == plugin.SchemeLocal {
+		// A host binary has no identity pb could resolve, and the
+		// lockfile records none, whatever the entry's other facts.
+		return fmt.Errorf("plugin %q: a local plugin has no lockfile entry; remove it", p.Ref)
+	}
 	if p.Ref == "" {
 		return errors.New("plugin entry has no ref")
 	}
@@ -423,32 +396,11 @@ func checkPluginPin(p PluginPin) error {
 		if strings.Contains(p.Ref, "@") {
 			return fmt.Errorf("plugin ref %q carries a digest; refs are pinned by the digest field", p.Ref)
 		}
-		if p.Binary != nil {
-			return fmt.Errorf("plugin %q: oci pins carry no binary hashes", p.Ref)
-		}
 		if err := checkHashRef("sha256:", p.Digest); err != nil {
 			return fmt.Errorf("plugin %q: %v", p.Ref, err)
 		}
 		if err := checkProvenance(p.Provenance, ProvenanceImageSignature); err != nil {
 			return fmt.Errorf("plugin %q: %v", p.Ref, err)
-		}
-	case SchemeLocal:
-		if p.Digest != "" {
-			return fmt.Errorf("plugin %q: local pins carry no digest", p.Ref)
-		}
-		if p.Provenance != (Provenance{}) {
-			return fmt.Errorf("plugin %q: local pins carry no provenance", p.Ref)
-		}
-		if len(p.Binary) == 0 {
-			return fmt.Errorf("plugin %q: local pin has no binary hashes", p.Ref)
-		}
-		for platform, hash := range p.Binary {
-			if err := checkPlatform(platform); err != nil {
-				return fmt.Errorf("plugin %q: %v", p.Ref, err)
-			}
-			if err := checkHashRef("sha256:", hash); err != nil {
-				return fmt.Errorf("plugin %q, platform %s: %v", p.Ref, platform, err)
-			}
 		}
 	default:
 		return fmt.Errorf("plugin %q: unknown scheme %q", p.Ref, p.Scheme)
@@ -556,17 +508,8 @@ func Encode(f *File) ([]byte, error) {
 				p := c.Plugins[i]
 				w.Literal("ref", p.Ref)
 				w.Literal("scheme", p.Scheme)
-				switch p.Scheme {
-				case SchemeOCI:
-					w.Literal("digest", p.Digest)
-					writeProvenance(w, p.Provenance)
-				case SchemeLocal:
-					w.Mapping("binary", func() {
-						for _, platform := range slices.Sorted(maps.Keys(p.Binary)) {
-							w.Literal(platform, p.Binary[platform])
-						}
-					})
-				}
+				w.Literal("digest", p.Digest)
+				writeProvenance(w, p.Provenance)
 			})
 		}
 	}, func(out []byte) (File, error) {
@@ -776,11 +719,10 @@ type rawModule struct {
 }
 
 type rawPlugin struct {
-	Ref        rawScalar            `yaml:"ref"`
-	Scheme     string               `yaml:"scheme"`
-	Digest     string               `yaml:"digest"`
-	Provenance provNode             `yaml:"provenance"`
-	Binary     map[string]rawScalar `yaml:"binary"`
+	Ref        rawScalar `yaml:"ref"`
+	Scheme     string    `yaml:"scheme"`
+	Digest     string    `yaml:"digest"`
+	Provenance provNode  `yaml:"provenance"`
 }
 
 // pluginEntryKeys are the keys each scheme's entries may carry — "the
@@ -789,8 +731,75 @@ type rawPlugin struct {
 // indistinguishable from absence, and goccy skips custom unmarshalers
 // for null entirely, so presence is read off the AST, not the value.
 var pluginEntryKeys = map[string]map[string]bool{
-	SchemeOCI:   {"ref": true, "scheme": true, "digest": true, "provenance": true},
-	SchemeLocal: {"ref": true, "scheme": true, "binary": true},
+	SchemeOCI: {"ref": true, "scheme": true, "digest": true, "provenance": true},
+}
+
+// refuseUnrecordedSchemes walks the plugins sequence of the document
+// for an entry written with a scheme the lockfile does not record and
+// refuses the first naming the scheme, whatever its other keys
+// (REQ-lock-plugin-entry): a local plugin's, from a lockfile written
+// when it did, naming the fix; any other as unknown. The walk reads
+// the document, not the decode, so the keys the scheme had never
+// speak first; an entry writing no scheme is the decode's as before.
+func refuseUnrecordedSchemes(mapping *ast.MappingNode) error {
+	for _, kv := range mapping.Values {
+		if s, ok := kv.Key.(*ast.StringNode); !ok || s.Value != "plugins" {
+			continue
+		}
+		seq, ok := kv.Value.(*ast.SequenceNode)
+		if !ok {
+			return nil
+		}
+		for i, entry := range seq.Values {
+			em, ok := entry.(*ast.MappingNode)
+			if !ok {
+				continue
+			}
+			scheme, written := scalarOf(em, "scheme")
+			if !written {
+				continue
+			}
+			ref, _ := scalarOf(em, "ref")
+			name := fmt.Sprintf("plugin %q", ref)
+			if ref == "" {
+				name = fmt.Sprintf("plugin entry %d", i+1)
+			}
+			switch scheme {
+			case SchemeOCI:
+			case plugin.SchemeLocal:
+				return fmt.Errorf("%w: %s: a local plugin has no lockfile entry; remove it", ErrInvalid, name)
+			default:
+				return fmt.Errorf("%w: %s: unknown scheme %q", ErrInvalid, name, scheme)
+			}
+		}
+	}
+	return nil
+}
+
+// nodeOf is the value node of a mapping's key, nil where the key is
+// not written.
+func nodeOf(m *ast.MappingNode, key string) ast.Node {
+	for _, kv := range m.Values {
+		if k, ok := kv.Key.(*ast.StringNode); ok && k.Value == key {
+			return kv.Value
+		}
+	}
+	return nil
+}
+
+// scalarOf is the scalar value of a mapping's key as the document
+// spells it — plain, quoted or a block scalar, an integer as its
+// digits — and whether the key holds one.
+func scalarOf(m *ast.MappingNode, key string) (string, bool) {
+	switch v := nodeOf(m, key).(type) {
+	case *ast.StringNode:
+		return v.Value, true
+	case *ast.LiteralNode:
+		return v.Value.Value, true
+	case *ast.IntegerNode:
+		return fmt.Sprint(v.Value), true
+	}
+	return "", false
 }
 
 // pluginKeySets walks the plugins sequence of the document mapping and
@@ -845,6 +854,20 @@ func Parse(data []byte) (*File, error) {
 		return nil, fmt.Errorf("%w: missing version key", ErrInvalid)
 	}
 	var raw rawFile
+	// The version first (REQ-lock-format): a document of another
+	// version, written as the integer the clause names, is refused as
+	// such before anything in it is judged; another spelling is the
+	// decode's to refuse as before.
+	if n, ok := nodeOf(mapping, "version").(*ast.IntegerNode); ok && fmt.Sprint(n.Value) != "1" {
+		return nil, fmt.Errorf("%w: unsupported lockfile version %v", ErrInvalid, n.Value)
+	}
+	// A plugin entry of a scheme the lockfile does not record is
+	// refused naming the scheme, whatever its other keys: read off the
+	// document before the strict decode, which would otherwise refuse
+	// the keys the scheme had (REQ-lock-plugin-entry).
+	if err := refuseUnrecordedSchemes(mapping); err != nil {
+		return nil, err
+	}
 	if err := yaml.NodeToValue(mapping, &raw, yaml.Strict()); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
@@ -879,21 +902,13 @@ func Parse(data []byte) (*File, error) {
 				}
 			}
 		}
-		if p.Scheme != SchemeLocal {
-			// oci — and unknown schemes fail in validate with the better
-			// error.
-			prov, err := p.Provenance.record()
-			if err != nil {
-				return nil, fmt.Errorf("%w: plugin %q: %v", ErrInvalid, p.Ref, err)
-			}
-			pin.Provenance = prov
+		// Every scheme the decode admits records a provenance; a scheme
+		// the lockfile does not record was refused before the decode.
+		prov, err := p.Provenance.record()
+		if err != nil {
+			return nil, fmt.Errorf("%w: plugin %q: %v", ErrInvalid, p.Ref, err)
 		}
-		if p.Binary != nil {
-			pin.Binary = make(map[string]string, len(p.Binary))
-			for platform, hash := range p.Binary {
-				pin.Binary[platform] = string(hash)
-			}
-		}
+		pin.Provenance = prov
 		f.Plugins = append(f.Plugins, pin)
 	}
 	if err := validate(f); err != nil {
@@ -941,35 +956,6 @@ func (f *File) pluginIndex(ref, scheme string) int {
 		}
 	}
 	return -1
-}
-
-// SetPluginBinary records a local plugin's content hash for one host
-// platform (REQ-plugin-local-pin, REQ-lock-plugin-entry): a first use
-// on that platform adds the key to the existing local pin; a key
-// already recorded must agree, a differing hash being a pin mismatch
-// naming both. The pin itself must exist and be local — a first use
-// on the first platform goes through AddPlugin.
-func (f *File) SetPluginBinary(ref, platform, hash string) error {
-	for i := range f.Plugins {
-		p := &f.Plugins[i]
-		if p.Ref != ref || p.Scheme != SchemeLocal {
-			continue
-		}
-		if have, ok := p.Binary[platform]; ok {
-			if have != hash {
-				return fmt.Errorf("%w: plugin %s on %s is pinned to %s, resolved %s", ErrPinMismatch, ref, platform, have, hash)
-			}
-			return nil
-		}
-		next := PluginPin{Ref: p.Ref, Scheme: p.Scheme, Binary: maps.Clone(p.Binary)}
-		next.Binary[platform] = hash
-		if err := checkPluginPin(next); err != nil {
-			return fmt.Errorf("%w: %v", ErrInvalid, err)
-		}
-		p.Binary = next.Binary
-		return nil
-	}
-	return fmt.Errorf("%w: no local pin for plugin %s", ErrInvalid, ref)
 }
 
 // AddModule records a first-use module pin (REQ-lock-first-use), as

@@ -87,27 +87,21 @@ module entry alone.
 **REQ-lock-plugin-entry** (wire): Each plugin entry MUST carry, in order:
 `ref` (the reference as written in generation configuration, without
 a digest — the pin's key, a place name the pin's `digest` turns into
-content (`plugin-execution.md`); a `local` entry's the command alone,
-its arguments no part of the key), `scheme` (its identity scheme, `oci` or `local` —
-`plugin-execution.md`), then the scheme's own facts and no others. An
-`oci` entry carries `digest` (the manifest-list digest the reference
-resolved to) and `provenance` (a provenance record for the image
-signature, `none` when unsigned). A `local` entry carries `binary`, a
-mapping from host platform (`<os>/<arch>`) to the content hash
-(`sha256:` + 64 lowercase hex digits) of the resolved binary on that
-platform, and no provenance key — a host binary has no evidence to
-record, and its absence is not spelled `none`. The scheme is stated,
-never inferred from which fields are present; a pin satisfies only
-lookups in its own scheme, so an entry migrated between schemes takes a
-fresh first-use pin. Plugin entries are sorted by `ref` then `scheme` in
-raw-byte order.
+content (`plugin-execution.md`)), `scheme` (its identity scheme, `oci`
+— the one scheme the lockfile records: a `local` plugin, a host
+binary, has no entry, `plugin-execution.md` "Local binaries"; an
+entry naming another scheme, whatever its other keys, is refused
+naming the scheme), then the scheme's
+own facts and no others: `digest` (the manifest-list digest the
+reference resolved to) and `provenance` (a provenance record for the
+image signature, `none` when unsigned). The scheme is stated, never
+inferred from which fields are present; a pin satisfies only lookups
+in its own scheme. Plugin entries are sorted by `ref` then `scheme`
+in raw-byte order.
 
 **REQ-lock-scalar-values** (wire): Every free-string fact — `version`,
 `san`, `issuer`, and `ref` — MUST be printable non-space ASCII, start
-with an alphanumeric character — a `ref` alone may also start with
-`/` or `./`, the starts a `local` plugin's path is written with; `.`
-alone leads YAML's float spellings and is excluded — not end with
-`:`, and not be a YAML null
+with an alphanumeric character, not end with `:`, and not be a YAML null
 spelling (`null`, `Null`, `NULL`, `~`). This bound is exactly what lets
 canonical emission write every value as an unquoted plain scalar that
 re-parses to the same bytes under the lockfile's own reader, which

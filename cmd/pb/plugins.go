@@ -24,11 +24,11 @@ const (
 // the evidence kept with it, which sit beside the module cache rather
 // than inside it (the module cache root holds module artifacts only,
 // dep-verbs.md REQ-dep-cache-layout), and the session's lockfile and
-// trust policy; with it the local runs' directory, resolved once.
-func acquirerConfig(s *dep.Session) (cfg oci.Config, runsDir string, err error) {
-	workDir, evidenceDir, runsDir, err := pluginStoreDirs()
+// trust policy.
+func acquirerConfig(s *dep.Session) (oci.Config, error) {
+	workDir, evidenceDir, err := pluginStoreDirs()
 	if err != nil {
-		return oci.Config{}, "", err
+		return oci.Config{}, err
 	}
 	return oci.Config{
 		WorkDir:     workDir,
@@ -36,7 +36,7 @@ func acquirerConfig(s *dep.Session) (cfg oci.Config, runsDir string, err error) 
 		Lock:        s.Lock,
 		Policy:      s.Client.Policy,
 		TrustedRoot: s.Client.TrustedRoot,
-	}, runsDir, nil
+	}, nil
 }
 
 // updateSubstrates are the substrates an update offers: every runner
@@ -84,7 +84,7 @@ func (u *lazyUpdater) UpdatePlugin(ctx context.Context, ref string) (lockfile.Pl
 		if err != nil {
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
-		cfg, _, err := acquirerConfig(u.session)
+		cfg, err := acquirerConfig(u.session)
 		if err != nil {
 			return lockfile.PluginPin{}, lockfile.PluginPin{}, err
 		}
@@ -114,21 +114,17 @@ func (u *lazyUpdater) Close() error {
 	return acq.Close()
 }
 
-// pluginStoreDirs locates the plugin store, its kept evidence and the
-// local runs' directories under the platform user cache directory,
-// beside the module cache's default rather than inside it
-// (plugin-execution.md REQ-plugin-core-verifies, provenance.md
-// REQ-prov-plugin-evidence-store, plugin-execution.md
-// REQ-plugin-local-pin).
-func pluginStoreDirs() (workDir, evidenceDir, runsDir string, err error) {
+// pluginStoreDirs locates the plugin store and its kept evidence
+// under the platform user cache directory, beside the module cache's
+// default rather than inside it (plugin-execution.md
+// REQ-plugin-core-verifies, provenance.md
+// REQ-prov-plugin-evidence-store).
+func pluginStoreDirs() (workDir, evidenceDir string, err error) {
 	if workDir, err = userCacheSubdir("the plugin store", "plugins"); err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 	if evidenceDir, err = userCacheSubdir("the plugin store", "plugin-evidence"); err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
-	if runsDir, err = userCacheSubdir("the plugin store", "plugin-runs"); err != nil {
-		return "", "", "", err
-	}
-	return workDir, evidenceDir, runsDir, nil
+	return workDir, evidenceDir, nil
 }

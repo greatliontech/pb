@@ -3,8 +3,8 @@
 
 bindings {
   requirement_id: "REQ-plat-local-runner"
-  content_hash: "c57cac5297c7080839f5b370bb2d7c9677ca086ea021672f68c06981b759bb16"
-  source_hash: "03966f25d22ce67e4b0344c78520f3b79d059c959f98f56b92b4e41f35d749dc"
+  content_hash: "69e0fc0373af29b581fb10da1a0c16808cad2e23b75be6aad3ce25487d262ebd"
+  source_hash: "d351eba02d2c1f05087b99ab4796c28db621270de0551b90ae4440a4bc4adff7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.Acquirer.Resolve"
   role: BINDING_ROLE_IMPLEMENTS
@@ -13,8 +13,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-local-runner"
-  content_hash: "c57cac5297c7080839f5b370bb2d7c9677ca086ea021672f68c06981b759bb16"
-  source_hash: "03966f25d22ce67e4b0344c78520f3b79d059c959f98f56b92b4e41f35d749dc"
+  content_hash: "69e0fc0373af29b581fb10da1a0c16808cad2e23b75be6aad3ce25487d262ebd"
+  source_hash: "d351eba02d2c1f05087b99ab4796c28db621270de0551b90ae4440a4bc4adff7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/local.TestResolve"
   role: BINDING_ROLE_TESTS
@@ -133,8 +133,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plat-local-runner"
-  content_hash: "c57cac5297c7080839f5b370bb2d7c9677ca086ea021672f68c06981b759bb16"
-  source_hash: "03966f25d22ce67e4b0344c78520f3b79d059c959f98f56b92b4e41f35d749dc"
+  content_hash: "69e0fc0373af29b581fb10da1a0c16808cad2e23b75be6aad3ce25487d262ebd"
+  source_hash: "d351eba02d2c1f05087b99ab4796c28db621270de0551b90ae4440a4bc4adff7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenSchemeGate"
   role: BINDING_ROLE_TESTS

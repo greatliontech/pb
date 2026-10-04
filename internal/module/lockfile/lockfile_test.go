@@ -36,10 +36,6 @@ func goldenFile() *File {
 			{Path: "example.com/a", Version: "v1.0.0", Modfile: "sha256:" + strings.Repeat("44", 32), Provenance: Provenance{}},
 		},
 		Plugins: []PluginPin{
-			{Ref: "tools/protoc-gen-local", Scheme: SchemeLocal, Binary: map[string]string{
-				"linux/amd64":  "sha256:" + strings.Repeat("66", 32),
-				"darwin/arm64": "sha256:" + strings.Repeat("77", 32),
-			}},
 			{Ref: "ghcr.io/acme/protoc-gen-x:v2", Scheme: SchemeOCI, Digest: "sha256:" + strings.Repeat("55", 32), Provenance: Provenance{}},
 		},
 	}
@@ -81,11 +77,6 @@ plugins:
     scheme: oci
     digest: sha256:` + "5555555555555555555555555555555555555555555555555555555555555555" + `
     provenance: none
-  - ref: tools/protoc-gen-local
-    scheme: local
-    binary:
-      darwin/arm64: sha256:` + "7777777777777777777777777777777777777777777777777777777777777777" + `
-      linux/amd64: sha256:` + "6666666666666666666666666666666666666666666666666666666666666666" + `
 `
 
 func TestEncodeGolden(t *testing.T) {
@@ -117,7 +108,7 @@ func TestParseGoldenRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(f.Modules) != 4 || len(f.Plugins) != 2 {
+	if len(f.Modules) != 4 || len(f.Plugins) != 1 {
 		t.Fatalf("parsed %d modules, %d plugins", len(f.Modules), len(f.Plugins))
 	}
 	pin, ok := f.Module("example.com/a", "v1.2.3")
@@ -129,14 +120,6 @@ func TestParseGoldenRoundTrip(t *testing.T) {
 	}
 	if _, ok := f.Plugin("ghcr.io/acme/protoc-gen-x:v2", SchemeOCI); !ok {
 		t.Fatalf("oci plugin pin lost")
-	}
-	lp, ok := f.Plugin("tools/protoc-gen-local", SchemeLocal)
-	if !ok || lp.Binary["linux/amd64"] != "sha256:"+strings.Repeat("66", 32) {
-		t.Fatalf("local plugin pin lost: %+v", lp)
-	}
-	// A pin satisfies only lookups in its own scheme.
-	if _, ok := f.Plugin("tools/protoc-gen-local", SchemeOCI); ok {
-		t.Fatal("local pin answered an oci lookup")
 	}
 	again, err := Encode(f)
 	if err != nil || string(again) != goldenEncoded {
@@ -151,6 +134,17 @@ func TestParseRejections(t *testing.T) {
 		{"wrong version", "version: 2\nmodules:\n" + mod, "unsupported lockfile version"},
 		{"missing version", "modules:\n" + mod, "unsupported lockfile version"},
 		{"unknown key", "version: 1\nmodules:\n" + mod + "extra: 1\n", "unknown field"},
+		{"local entry as written before", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "a local plugin has no lockfile entry; remove it"},
+		{"local entry with a path ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ./tools/gen\n    scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "a local plugin has no lockfile entry; remove it"},
+		{"local entry bare", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n", "a local plugin has no lockfile entry; remove it"},
+		{"local entry as a block scalar", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: >-\n      local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "a local plugin has no lockfile entry; remove it"},
+		{"local entry without a ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "plugin entry 1: a local plugin has no lockfile entry; remove it"},
+		{"another scheme with its own keys", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: remote\n    endpoint: y\n", `unknown scheme "remote"`},
+		{"a case variant of local", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: LOCAL\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", `unknown scheme "LOCAL"`},
+		{"a block-scalar version", "version: |\n  1\nmodules:\n" + mod, "cannot unmarshal"},
+		{"an empty version", "version: \"\"\nmodules:\n" + mod, "cannot unmarshal"},
+		{"another version with a local entry", "version: 2\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "unsupported lockfile version"},
+		{"binary key", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", `unknown field "binary"`},
 		{"multi-doc", "version: 1\nmodules:\n" + mod + "---\nversion: 1\n", "exactly one YAML document"},
 		{"merge key", "version: 1\nmodules:\n  - <<: {path: example.com/a}\n    version: v1.0.0\n    provenance: none\n", "merge keys"},
 		{"top level sequence", "- version: 1\n", "top level must be a mapping"},
@@ -211,15 +205,6 @@ func TestParseRejections(t *testing.T) {
 		{"duplicate plugin pin", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("22", 32) + "\n    provenance: none\n", "duplicate plugin pin"},
 		{"plugin missing scheme", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "unknown scheme"},
 		{"plugin unknown scheme", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: remote\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n", "unknown scheme"},
-		{"local pin with digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
-		{"local pin with empty digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest: \"\"\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
-		{"local pin with null digest", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    digest:\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "local pins carry no digest"},
-		{"oci pin with null binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n    binary:\n", "oci pins carry no binary"},
-		{"local pin with provenance key", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    provenance: none\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "carry no provenance key"},
-		{"local pin without binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n", "has no binary hashes"},
-		{"local pin bad platform", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux: sha256:" + strings.Repeat("11", 32) + "\n", "not <os>/<arch>"},
-		{"local pin bad hash", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux/amd64: pb1:" + strings.Repeat("11", 32) + "\n", "not sha256:"},
-		{"oci pin with binary", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "oci pins carry no binary"},
 	}
 	for _, tc := range cases {
 		_, err := Parse([]byte(tc.in))
@@ -334,9 +319,6 @@ func TestUpdatePlugin(t *testing.T) {
 	}
 	if err := f.UpdatePlugin(PluginPin{Ref: "ghcr.io/a/c:v1", Scheme: SchemeOCI, Digest: moved.Digest}); !errors.Is(err, ErrPinMismatch) {
 		t.Fatalf("an unpinned reference: %v", err)
-	}
-	if err := f.UpdatePlugin(PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + strings.Repeat("33", 32)}}); !errors.Is(err, ErrInvalid) {
-		t.Fatalf("a local pin: %v", err)
 	}
 	if err := f.UpdatePlugin(PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "bad"}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("an invalid pin: %v", err)
@@ -479,28 +461,11 @@ func TestFixedPointProperty(t *testing.T) {
 			}
 		}
 		if rapid.Bool().Draw(t, "hasPlugin") {
-			if rapid.Bool().Draw(t, "pluginLocal") {
-				platforms := rapid.SliceOfNDistinct(rapid.SampledFrom([]string{
-					"linux/amd64", "linux/arm64", "darwin/arm64", "darwin/amd64",
-				}), 1, 4, rapid.ID).Draw(t, "platforms")
-				binary := map[string]string{}
-				for _, platform := range platforms {
-					binary[platform] = "sha256:" + hex64("binary-"+platform)
-				}
-				// A local ref may start with "/" or "./", a path's starts
-				// (REQ-lock-scalar-values).
-				lref := rapid.SampledFrom([]string{"", "/", "./"}).Draw(t, "lrefStart")
-				if lref == "" || rapid.Bool().Draw(t, "lrefBody") {
-					lref += plain("lref", printable)
-				}
-				f.Plugins = append(f.Plugins, PluginPin{Ref: lref, Scheme: SchemeLocal, Binary: binary})
-			} else {
-				pin := PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")}
-				if rapid.Bool().Draw(t, "hasImageProv") {
-					pin.Provenance = Provenance{Type: ProvenanceImageSignature, SAN: plain("psan", printable), Issuer: plain("pissuer", printable)}
-				}
-				f.Plugins = append(f.Plugins, pin)
+			pin := PluginPin{Ref: plain("ref", printableNoAt), Scheme: SchemeOCI, Digest: "sha256:" + hex64("pdigest")}
+			if rapid.Bool().Draw(t, "hasImageProv") {
+				pin.Provenance = Provenance{Type: ProvenanceImageSignature, SAN: plain("psan", printable), Issuer: plain("pissuer", printable)}
 			}
+			f.Plugins = append(f.Plugins, pin)
 		}
 		out1, err := Encode(&f)
 		if err != nil {
@@ -603,7 +568,6 @@ func TestPinsOnlyStructural(t *testing.T) {
 		structural.FieldOf[string]("Scheme"),
 		structural.FieldOf[string]("Digest"),
 		structural.FieldOf[Provenance]("Provenance"),
-		structural.FieldOf[map[string]string]("Binary"),
 	)
 	structural.ExportedData[Provenance](t,
 		structural.FieldOf[string]("Type"),
@@ -772,29 +736,21 @@ func TestPlainScalarBoundaries(t *testing.T) {
 			t.Errorf("%q accepted", s)
 		}
 	}
-	// A ref alone admits the path starts a local value is written
-	// with, and never "." alone.
-	for _, s := range []string{"/x", "/", "./x", "./"} {
-		if err := checkPlainScalar("ref", s); err != nil {
-			t.Errorf("ref %q rejected: %v", s, err)
-		}
-	}
-	for _, s := range []string{".", ".inf", ".nan", ".x", "-x"} {
+	// A ref is held to the rule as every fact is: a path's starts, a
+	// local plugin's as written, name no lockfile entry.
+	for _, s := range []string{"/x", "/", "./x", "./", ".", ".inf", ".nan", ".x", "-x"} {
 		if err := checkPlainScalar("ref", s); err == nil {
 			t.Errorf("ref %q accepted", s)
 		}
 	}
 	// The diagnostic carries the field name and the full rule for every
 	// kind the callers pass.
-	for _, kind := range []string{"version", "san", "issuer"} {
+	for _, kind := range []string{"version", "san", "issuer", "ref"} {
 		err := checkPlainScalar(kind, "-x")
 		want := kind + ` "-x" is not plain-scalar safe: values start alphanumeric, use printable non-space ASCII, are not a null spelling, and do not end with ":"`
 		if err == nil || err.Error() != want {
 			t.Errorf("%s diagnostic = %v", kind, err)
 		}
-	}
-	if err := checkPlainScalar("ref", "-x"); err == nil || err.Error() != `ref "-x" is not plain-scalar safe: values start alphanumeric, with "/" or with "./", use printable non-space ASCII, are not a null spelling, and do not end with ":"` {
-		t.Errorf("ref diagnostic = %v", err)
 	}
 }
 
@@ -918,6 +874,144 @@ func TestScalarSpellingsPreserved(t *testing.T) {
 	}
 }
 
+// Ruleset pins are module pins of their own list (REQ-lock-format,
+// REQ-lock-ruleset-entry): emitted between the modules and the
+// plugins, only where any exist, sorted as the modules are; a pair
+// both a declaration and an import name is pinned in both lists,
+// each by its own reader, and a pair twice in one list is refused.
+func TestRulesetPins(t *testing.T) {
+	zeros := strings.Repeat("0", 64)
+	pin := func(path, version string) ModulePin {
+		return ModulePin{Path: path, Version: version, Digest: "pb1:" + zeros}
+	}
+	f := &File{
+		Modules:  []ModulePin{pin("example.com/std", "v1.0.0")},
+		Rulesets: []ModulePin{pin("example.com/std", "v1.1.0"), pin("example.com/std", "v1.0.0"), pin("example.com/house", "v0.1.0")},
+		Plugins:  []PluginPin{{Ref: "ghcr.io/x/y:v1", Scheme: SchemeOCI, Digest: "sha256:" + zeros}},
+	}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "version: 1\nmodules:\n  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"rulesets:\n  - path: example.com/house\n    version: v0.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"  - path: example.com/std\n    version: v1.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
+		"plugins:\n  - ref: ghcr.io/x/y:v1\n    scheme: oci\n    digest: sha256:" + zeros + "\n    provenance: none\n"
+	if string(out) != want {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
+	}
+	again, err := Parse(out)
+	if err != nil || len(again.Rulesets) != 3 || len(again.Modules) != 1 || again.Rulesets[0].Path != "example.com/house" {
+		t.Fatalf("round trip: %+v %v", again, err)
+	}
+	// The lists answer apart: the modules' reader sees no ruleset pin
+	// and the rulesets' no module pin.
+	if _, ok := f.ModulePins().Module("example.com/house", "v0.1.0"); ok {
+		t.Fatal("a ruleset pin answered a module lookup")
+	}
+	if _, ok := f.RulesetPins().Module("example.com/std", "v1.1.0"); !ok {
+		t.Fatal("the rulesets' reader misses its own pin")
+	}
+	if err := f.RulesetPins().Add(pin("example.com/std", "v1.1.0")); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("a ruleset pin added twice: %v", err)
+	}
+	if err := f.ModulePins().Add(pin("example.com/std", "v1.1.0")); err != nil || len(f.Modules) != 2 {
+		t.Fatalf("the modules' list takes the pair the rulesets' holds: %v", err)
+	}
+	if err := f.RulesetPins().Verify("example.com/house", "v0.1.0", "pb1:"+strings.Repeat("1", 64), ""); !errors.Is(err, ErrPinMismatch) {
+		t.Fatalf("a ruleset pin verified against other bytes: %v", err)
+	}
+	updated := pin("example.com/house", "v0.1.0")
+	updated.Modfile = "sha256:" + zeros
+	if err := f.RulesetPins().Update(updated); err != nil || f.Rulesets[2].Modfile != updated.Modfile || f.Modules[0].Modfile != "" {
+		t.Fatalf("update of a ruleset pin: %v %+v", err, f)
+	}
+	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n")); err == nil || !strings.Contains(err.Error(), "duplicate ruleset pin example.com/a@v1.0.0") {
+		t.Fatalf("a duplicate ruleset pin: %v", err)
+	}
+	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets: []\n")); err != nil {
+		t.Fatalf("an empty rulesets list parses: %v", err)
+	}
+	// One pair at two digests across the lists is no lockfile, read
+	// or written; the same digest, or one side digestless, is.
+	two := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + strings.Repeat("1", 64) + "\n    provenance: none\n"
+	if _, err := Parse([]byte(two)); err == nil || !strings.Contains(err.Error(), "example.com/a@v1.0.0 pinned as a module at pb1:"+zeros+" and as a ruleset at pb1:"+strings.Repeat("1", 64)) {
+		t.Fatalf("two digests for one pair: %v", err)
+	}
+	if _, err := Encode(&File{Modules: []ModulePin{pin("example.com/a", "v1.0.0")}, Rulesets: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Digest: "pb1:" + strings.Repeat("1", 64)}}}); err == nil {
+		t.Fatal("two digests for one pair encoded")
+	}
+	for _, ok := range []string{
+		strings.Replace(two, "pb1:"+strings.Repeat("1", 64), "pb1:"+zeros, 1),
+		strings.Replace(two, "    digest: pb1:"+strings.Repeat("1", 64)+"\n", "", 1),
+	} {
+		if _, err := Parse([]byte(ok)); err != nil {
+			t.Fatalf("one content, or one side digestless: %v", err)
+		}
+	}
+	// No ruleset pin, no rulesets key.
+	if out, err := Encode(&File{Modules: f.Modules}); err != nil || strings.Contains(string(out), "rulesets") {
+		t.Fatalf("a file without ruleset pins spelled the key: %v\n%s", err, out)
+	}
+}
+
+// A git record names the subtree its binding was verified under,
+// written after the object and omitted at the repository root; an
+// image record, signing no object, never carries one, and a subtree
+// that is no clean relative directory is refused
+// (REQ-lock-provenance-record, REQ-lock-pinned-key-record).
+func TestRecordSubtreeRoundTrips(t *testing.T) {
+	rec := goldenProv
+	rec.Subtree = "proto/api"
+	f := &File{Modules: []ModulePin{{Path: "example.com/a/proto/api", Version: "v1.2.3", Digest: "pb1:" + strings.Repeat("11", 32), Modfile: "sha256:" + strings.Repeat("33", 32), Provenance: rec}}}
+	out, err := Encode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "version: 1\nmodules:\n  - path: example.com/a/proto/api\n    version: v1.2.3\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    modfile: sha256:" + strings.Repeat("33", 32) +
+		"\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + rec.Object + "\n      subtree: proto/api\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
+	if string(out) != want {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
+	}
+	back, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pin, ok := back.Module("example.com/a/proto/api", "v1.2.3"); !ok || pin.Provenance != rec {
+		t.Fatalf("parsed back %+v %v", pin, ok)
+	}
+	pinned := goldenPinned
+	pinned.Subtree = "sub"
+	if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil || !strings.Contains(string(out), "      object: "+pinned.Object+"\n      subtree: sub\n      key:\n") {
+		t.Fatalf("a pinned-key record's subtree: %v\n%s", err, out)
+	}
+	// A subtree is spelled as a module path's segments are: a leading
+	// underscore, dash or tilde is a segment's.
+	for _, sub := range []string{"_api", "-x/y", "~v2", "-", "~", "null", "NULL"} {
+		pinned.Subtree = sub
+		if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil {
+			t.Fatalf("subtree %q: %v", sub, err)
+		} else if back, err := Parse(out); err != nil {
+			t.Fatalf("subtree %q parsed back: %v", sub, err)
+		} else if pin, _ := back.Module("example.com/c/sub", "v2.0.0"); pin.Provenance.Subtree != sub {
+			t.Fatalf("subtree %q read back as %q", sub, pin.Provenance.Subtree)
+		}
+	}
+	for name, bad := range map[string]string{
+		"written empty":         strings.Replace(string(out), "subtree: proto/api", "subtree: \"\"", 1),
+		"written bare":          strings.Replace(string(out), "subtree: proto/api", "subtree:", 1),
+		"written null":          strings.Replace(string(out), "subtree: proto/api", "subtree: null", 1),
+		"under an image record": "version: 1\nmodules:\nplugins:\n  - ref: ghcr.io/acme/plugin:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("55", 32) + "\n    provenance:\n      type: image-signature\n      subtree: sub\n      identity:\n        san: x\n        issuer: y\n",
+		"not clean":             strings.Replace(string(out), "subtree: proto/api", "subtree: proto/../api", 1),
+		"absolute":              strings.Replace(string(out), "subtree: proto/api", "subtree: /proto", 1),
+	} {
+		if _, err := Parse([]byte(bad)); !errors.Is(err, ErrInvalid) {
+			t.Fatalf("%s parsed: %v", name, err)
+		}
+	}
+}
+
 // Anchor cases pinning guard branches no other test's inputs reach.
 func TestMutationResidue(t *testing.T) {
 	h64 := strings.Repeat("ab", 32)
@@ -932,32 +1026,6 @@ func TestMutationResidue(t *testing.T) {
 	}
 	if p, ok := f.Plugin("ghcr.io/a/two:v1", SchemeOCI); !ok || p.Ref != "ghcr.io/a/two:v1" {
 		t.Fatalf("second plugin lookup: %+v %v", p, ok)
-	}
-
-	// One ref pinned in both schemes coexists: distinct pins, distinct
-	// lookups, sorted local-before-oci under one ref (raw-byte order).
-	// Input deliberately oci-first: sorted output is local-first, so a
-	// dropped scheme tie-break leaves the input order and fails below.
-	both := &File{Plugins: []PluginPin{
-		{Ref: "protoc-gen-x", Scheme: SchemeOCI, Digest: "sha256:" + h64},
-		{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + h64}},
-	}}
-	enc, err := Encode(both)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Index(string(enc), "scheme: local") > strings.Index(string(enc), "scheme: oci") {
-		t.Fatalf("schemes not sorted under one ref:\n%s", enc)
-	}
-	reparsed, err := Parse(enc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := reparsed.Plugin("protoc-gen-x", SchemeOCI); !ok {
-		t.Fatal("oci pin lost beside local")
-	}
-	if _, ok := reparsed.Plugin("protoc-gen-x", SchemeLocal); !ok {
-		t.Fatal("local pin lost beside oci")
 	}
 
 	// Two-plugin emission is ref-sorted regardless of input order.
@@ -1143,48 +1211,6 @@ func TestForbiddenYAMLConstructs(t *testing.T) {
 	}
 }
 
-// The platform grammar admits exactly <os>/<arch> in lowercase
-// alphanumerics — boundary characters on every range edge.
-func TestPlatformGrammar(t *testing.T) {
-	for _, ok := range []string{"linux/amd64", "linux/386", "a0/z9", "darwin/arm64"} {
-		if err := checkPlatform(ok); err != nil {
-			t.Errorf("%q rejected: %v", ok, err)
-		}
-	}
-	for _, bad := range []string{
-		"", "linux", "linux/", "/amd64", "Linux/amd64", "linux/AMD64",
-		"linux/amd_64", "linux/amd/64", "linux/amd`", "linux/amd{", "li:nux/a",
-	} {
-		if err := checkPlatform(bad); err == nil {
-			t.Errorf("%q accepted", bad)
-		}
-	}
-}
-
-// The scheme/field agreement holds on the Encode path too: a
-// hand-built pin carrying another scheme's facts never emits.
-func TestEncodeSchemeFieldMismatch(t *testing.T) {
-	h64 := strings.Repeat("ab", 32)
-	cases := []struct {
-		name string
-		pin  PluginPin
-		msg  string
-	}{
-		{"oci with binary", PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64,
-			Binary: map[string]string{"linux/amd64": "sha256:" + h64}}, "carry no binary"},
-		{"local with digest", PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Digest: "sha256:" + h64,
-			Binary: map[string]string{"linux/amd64": "sha256:" + h64}}, "carry no digest"},
-		{"local with provenance", PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal,
-			Binary:     map[string]string{"linux/amd64": "sha256:" + h64},
-			Provenance: goldenProv}, "carry no provenance"},
-	}
-	for _, tc := range cases {
-		if _, err := Encode(&File{Plugins: []PluginPin{tc.pin}}); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
-			t.Errorf("%s: err = %v, want ErrInvalid with %q", tc.name, err, tc.msg)
-		}
-	}
-}
-
 // An oci pin's provenance record — an image-signature record, the
 // one a plugin entry admits — survives the parse into the pin.
 func TestPluginProvenanceRecordParsed(t *testing.T) {
@@ -1204,8 +1230,7 @@ func TestPluginProvenanceRecordParsed(t *testing.T) {
 }
 
 // AddPlugin guards first use per (ref, scheme): a duplicate pair is
-// refused, a different scheme under the same ref is not, and an
-// invalid pin never lands (REQ-lock-first-use).
+// refused and an invalid pin never lands (REQ-lock-first-use).
 func TestAddPlugin(t *testing.T) {
 	h64 := strings.Repeat("ab", 32)
 	f := &File{}
@@ -1216,212 +1241,10 @@ func TestAddPlugin(t *testing.T) {
 	if err := f.AddPlugin(oci); !errors.Is(err, ErrPinMismatch) {
 		t.Fatalf("duplicate pair: %v", err)
 	}
-	local := PluginPin{Ref: "ghcr.io/a/b:v1", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": "sha256:" + h64}}
-	if err := f.AddPlugin(local); err != nil {
-		t.Fatalf("same ref, other scheme: %v", err)
-	}
 	if err := f.AddPlugin(PluginPin{Ref: "x", Scheme: "remote"}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("invalid pin: %v", err)
 	}
-	if len(f.Plugins) != 2 {
+	if len(f.Plugins) != 1 {
 		t.Fatalf("plugins = %d", len(f.Plugins))
-	}
-}
-
-// A local pin gains a platform on that platform's first use, keeps a
-// matching hash as it is, refuses a differing one naming both, and
-// is never created by the platform write itself.
-func TestSetPluginBinary(t *testing.T) {
-	h1, h2 := "sha256:"+strings.Repeat("a", 64), "sha256:"+strings.Repeat("b", 64)
-	f := &File{}
-	if err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h1); !errors.Is(err, ErrInvalid) {
-		t.Fatalf("no pin: %v", err)
-	}
-	if err := f.AddPlugin(PluginPin{Ref: "protoc-gen-x", Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h1}}); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SetPluginBinary("protoc-gen-x", "darwin/arm64", h2); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h1); err != nil {
-		t.Fatalf("same hash: %v", err)
-	}
-	err := f.SetPluginBinary("protoc-gen-x", "linux/amd64", h2)
-	if !errors.Is(err, ErrPinMismatch) || !strings.Contains(err.Error(), h1) || !strings.Contains(err.Error(), h2) {
-		t.Fatalf("differing hash: %v", err)
-	}
-	if err := f.SetPluginBinary("protoc-gen-x", "bad", h1); !errors.Is(err, ErrInvalid) {
-		t.Fatalf("bad platform: %v", err)
-	}
-	p, _ := f.Plugin("protoc-gen-x", SchemeLocal)
-	if len(p.Binary) != 2 || p.Binary["darwin/arm64"] != h2 {
-		t.Fatalf("pin = %+v", p)
-	}
-}
-
-// A ref may start with "/" or "./" — a local plugin's path as
-// written — and still emits as a plain scalar re-parsing to itself;
-// "." alone, the float spellings' lead, does not.
-func TestPluginRefPathStarts(t *testing.T) {
-	h := "sha256:" + strings.Repeat("a", 64)
-	for _, ref := range []string{"/opt/protoc-gen-x", "./tools/gen", "tools/gen"} {
-		f := &File{}
-		if err := f.AddPlugin(PluginPin{Ref: ref, Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h}}); err != nil {
-			t.Fatalf("%q: %v", ref, err)
-		}
-		out, err := Encode(f)
-		if err != nil {
-			t.Fatalf("%q: %v", ref, err)
-		}
-		back, err := Parse(out)
-		if err != nil {
-			t.Fatalf("%q: re-parse: %v\n%s", ref, err, out)
-		}
-		if got, _ := back.Plugin(ref, SchemeLocal); got.Ref != ref {
-			t.Fatalf("%q re-parsed as %q", ref, got.Ref)
-		}
-	}
-	for _, ref := range []string{".", ".inf", ".x", "-x"} {
-		if err := (&File{}).AddPlugin(PluginPin{Ref: ref, Scheme: SchemeLocal, Binary: map[string]string{"linux/amd64": h}}); !errors.Is(err, ErrInvalid) {
-			t.Errorf("%q accepted: %v", ref, err)
-		}
-	}
-}
-
-// Ruleset pins are module pins of their own list (REQ-lock-format,
-// REQ-lock-ruleset-entry): emitted between the modules and the
-// plugins, only where any exist, sorted as the modules are; a pair
-// both a declaration and an import name is pinned in both lists,
-// each by its own reader, and a pair twice in one list is refused.
-func TestRulesetPins(t *testing.T) {
-	zeros := strings.Repeat("0", 64)
-	pin := func(path, version string) ModulePin {
-		return ModulePin{Path: path, Version: version, Digest: "pb1:" + zeros}
-	}
-	f := &File{
-		Modules:  []ModulePin{pin("example.com/std", "v1.0.0")},
-		Rulesets: []ModulePin{pin("example.com/std", "v1.1.0"), pin("example.com/std", "v1.0.0"), pin("example.com/house", "v0.1.0")},
-		Plugins:  []PluginPin{{Ref: "ghcr.io/x/y:v1", Scheme: SchemeOCI, Digest: "sha256:" + zeros}},
-	}
-	out, err := Encode(f)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "version: 1\nmodules:\n  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
-		"rulesets:\n  - path: example.com/house\n    version: v0.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
-		"  - path: example.com/std\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
-		"  - path: example.com/std\n    version: v1.1.0\n    digest: pb1:" + zeros + "\n    provenance: none\n" +
-		"plugins:\n  - ref: ghcr.io/x/y:v1\n    scheme: oci\n    digest: sha256:" + zeros + "\n    provenance: none\n"
-	if string(out) != want {
-		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
-	}
-	again, err := Parse(out)
-	if err != nil || len(again.Rulesets) != 3 || len(again.Modules) != 1 || again.Rulesets[0].Path != "example.com/house" {
-		t.Fatalf("round trip: %+v %v", again, err)
-	}
-	// The lists answer apart: the modules' reader sees no ruleset pin
-	// and the rulesets' no module pin.
-	if _, ok := f.ModulePins().Module("example.com/house", "v0.1.0"); ok {
-		t.Fatal("a ruleset pin answered a module lookup")
-	}
-	if _, ok := f.RulesetPins().Module("example.com/std", "v1.1.0"); !ok {
-		t.Fatal("the rulesets' reader misses its own pin")
-	}
-	if err := f.RulesetPins().Add(pin("example.com/std", "v1.1.0")); !errors.Is(err, ErrPinMismatch) {
-		t.Fatalf("a ruleset pin added twice: %v", err)
-	}
-	if err := f.ModulePins().Add(pin("example.com/std", "v1.1.0")); err != nil || len(f.Modules) != 2 {
-		t.Fatalf("the modules' list takes the pair the rulesets' holds: %v", err)
-	}
-	if err := f.RulesetPins().Verify("example.com/house", "v0.1.0", "pb1:"+strings.Repeat("1", 64), ""); !errors.Is(err, ErrPinMismatch) {
-		t.Fatalf("a ruleset pin verified against other bytes: %v", err)
-	}
-	updated := pin("example.com/house", "v0.1.0")
-	updated.Modfile = "sha256:" + zeros
-	if err := f.RulesetPins().Update(updated); err != nil || f.Rulesets[2].Modfile != updated.Modfile || f.Modules[0].Modfile != "" {
-		t.Fatalf("update of a ruleset pin: %v %+v", err, f)
-	}
-	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n  - path: example.com/a\n    version: v1.0.0\n    provenance: none\n")); err == nil || !strings.Contains(err.Error(), "duplicate ruleset pin example.com/a@v1.0.0") {
-		t.Fatalf("a duplicate ruleset pin: %v", err)
-	}
-	if _, err := Parse([]byte("version: 1\nmodules: []\nrulesets: []\n")); err != nil {
-		t.Fatalf("an empty rulesets list parses: %v", err)
-	}
-	// One pair at two digests across the lists is no lockfile, read
-	// or written; the same digest, or one side digestless, is.
-	two := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + zeros + "\n    provenance: none\nrulesets:\n  - path: example.com/a\n    version: v1.0.0\n    digest: pb1:" + strings.Repeat("1", 64) + "\n    provenance: none\n"
-	if _, err := Parse([]byte(two)); err == nil || !strings.Contains(err.Error(), "example.com/a@v1.0.0 pinned as a module at pb1:"+zeros+" and as a ruleset at pb1:"+strings.Repeat("1", 64)) {
-		t.Fatalf("two digests for one pair: %v", err)
-	}
-	if _, err := Encode(&File{Modules: []ModulePin{pin("example.com/a", "v1.0.0")}, Rulesets: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Digest: "pb1:" + strings.Repeat("1", 64)}}}); err == nil {
-		t.Fatal("two digests for one pair encoded")
-	}
-	for _, ok := range []string{
-		strings.Replace(two, "pb1:"+strings.Repeat("1", 64), "pb1:"+zeros, 1),
-		strings.Replace(two, "    digest: pb1:"+strings.Repeat("1", 64)+"\n", "", 1),
-	} {
-		if _, err := Parse([]byte(ok)); err != nil {
-			t.Fatalf("one content, or one side digestless: %v", err)
-		}
-	}
-	// No ruleset pin, no rulesets key.
-	if out, err := Encode(&File{Modules: f.Modules}); err != nil || strings.Contains(string(out), "rulesets") {
-		t.Fatalf("a file without ruleset pins spelled the key: %v\n%s", err, out)
-	}
-}
-
-// A git record names the subtree its binding was verified under,
-// written after the object and omitted at the repository root; an
-// image record, signing no object, never carries one, and a subtree
-// that is no clean relative directory is refused
-// (REQ-lock-provenance-record, REQ-lock-pinned-key-record).
-func TestRecordSubtreeRoundTrips(t *testing.T) {
-	rec := goldenProv
-	rec.Subtree = "proto/api"
-	f := &File{Modules: []ModulePin{{Path: "example.com/a/proto/api", Version: "v1.2.3", Digest: "pb1:" + strings.Repeat("11", 32), Modfile: "sha256:" + strings.Repeat("33", 32), Provenance: rec}}}
-	out, err := Encode(f)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "version: 1\nmodules:\n  - path: example.com/a/proto/api\n    version: v1.2.3\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    modfile: sha256:" + strings.Repeat("33", 32) +
-		"\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + rec.Object + "\n      subtree: proto/api\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
-	if string(out) != want {
-		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
-	}
-	back, err := Parse(out)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if pin, ok := back.Module("example.com/a/proto/api", "v1.2.3"); !ok || pin.Provenance != rec {
-		t.Fatalf("parsed back %+v %v", pin, ok)
-	}
-	pinned := goldenPinned
-	pinned.Subtree = "sub"
-	if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil || !strings.Contains(string(out), "      object: "+pinned.Object+"\n      subtree: sub\n      key:\n") {
-		t.Fatalf("a pinned-key record's subtree: %v\n%s", err, out)
-	}
-	// A subtree is spelled as a module path's segments are: a leading
-	// underscore, dash or tilde is a segment's.
-	for _, sub := range []string{"_api", "-x/y", "~v2", "-", "~", "null", "NULL"} {
-		pinned.Subtree = sub
-		if out, err := Encode(&File{Modules: []ModulePin{{Path: "example.com/c/sub", Version: "v2.0.0", Digest: "pb1:" + strings.Repeat("88", 32), Provenance: pinned}}}); err != nil {
-			t.Fatalf("subtree %q: %v", sub, err)
-		} else if back, err := Parse(out); err != nil {
-			t.Fatalf("subtree %q parsed back: %v", sub, err)
-		} else if pin, _ := back.Module("example.com/c/sub", "v2.0.0"); pin.Provenance.Subtree != sub {
-			t.Fatalf("subtree %q read back as %q", sub, pin.Provenance.Subtree)
-		}
-	}
-	for name, bad := range map[string]string{
-		"written empty":         strings.Replace(string(out), "subtree: proto/api", "subtree: \"\"", 1),
-		"written bare":          strings.Replace(string(out), "subtree: proto/api", "subtree:", 1),
-		"written null":          strings.Replace(string(out), "subtree: proto/api", "subtree: null", 1),
-		"under an image record": "version: 1\nmodules:\nplugins:\n  - ref: ghcr.io/acme/plugin:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("55", 32) + "\n    provenance:\n      type: image-signature\n      subtree: sub\n      identity:\n        san: x\n        issuer: y\n",
-		"not clean":             strings.Replace(string(out), "subtree: proto/api", "subtree: proto/../api", 1),
-		"absolute":              strings.Replace(string(out), "subtree: proto/api", "subtree: /proto", 1),
-	} {
-		if _, err := Parse([]byte(bad)); !errors.Is(err, ErrInvalid) {
-			t.Fatalf("%s parsed: %v", name, err)
-		}
 	}
 }

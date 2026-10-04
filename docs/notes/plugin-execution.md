@@ -67,7 +67,7 @@ and schemas never leave the machine.
   response authority).
 - Backend taxonomy: identity schemes (`oci` default with the full
   guarantee set; `local` host binaries as an explicit policy-gated
-  downgrade, content-hash pinned by default; `remote` reserved as its
+  downgrade, recorded nowhere; `remote` reserved as its
   own trust category — it ships descriptors off-machine) are per-entry
   and committed; runners (`native`, `docker`) are machine-scoped
   mechanism, never committed, capability-defaulted, no silent fallback.
@@ -83,8 +83,8 @@ and schemas never leave the machine.
   (`pb.trust.yaml`) governs modules and plugin images alike; unsigned
   allowed-and-recorded by default, `require-provenance` opt-in. Its
   `execution` block is the committed home of the whole plugin-execution
-  posture: tier floor, permitted schemes, local-pin opt-out, override
-  permission, resource ceilings. Generation configuration (`pb.gen.yaml`)
+  posture: tier floor, permitted schemes, override permission,
+  resource ceilings. Generation configuration (`pb.gen.yaml`)
   carries none of it.
 - Default MinTier: `Strong` (core is Linux-only where namespaces afford
   it); unattainable tier fails loudly with the explicit-lowering path

@@ -242,9 +242,11 @@ lies under an output directory `clean` names.
 
 **REQ-gen-verb** (behavior): `generate` MUST run generation at the
 working directory's resolution root: parse the generation file, compile
-the build (`REQ-gen-compile`), acquire every entry's plugin — verified
-and pinned, with the pins first use records persisted before any
-plugin executes and whatever follows, per `REQ-lock-first-use` —
+the build (`REQ-gen-compile`), acquire every entry's plugin — an
+`oci` entry's verified and pinned, with the pins first use records
+persisted before any plugin executes and whatever follows, per
+`REQ-lock-first-use`; a `local` entry's command resolved, nothing
+recorded (`plugin-execution.md` "Local binaries") —
 build every entry's request, empty the output directories `clean`
 names (REQ-gen-clean), and then for each entry in declaration
 order execute

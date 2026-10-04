@@ -253,18 +253,18 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Gen"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "5e5a16bfa7d031a29f3c01c9e491e927d334af3ebdc52fd885b5db0d7de3cca8"
+  shape_hash: "200a1e94823381d3d017caa3f9a8f7a05965d59532e4ad90d368e3d8d95bf608"
 }
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenHappyPath"
   role: BINDING_ROLE_TESTS
@@ -273,8 +273,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenFailurePaths"
   role: BINDING_ROLE_TESTS
@@ -283,8 +283,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenPersistsPins"
   role: BINDING_ROLE_TESTS
@@ -353,8 +353,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenNamesEntry"
   role: BINDING_ROLE_TESTS
@@ -363,8 +363,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-gen-verb"
-  content_hash: "56ac8c63d01d1add46b793e177293793b23493a26d16c7f6d38bb85c7ecfd32f"
-  source_hash: "18a88c344ca6703971ad80410277b400216dacb1e215c02d050adf019c6224e6"
+  content_hash: "e1d42b92167c3bcf3575ba228fa6e7f845c79c4bee5db6412292323a25225d22"
+  source_hash: "df6ebb2083a899d57d0630b9471b94b2ecc9f4bd5bd09d930e9ce61f23252cf6"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestGenPinsPersistAcrossLaterFailure"
   role: BINDING_ROLE_TESTS

@@ -60,7 +60,7 @@ func generateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg, runsDir, err := acquirerConfig(s)
+			cfg, err := acquirerConfig(s)
 			if err != nil {
 				return err
 			}
@@ -75,7 +75,7 @@ func generateCmd() *cobra.Command {
 			// which is rooted at the host's filesystem root.
 			if native, err := runner.NativeRunner(); err == nil {
 				deps.Local = &dep.LocalDeps{
-					Acquirer: &local.Acquirer{Root: rootOSPath(s), Runs: runsDir, Lock: s.Lock, Policy: s.Client.Policy},
+					Acquirer: &local.Acquirer{Root: rootOSPath(s)},
 					Runner:   native,
 				}
 			} else {

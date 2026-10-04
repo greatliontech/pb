@@ -196,7 +196,15 @@ reports the tier the sandbox reports
 for the row that ran it (`REQ-plugin-reported-tier`), and that tier
 grades nothing of the world: the binary runs in the host's, with the
 host's environment and network, under the resource bounds alone —
-no floor is required of it.
+no floor is required of it. Nothing of a `local` entry is recorded:
+the lockfile holds no entry for it (`module-lockfile.md`
+REQ-lock-plugin-entry). A host binary has no identity pb could
+resolve — no store serves its bytes, no manifest names them — so a
+hash of it would be a fact one machine recorded and no other could
+satisfy but by coincidence, friction for a team and a guarantee for
+nobody; what the run executes is what the command resolves to at the
+run (REQ-plugin-local-resolution), and the scheme's permission is the
+root's acceptance of exactly that.
 
 **REQ-plugin-local-resolution** (behavior): A `local` command — the
 value's scalar, or its list's first element — containing no path
@@ -213,40 +221,6 @@ resolution root as its working directory, so an argument naming a
 relative path names it under the root wherever pb was invoked.
 Resolution failure fails generation with an error naming the search
 performed; it never falls back to another scheme or source.
-
-**REQ-plugin-local-pin** (behavior): Unless the trust policy disables
-local pinning, first use of a `local` plugin MUST record the resolved
-command's content hash in the lockfile per `REQ-lock-first-use`, keyed
-by host platform, with later runs failing on a hash mismatch and naming
-both hashes. Identity is the bytes, not the location: a moved or
-re-resolved binary with identical content is a non-event. The pin is
-the command's alone, keyed by the command as written: entries naming
-one command with different arguments share it, and the arguments,
-with any file they name — an interpreter's script — are configuration
-the generation file holds, as `opt` is, never pinned. The bytes the
-run executes are the bytes the pin names, by construction: the
-acquisition copies the resolved binary into a directory of the run's
-own, hashing the copy as it writes it, and the process the run
-executes is the copy — a binary rebuilt at its place between the
-acquisition and the run, a developer's build of their own plugin
-while generation runs, is what the next acquisition refuses — unless
-the trust policy disables local pinning — never what this run
-executes. The run's directory is made under the user cache directory
-beside the plugin store at the run's first local acquisition, holds
-every local entry's copy under the binary's own name, and is removed
-with its copies at the run's end, a removal that fails being the
-run's failure, joined to any other; a run that ends without
-removing it — a crash's — leaves residue the next run's first local
-acquisition removes, leaving to a later one what it cannot, or
-`pb clean --plugins` (`dep-verbs.md` REQ-dep-clean) removes, failing
-on what it cannot — a live run's directory never: the directory is
-held by its lock while the run lives, only a directory whose lock is
-free is residue, and a remover takes a directory out of a claim's
-reach before removing anything in it, so what a run claims no
-remover is at. A plugin that finds resources beside its own
-executable finds the run's directory: the arguments and the working
-directory are the configuration a local plugin reads its
-surroundings from.
 
 ## Execution
 

@@ -2,3 +2,4 @@
 # proto-message: stipulator.v1.Tombstones
 
 retired: "REQ-archive-forbidden-entries"
+retired: "REQ-plugin-local-pin"

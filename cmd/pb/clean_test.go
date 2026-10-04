@@ -19,7 +19,7 @@ func TestCleanCommand(t *testing.T) {
 	cache := filepath.Dir(config)
 	cacheHome := cacheHome(t)
 	origin := strings.Repeat("cd", 32)
-	for _, p := range []string{filepath.Join(cache, "root.json"), filepath.Join(cache, "example.com", "m", "@v", "v1.0.0.zip"), filepath.Join(cache, "vcs", origin, "snapshots", "HEAD"), filepath.Join(cache, "vcs", origin, "lock"), filepath.Join(cacheHome, "pb", "plugin-evidence", "sha256", "ab.json"), filepath.Join(cacheHome, "pb", "sources", "example.com", "m@v1.0.0", "m.proto"), filepath.Join(cacheHome, "pb", "plugin-runs", "run-stale", "1", "gen")} {
+	for _, p := range []string{filepath.Join(cache, "root.json"), filepath.Join(cache, "example.com", "m", "@v", "v1.0.0.zip"), filepath.Join(cache, "vcs", origin, "snapshots", "HEAD"), filepath.Join(cache, "vcs", origin, "lock"), filepath.Join(cacheHome, "pb", "plugin-evidence", "sha256", "ab.json"), filepath.Join(cacheHome, "pb", "sources", "example.com", "m@v1.0.0", "m.proto")} {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -54,9 +54,6 @@ func TestCleanCommand(t *testing.T) {
 	if entries, err := os.ReadDir(filepath.Join(cacheHome, "pb", "plugin-evidence")); err != nil || len(entries) != 0 {
 		t.Fatalf("evidence after clean: %v, %v", entries, err)
 	}
-	if entries, err := os.ReadDir(filepath.Join(cacheHome, "pb", "plugin-runs")); err != nil || len(entries) != 0 {
-		t.Fatalf("the local runs' residue after clean: %v, %v", entries, err)
-	}
 	if _, err := os.Stat(filepath.Join(cacheHome, "pb", "plugins")); !os.IsNotExist(err) {
 		t.Fatalf("an absent plugin store was created by clean: %v", err)
 	}
@@ -69,37 +66,5 @@ func TestCleanCommand(t *testing.T) {
 	cmd, _, err := root.Find([]string{"clean"})
 	if err != nil || cmd.Flags().Lookup("modules") == nil || cmd.Flags().Lookup("plugins") == nil || cmd.Flags().Lookup("sources") == nil {
 		t.Fatalf("clean's flags: %v", err)
-	}
-}
-
-// `--plugins` removes the local runs' residue whatever the store's
-// emptying did: a store the library refuses to open is reported, and
-// the residue is gone all the same (REQ-dep-clean).
-func TestCleanSweepsTheRunsResidueWhenTheStoreRefuses(t *testing.T) {
-	plant(t, "cache: .\n")
-	cacheHome := cacheHome(t)
-	// A regular file where the store's directory goes: refused.
-	if err := os.MkdirAll(filepath.Join(cacheHome, "pb"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(cacheHome, "pb", "plugins"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	residue := filepath.Join(cacheHome, "pb", "plugin-runs", "run-stale")
-	if err := os.MkdirAll(filepath.Join(residue, "1"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(residue, "1", "gen"), []byte("x"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	root := rootCmd()
-	root.SetOut(&bytes.Buffer{})
-	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"clean", "--plugins"})
-	if err := root.ExecuteContext(t.Context()); err == nil || !strings.Contains(err.Error(), "plugin store") {
-		t.Fatalf("a refused store: %v", err)
-	}
-	if _, err := os.Stat(residue); !os.IsNotExist(err) {
-		t.Fatalf("the residue after the refused emptying: %v", err)
 	}
 }

@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "eaa875c756348c65a245d0349b6dd0ec14834a02f36dcc95497ec55dd6372ffd"
-  source_hash: "1d5d4901eba452e760ee11e8af8a0aca49df6dcafd1bb889cbe80dfbd0a29673"
+  content_hash: "c5cbe848f2a65283a960392a9eaf6fc03821a250ce0752ae8b0960eff53a32be"
+  source_hash: "2a52895d749cad74f8f99b68e746495b70544669890b02cc342c25ea19bca5f9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.Encode"
   role: BINDING_ROLE_IMPLEMENTS
@@ -63,8 +63,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-plugin-entry"
-  content_hash: "eaa875c756348c65a245d0349b6dd0ec14834a02f36dcc95497ec55dd6372ffd"
-  source_hash: "1d5d4901eba452e760ee11e8af8a0aca49df6dcafd1bb889cbe80dfbd0a29673"
+  content_hash: "c5cbe848f2a65283a960392a9eaf6fc03821a250ce0752ae8b0960eff53a32be"
+  source_hash: "2a52895d749cad74f8f99b68e746495b70544669890b02cc342c25ea19bca5f9"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestEncodeGolden"
   role: BINDING_ROLE_TESTS
@@ -243,8 +243,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-scalar-values"
-  content_hash: "3ec5ee83dc375ac65b4792dda13b31b8e87776fa815fdeac24bbc59f05e4bf7e"
-  source_hash: "5deda95e59903c6e916a5febd532035889d8243a5a889e7d5e057bd82cc5d2fc"
+  content_hash: "7101a4dc0022e1552186813b559904e0d11eb85ab6703ac3737a3a630283e3cd"
+  source_hash: "ec0b1bf930e14ee24a30770b695dd441861dfb9440e3b78afd76d5e19cbff61c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.checkPlainScalar"
   role: BINDING_ROLE_IMPLEMENTS
@@ -253,8 +253,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-scalar-values"
-  content_hash: "3ec5ee83dc375ac65b4792dda13b31b8e87776fa815fdeac24bbc59f05e4bf7e"
-  source_hash: "5deda95e59903c6e916a5febd532035889d8243a5a889e7d5e057bd82cc5d2fc"
+  content_hash: "7101a4dc0022e1552186813b559904e0d11eb85ab6703ac3737a3a630283e3cd"
+  source_hash: "ec0b1bf930e14ee24a30770b695dd441861dfb9440e3b78afd76d5e19cbff61c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestPlainScalarBoundaries"
   role: BINDING_ROLE_TESTS
@@ -263,8 +263,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-scalar-values"
-  content_hash: "3ec5ee83dc375ac65b4792dda13b31b8e87776fa815fdeac24bbc59f05e4bf7e"
-  source_hash: "5deda95e59903c6e916a5febd532035889d8243a5a889e7d5e057bd82cc5d2fc"
+  content_hash: "7101a4dc0022e1552186813b559904e0d11eb85ab6703ac3737a3a630283e3cd"
+  source_hash: "ec0b1bf930e14ee24a30770b695dd441861dfb9440e3b78afd76d5e19cbff61c"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestEncodeRejectsUnsafeScalars"
   role: BINDING_ROLE_TESTS

@@ -443,3 +443,9 @@ formatter and the language server
       directory beside REQ-plugin-local-pin; a binary replaced
       between the acquisition and the run executing the acquired
       bytes; the issue closes
+- [x] 35. Local pinning dropped: a host binary has no identity pb can
+      resolve, so none is claimed — REQ-plugin-local-pin retired, the
+      lockfile's `local` scheme and `binary` map and the trust policy's
+      `local-pin` knob with it, the local acquirer resolution alone,
+      the run directory, its lock and sweep and `--plugins`' residue
+      clause gone; the parallels row reads parity

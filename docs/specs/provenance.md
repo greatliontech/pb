@@ -91,11 +91,9 @@ contain `execution`, the resolution root's plugin-execution posture
 (`plugin-execution.md`), with each key optional: `min-tier` (the sandbox
 tier floor for `oci` plugins; default `Strong`), `schemes` (the
 permitted identity schemes; default `[oci]` — listing `local` is the
-root's explicit acceptance of unsandboxed execution), `local-pin`
-(whether local binaries are content-hash pinned; `true` or `false`,
-lowercase, default `true`), `plugin-overrides` (whether
-invocation-scoped overrides are permitted; same spellings, default
-`true`), and `limits` (plugin resource bounds overriding the
+root's explicit acceptance of unsandboxed execution),
+`plugin-overrides` (whether invocation-scoped overrides are
+permitted; `true` or `false`, lowercase, default `true`), and `limits` (plugin resource bounds overriding the
 implementation defaults, each optional: `memory`, a positive integer
 byte count with optional `Ki`/`Mi`/`Gi` suffix; `cpu`, a positive plain
 decimal core count — digits with an optional fractional part, no signs
