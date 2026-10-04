@@ -169,7 +169,19 @@ discovery `REQ-proxy-list-advisory` sanctions. With module-path
 arguments it updates the named modules and fails on a name no workspace
 module requires, on a name whose discovery finds no release, and on a
 name whose highest discovered release is lower than a declaration — an
-origin that regressed is surfaced, never papered over. Without
+origin that regressed is surfaced, never papered over. A
+`<path>@<version>` argument names a pinned pair to re-resolve — the
+explicit update every hold of a pin names (`provenance.md`
+REQ-prov-pin-held, `module-lockfile.md` REQ-lock-no-silent-downgrade):
+its pins — in every list that pins the pair, the modules' and the
+rulesets', one content under one digest (`module-lockfile.md`
+REQ-lock-ruleset-entry) — are dropped together and the pair run
+through the first-use pipeline for each, fetched from the sources and
+judged under the trust policy of the day, each list's pin recorded
+anew and its transition of digest and provenance reported; a pair no
+list pins fails, since nothing is re-resolved — a pair is pinned by
+its first use, never by name here — and a replaced path fails as it
+does above: a replaced pair is never pinned, its replacement's is. Without
 arguments it updates every direct requirement with a discoverable
 release higher than its declaration, skipping the rest. An import of
 the lint file written without a version — a migration whose
@@ -231,8 +243,12 @@ for. The answer is deterministic and derives from the same graph
 **REQ-dep-verify** (behavior): `verify` MUST recompute, for every
 pinned (module path, version) pair whose artifacts are present in the
 module cache, the module digest and module-file hash against the pin,
-reporting every mismatch — exhaustively and deterministically ordered —
-and failing when any exists. The cached archive is the attested
+hold the pin's provenance record to the trust policy of the day and
+re-verify the cached envelope against the archive where the pin
+records evidence and the cache holds one (`provenance.md`
+REQ-prov-pin-held) — an uncached envelope outside the scope as an
+uncached archive is — reporting every mismatch — exhaustively and
+deterministically ordered — and failing when any exists. The cached archive is the attested
 artifact: the module-file hash is recomputed from its in-archive copy
 (the same bytes as any standalone copy, by
 `REQ-lock-modfile-consistency`), and a pair whose archive is not

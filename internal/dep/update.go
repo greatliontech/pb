@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/greatliontech/pb/internal/module/mvs"
 	"io"
 	"os"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/greatliontech/pb/internal/check/lintfile"
 	"github.com/greatliontech/pb/internal/module"
@@ -51,6 +53,7 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 	// consulted only for named targets; the unnamed sweep leaves
 	// plugins as pinned.
 	var pluginTargets, moduleTargets []string
+	var pairTargets []string
 	if len(targets) > 0 {
 		pluginRefs, err := declaredPlugins(s)
 		if err != nil {
@@ -62,9 +65,12 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 				continue
 			}
 			seen[target] = true
-			if pluginRefs[target] {
+			switch {
+			case pluginRefs[target]:
 				pluginTargets = append(pluginTargets, target)
-			} else {
+			case strings.Contains(target, "@"):
+				pairTargets = append(pairTargets, target)
+			default:
 				moduleTargets = append(moduleTargets, target)
 			}
 		}
@@ -137,6 +143,18 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 		// file's fact, refused before any argument moves.
 		if named && s.Root.Replaced(target) {
 			return fmt.Errorf("dep update: %s is replaced by %s in the workspace file; its origin is never consulted, and what the replacement names is the workspace file's to move", target, s.Root.Source(target, version.Version{}))
+		}
+	}
+	// A pinned pair named as <path>@<version> is re-resolved: its pin
+	// dropped and recorded anew by the first-use pipeline under the
+	// trust policy of the day — the explicit update every hold names
+	// (provenance.md REQ-prov-pin-held) — durable before the next.
+	for _, target := range pairTargets {
+		if err := reresolve(ctx, s, out, target); err != nil {
+			return err
+		}
+		if err := s.SaveLock(); err != nil {
+			return err
 		}
 	}
 	// A moved plugin pin is durable before it is reported, whatever
@@ -305,8 +323,10 @@ func Update(ctx context.Context, s *Session, out io.Writer, plugins PluginUpdate
 
 // Verify recomputes, for every pinned pair whose artifacts are present
 // in the module cache, the module digest and module-file hash against
-// the pin (REQ-dep-verify), reporting every mismatch and failing when
-// any exists. Pairs with no cached artifacts are outside its scope.
+// the pin, and holds the pin's provenance record to the trust policy
+// of the day and to the cached evidence (REQ-dep-verify), reporting
+// every mismatch and failing when any exists. Pairs with no cached
+// artifacts are outside its scope, an uncached envelope the same way.
 func Verify(ctx context.Context, s *Session, out io.Writer) error {
 	// The modules' pins, then the rulesets' (REQ-dep-ruleset-
 	// declarations), each list in raw-byte order of pair, a ruleset
@@ -366,6 +386,10 @@ func Verify(ctx context.Context, s *Session, out io.Writer) error {
 				continue
 			}
 		}
+		if err := s.Client.VerifyCachedEvidence(ctx, pin.Path, v, pin.ModulePin, b); err != nil {
+			mismatches = append(mismatches, fmt.Sprintf("%s@%s%s: provenance: %v", pin.Path, pin.Version, pin.mark, err))
+			continue
+		}
 		verified++
 	}
 	for _, m := range mismatches {
@@ -410,4 +434,63 @@ func provenanceSpelling(p lockfile.Provenance) string {
 		return p.Type + " " + p.KeyKind + " " + p.KeyFingerprint
 	}
 	return p.Type + " " + p.SAN + " by " + p.Issuer
+}
+
+// reresolve re-resolves one pinned pair named <path>@<version>: its
+// pins — in every list that pins it, the modules' and the rulesets',
+// one content under one digest (REQ-lock-ruleset-entry) — dropped
+// together and the pair run through the first-use pipeline for each,
+// fetched from the sources, its provenance judged under the trust
+// policy of the day, pinned anew, each list's transition reported
+// (REQ-dep-update). A pair no list pins is refused: there is nothing
+// to re-resolve. A replaced path is refused as the module-path form
+// refuses it: a replaced pair is never pinned, its replacement's is.
+// The read goes where every pair's does — a module's through the
+// driver, a ruleset's through the client's ruleset pipeline — the
+// replaced path refused first, so the pair read is the pair named.
+func reresolve(ctx context.Context, s *Session, out io.Writer, target string) error {
+	path, ver, ok := strings.Cut(target, "@")
+	if !ok || path == "" || ver == "" {
+		return fmt.Errorf("dep update: %s is not a <path>@<version> pair", target)
+	}
+	v, err := version.Parse(ver)
+	if err != nil {
+		return fmt.Errorf("dep update: %s: %w", target, err)
+	}
+	if s.Root.Replaced(path) {
+		return fmt.Errorf("dep update: %s is replaced by %s in the workspace file; a replaced pair is never pinned, its replacement's pair is", target, s.Root.Source(path, version.Version{}))
+	}
+	modPin, inModules := s.Lock.ModulePins().Module(path, v.String())
+	rsPin, inRulesets := s.Lock.RulesetPins().Module(path, v.String())
+	if !inModules && !inRulesets {
+		return fmt.Errorf("dep update: no pin records %s; a pair is re-resolved, never pinned afresh here", target)
+	}
+	same := func(p lockfile.ModulePin) bool { return p.Path == path && p.Version == v.String() }
+	s.Lock.Modules = slices.DeleteFunc(s.Lock.Modules, same)
+	s.Lock.Rulesets = slices.DeleteFunc(s.Lock.Rulesets, same)
+	report := func(before lockfile.ModulePin, list lockfile.Pins, mark string) error {
+		after, ok := list.Module(path, v.String())
+		if !ok {
+			return fmt.Errorf("dep update: %s: the re-resolution recorded no %s pin", target, list.Name())
+		}
+		fmt.Fprintf(out, "%s%s: digest %s -> %s, provenance %s -> %s\n", target, mark, before.Digest, after.Digest, provenanceSpelling(before.Provenance), provenanceSpelling(after.Provenance))
+		return nil
+	}
+	if inModules {
+		if _, err := s.Driver.Download(ctx, mvs.Requirement{Path: path, Version: v}); err != nil {
+			return fmt.Errorf("dep update: %s: %w", target, err)
+		}
+		if err := report(modPin, s.Lock.ModulePins(), ""); err != nil {
+			return err
+		}
+	}
+	if inRulesets {
+		if err := s.Client.RulesetDownload(ctx, path, v); err != nil {
+			return fmt.Errorf("dep update: %s: %w", target, err)
+		}
+		if err := report(rsPin, s.Lock.RulesetPins(), " (ruleset pin)"); err != nil {
+			return err
+		}
+	}
+	return nil
 }

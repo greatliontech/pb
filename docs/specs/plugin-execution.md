@@ -140,9 +140,8 @@ the run uses, on every byte path.
 **REQ-plugin-verify-before-run** (behavior): A plugin image MUST pass
 trust-policy evaluation (`provenance.md`) before any process from it is
 executed — on every acquisition, cached content included, so a
-tightened policy gates immediately. The module pipeline's
-pin-is-the-record posture deliberately does not apply here: the
-stricter per-run posture sits on the side that executes code.
+tightened policy gates immediately — as a module pin is held on every
+use (`provenance.md` REQ-prov-pin-held): one rule for every pin.
 
 **REQ-plugin-core-verifies** (invariant): Pin resolution, trust-policy
 evaluation, and the platform check MUST be performed by pb against the

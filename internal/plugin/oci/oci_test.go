@@ -552,9 +552,10 @@ func imageRecord(san string) lockfile.Provenance {
 
 // Under require-provenance the image's evidence decides
 // (REQ-plugin-verify-before-run, REQ-prov-plugin-signature): with no
-// identity rule or no trusted root nothing is judged and the
-// acquisition fails naming which (REQ-prov-plugin-identity); an
-// unsigned image fails as absent; a signature by the rule's identity
+// identity rule nothing is judged and the acquisition fails naming it
+// (REQ-prov-plugin-identity); with no trusted root an unsigned image
+// fails as absent and a signed one as a judgement with no root to
+// make it; an unsigned image fails as absent; a signature by the rule's identity
 // is recorded as an image-signature record; one by another signer is
 // not accepted; rejected evidence aborts. Nothing failed is pinned.
 func TestAcquireProvenancePolicy(t *testing.T) {
@@ -569,8 +570,8 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 				t.Fatalf("require without an identity rule: %v", err)
 			}
 			noRoot := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, nil)
-			if _, err := noRoot.Acquire(ctx, ref, Host()); !errors.Is(err, ErrNoTrustedRoot) {
-				t.Fatalf("require without a trusted root: %v", err)
+			if _, err := noRoot.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrNoEvidence) {
+				t.Fatalf("require without a trusted root, the image unsigned: %v", err)
 			}
 			unsigned := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, fx.sig.TrustedRoot())
 			if _, err := unsigned.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrNoEvidence) {
@@ -578,6 +579,10 @@ func TestAcquireProvenancePolicy(t *testing.T) {
 			}
 
 			fx.signBundle(t, "someone@example.com", signerIssuer, sigstoretest.BundleOptions{})
+			noRootSigned := newAcquirer(t, fx.fixture, &lockfile.File{}, governed, nil)
+			if _, err := noRootSigned.Acquire(ctx, ref, Host()); !errors.Is(err, ErrNoTrustedRoot) {
+				t.Fatalf("evidence found with no trusted root: %v", err)
+			}
 			lock := &lockfile.File{}
 			other := newAcquirer(t, fx.fixture, lock, governed, fx.sig.TrustedRoot())
 			if _, err := other.Acquire(ctx, ref, Host()); !errors.Is(err, image.ErrIdentityNotAccepted) {
@@ -642,9 +647,16 @@ func TestAcquireOpportunisticVerification(t *testing.T) {
 	if got, err := other.Acquire(ctx, ref, Host()); err != nil || pinOf(t, other, ref).Provenance != (lockfile.Provenance{}) {
 		t.Fatalf("identity non-acceptance not tolerated as none: %+v %v", got, err)
 	}
+	// Evidence found with no trusted root to judge it fails under
+	// allow-unsigned too; an unsigned image with no root is none.
 	noRoot := newAcquirer(t, fx.fixture, &lockfile.File{}, tolerant, nil)
-	if got, err := noRoot.Acquire(ctx, ref, Host()); err != nil || pinOf(t, noRoot, ref).Provenance != (lockfile.Provenance{}) {
-		t.Fatalf("no trusted root not tolerated as none: %+v %v", got, err)
+	if _, err := noRoot.Acquire(ctx, ref, Host()); !errors.Is(err, ErrNoTrustedRoot) || len(noRoot.lock.Plugins) != 0 {
+		t.Fatalf("a signed image with no trusted root: %v, pins %+v", err, noRoot.lock.Plugins)
+	}
+	unsignedFx := newSignedFixture(t, true)
+	unsignedNoRoot := newAcquirer(t, unsignedFx.fixture, &lockfile.File{}, &trust.Policy{Plugins: []trust.Rule{rule(unsignedFx.host+"/org", trust.AllowUnsigned, signerSAN)}}, nil)
+	if got, err := unsignedNoRoot.Acquire(ctx, unsignedFx.host+"/org/plugin:v1", Host()); err != nil || pinOf(t, unsignedNoRoot, unsignedFx.host+"/org/plugin:v1").Provenance != (lockfile.Provenance{}) {
+		t.Fatalf("an unsigned image with no trusted root: %+v %v", got, err)
 	}
 
 	bare := newSignedFixture(t, true)

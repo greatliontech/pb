@@ -48,7 +48,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "489b66a1fd4eafb364778427a0b349743265a295d4fcaabdb8e07152c42c5104"
+  shape_hash: "b2ac884446eb40d5d1b0c31644190ef9df2955b172707630e6d3f8c5afad2371"
 }
 
 bindings {
@@ -163,8 +163,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Update"
   role: BINDING_ROLE_IMPLEMENTS
@@ -173,8 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateVerb"
   role: BINDING_ROLE_TESTS
@@ -223,8 +223,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-verify"
-  content_hash: "beccc992e57f500f38f516ef95ccc50d7bc4c26d164f95d04a7c88b16eb90840"
-  source_hash: "29da04ab7496071f7fad41a04edddcd7f824e8d90ac17b5dc25d5bcc75c03656"
+  content_hash: "cbc9996032413f2c27f9e3fc6bdd651050eb6b9f6334c046dbcab134f251759f"
+  source_hash: "32e93ef6afa4d5df8c44ba12053fc4fd8f65bdac55531a4ab5c593eddf6981db"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -233,8 +233,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-verify"
-  content_hash: "beccc992e57f500f38f516ef95ccc50d7bc4c26d164f95d04a7c88b16eb90840"
-  source_hash: "29da04ab7496071f7fad41a04edddcd7f824e8d90ac17b5dc25d5bcc75c03656"
+  content_hash: "cbc9996032413f2c27f9e3fc6bdd651050eb6b9f6334c046dbcab134f251759f"
+  source_hash: "32e93ef6afa4d5df8c44ba12053fc4fd8f65bdac55531a4ab5c593eddf6981db"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestVerifyVerb"
   role: BINDING_ROLE_TESTS
@@ -243,8 +243,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
@@ -253,8 +253,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.File.UpdatePlugin"
   role: BINDING_ROLE_IMPLEMENTS
@@ -263,8 +263,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
@@ -273,8 +273,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
@@ -293,8 +293,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.provenanceSpelling"
   role: BINDING_ROLE_IMPLEMENTS
@@ -303,8 +303,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestProvenanceSpelling"
   role: BINDING_ROLE_TESTS
@@ -363,8 +363,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateLeavesAReplacedPath"
   role: BINDING_ROLE_TESTS
@@ -423,8 +423,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.TestReplaceByDirectory"
   role: BINDING_ROLE_TESTS
@@ -733,8 +733,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-dep-update"
-  content_hash: "043f1a26bac9efe3817395de29a0d7d118b58fad00ecb3ec79ba9fde5dfaa581"
-  source_hash: "daf13310ff730326a2103a1353fa9c021d39ea069d834eea36477e3060334b03"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/dep.Session.importsToMove"
   role: BINDING_ROLE_IMPLEMENTS
@@ -749,4 +749,24 @@ bindings {
   symbol: "github.com/greatliontech/pb/internal/source/fetch.DigestName"
   role: BINDING_ROLE_IMPLEMENTS
   shape_hash: "e4eadc1e6d09b59ae56b49db813ddec1c2ad94712f746410c9ad59df7d804523"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.reresolve"
+  role: BINDING_ROLE_IMPLEMENTS
+  shape_hash: "3612452ef8fe69200e47ae9271e7f4ce3cb23444415045a505659db0f89958a9"
+}
+
+bindings {
+  requirement_id: "REQ-dep-update"
+  content_hash: "928c2278c8ed66fc074b47bf00454f0f336a1d9348caec8ad1c02a0dcfd787f3"
+  source_hash: "7c4b32791ebdfbfc73148cea419c623bae75093d190e511cd0e9f81332570abc"
+  backend: "go"
+  symbol: "github.com/greatliontech/pb/internal/dep.TestUpdateReresolvesAPinnedPair"
+  role: BINDING_ROLE_TESTS
+  shape_hash: "ed715af1b054c0e13cf976fe1d83e1240ef096d5d3d1d21c1d7c3876bfde2fa1"
 }

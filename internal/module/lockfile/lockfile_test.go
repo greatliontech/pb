@@ -15,7 +15,7 @@ import (
 )
 
 var goldenProv = Provenance{
-	Type: "git-signed-tag", ObjectFormat: "sha1",
+	Type: "git-signed-tag", ObjectFormat: "sha1", Repo: "https://github.com/acme/protos",
 	Object: strings.Repeat("ab", 20),
 	SAN:    "https://github.com/acme/protos/.github/workflows/release.yaml@refs/tags/v1.2.3",
 	Issuer: "https://token.actions.githubusercontent.com",
@@ -55,6 +55,7 @@ modules:
       type: git-signed-tag
       objectFormat: sha1
       object: abababababababababababababababababababab
+      repo: https://github.com/acme/protos
       identity:
         san: https://github.com/acme/protos/.github/workflows/release.yaml@refs/tags/v1.2.3
         issuer: https://token.actions.githubusercontent.com
@@ -134,6 +135,8 @@ func TestParseRejections(t *testing.T) {
 		{"wrong version", "version: 2\nmodules:\n" + mod, "unsupported lockfile version"},
 		{"missing version", "modules:\n" + mod, "unsupported lockfile version"},
 		{"unknown key", "version: 1\nmodules:\n" + mod + "extra: 1\n", "unknown field"},
+		{"signed-tag record without a repo", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "names no repo"},
+		{"repo on a pinned-key record", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha256\n      object: " + strings.Repeat("ab", 32) + "\n      repo: https://example.com/r\n      key:\n        kind: ssh\n        fingerprint: SHA256:" + strings.Repeat("A", 43) + "\n", "names no repository"},
 		{"local entry as written before", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "a local plugin has no lockfile entry; remove it"},
 		{"local entry with a path ref", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ./tools/gen\n    scheme: local\n    binary:\n      linux/amd64: sha256:" + strings.Repeat("11", 32) + "\n", "a local plugin has no lockfile entry; remove it"},
 		{"local entry bare", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: protoc-gen-x\n    scheme: local\n", "a local plugin has no lockfile entry; remove it"},
@@ -156,8 +159,8 @@ func TestParseRejections(t *testing.T) {
 		{"missing provenance", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n", "missing provenance"},
 		{"bad provenance scalar", "version: 1\nmodules:\n" + strings.Replace(mod, "none", "sometimes", 1), "neither none nor a record"},
 		{"bad provenance type", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: pgp\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "unknown provenance type"},
-		{"bad object format", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: md5\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "unknown object format"},
-		{"short object", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha256\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "not 64 lowercase hex"},
+		{"bad object format", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: md5\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "unknown object format"},
+		{"short object", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha256\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n", "not 64 lowercase hex"},
 		{"missing identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n", "san and issuer"},
 		{"pinned key without a key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n", "key needs a kind and a fingerprint"},
 		{"pinned key with an empty key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key: {}\n", "key needs a kind and a fingerprint"},
@@ -165,9 +168,9 @@ func TestParseRejections(t *testing.T) {
 		{"pinned key with an openpgp fingerprint in lowercase", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: openpgp\n        fingerprint: 91edfea1c6643ea64ec693516ea5914f2dade816\n", "is not spelled as openpgp spells one"},
 		{"pinned key with an identity's issuer alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM\n      identity:\n        issuer: y\n", "names a key, not an identity"},
 		{"pinned key with an empty identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: SHA256:cuQ/ZG8mqAef7X0GZ19RH5baTiwTVg76NePyXAKPBfM\n      identity: {}\n", "names a key, not an identity"},
-		{"signed tag with a key's fingerprint alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        fingerprint: f\n", "names an identity, not a key"},
-		{"signed tag with a null key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n", "names an identity, not a key"},
-		{"signed tag with an empty key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key: {}\n", "names an identity, not a key"},
+		{"signed tag with a key's fingerprint alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        fingerprint: f\n", "names an identity, not a key"},
+		{"signed tag with a null key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n", "names an identity, not a key"},
+		{"signed tag with an empty key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key: {}\n", "names an identity, not a key"},
 		{"image signature with a key", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: image-signature\n      identity:\n        san: x\n        issuer: y\n      key:\n        kind: ssh\n        fingerprint: f\n", "an image-signature record names an identity, not a key"},
 		{"image signature with an empty object format", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: image-signature\n      objectFormat: \"\"\n      identity:\n        san: x\n        issuer: y\n", "an image-signature record names no signed object"},
 		{"pinned key of an unknown kind", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: x509\n        fingerprint: f\n", `unknown key kind "x509"`},
@@ -176,21 +179,21 @@ func TestParseRejections(t *testing.T) {
 		{"pinned key with an openpgp fingerprint of neither length", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: openpgp\n        fingerprint: " + strings.Repeat("AB", 24) + "\n", "is not spelled as openpgp spells one"},
 		{"pinned key beside an identity", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: f\n      identity:\n        san: x\n        issuer: y\n", "names a key, not an identity"},
 		{"pinned key without an object", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-pinned-key\n      key:\n        kind: ssh\n        fingerprint: f\n", "unknown object format"},
-		{"signed tag with a key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        kind: ssh\n        fingerprint: f\n", "names an identity, not a key"},
+		{"signed tag with a key", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x\n        issuer: y\n      key:\n        kind: ssh\n        fingerprint: f\n", "names an identity, not a key"},
 		{"pinned key on a plugin entry", "version: 1\nmodules:\n" + mod + "plugins:\n  - ref: ghcr.io/a/b:v1\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance:\n      type: git-pinned-key\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      key:\n        kind: ssh\n        fingerprint: f\n", `provenance type "git-pinned-key" is not this entry's (image-signature)`},
 		{"image signature on a module entry", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: image-signature\n      identity:\n        san: x\n        issuer: y\n", `is not this entry's (git-signed-tag or git-pinned-key)`},
 		{"duplicate module pin", "version: 1\nmodules:\n" + mod + mod, "duplicate module pin"},
 		{"space in version", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1 .0\n    provenance: none\n", "version \"v1 .0\" is not plain-scalar safe"},
 		{"trailing colon version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"v1:\"\n    provenance: none\n", "not plain-scalar safe"},
-		{"quoted san survives one strip", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: \"'q'\"\n        issuer: y\n", "san \"'q'\" is not plain-scalar safe"},
-		{"leading dash issuer", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x@y\n        issuer: -evil\n", "issuer \"-evil\" is not plain-scalar safe"},
-		{"non-ascii san", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: café\n        issuer: y\n", "not plain-scalar safe"},
+		{"quoted san survives one strip", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: \"'q'\"\n        issuer: y\n", "san \"'q'\" is not plain-scalar safe"},
+		{"leading dash issuer", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: x@y\n        issuer: -evil\n", "issuer \"-evil\" is not plain-scalar safe"},
+		{"non-ascii san", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: café\n        issuer: y\n", "not plain-scalar safe"},
 		{"unquoted null version", "version: 1\nmodules:\n  - path: example.com/a\n    version: null\n    provenance: none\n", "has no version"},
 		{"quoted null version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"null\"\n    provenance: none\n", "not plain-scalar safe"},
-		{"escaped single-quoted san", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: 'a''b'\n        issuer: y\n", "contains escapes"},
+		{"escaped single-quoted san", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: 'a''b'\n        issuer: y\n", "contains escapes"},
 		{"escaped double-quoted version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"a\\\"b\"\n    provenance: none\n", "contains escapes"},
 		{"non-quote escape in double-quoted version", "version: 1\nmodules:\n  - path: example.com/a\n    version: \"a\\nb\"\n    provenance: none\n", "contains escapes"},
-		{"empty san value", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san:\n        issuer: y\n", "san and issuer"},
+		{"empty san value", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san:\n        issuer: y\n", "san and issuer"},
 		{"empty provenance record", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: {}\n", "provenance record is empty"},
 		{"none spelled with an escape", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance: \"non\\u0065\"\n", "neither none nor a record"},
 		{"record of an empty identity alone", "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      identity: {}\n", "provenance record names no type"},
@@ -449,6 +452,7 @@ func TestFixedPointProperty(t *testing.T) {
 				} else {
 					pin.Provenance = Provenance{
 						Type: "git-signed-tag", ObjectFormat: "sha256", Object: hex64("obj"),
+						Repo:   "https://" + plain("repo", printable),
 						SAN:    plain("san", printable),
 						Issuer: plain("issuer", printable),
 					}
@@ -574,6 +578,7 @@ func TestPinsOnlyStructural(t *testing.T) {
 		structural.FieldOf[string]("ObjectFormat"),
 		structural.FieldOf[string]("Object"),
 		structural.FieldOf[string]("Subtree"),
+		structural.FieldOf[string]("Repo"),
 		structural.FieldOf[string]("SAN"),
 		structural.FieldOf[string]("Issuer"),
 		structural.FieldOf[string]("KeyKind"),
@@ -760,7 +765,7 @@ func TestPlainScalarBoundaries(t *testing.T) {
 func TestEncodeRejectsUnsafeScalars(t *testing.T) {
 	mod := func(p ModulePin) *File { return &File{Modules: []ModulePin{p}} }
 	prov := func(san, issuer string) Provenance {
-		return Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: san, Issuer: issuer}
+		return Provenance{Type: "git-signed-tag", Repo: "https://github.com/acme/protos", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: san, Issuer: issuer}
 	}
 	cases := []struct {
 		name string
@@ -853,7 +858,7 @@ func TestAcceptanceVariants(t *testing.T) {
 func TestScalarSpellingsPreserved(t *testing.T) {
 	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: 0x1f\n    provenance:\n" +
 		"      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n" +
-		"      identity:\n        san: 'a\\b'\n        issuer: y\n" +
+		"      repo: https://github.com/acme/protos\n      identity:\n        san: 'a\\b'\n        issuer: y\n" +
 		"plugins:\n  - ref: True\n    scheme: oci\n    digest: sha256:" + strings.Repeat("11", 32) + "\n    provenance: none\n"
 	f, err := Parse([]byte(in))
 	if err != nil {
@@ -970,7 +975,7 @@ func TestRecordSubtreeRoundTrips(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "version: 1\nmodules:\n  - path: example.com/a/proto/api\n    version: v1.2.3\n    digest: pb1:" + strings.Repeat("11", 32) + "\n    modfile: sha256:" + strings.Repeat("33", 32) +
-		"\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + rec.Object + "\n      subtree: proto/api\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
+		"\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + rec.Object + "\n      subtree: proto/api\n      repo: https://github.com/acme/protos\n      identity:\n        san: " + rec.SAN + "\n        issuer: " + rec.Issuer + "\n"
 	if string(out) != want {
 		t.Fatalf("encoded:\n%s\nwant:\n%s", out, want)
 	}
@@ -1066,7 +1071,7 @@ func TestMutationResidue(t *testing.T) {
 		msg string
 	}{
 		{Provenance{Type: "pgp", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}, "unknown provenance type"},
-		{Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}, "is not this entry's"},
+		{Provenance{Type: "git-signed-tag", Repo: "https://github.com/acme/protos", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: "y"}, "is not this entry's"},
 	} {
 		bad := &File{Plugins: []PluginPin{{Ref: "ghcr.io/a/b:v1", Scheme: SchemeOCI, Digest: "sha256:" + h64, Provenance: tc.p}}}
 		if _, err := Encode(bad); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), tc.msg) {
@@ -1093,8 +1098,8 @@ func TestMutationResidue(t *testing.T) {
 
 	// Identity with exactly one empty half.
 	for _, p := range []Provenance{
-		{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "", Issuer: "y"},
-		{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: ""},
+		{Type: "git-signed-tag", Repo: "https://github.com/acme/protos", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "", Issuer: "y"},
+		{Type: "git-signed-tag", Repo: "https://github.com/acme/protos", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), SAN: "x", Issuer: ""},
 	} {
 		mf := &File{Modules: []ModulePin{{Path: "example.com/a", Version: "v1.0.0", Provenance: p}}}
 		if _, err := Encode(mf); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "san and issuer") {
@@ -1119,7 +1124,7 @@ func TestMutationResidue(t *testing.T) {
 	}
 
 	// Provenance record with an unknown extra field.
-	in = "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      extra: 1\n      identity:\n        san: x\n        issuer: y\n"
+	in = "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      extra: 1\n      identity:\n        san: x\n        issuer: y\n"
 	if _, err := Parse([]byte(in)); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("provenance extra field: %v", err)
 	}
@@ -1184,7 +1189,7 @@ func TestForbiddenYAMLConstructs(t *testing.T) {
 	}
 	// A digits-only object hash is preserved as spelled: forty zeros is a
 	// syntactically valid sha1 hex value (no int-coercion detour).
-	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: \"" + strings.Repeat("0", 40) + "\"\n      identity:\n        san: x\n        issuer: y\n"
+	in := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: \"" + strings.Repeat("0", 40) + "\"\n      identity:\n        san: x\n        issuer: y\n"
 	f, err := Parse([]byte(in))
 	if err != nil {
 		t.Fatalf("all-zeros object: %v", err)
@@ -1205,7 +1210,7 @@ func TestForbiddenYAMLConstructs(t *testing.T) {
 		t.Fatalf("single-quoted object: %+v %v", f, err)
 	}
 	// Empty-quoted identity halves are empty, hence rejected.
-	in2 := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: ''\n        issuer: y\n"
+	in2 := "version: 1\nmodules:\n  - path: example.com/a\n    version: v1.0.0\n    provenance:\n      type: git-signed-tag\n      repo: https://github.com/acme/protos\n      objectFormat: sha1\n      object: " + strings.Repeat("ab", 20) + "\n      identity:\n        san: ''\n        issuer: y\n"
 	if _, err := Parse([]byte(in2)); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "san and issuer") {
 		t.Fatalf("empty-quoted san: %v", err)
 	}

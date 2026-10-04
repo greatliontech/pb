@@ -449,3 +449,12 @@ formatter and the language server
       `local-pin` knob with it, the local acquirer resolution alone,
       the run directory, its lock and sweep and `--plugins`' residue
       clause gone; the parallels row reads parity
+- [x] 36. Every pin held on every use: the provenance record held to
+      the trust policy of the day wherever the pin is used and to its
+      re-verified evidence wherever the archive is read, once per pair
+      a client; evidence served with no trusted root a failure, for
+      modules and plugin images alike; `pb dep verify` re-verifying
+      cached evidence; provenance.md REQ-prov-pin-held, the trusted
+      root term and REQ-prov-plugin-identity, plugin-execution.md's
+      posture sentence, REQ-lock-no-silent-downgrade and REQ-dep-verify
+      amended

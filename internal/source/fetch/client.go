@@ -62,9 +62,12 @@ type Client struct {
 	// Policy is the trust policy; nil means the zero policy
 	// (allow-unsigned, no identity rules).
 	Policy *trust.Policy
-	// TrustedRoot pins the sigstore material evidence verifies against.
-	// With a nil root no evidence can verify: absent under
-	// allow-unsigned, a failure under require-provenance.
+	// TrustedRoot pins the sigstore material evidence verifies against:
+	// an input to every judgement of sigstore evidence, so sigstore
+	// evidence served with a nil root fails the operation under either
+	// posture, while a source serving none leaves the subject unsigned
+	// and pinned-key evidence needs no root (provenance.md, the trusted
+	// root term).
 	TrustedRoot *gitprov.TrustedRoot
 	// ResolveOrigin maps a module path to its origin; required. Called
 	// lazily — the direct source always needs it, proxy fetches only
@@ -86,7 +89,18 @@ type Client struct {
 
 	origins map[string]origin.Origin
 	repos   map[string]*direct.Repo
+	// heldPairs is the pinned pairs whose evidence record this client
+	// has held to the trusted root in its life, by pair and digest:
+	// the record is held wherever the archive is read, once per
+	// client (provenance.md REQ-prov-pin-held).
+	heldPairs map[string]struct{}
 }
+
+// ErrPinUnderPolicy is a pin the trust policy of the day no longer
+// accepts as recorded — unsigned where it requires provenance, signed
+// by an identity its rule no longer names — which only an explicit
+// update re-resolves (provenance.md REQ-prov-pin-held).
+var ErrPinUnderPolicy = errors.New("the pin is not accepted by the trust policy of the day")
 
 // origin resolves and memoizes a module path's origin. Failures are not
 // memoized: origin resolution is a network operation whose transient

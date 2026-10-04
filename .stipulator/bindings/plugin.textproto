@@ -43,8 +43,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-verify-before-run"
-  content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
-  source_hash: "4607207c0f0732b83d38eb7032c6a6d68e86a93b291008202ed769399ec819db"
+  content_hash: "9748ddd7e5ed4de5930a6b7766207726efc07546b9cb8bcef3d18367c9765baf"
+  source_hash: "6a91fed1dd17b4ee0b095e5b858a972d7e697cc2b801163e2db6dc73a90797c7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.Acquirer.verify"
   role: BINDING_ROLE_IMPLEMENTS
@@ -53,8 +53,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-plugin-verify-before-run"
-  content_hash: "82017de207a44c31ca0e15b43ab06126a454a89db895a90df2617d25b7e139f8"
-  source_hash: "4607207c0f0732b83d38eb7032c6a6d68e86a93b291008202ed769399ec819db"
+  content_hash: "9748ddd7e5ed4de5930a6b7766207726efc07546b9cb8bcef3d18367c9765baf"
+  source_hash: "6a91fed1dd17b4ee0b095e5b858a972d7e697cc2b801163e2db6dc73a90797c7"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireProvenancePolicy"
   role: BINDING_ROLE_TESTS

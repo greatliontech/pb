@@ -63,7 +63,16 @@ under (`provenance.md` REQ-prov-tag-binding) — a clean relative path
 of module path segments (`module-resolution.md`
 REQ-resolve-path-syntax), never written empty — absent for a module at
 the repository root, so the record is re-verified where it was bound
-whatever the module's path resolves to later. An `image-signature` record — a sigstore signature
+whatever the module's path resolves to later — then `repo`, the
+origin's HTTPS repository URL the record was accepted under
+(`module-resolution.md` REQ-resolve-ssh: the identity, never the
+route), from which the origin default is re-derived offline on every
+later use (`provenance.md` REQ-prov-pin-held) whatever the path
+resolves to later; a `git-signed-tag` record naming no `repo` is
+invalid, and a lockfile holding one loads no session: the entry's
+record is set to `none`, or the entry removed, by hand, and the pair
+re-resolved by `pb dep update <path>@<version>` or recorded anew by
+`pb dep download` (`dep-verbs.md`). An `image-signature` record — a sigstore signature
 over the plugin entry's digest (`provenance.md`) — carries no field of
 its own: the entry's `digest` is what was signed. A `git-signed-tag`
 record belongs to a module entry and an `image-signature` record to a
@@ -168,4 +177,7 @@ signed object except by an explicit user-invoked update of that pin;
 re-resolution that can no longer verify previously recorded provenance
 fails rather than rewriting the record. A changed signed object for the
 same (module path, version) means the origin tag moved — a rewrite, not
-a refresh: new releases are new versions with their own pins.
+a refresh: new releases are new versions with their own pins. The
+record is held on every use, to the policy of the day and to its
+evidence (`provenance.md` REQ-prov-pin-held): a pin is a claim every
+machine re-establishes, the digest and the record alike.

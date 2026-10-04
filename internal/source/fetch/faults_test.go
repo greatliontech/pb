@@ -197,11 +197,14 @@ func TestProvenanceEvaluationErrorArms(t *testing.T) {
 		if pin, _ := c.Lock.Module("example.com/m", "v1.0.0"); pin.Provenance != (lockfile.Provenance{}) {
 			t.Fatalf("provenance = %+v, want none", pin.Provenance)
 		}
+		// No identity arm holds the evidence — the origin has no
+		// default identity — so the root is never the question: the
+		// evidence is absent, a require failure naming that.
 		c2 := fx.Client("proxy")
 		c2.Policy = &trust.Policy{Default: trust.RequireProvenance}
 		if _, err := c2.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil ||
-			!strings.Contains(err.Error(), "trusted root") {
-			t.Fatalf("err = %v, want the no-trusted-root failure", err)
+			!strings.Contains(err.Error(), "requires provenance") || strings.Contains(err.Error(), "trusted root") {
+			t.Fatalf("err = %v, want the no-identity failure", err)
 		}
 	})
 
@@ -859,7 +862,7 @@ func TestDownloadEntryFaultsAndClasses(t *testing.T) {
 	})
 }
 
-// downloadProv-side classes behind a verified pin: cache read fault,
+// ensureProv-side classes behind a verified pin: cache read fault,
 // transport failure, junk envelope, and a missing trusted root each
 // surface as themselves.
 func TestDownloadProvFailureClasses(t *testing.T) {

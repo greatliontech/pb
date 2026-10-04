@@ -10,7 +10,9 @@ import (
 
 	"github.com/greatliontech/pb/internal/module/archive"
 	"github.com/greatliontech/pb/internal/module/lockfile"
+	"github.com/greatliontech/pb/internal/provenance/trust"
 	"github.com/greatliontech/pb/internal/source/proxy"
+	"github.com/greatliontech/pb/internal/testing/provtest"
 )
 
 // Versions parses the proxy's advisory listing and falls through on
@@ -193,13 +195,18 @@ func TestDownloadVanishedEvidenceFailsClosed(t *testing.T) {
 	fx.Endpoint("example.com/m", "v1.0.0", "zip", string(zip))
 	fx.Endpoint("example.com/m", "v1.0.0", "info", `{"version":"v1.0.0"}`)
 	c := fx.Client("proxy")
+	// The policy of the day accepts the recorded identity and a root is
+	// there to judge evidence: the hold passes, and the vanished
+	// evidence alone decides.
+	c.Policy = explicitRule("signer@example.com", "https://accounts.example.com", trust.AllowUnsigned)
+	c.TrustedRoot = provtest.New(t).TrustedRoot()
 	// Simulate an earlier explicit resolution having verified evidence.
 	if err := c.Lock.AddModule(lockfile.ModulePin{
 		Path: "example.com/m", Version: "v1.0.0",
 		Digest:  mustDigest(t, zip),
 		Modfile: ModfileHash([]byte(files["pb.yaml"])),
 		Provenance: lockfile.Provenance{
-			Type: "git-signed-tag", ObjectFormat: "sha1",
+			Type: "git-signed-tag", Repo: "https://github.com/acme/protos", ObjectFormat: "sha1",
 			Object: "0123456789012345678901234567890123456789",
 			SAN:    "signer@example.com", Issuer: "https://accounts.example.com",
 		},

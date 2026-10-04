@@ -498,7 +498,7 @@ bindings {
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.Client.pinnedZip"
   role: BINDING_ROLE_IMPLEMENTS
-  shape_hash: "489b66a1fd4eafb364778427a0b349743265a295d4fcaabdb8e07152c42c5104"
+  shape_hash: "b2ac884446eb40d5d1b0c31644190ef9df2955b172707630e6d3f8c5afad2371"
 }
 
 bindings {

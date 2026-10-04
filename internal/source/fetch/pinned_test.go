@@ -294,18 +294,18 @@ func TestPinnedKeyRejectionsAbort(t *testing.T) {
 	})
 }
 
-// Under keys beside an identity with no trusted root configured, a
-// sigstore signature is unverifiable — absent — and nothing else is
-// accepted, so the operation fails as a requirement, naming the
-// reason, never reading a chain against no root.
-func TestSigstoreEvidenceUnderKeysWithoutRootIsAbsent(t *testing.T) {
+// Sigstore evidence under a rule naming keys beside an identity, with
+// no trusted root: the identity arm would judge it and cannot — a
+// failure naming the root, never an unsigned subject (the trusted root
+// term).
+func TestSigstoreEvidenceUnderKeysWithoutRootFails(t *testing.T) {
 	signer := provtest.New(t)
 	ssh := newSSHFixture(t, "v1.0.0")
 	sfx := newProvFixture(t, signer, sigstoretest.TagOptions{}, "v1.0.0")
 	c := sfx.Client("proxy")
 	c.Policy = keysRule("", &trust.IdentityRule{SAN: provtest.Subject, Issuer: provtest.Issuer}, ssh.key)
-	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil || !strings.Contains(err.Error(), "requires provenance") || !strings.Contains(err.Error(), "trusted root") {
-		t.Fatalf("err = %v, want a require-provenance failure naming the root", err)
+	if _, err := c.Module(ctx, "example.com/m", ver(t, "v1.0.0")); err == nil || !strings.Contains(err.Error(), "no trusted root is configured to judge it") {
+		t.Fatalf("err = %v, want the missing-root failure", err)
 	}
 }
 

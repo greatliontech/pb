@@ -70,6 +70,7 @@ type Provenance struct {
 	ObjectFormat   string // git-signed-tag, git-pinned-key: "sha1" or "sha256"
 	Object         string // git-signed-tag, git-pinned-key: hex git hash of the signed object
 	Subtree        string // git-signed-tag, git-pinned-key: the module's directory in the repository the tag bound it under, "" at the root
+	Repo           string // git-signed-tag: the origin's HTTPS repository the record was accepted under, the origin default re-derives from
 	SAN            string // git-signed-tag, image-signature
 	Issuer         string // git-signed-tag, image-signature
 	KeyKind        string // git-pinned-key: "openpgp" or "ssh"
@@ -90,11 +91,12 @@ func NamesKey(p Provenance) bool { return recordShapes[p.Type].namesKey }
 type recordShape struct {
 	signsObject bool
 	namesKey    bool
+	namesRepo   bool
 	article     string
 }
 
 var recordShapes = map[string]recordShape{
-	ProvenanceGitSignedTag:   {signsObject: true, article: "a"},
+	ProvenanceGitSignedTag:   {signsObject: true, namesRepo: true, article: "a"},
 	ProvenanceGitPinnedKey:   {signsObject: true, namesKey: true, article: "a"},
 	ProvenanceImageSignature: {article: "an"},
 }
@@ -344,6 +346,16 @@ func checkProvenance(p Provenance, admitted ...string) error {
 	if p.SAN == "" || p.Issuer == "" {
 		return errors.New("identity needs both san and issuer")
 	}
+	switch {
+	case shape.namesRepo && p.Repo == "":
+		return fmt.Errorf("%s %s record names no repo: the repository it was accepted under, which a record written before it was recorded lacks; set this entry's provenance to none and run pb dep update <path>@<version> for the pair, or remove the entry and run pb dep download", shape.article, p.Type)
+	case shape.namesRepo:
+		if err := checkPlainScalar("repo", p.Repo); err != nil {
+			return err
+		}
+	case p.Repo != "":
+		return fmt.Errorf("%s %s record names no repository", shape.article, p.Type)
+	}
 	if err := checkPlainScalar("san", p.SAN); err != nil {
 		return err
 	}
@@ -560,6 +572,9 @@ func writeProvenance(w *contractfile.Writer, p Provenance) {
 				w.Scalar("subtree", p.Subtree)
 			}
 		}
+		if shape.namesRepo {
+			w.Literal("repo", p.Repo)
+		}
 		if shape.namesKey {
 			w.Mapping("key", func() {
 				w.Literal("kind", p.KeyKind)
@@ -616,6 +631,7 @@ type rawProvenance struct {
 	ObjectFormat *rawScalar   `yaml:"objectFormat"`
 	Object       *rawScalar   `yaml:"object"`
 	Subtree      *rawScalar   `yaml:"subtree"`
+	Repo         *rawScalar   `yaml:"repo"`
 	Identity     *rawIdentity `yaml:"identity"`
 	Key          *rawKey      `yaml:"key"`
 }
@@ -684,6 +700,9 @@ func (p *provNode) record() (Provenance, error) {
 		if !shape.namesKey && p.present["key"] {
 			return Provenance{}, fmt.Errorf("%s %s record names an identity, not a key", shape.article, rec.Type)
 		}
+		if !shape.namesRepo && p.present["repo"] {
+			return Provenance{}, fmt.Errorf("%s %s record names no repository", shape.article, rec.Type)
+		}
 	}
 	if r.ObjectFormat != nil {
 		rec.ObjectFormat = string(*r.ObjectFormat)
@@ -696,6 +715,12 @@ func (p *provNode) record() (Provenance, error) {
 			return Provenance{}, errors.New("a subtree written is never empty: the root writes none")
 		}
 		rec.Subtree = string(*r.Subtree)
+	}
+	if p.present["repo"] {
+		if r.Repo == nil || *r.Repo == "" {
+			return Provenance{}, errors.New("a repo written is never empty")
+		}
+		rec.Repo = string(*r.Repo)
 	}
 	if r.Identity != nil {
 		rec.SAN, rec.Issuer = string(r.Identity.SAN), string(r.Identity.Issuer)

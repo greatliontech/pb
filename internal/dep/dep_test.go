@@ -912,6 +912,75 @@ func TestUpdateVerb(t *testing.T) {
 	})
 }
 
+// A pinned pair named <path>@<version> is re-resolved by update: its
+// pin dropped and recorded anew by the first-use pipeline, the
+// transition reported; a pair no list pins is refused, and a bare
+// path still moves versions (REQ-dep-update).
+func TestUpdateReresolvesAPinnedPair(t *testing.T) {
+	fx := newDep(t, map[string]string{
+		"pb.work":   "use:\n  - a\n",
+		"a/pb.yaml": ws("example.com/a", "  example.com/m1: v1.0.0\n"),
+	})
+	fx.serve(t, "example.com/m1", "v1.0.0", map[string]string{"pb.yaml": ws("example.com/m1", "")})
+	fx.Endpoint("example.com/m1", "v1.0.0", "info", `{"version":"v1.0.0"}`)
+	s := fx.session(t, ".")
+	if err := Download(ctx, s, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := s.Lock.Module("example.com/m1", "v1.0.0")
+	// The record edited by hand to a fabricated identity: the explicit
+	// update drops it and records what resolves today.
+	for i := range s.Lock.Modules {
+		s.Lock.Modules[i].Provenance = lockfile.Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), Repo: "https://github.com/x/y", SAN: "https://github.com/x/y/.github/workflows/r.yml@refs/tags/v1.0.0", Issuer: "https://token.actions.githubusercontent.com"}
+	}
+	var out bytes.Buffer
+	if err := Update(ctx, s, &out, nil, "example.com/m1@v1.0.0"); err != nil {
+		t.Fatalf("Update of a pair: %v", err)
+	}
+	after, ok := s.Lock.Module("example.com/m1", "v1.0.0")
+	if !ok || after.Digest != before.Digest || after.Provenance != (lockfile.Provenance{}) {
+		t.Fatalf("the pin after the re-resolution: %+v, want the digest kept and the fabricated record gone", after)
+	}
+	if !strings.Contains(out.String(), "example.com/m1@v1.0.0: digest "+before.Digest+" -> "+before.Digest+", provenance") {
+		t.Fatalf("report = %q", out.String())
+	}
+	if err := Update(ctx, s, &out, nil, "example.com/m1@v9.9.9"); err == nil || !strings.Contains(err.Error(), "no pin records example.com/m1@v9.9.9") {
+		t.Fatalf("a pair no list pins: %v", err)
+	}
+	if err := Update(ctx, s, &out, nil, "example.com/m1@"); err == nil || !strings.Contains(err.Error(), "not a <path>@<version> pair") {
+		t.Fatalf("a malformed pair: %v", err)
+	}
+	// A pair pinned in both lists — a module declared and a ruleset
+	// imported — is one content under one digest: both pins drop and
+	// both are recorded anew, each list's transition reported.
+	fabricated := lockfile.Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("cd", 20), Repo: "https://github.com/x/y", SAN: "https://github.com/x/y/.github/workflows/r.yml@refs/tags/v1.0.0", Issuer: "https://token.actions.githubusercontent.com"}
+	for i := range s.Lock.Modules {
+		s.Lock.Modules[i].Provenance = fabricated
+	}
+	if err := s.Lock.RulesetPins().Add(lockfile.ModulePin{Path: "example.com/m1", Version: "v1.0.0", Digest: before.Digest, Modfile: before.Modfile, Provenance: fabricated}); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Update(ctx, s, &out, nil, "example.com/m1@v1.0.0"); err != nil {
+		t.Fatalf("Update of a pair pinned twice: %v", err)
+	}
+	m, okM := s.Lock.ModulePins().Module("example.com/m1", "v1.0.0")
+	r, okR := s.Lock.RulesetPins().Module("example.com/m1", "v1.0.0")
+	if !okM || !okR || m.Provenance != (lockfile.Provenance{}) || r.Provenance != (lockfile.Provenance{}) || m.Digest != r.Digest {
+		t.Fatalf("the pins after the re-resolution: %+v %v, %+v %v", m, okM, r, okR)
+	}
+	if !strings.Contains(out.String(), "example.com/m1@v1.0.0: digest") || !strings.Contains(out.String(), "example.com/m1@v1.0.0 (ruleset pin): digest") {
+		t.Fatalf("report = %q", out.String())
+	}
+	// A replaced path is refused: a replaced pair is never pinned, its
+	// replacement's pair is.
+	fx.write(t, "pb.work", "use:\n  - a\nreplace:\n  example.com/m1: example.com/fork@v2.0.0\n")
+	replaced := fx.session(t, ".")
+	if err := Update(ctx, replaced, &out, nil, "example.com/m1@v1.0.0"); err == nil || !strings.Contains(err.Error(), "replaced by example.com/fork@v2.0.0") {
+		t.Fatalf("a replaced pair: %v", err)
+	}
+}
+
 // Verify recomputes cached artifacts against pins: clean caches
 // verify, tampered entries are reported exhaustively and fail, absent
 // entries are outside its scope (REQ-dep-verify).
@@ -943,6 +1012,38 @@ func TestVerifyVerb(t *testing.T) {
 	out.Reset()
 	if err := Verify(ctx, s, &out); err != nil || !strings.Contains(out.String(), "verified 1 cached module(s)") {
 		t.Fatalf("Verify beside a digestless pin: %v %q", err, out.String())
+	}
+	// The pin's record is held to the policy of the day: a none record
+	// under a policy requiring provenance is a reported mismatch.
+	s.Client.Policy = &trust.Policy{Default: trust.RequireProvenance}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err == nil || !strings.Contains(out.String(), "example.com/m1@v1.0.0: provenance:") || !strings.Contains(out.String(), "requires it") {
+		t.Fatalf("a none pin under require: %v %q", err, out.String())
+	}
+	s.Client.Policy = nil
+	// A pin recording evidence whose cached envelope cannot be read is
+	// a reported mismatch; one with no cached envelope is outside the
+	// scope, as an uncached archive is.
+	for i := range s.Lock.Modules {
+		if s.Lock.Modules[i].Path == "example.com/m1" {
+			s.Lock.Modules[i].Provenance = lockfile.Provenance{Type: "git-signed-tag", ObjectFormat: "sha1", Object: strings.Repeat("ab", 20), Repo: "https://github.com/acme/protos", SAN: "https://github.com/acme/protos/.github/workflows/release.yml@refs/tags/v1.0.0", Issuer: "https://token.actions.githubusercontent.com"}
+		}
+	}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err != nil || !strings.Contains(out.String(), "verified 1 cached module(s)") {
+		t.Fatalf("a record with no cached envelope: %v %q", err, out.String())
+	}
+	if err := s.Client.Cache.Put("example.com/m1", mustVer(t, "v1.0.0"), fetch.KindProv, s.PinnedDigest("example.com/m1", "v1.0.0"), []byte("junk")); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := Verify(ctx, s, &out); err == nil || !strings.Contains(out.String(), "example.com/m1@v1.0.0: provenance:") {
+		t.Fatalf("a record with a junk cached envelope: %v %q", err, out.String())
+	}
+	for i := range s.Lock.Modules {
+		if s.Lock.Modules[i].Path == "example.com/m1" {
+			s.Lock.Modules[i].Provenance = lockfile.Provenance{}
+		}
 	}
 	// A tampered cache entry is a reported mismatch and a failure.
 	wrong, _ := fetchtest.ModuleZip(t, map[string]string{"pb.yaml": ws("example.com/m1", "  example.com/x: v1.0.0\n")})

@@ -12,10 +12,14 @@ lockfile provenance records (`module-lockfile.md`).
 (Fulcio roots and intermediates, Rekor public keys) against which all
 certificate chains and transparency proofs are verified — loaded from
 the file named by the `trustedroot` setting: `PBTRUSTEDROOT`, or the
-user configuration file's `trustedroot` key (`user-config.md`). Without
-one, no evidence can verify: absent under `allow-unsigned`, a failure
-under `require-provenance`; operations needing no evidence
-verification run without a root.
+user configuration file's `trustedroot` key (`user-config.md`). It is
+an input to every judgement of sigstore evidence: sigstore evidence
+served with no root to judge it fails the operation under either
+posture — a judgement with a missing input has no answer, and an
+unsigned record would be a fact about the machine, not the subject —
+while a subject whose sources serve no evidence is unsigned, root or
+none, and pinned-key evidence needs no root; operations needing no
+evidence verification run without a root.
 
 **verified identity** (term): The identity extracted from a valid Fulcio
 certificate: the subject alternative name (SAN) and the OIDC issuer.
@@ -112,6 +116,27 @@ matching fails the operation.
 **REQ-prov-unsigned-recorded** (behavior): A subject resolved under
 `allow-unsigned` with no accepted evidence MUST be recorded with
 provenance `none` in the lockfile — tolerated, never invisible.
+
+**REQ-prov-pin-held** (behavior): A pin is held on every use, as the
+digest is: the provenance record to the trust policy of the day
+wherever the pin is used, and to its evidence wherever the pinned
+archive is read. A record of `none` under a rule requiring provenance
+— by mode or by naming keys — fails; an identity record is held to
+the rule's identity where one is written, fails under a rule naming
+keys alone, and under the origin default is held to the default
+identity re-derived, offline, from the repository the record names
+(REQ-prov-origin-consistency, `module-lockfile.md`
+REQ-lock-provenance-record) — a record made under an explicit rule
+since removed stands only where the default accepts it; a pinned-key
+record is held as REQ-prov-pinned-key-recorded has it. Where the
+archive is read, the evidence — the cached envelope first, fetched
+where the cache holds none or what it holds fails — MUST re-verify
+against the trusted root and the archive and reproduce the record
+(`module-lockfile.md` REQ-lock-no-silent-downgrade), once per pair,
+digest and record in a process. Every refusal names the explicit
+update that re-resolves the pair, `pb dep update <path>@<version>`
+(`dep-verbs.md` REQ-dep-update): the record is a claim every machine
+re-establishes, never a verdict one machine recorded for the others.
 
 ## Pinned keys
 
@@ -220,8 +245,11 @@ either posture.
 identity: no offline-verifiable correspondence binds a repository to
 a signer, as REQ-prov-origin-consistency requires of a designation, so
 evidence MUST be accepted only through an explicit identity rule. With no
-identity rule governing the reference, or no trusted root configured,
-no evidence is judged and the image is unsigned as above.
+identity rule governing the reference no evidence is judged and the
+image is unsigned as above; with no trusted root configured the
+evidence is looked for all the same — none found is unsigned, any
+found fails the acquisition under either posture, as the trusted root
+term has it.
 
 **REQ-prov-plugin-evidence-kept** (behavior): Evidence fetched for an
 image MUST be kept with pb's plugin content, keyed by the digest

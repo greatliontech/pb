@@ -73,8 +73,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.Parse"
   role: BINDING_ROLE_IMPLEMENTS
@@ -83,8 +83,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestParseRejections"
   role: BINDING_ROLE_TESTS
@@ -93,8 +93,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestParseGoldenRoundTrip"
   role: BINDING_ROLE_TESTS
@@ -173,8 +173,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.CheckProvenanceTransition"
   role: BINDING_ROLE_IMPLEMENTS
@@ -183,8 +183,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestProvenanceTransition"
   role: BINDING_ROLE_TESTS
@@ -193,8 +193,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestFixedPointProperty"
   role: BINDING_ROLE_TESTS
@@ -333,8 +333,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance.Record"
   role: BINDING_ROLE_IMPLEMENTS
@@ -363,8 +363,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestImageSignatureRecordRoundTrips"
   role: BINDING_ROLE_TESTS
@@ -373,8 +373,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestAcquireReverifiesPinnedRecord"
   role: BINDING_ROLE_TESTS
@@ -383,8 +383,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/provenance/image.TestJudgePrefersTheAcceptedRecord"
   role: BINDING_ROLE_TESTS
@@ -393,8 +393,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestMutationResidue"
   role: BINDING_ROLE_TESTS
@@ -403,8 +403,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestPluginProvenanceRecordParsed"
   role: BINDING_ROLE_TESTS
@@ -413,8 +413,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
@@ -423,8 +423,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-no-silent-downgrade"
-  content_hash: "ac22dfd8e3a961c34ea9078c2bba76da46915a57a6895e013bd4e0a256522f95"
-  source_hash: "3c10a7392d7b109efc0695bd9f94ebfc7effe7a4333b1f5ad151dd62b98979ea"
+  content_hash: "a7ff2b1d9d2daca697e6971e1e2abf12f8b80428f6dfafb96eb4d708494917b8"
+  source_hash: "26e6848415ee12f616f9c498c172410157d862e05be5cee0cffd42ff64d45a4e"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/plugin/oci.TestUpdatePlugin"
   role: BINDING_ROLE_TESTS
@@ -623,8 +623,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/module/lockfile.TestRecordSubtreeRoundTrips"
   role: BINDING_ROLE_TESTS
@@ -643,8 +643,8 @@ bindings {
 
 bindings {
   requirement_id: "REQ-lock-provenance-record"
-  content_hash: "1140950d4e6be00224b6cf77d707d41cc0223021d4856b596bc15bfbfcb58d53"
-  source_hash: "4d3d2113d81a9370201a35e5f7090e4b8597fb17db82d31940eb42fc27024a07"
+  content_hash: "8f2f762d8dfd6a924c2455319137522ab6c03f0f2a8871f3a2bca13f57ff5605"
+  source_hash: "d18da85b561f0cec0cf5402646137a595aed2d43b57616cee53a2c3fbc11303d"
   backend: "go"
   symbol: "github.com/greatliontech/pb/internal/source/fetch.TestReverificationBindsUnderTheRecordedSubtree"
   role: BINDING_ROLE_TESTS

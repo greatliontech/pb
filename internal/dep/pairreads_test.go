@@ -24,7 +24,9 @@ import (
 // can name; prepare hands RulesetZip to lintfile.Rulesets, which
 // reads each import through Root.Source, as closure (download, graph,
 // why and tidy) and Update read the imports through the session's
-// view of them. A ninth site is a reader the mapping does not reach.
+// view of them, and Update's pair form re-resolves a ruleset pin by
+// the pair named, a replaced path refused before the read. A tenth
+// site is a reader the mapping does not reach.
 func TestPairReadsGoThroughTheDriver(t *testing.T) {
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
@@ -134,7 +136,7 @@ func TestPairReadsGoThroughTheDriver(t *testing.T) {
 		}
 	}
 	slices.Sort(sites)
-	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Download.RulesetDownload", "internal/dep:Modules.Zip", "internal/dep:Update.RulesetZip", "internal/dep:assembleRun.RulesetZip", "internal/dep:closure.RulesetZip", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
+	want := []string{"internal/dep:Breaking.Zip", "internal/dep:Download.RulesetDownload", "internal/dep:Modules.Zip", "internal/dep:Update.RulesetZip", "internal/dep:assembleRun.RulesetZip", "internal/dep:closure.RulesetZip", "internal/dep:reresolve.RulesetDownload", "internal/resolve:Download.Download", "internal/resolve:load.Module"}
 	if !slices.Equal(sites, want) {
 		t.Fatalf("fetch-client content readers used across the module: %v, want exactly %v — a build-list pair is read through the driver or modfiles.Load, never handed to the client", sites, want)
 	}

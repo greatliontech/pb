@@ -51,7 +51,7 @@ func depCmd() *cobra.Command {
 		RunE: run(func(ctx context.Context, s *dep.Session) error { return dep.Verify(ctx, s, os.Stdout) }),
 	})
 	cmd.AddCommand(&cobra.Command{
-		Use: "update [module path or oci plugin reference...]", Short: "move requirements to the highest discovered release, or re-resolve a plugin",
+		Use: "update [module path, <path>@<version> pair or oci plugin reference...]", Short: "move requirements to the highest discovered release, or re-resolve a pinned pair or plugin",
 		Long: `move requirements to the highest discovered release, or re-resolve a plugin
 
 A ruleset import the lint file holds without a version — a migration

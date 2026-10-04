@@ -35,13 +35,14 @@ import (
 )
 
 // The two reasons no evidence is judged for an image
-// (provenance.md REQ-prov-plugin-identity), tolerable under
-// allow-unsigned like absence: no identity rule governs the
-// reference, so no signer could be accepted; no trusted root is
-// configured to verify against.
+// (provenance.md REQ-prov-plugin-identity): no identity rule governs
+// the reference, so no signer could be accepted — tolerable under
+// allow-unsigned like absence; evidence is found and no trusted root
+// is configured to judge it — a missing input, a failure under either
+// posture.
 var (
 	ErrNoIdentityRule = errors.New("oci: no identity rule names an accepted signer for the plugin")
-	ErrNoTrustedRoot  = errors.New("oci: no trusted root is configured to verify plugin signatures against")
+	ErrNoTrustedRoot  = errors.New("oci: signature evidence is found but no trusted root is configured to judge it (the trustedroot setting)")
 )
 
 // v1Platform is the image library's spelling of a platform.
@@ -517,10 +518,11 @@ func (a *Acquirer) verify(ctx context.Context, id ocifs.ResolvedIdentity) error 
 // tolerable reports a judgement that accepted nothing for a reason
 // allow-unsigned tolerates (REQ-prov-plugin-classification,
 // REQ-prov-plugin-identity): absence, a signer the policy refuses, no
-// identity rule, no trusted root.
+// identity rule. Evidence found with no trusted root to judge it is
+// not among them: a judgement with a missing input has no answer.
 func tolerable(err error) bool {
 	return errors.Is(err, image.ErrNoEvidence) || errors.Is(err, image.ErrIdentityNotAccepted) ||
-		errors.Is(err, ErrNoIdentityRule) || errors.Is(err, ErrNoTrustedRoot)
+		errors.Is(err, ErrNoIdentityRule)
 }
 
 // evidenceStore is the store at dir, none for no dir.
@@ -542,14 +544,14 @@ func evidenceStore(dir string) *evidence.Store {
 // identity rule governing the declared reference; accept is the
 // caller's further acceptance of a verified record, nil for every
 // one; fresh — an explicit update — fetches without judging what was
-// kept. With no identity rule or no trusted root nothing is judged:
-// no evidence could be accepted (REQ-prov-plugin-identity).
+// kept. With no identity rule nothing is judged: no evidence could be
+// accepted (REQ-prov-plugin-identity). With no trusted root the
+// evidence is looked for all the same: none found is an unsigned
+// image, any found a judgement with no root to make it, a failure
+// under either posture.
 func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decision trust.Decision, accept func(lockfile.Provenance) bool, fresh bool) (lockfile.Provenance, error) {
 	if decision.Identity == nil {
 		return lockfile.Provenance{}, ErrNoIdentityRule
-	}
-	if a.root == nil {
-		return lockfile.Provenance{}, ErrNoTrustedRoot
 	}
 	id, err := trust.ExplicitIdentity(*decision.Identity)
 	if err != nil {
@@ -562,6 +564,24 @@ func (a *Acquirer) evidence(ctx context.Context, reference, digest string, decis
 	h, err := v1.NewHash(digest)
 	if err != nil {
 		return lockfile.Provenance{}, fmt.Errorf("oci: %w", err)
+	}
+	if a.root == nil {
+		if a.kept != nil {
+			if kept, ok := a.kept.Load(h); ok {
+				for _, err := range image.Sequence(kept) {
+					if err == nil {
+						return lockfile.Provenance{}, ErrNoTrustedRoot
+					}
+				}
+			}
+		}
+		for _, err := range discover.Discover(ctx, ref.Context(), h, remote.WithTransport(a.transport), remote.WithAuthFromKeychain(a.fs.Keychain())) {
+			if err != nil {
+				return lockfile.Provenance{}, err
+			}
+			return lockfile.Provenance{}, ErrNoTrustedRoot
+		}
+		return lockfile.Provenance{}, image.ErrNoEvidence
 	}
 	if a.kept != nil && !fresh {
 		if kept, ok := a.kept.Load(h); ok {

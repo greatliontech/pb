@@ -42,11 +42,13 @@ func (c *Client) download(ctx context.Context, modPath string, v version.Version
 		}
 		pin, _ = pins.Module(modPath, v.String())
 	}
-	key, err := c.pinGoverned(modPath, v, pin)
+	key, err := c.holdToPolicy(modPath, v, pin)
 	if err != nil {
 		return err
 	}
-	zip, err := c.pinnedZip(ctx, modPath, v, pin)
+	// The archive read holds the evidence record with it (held): the
+	// envelope is in the cache, re-verified, once this returns.
+	zip, err := c.pinnedZip(ctx, modPath, v, pin, key)
 	if err != nil {
 		return err
 	}
@@ -55,15 +57,7 @@ func (c *Client) download(ctx context.Context, modPath string, v version.Version
 			return err
 		}
 	}
-	if err := c.downloadInfo(ctx, modPath, v); err != nil {
-		return err
-	}
-	if pin.Provenance != (lockfile.Provenance{}) {
-		if err := c.downloadProv(ctx, modPath, v, pin, key, zip); err != nil {
-			return err
-		}
-	}
-	return nil
+	return c.downloadInfo(ctx, modPath, v)
 }
 
 // archiveModfile extracts the declared module file from the
@@ -145,7 +139,7 @@ func checkInfo(b []byte, v version.Version) error {
 	return nil
 }
 
-// downloadProv ensures the provenance envelope behind a verified pin is
+// ensureProv ensures the provenance envelope behind a verified pin is
 // cached, re-verifying that some evidence object reproduces exactly the
 // pinned record — held to the recorded identity, not the policy's
 // current patterns, or to the recorded key as the policy of the day
@@ -155,7 +149,7 @@ func checkInfo(b []byte, v version.Version) error {
 // absent (REQ-dep-cache-transparent); served evidence that cannot
 // reproduce the record fails rather than rewriting anything
 // (REQ-lock-no-silent-downgrade).
-func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip []byte) error {
+func (c *Client) ensureProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip []byte) error {
 	if b, ok, err := c.Cache.Get(modPath, v, KindProv, pin.Digest); err != nil {
 		return err
 	} else if ok && c.reverifyProv(ctx, modPath, v, pin, key, zip, b) == nil {
@@ -175,12 +169,13 @@ func (c *Client) downloadProv(ctx context.Context, modPath string, v version.Ver
 }
 
 // reverifyProv checks that an envelope reproduces the pinned record:
-// some evidence object verifies against the recorded identity — or,
-// for a pinned-key record, against the recorded key as the policy of
-// the day pins it, which pinGoverned resolved before anything was
-// served (REQ-prov-pinned-key-recorded) — and renders exactly the
-// recorded provenance facts (the downgrade guard's acceptance
-// criterion).
+// some evidence object verifies against the recorded identity — held
+// to the policy of the day by holdToPolicy before anything was
+// served, so the record's identity is the rule's where one is
+// written — or, for a pinned-key record, against the recorded key as
+// the policy of the day pins it, which holdToPolicy resolved too
+// (REQ-prov-pinned-key-recorded) — and renders exactly the recorded
+// provenance facts (the downgrade guard's acceptance criterion).
 func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, key *gitprov.PinnedKey, zip, provBytes []byte) error {
 	evidence, err := provenance.ParseEnvelope(provBytes)
 	if err != nil {
@@ -200,6 +195,9 @@ func (c *Client) reverifyProv(ctx context.Context, modPath string, v version.Ver
 	// the subtree the pin names, never the origin resolved today — a
 	// vanity redirect moving the module moves no attested fact.
 	_, accepted, skipped, err := c.verifyEvidence(ctx, pin.Provenance.Subtree, v, zip, evidence, id, keys, func(rec lockfile.Provenance) bool {
+		// The record's repository is the origin default's input, held
+		// by holdToPolicy; the evidence binds no repository, and the
+		// transition compares none.
 		return lockfile.CheckProvenanceTransition(pin.Provenance, rec) == nil
 	})
 	if err != nil {
@@ -223,4 +221,25 @@ func (c *Client) pinnedKeyOf(modPath string, rec lockfile.Provenance) (gitprov.P
 		}
 	}
 	return gitprov.PinnedKey{}, false
+}
+
+// VerifyCachedEvidence holds a pinned pair's record to the trust
+// policy of the day and, where the pin records evidence and the cache
+// holds the envelope, re-verifies the envelope against the archive
+// given (dep-verbs.md REQ-dep-verify) — a pair whose envelope is not
+// cached is outside the verb's scope as an uncached archive is; a
+// failure is the pin's disagreement with its evidence or the policy.
+func (c *Client) VerifyCachedEvidence(ctx context.Context, modPath string, v version.Version, pin lockfile.ModulePin, zip []byte) error {
+	key, err := c.holdToPolicy(modPath, v, pin)
+	if err != nil {
+		return err
+	}
+	if pin.Provenance == (lockfile.Provenance{}) {
+		return nil
+	}
+	b, ok, err := c.Cache.Get(modPath, v, KindProv, pin.Digest)
+	if err != nil || !ok {
+		return err
+	}
+	return c.reverifyProv(ctx, modPath, v, pin, key, zip, b)
 }
